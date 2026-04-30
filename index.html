@@ -1,1 +1,380 @@
-https://script.google.com/macros/s/AKfycbxwDB-Uot-xGPmPnHOfr4O7-G9D2mlorURH1nWDbqQCcfJypNsSXC9SJ78jP2WMftVB/exec
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Тест кандидата</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      color: #111827;
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 16px;
+      background: #111827;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #000000;
+    }
+
+    .timer {
+      font-size: 22px;
+      font-weight: bold;
+      color: #b91c1c;
+      margin-bottom: 20px;
+    }
+
+    .question {
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      background: #fafafa;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0;
+      line-height: 1.4;
+    }
+
+    .warning {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .success {
+      color: #15803d;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .small {
+      font-size: 14px;
+      color: #4b5563;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="card" id="startBlock">
+      <h1>Тест кандидата</h1>
+
+      <p class="small">
+        Заполните контактные данные и начните тест. Во время теста фиксируется количество уходов со страницы.
+      </p>
+
+      <input id="name" type="text" placeholder="Ваше имя" />
+      <input id="email" type="email" placeholder="Email" />
+      <input id="phone" type="tel" placeholder="Телефон" />
+
+      <div class="warning">
+        Важно: не закрывайте страницу и не переключайтесь на другие вкладки во время прохождения теста.
+      </div>
+
+      <button onclick="startTest()">Начать тест</button>
+    </div>
+
+    <div class="card" id="testBlock" style="display: none;">
+      <div class="timer">
+        Осталось времени: <span id="timer">10:00</span>
+      </div>
+
+      <div id="questions"></div>
+
+      <button onclick="finishTest()">Завершить тест</button>
+    </div>
+
+    <div class="card" id="resultBlock" style="display: none;">
+      <h2>Тест завершён</h2>
+      <p id="resultText"></p>
+      <p id="sendStatus"></p>
+    </div>
+
+  </div>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwDB-Uot-xGPmPnHOfr4O7-G9D2mlorURH1nWDbqQCcfJypNsSXC9SJ78jP2WMftVB/exec";
+
+    const questions = [
+      {
+        text: "Что показывает выручка?",
+        options: [
+          "Все деньги на счёте компании",
+          "Доход от продажи товаров или услуг",
+          "Чистую прибыль компании",
+          "Сумму налогов"
+        ],
+        correct: 1
+      },
+      {
+        text: "Что такое чистая прибыль?",
+        options: [
+          "Выручка минус все расходы",
+          "Деньги на расчётном счёте",
+          "Себестоимость продукции",
+          "Кредиторская задолженность"
+        ],
+        correct: 0
+      },
+      {
+        text: "Что показывает баланс?",
+        options: [
+          "Доходы и расходы за период",
+          "Активы, обязательства и капитал",
+          "Только движение денег",
+          "Только продажи"
+        ],
+        correct: 1
+      },
+      {
+        text: "Что такое денежный поток?",
+        options: [
+          "Бухгалтерская прибыль",
+          "Движение денежных средств",
+          "План продаж",
+          "Маржинальность"
+        ],
+        correct: 1
+      },
+      {
+        text: "Маржинальная прибыль считается как:",
+        options: [
+          "Выручка минус переменные расходы",
+          "Выручка минус налоги",
+          "Активы минус обязательства",
+          "Прибыль плюс амортизация"
+        ],
+        correct: 0
+      },
+      {
+        text: "Что означает план-факт анализ?",
+        options: [
+          "Сравнение плановых и фактических показателей",
+          "Расчёт налогов",
+          "Составление договора",
+          "Анализ только выручки"
+        ],
+        correct: 0
+      },
+      {
+        text: "Если прибыль есть, но денег на счёте нет, это может означать:",
+        options: [
+          "Такого быть не может",
+          "Деньги могли уйти в дебиторскую задолженность, запасы или инвестиции",
+          "Компания точно банкрот",
+          "Выручка всегда равна деньгам"
+        ],
+        correct: 1
+      },
+      {
+        text: "Точка безубыточности показывает:",
+        options: [
+          "Объём продаж, при котором прибыль равна нулю",
+          "Максимальную прибыль",
+          "Размер кредита",
+          "Ставку налога"
+        ],
+        correct: 0
+      }
+    ];
+
+    let timeLeft = 600;
+    let timerInterval = null;
+    let tabSwitches = 0;
+    let testStarted = false;
+    let testFinished = false;
+
+    document.addEventListener("visibilitychange", function () {
+      if (testStarted && !testFinished && document.hidden) {
+        tabSwitches++;
+      }
+    });
+
+    function startTest() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+
+      if (!name || !email || !phone) {
+        alert("Заполните имя, email и телефон.");
+        return;
+      }
+
+      document.getElementById("startBlock").style.display = "none";
+      document.getElementById("testBlock").style.display = "block";
+
+      renderQuestions();
+
+      testStarted = true;
+      testFinished = false;
+
+      timerInterval = setInterval(function () {
+        timeLeft--;
+        updateTimer();
+
+        if (timeLeft <= 0) {
+          finishTest();
+        }
+      }, 1000);
+    }
+
+    function updateTimer() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+
+      document.getElementById("timer").textContent =
+        minutes + ":" + String(seconds).padStart(2, "0");
+    }
+
+    function renderQuestions() {
+      const container = document.getElementById("questions");
+      container.innerHTML = "";
+
+      questions.forEach(function (question, index) {
+        const block = document.createElement("div");
+        block.className = "question";
+
+        let html = "<h3>" + (index + 1) + ". " + question.text + "</h3>";
+
+        question.options.forEach(function (option, optionIndex) {
+          html += `
+            <label>
+              <input type="radio" name="q${index}" value="${optionIndex}">
+              ${option}
+            </label>
+          `;
+        });
+
+        block.innerHTML = html;
+        container.appendChild(block);
+      });
+    }
+
+    function finishTest() {
+      if (testFinished) return;
+
+      testFinished = true;
+      testStarted = false;
+
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+
+      let score = 0;
+      const answers = [];
+
+      questions.forEach(function (question, index) {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        const selectedIndex = selected ? Number(selected.value) : null;
+        const isCorrect = selectedIndex === question.correct;
+
+        if (isCorrect) {
+          score++;
+        }
+
+        answers.push({
+          question: question.text,
+          selectedAnswer: selectedIndex !== null ? question.options[selectedIndex] : "Нет ответа",
+          correctAnswer: question.options[question.correct],
+          isCorrect: isCorrect
+        });
+      });
+
+      const total = questions.length;
+      const percent = Math.round((score / total) * 100);
+
+      document.getElementById("testBlock").style.display = "none";
+      document.getElementById("resultBlock").style.display = "block";
+
+      document.getElementById("resultText").innerHTML =
+        "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
+        "Процент: <b>" + percent + "%</b>";
+
+      const resultData = {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        score: score,
+        total: total,
+        percent: percent,
+        tabSwitches: tabSwitches,
+        answers: answers
+      };
+
+      sendResult(resultData);
+    }
+
+    function sendResult(data) {
+      const status = document.getElementById("sendStatus");
+      status.textContent = "Отправка результата...";
+      status.className = "";
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify(data)
+      })
+      .then(function () {
+        status.textContent = "Результат отправлен.";
+        status.className = "success";
+      })
+      .catch(function () {
+        status.textContent = "Результат посчитан, но отправка не удалась.";
+        status.className = "error";
+      });
+    }
+  </script>
+</body>
+</html>

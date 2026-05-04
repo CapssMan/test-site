@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>Тест кандидата</title>
 
   <style>
@@ -24,7 +23,7 @@
       background: #ffffff;
       padding: 22px;
       border-radius: 14px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
       margin-bottom: 18px;
     }
 
@@ -48,6 +47,10 @@
       border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #000000;
     }
 
     .timer {
@@ -102,10 +105,7 @@
 
     <div class="card" id="startBlock">
       <h1>Тест кандидата</h1>
-
-      <p class="small">
-        Тест: Junior Financial Analyst v1. Время: 10 минут.
-      </p>
+      <p class="small">Тест: Junior Financial Analyst v1. Время: 10 минут.</p>
 
       <input id="name" type="text" placeholder="Ваше имя" />
       <input id="email" type="email" placeholder="Email" />
@@ -118,7 +118,7 @@
       <button onclick="startTest()">Начать тест</button>
     </div>
 
-    <div class="card" id="testBlock" style="display: none;">
+    <div class="card" id="testBlock" style="display:none;">
       <div class="timer">
         Осталось времени: <span id="timer">10:00</span>
       </div>
@@ -128,7 +128,7 @@
       <button onclick="finishTest()">Завершить тест</button>
     </div>
 
-    <div class="card" id="resultBlock" style="display: none;">
+    <div class="card" id="resultBlock" style="display:none;">
       <h2>Тест завершён</h2>
       <p id="resultText"></p>
       <p id="sendStatus"></p>
@@ -304,135 +304,134 @@
       });
     }
 
-function finishTest() {
-  if (testFinished) return;
+    function finishTest() {
+      if (testFinished) return;
 
-  testFinished = true;
-  testStarted = false;
+      testFinished = true;
+      testStarted = false;
 
-  if (timerInterval) {
-    clearInterval(timerInterval);
-  }
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
 
-  let score = 0;
-  const answers = [];
-  const weakTopicsArray = [];
-  const unansweredArray = [];
+      let score = 0;
+      const answers = [];
+      const weakTopicsArray = [];
+      const unansweredArray = [];
 
-  questions.forEach(function (question, index) {
-    const selected = document.querySelector(`input[name="q${index}"]:checked`);
-    const selectedIndex = selected ? Number(selected.value) : null;
-    const isUnanswered = selectedIndex === null;
-    const isCorrect = selectedIndex === question.correct;
+      questions.forEach(function (question, index) {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        const selectedIndex = selected ? Number(selected.value) : null;
+        const isUnanswered = selectedIndex === null;
+        const isCorrect = selectedIndex === question.correct;
 
-    if (isCorrect) {
-      score++;
-    } else {
-      weakTopicsArray.push(question.topic);
+        if (isCorrect) {
+          score++;
+        } else {
+          weakTopicsArray.push(question.topic);
+        }
+
+        if (isUnanswered) {
+          unansweredArray.push("Q" + (index + 1) + ": " + question.text);
+        }
+
+        answers.push({
+          number: index + 1,
+          topic: question.topic,
+          question: question.text,
+          selectedAnswer: selectedIndex !== null ? question.options[selectedIndex] : "Нет ответа",
+          correctAnswer: question.options[question.correct],
+          isCorrect: isCorrect,
+          status: isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")
+        });
+      });
+
+      const total = questions.length;
+      const percent = Math.round((score / total) * 100);
+
+      const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
+
+      let finalDecision = "Не годен";
+      if (percent >= 70 && tabSwitches <= 1) {
+        finalDecision = "Годен";
+      }
+
+      const weakTopics = [...new Set(weakTopicsArray)].join(", ") || "Нет";
+      const unansweredQuestions = unansweredArray.join("; ") || "Нет";
+
+      let txtReport = "";
+      txtReport += "ОТЧЁТ ПО ТЕСТУ\n";
+      txtReport += "====================\n\n";
+      txtReport += "Версия теста: " + TEST_VERSION + "\n";
+      txtReport += "Имя: " + document.getElementById("name").value.trim() + "\n";
+      txtReport += "Email: " + document.getElementById("email").value.trim() + "\n";
+      txtReport += "Телефон: " + document.getElementById("phone").value.trim() + "\n\n";
+      txtReport += "Результат: " + score + " из " + total + "\n";
+      txtReport += "Процент: " + percent + "%\n";
+      txtReport += "Статус: " + passStatus + "\n";
+      txtReport += "Решение: " + finalDecision + "\n";
+      txtReport += "Уходы со вкладки: " + tabSwitches + "\n";
+      txtReport += "Слабые темы: " + weakTopics + "\n";
+      txtReport += "Неотвеченные вопросы: " + unansweredQuestions + "\n\n";
+      txtReport += "ДЕТАЛЬНЫЙ РАЗБОР\n";
+      txtReport += "====================\n\n";
+
+      answers.forEach(function (answer) {
+        txtReport += "Вопрос " + answer.number + ": " + answer.question + "\n";
+        txtReport += "Тема: " + answer.topic + "\n";
+        txtReport += "Ответ кандидата: " + answer.selectedAnswer + " - " + answer.status + "\n";
+
+        if (!answer.isCorrect) {
+          txtReport += "Правильный ответ: " + answer.correctAnswer + "\n";
+        }
+
+        txtReport += "\n";
+      });
+
+      let summary = "";
+
+      if (percent >= 85 && tabSwitches === 0) {
+        summary = "Сильный кандидат. Хорошая база, признаков проблемного прохождения нет.";
+      } else if (percent >= 70 && tabSwitches <= 1) {
+        summary = "Кандидат годен. Есть отдельные пробелы: " + weakTopics + ".";
+      } else if (percent >= 70 && tabSwitches > 1) {
+        summary = "Знания по баллам приемлемые, но есть риск недобросовестного прохождения из-за уходов со вкладки.";
+      } else {
+        summary = "Кандидат не годен. Основные пробелы: " + weakTopics + ".";
+      }
+
+      if (unansweredQuestions !== "Нет") {
+        summary += " Есть вопросы без ответа.";
+      }
+
+      document.getElementById("testBlock").style.display = "none";
+      document.getElementById("resultBlock").style.display = "block";
+
+      document.getElementById("resultText").innerHTML =
+        "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
+        "Процент: <b>" + percent + "%</b><br>" +
+        "Статус: <b>" + passStatus + "</b><br>" +
+        "Решение: <b>" + finalDecision + "</b>";
+
+      const resultData = {
+        testVersion: TEST_VERSION,
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        score: score,
+        total: total,
+        percent: percent,
+        passStatus: passStatus,
+        finalDecision: finalDecision,
+        tabSwitches: tabSwitches,
+        weakTopics: weakTopics,
+        unansweredQuestions: unansweredQuestions,
+        txtReport: txtReport,
+        summary: summary
+      };
+
+      sendResult(resultData);
     }
-
-    if (isUnanswered) {
-      unansweredArray.push("Q" + (index + 1) + ": " + question.text);
-    }
-
-    answers.push({
-      number: index + 1,
-      topic: question.topic,
-      question: question.text,
-      selectedAnswer: selectedIndex !== null ? question.options[selectedIndex] : "Нет ответа",
-      correctAnswer: question.options[question.correct],
-      isCorrect: isCorrect,
-      status: isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")
-    });
-  });
-
-  const total = questions.length;
-  const percent = Math.round((score / total) * 100);
-
-  const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
-
-  let finalDecision = "Не годен";
-  if (percent >= 70 && tabSwitches <= 1) {
-    finalDecision = "Годен";
-  }
-
-  const weakTopics = [...new Set(weakTopicsArray)].join(", ") || "Нет";
-  const unansweredQuestions = unansweredArray.join("; ") || "Нет";
-
-  let txtReport = "";
-  txtReport += "ОТЧЁТ ПО ТЕСТУ\n";
-  txtReport += "====================\n\n";
-  txtReport += "Версия теста: " + TEST_VERSION + "\n";
-  txtReport += "Имя: " + document.getElementById("name").value.trim() + "\n";
-  txtReport += "Email: " + document.getElementById("email").value.trim() + "\n";
-  txtReport += "Телефон: " + document.getElementById("phone").value.trim() + "\n\n";
-  txtReport += "Результат: " + score + " из " + total + "\n";
-  txtReport += "Процент: " + percent + "%\n";
-  txtReport += "Статус: " + passStatus + "\n";
-  txtReport += "Решение: " + finalDecision + "\n";
-  txtReport += "Уходы со вкладки: " + tabSwitches + "\n";
-  txtReport += "Слабые темы: " + weakTopics + "\n";
-  txtReport += "Неотвеченные вопросы: " + unansweredQuestions + "\n\n";
-  txtReport += "ДЕТАЛЬНЫЙ РАЗБОР\n";
-  txtReport += "====================\n\n";
-
-  answers.forEach(function (answer) {
-    txtReport += "Вопрос " + answer.number + ": " + answer.question + "\n";
-    txtReport += "Тема: " + answer.topic + "\n";
-    txtReport += "Ответ кандидата: " + answer.selectedAnswer + " - " + answer.status + "\n";
-
-    if (!answer.isCorrect) {
-      txtReport += "Правильный ответ: " + answer.correctAnswer + "\n";
-    }
-
-    txtReport += "\n";
-  });
-
-  let summary = "";
-
-  if (percent >= 85 && tabSwitches === 0) {
-    summary = "Сильный кандидат. Хорошая база, признаков проблемного прохождения нет.";
-  } else if (percent >= 70 && tabSwitches <= 1) {
-    summary = "Кандидат годен. Есть отдельные пробелы: " + weakTopics + ".";
-  } else if (percent >= 70 && tabSwitches > 1) {
-    summary = "Знания по баллам приемлемые, но есть риск недобросовестного прохождения из-за уходов со вкладки.";
-  } else {
-    summary = "Кандидат не годен. Основные пробелы: " + weakTopics + ".";
-  }
-
-  if (unansweredQuestions !== "Нет") {
-    summary += " Есть вопросы без ответа.";
-  }
-
-  document.getElementById("testBlock").style.display = "none";
-  document.getElementById("resultBlock").style.display = "block";
-
-  document.getElementById("resultText").innerHTML =
-    "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
-    "Процент: <b>" + percent + "%</b><br>" +
-    "Статус: <b>" + passStatus + "</b><br>" +
-    "Решение: <b>" + finalDecision + "</b>";
-
-  const resultData = {
-    testVersion: TEST_VERSION,
-    name: document.getElementById("name").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    score: score,
-    total: total,
-    percent: percent,
-    passStatus: passStatus,
-    finalDecision: finalDecision,
-    tabSwitches: tabSwitches,
-    weakTopics: weakTopics,
-    unansweredQuestions: unansweredQuestions,
-    txtReport: txtReport,
-    summary: summary,
-    answers: answers
-  };
-
-  sendResult(resultData);
-}
 
     function sendResult(data) {
       const status = document.getElementById("sendStatus");

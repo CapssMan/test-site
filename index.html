@@ -348,6 +348,13 @@
 
       const total = questions.length;
       const percent = Math.round((score / total) * 100);
+      let penalty = 0;
+
+      if (tabSwitches === 1) penalty = 3;
+      else if (tabSwitches <= 3) penalty = 7;
+      else if (tabSwitches >= 4) penalty = 15;
+      
+      const finalScore = percent - penalty;
 
       const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
 
@@ -411,7 +418,8 @@
         "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
         "Процент: <b>" + percent + "%</b><br>" +
         "Статус: <b>" + passStatus + "</b><br>" +
-        "Решение: <b>" + finalDecision + "</b>";
+        "Решение: <b>" + finalDecision + "</b>" +
+        "<br>Итоговый балл: <b>" + finalScore + "</b>";
 
       const resultData = {
         testVersion: TEST_VERSION,
@@ -427,6 +435,7 @@
         weakTopics: weakTopics,
         unansweredQuestions: unansweredQuestions,
         txtReport: txtReport,
+        finalScore: finalScore,
         summary: summary
       };
 

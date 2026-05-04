@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Тест кандидата</title>
 
   <style>
@@ -304,6 +305,13 @@
       });
     }
 
+    function calculatePenalty(tabSwitches) {
+      if (tabSwitches === 0) return 0;
+      if (tabSwitches === 1) return 3;
+      if (tabSwitches <= 3) return 7;
+      return 15;
+    }
+
     function finishTest() {
       if (testFinished) return;
 
@@ -348,18 +356,15 @@
 
       const total = questions.length;
       const percent = Math.round((score / total) * 100);
-      let penalty = 0;
 
-      if (tabSwitches === 1) penalty = 3;
-      else if (tabSwitches <= 3) penalty = 7;
-      else if (tabSwitches >= 4) penalty = 15;
-      
-      const finalScore = percent - penalty;
+      const penalty = calculatePenalty(tabSwitches);
+      const finalScore = Math.max(0, percent - penalty);
 
       const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
 
       let finalDecision = "Не годен";
-      if (percent >= 70 && tabSwitches <= 1) {
+
+      if (percent >= 70 && tabSwitches <= 2) {
         finalDecision = "Годен";
       }
 
@@ -375,6 +380,8 @@
       txtReport += "Телефон: " + document.getElementById("phone").value.trim() + "\n\n";
       txtReport += "Результат: " + score + " из " + total + "\n";
       txtReport += "Процент: " + percent + "%\n";
+      txtReport += "Штраф за уходы со вкладки: " + penalty + "\n";
+      txtReport += "Итоговый балл: " + finalScore + "\n";
       txtReport += "Статус: " + passStatus + "\n";
       txtReport += "Решение: " + finalDecision + "\n";
       txtReport += "Уходы со вкладки: " + tabSwitches + "\n";
@@ -397,11 +404,11 @@
 
       let summary = "";
 
-      if (percent >= 85 && tabSwitches === 0) {
+      if (finalScore >= 85 && tabSwitches === 0) {
         summary = "Сильный кандидат. Хорошая база, признаков проблемного прохождения нет.";
-      } else if (percent >= 70 && tabSwitches <= 1) {
+      } else if (finalScore >= 70 && tabSwitches <= 2) {
         summary = "Кандидат годен. Есть отдельные пробелы: " + weakTopics + ".";
-      } else if (percent >= 70 && tabSwitches > 1) {
+      } else if (percent >= 70 && tabSwitches > 2) {
         summary = "Знания по баллам приемлемые, но есть риск недобросовестного прохождения из-за уходов со вкладки.";
       } else {
         summary = "Кандидат не годен. Основные пробелы: " + weakTopics + ".";
@@ -417,9 +424,9 @@
       document.getElementById("resultText").innerHTML =
         "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
         "Процент: <b>" + percent + "%</b><br>" +
+        "Итоговый балл: <b>" + finalScore + "</b><br>" +
         "Статус: <b>" + passStatus + "</b><br>" +
-        "Решение: <b>" + finalDecision + "</b>" +
-        "<br>Итоговый балл: <b>" + finalScore + "</b>";
+        "Решение: <b>" + finalDecision + "</b>";
 
       const resultData = {
         testVersion: TEST_VERSION,
@@ -429,13 +436,12 @@
         score: score,
         total: total,
         percent: percent,
+        finalScore: finalScore,
         passStatus: passStatus,
         finalDecision: finalDecision,
         tabSwitches: tabSwitches,
         weakTopics: weakTopics,
-        unansweredQuestions: unansweredQuestions,
         txtReport: txtReport,
-        finalScore: finalScore,
         summary: summary
       };
 

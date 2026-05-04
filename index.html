@@ -16,7 +16,7 @@
     }
 
     .container {
-      max-width: 820px;
+      max-width: 860px;
       margin: 0 auto;
     }
 
@@ -26,10 +26,6 @@
       border-radius: 14px;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
       margin-bottom: 18px;
-    }
-
-    h1, h2, h3 {
-      margin-top: 0;
     }
 
     input {
@@ -52,10 +48,6 @@
       border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
-    }
-
-    button:hover {
-      background: #000000;
     }
 
     .timer {
@@ -112,7 +104,7 @@
       <h1>Тест кандидата</h1>
 
       <p class="small">
-        Заполните контактные данные и начните тест. Во время теста фиксируется количество уходов со страницы.
+        Тест: Junior Financial Analyst v1. Время: 10 минут.
       </p>
 
       <input id="name" type="text" placeholder="Ваше имя" />
@@ -120,7 +112,7 @@
       <input id="phone" type="tel" placeholder="Телефон" />
 
       <div class="warning">
-        Важно: не закрывайте страницу и не переключайтесь на другие вкладки во время прохождения теста.
+        Во время теста фиксируется количество уходов со страницы.
       </div>
 
       <button onclick="startTest()">Начать тест</button>
@@ -147,8 +139,11 @@
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr5v4YzlLfKFshWPOFsz7_d1GbBihUm-cCTqwsIOI21_CPFBGSqSjqkc5310BBtlqbWQ/exec";
 
+    const TEST_VERSION = "Junior Financial Analyst v1";
+
     const questions = [
       {
+        topic: "Выручка",
         text: "Что показывает выручка?",
         options: [
           "Все деньги на счёте компании",
@@ -159,6 +154,7 @@
         correct: 1
       },
       {
+        topic: "Прибыль",
         text: "Что такое чистая прибыль?",
         options: [
           "Выручка минус все расходы",
@@ -169,6 +165,7 @@
         correct: 0
       },
       {
+        topic: "Баланс",
         text: "Что показывает баланс?",
         options: [
           "Доходы и расходы за период",
@@ -179,6 +176,7 @@
         correct: 1
       },
       {
+        topic: "Денежный поток",
         text: "Что такое денежный поток?",
         options: [
           "Бухгалтерская прибыль",
@@ -189,6 +187,7 @@
         correct: 1
       },
       {
+        topic: "Маржинальность",
         text: "Маржинальная прибыль считается как:",
         options: [
           "Выручка минус переменные расходы",
@@ -199,6 +198,7 @@
         correct: 0
       },
       {
+        topic: "План-факт анализ",
         text: "Что означает план-факт анализ?",
         options: [
           "Сравнение плановых и фактических показателей",
@@ -209,6 +209,7 @@
         correct: 0
       },
       {
+        topic: "Прибыль vs деньги",
         text: "Если прибыль есть, но денег на счёте нет, это может означать:",
         options: [
           "Такого быть не может",
@@ -219,6 +220,7 @@
         correct: 1
       },
       {
+        topic: "Точка безубыточности",
         text: "Точка безубыточности показывает:",
         options: [
           "Объём продаж, при котором прибыль равна нулю",
@@ -314,42 +316,83 @@
 
       let score = 0;
       const answers = [];
+      const weakTopicsArray = [];
+      const unansweredArray = [];
 
       questions.forEach(function (question, index) {
         const selected = document.querySelector(`input[name="q${index}"]:checked`);
         const selectedIndex = selected ? Number(selected.value) : null;
+        const isUnanswered = selectedIndex === null;
         const isCorrect = selectedIndex === question.correct;
 
         if (isCorrect) {
           score++;
+        } else {
+          weakTopicsArray.push(question.topic);
+        }
+
+        if (isUnanswered) {
+          unansweredArray.push("Q" + (index + 1) + ": " + question.text);
         }
 
         answers.push({
+          topic: question.topic,
           question: question.text,
           selectedAnswer: selectedIndex !== null ? question.options[selectedIndex] : "Нет ответа",
           correctAnswer: question.options[question.correct],
-          isCorrect: isCorrect
+          isCorrect: isCorrect,
+          status: isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")
         });
       });
 
       const total = questions.length;
       const percent = Math.round((score / total) * 100);
+      const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
+
+      const weakTopics = [...new Set(weakTopicsArray)].join(", ") || "Нет";
+      const unansweredQuestions = unansweredArray.join("; ") || "Нет";
+
+      let summary = "";
+
+      if (percent >= 85) {
+        summary = "Сильный результат. Кандидат хорошо понимает базовые финансовые показатели.";
+      } else if (percent >= 70) {
+        summary = "Приемлемый результат. Есть отдельные пробелы: " + weakTopics + ".";
+      } else if (percent >= 50) {
+        summary = "Средний результат. Нужно проверить слабые темы: " + weakTopics + ".";
+      } else {
+        summary = "Слабый результат. Кандидат не показывает уверенной базы. Основные пробелы: " + weakTopics + ".";
+      }
+
+      if (tabSwitches > 0) {
+        summary += " Зафиксированы уходы со вкладки: " + tabSwitches + ".";
+      }
+
+      if (unansweredQuestions !== "Нет") {
+        summary += " Есть вопросы без ответа.";
+      }
 
       document.getElementById("testBlock").style.display = "none";
       document.getElementById("resultBlock").style.display = "block";
 
       document.getElementById("resultText").innerHTML =
         "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
-        "Процент: <b>" + percent + "%</b>";
+        "Процент: <b>" + percent + "%</b><br>" +
+        "Статус: <b>" + passStatus + "</b>";
 
       const resultData = {
+        testVersion: TEST_VERSION,
         name: document.getElementById("name").value.trim(),
         email: document.getElementById("email").value.trim(),
         phone: document.getElementById("phone").value.trim(),
         score: score,
         total: total,
         percent: percent,
+        passStatus: passStatus,
         tabSwitches: tabSwitches,
+        weakTopics: weakTopics,
+        unansweredQuestions: unansweredQuestions,
+        summary: summary,
         answers: answers
       };
 

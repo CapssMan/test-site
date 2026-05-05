@@ -727,15 +727,37 @@
     let questionTimeLeft = 0;
     let questionTimerInterval = null;
     let tabSwitches = 0;
+    let lastTabExitAt = 0;
     let testStarted = false;
     let testFinished = false;
     let currentQuestionStartTime = null;
     const answers = [];
 
-    document.addEventListener("visibilitychange", function () {
-      if (testStarted && !testFinished && document.hidden) {
-        tabSwitches++;
+    function registerTabExit(reason) {
+      if (!testStarted || testFinished) return;
+
+      const now = Date.now();
+
+      if (now - lastTabExitAt < 1000) {
+        return;
       }
+
+      tabSwitches++;
+      lastTabExitAt = now;
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        registerTabExit("visibilitychange");
+      }
+    });
+
+    window.addEventListener("blur", function () {
+      registerTabExit("blur");
+    });
+
+    window.addEventListener("pagehide", function () {
+      registerTabExit("pagehide");
     });
 
     document.addEventListener("contextmenu", function (e) {
@@ -868,6 +890,7 @@
 
       currentQuestionIndex = 0;
       tabSwitches = 0;
+      lastTabExitAt = 0;
       testStarted = true;
       testFinished = false;
 
@@ -1033,10 +1056,14 @@
       testFinished = true;
       testStarted = false;
 
-      const total = answers.reduce((sum, answer) => sum + answer.points, 0);
-      const score = answers.reduce((sum, answer) => sum + answer.earnedPoints, 0);
+      const rawTotal = answers.reduce((sum, answer) => sum + answer.points, 0);
+      const rawScore = answers.reduce((sum, answer) => sum + answer.earnedPoints, 0);
 
-      const percent = Math.round((score / total) * 100);
+      const percent = Math.round((rawScore / rawTotal) * 100);
+
+      const score = percent;
+      const total = 100;
+
       const penalty = calculatePenalty(tabSwitches);
       const finalScore = Math.max(0, percent - penalty);
 
@@ -1079,6 +1106,8 @@
         englishLevel: englishLevel,
         score: score,
         total: total,
+        rawScore: rawScore,
+        rawTotal: rawTotal,
         percent: percent,
         penalty: penalty,
         finalScore: finalScore,
@@ -1118,9 +1147,7 @@
         passStatus: passStatus,
         finalDecision: finalDecision,
         tabSwitches: tabSwitches,
-        weakTopics: weakTopics,
-        txtReport: txtReport,
-        summary: summary
+        txtReport: txtReport
       };
 
       sendResult(resultData);
@@ -1246,6 +1273,7 @@
       report += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";
       report += "==============================\n\n";
       report += "Баллы: " + data.score + " из " + data.total + "\n";
+      report += "Сырой весовой результат: " + data.rawScore + " из " + data.rawTotal + "\n";
       report += "Процент: " + data.percent + "%\n";
       report += "Штраф за уходы со вкладки: " + data.penalty + "\n";
       report += "Итоговый балл: " + data.finalScore + "\n";

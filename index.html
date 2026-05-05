@@ -910,14 +910,14 @@
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim().toLowerCase();
       const phone = getFullPhone();
-
-      const attemptStatus = document.getElementById("attemptStatus");
-      const startButton = document.getElementById("startButton");
-
+    
       if (!name || !email || !phone) {
         alert("Заполните имя, email и телефон.");
         return;
       }
+    
+      startTest();
+    }
 
       startButton.disabled = true;
       startButton.textContent = "Проверяем повторную попытку...";

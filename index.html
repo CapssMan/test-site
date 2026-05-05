@@ -4,9 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Тест кандидата</title>
+  <title>Тест: Финансовый аналитик Junior</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #f3f4f6;
@@ -16,31 +23,35 @@
     }
 
     .container {
-      max-width: 860px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
     .card {
       background: #ffffff;
-      padding: 22px;
-      border-radius: 14px;
+      padding: 24px;
+      border-radius: 16px;
       box-shadow: 0 4px 14px rgba(0,0,0,0.08);
       margin-bottom: 18px;
     }
 
-    input {
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    input, select {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
       border: 1px solid #d1d5db;
       border-radius: 8px;
       font-size: 16px;
-      box-sizing: border-box;
+      background: white;
     }
 
     button {
       width: 100%;
-      padding: 13px;
+      padding: 14px;
       margin-top: 16px;
       background: #111827;
       color: white;
@@ -54,25 +65,15 @@
       background: #000000;
     }
 
-    .timer {
-      font-size: 22px;
-      font-weight: bold;
-      color: #b91c1c;
-      margin-bottom: 20px;
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
     }
 
-    .question {
-      padding: 16px;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      background: #fafafa;
-    }
-
-    label {
-      display: block;
-      margin: 10px 0;
-      line-height: 1.4;
+    .small {
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.5;
     }
 
     .warning {
@@ -82,6 +83,73 @@
       border-radius: 10px;
       margin-top: 12px;
       font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .test-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .timer {
+      color: #b91c1c;
+    }
+
+    .question {
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .option {
+      display: block;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .option:hover {
+      border-color: #111827;
+    }
+
+    .option input {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    .context-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      background: white;
+    }
+
+    .context-table th,
+    .context-table td {
+      border: 1px solid #d1d5db;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .context-table th {
+      background: #f3f4f6;
     }
 
     .success {
@@ -94,9 +162,13 @@
       font-weight: bold;
     }
 
-    .small {
-      font-size: 14px;
-      color: #4b5563;
+    .blocked {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -105,28 +177,50 @@
   <div class="container">
 
     <div class="card" id="startBlock">
-      <h1>Тест кандидата</h1>
-      <p class="small">Тест: Junior Financial Analyst v1. Время: 10 минут.</p>
+      <h1>Тест: Финансовый аналитик Junior</h1>
+
+      <p class="small">
+        В тесте 40 вопросов. Вопросы и варианты ответа показываются в случайном порядке.
+        На каждый вопрос отводится отдельное время. Вернуться к предыдущему вопросу нельзя.
+      </p>
 
       <input id="name" type="text" placeholder="Ваше имя" />
       <input id="email" type="email" placeholder="Email" />
-      <input id="phone" type="tel" placeholder="Телефон" />
+
+      <select id="phoneCountry">
+        <option value="+7">Россия +7</option>
+        <option value="+7">Казахстан +7</option>
+        <option value="+375">Беларусь +375</option>
+        <option value="+374">Армения +374</option>
+        <option value="+996">Кыргызстан +996</option>
+        <option value="+998">Узбекистан +998</option>
+        <option value="+994">Азербайджан +994</option>
+        <option value="+992">Таджикистан +992</option>
+        <option value="+373">Молдова +373</option>
+      </select>
+
+      <input id="phone" type="tel" placeholder="Введите номер без кода страны. Например: 9991234567" />
 
       <div class="warning">
-        Во время теста фиксируется количество уходов со страницы.
+        Повторная попытка доступна через 21 день. Во время теста фиксируется количество уходов со страницы.
+        Копирование текста и контекстное меню заблокированы.
       </div>
 
-      <button onclick="startTest()">Начать тест</button>
+      <button id="startButton" onclick="startAttempt()">Начать тест</button>
+
+      <div id="attemptStatus"></div>
     </div>
 
     <div class="card" id="testBlock" style="display:none;">
-      <div class="timer">
-        Осталось времени: <span id="timer">10:00</span>
+      <div class="test-top">
+        <div class="pill">Вопрос <span id="questionNumber">1</span> из <span id="questionTotal">40</span></div>
+        <div class="pill timer">Осталось: <span id="questionTimer">00:00</span></div>
+        <div class="pill">Баллы за вопрос: <span id="questionPoints">0</span></div>
       </div>
 
-      <div id="questions"></div>
+      <div id="questionContainer"></div>
 
-      <button onclick="finishTest()">Завершить тест</button>
+      <button id="nextButton" onclick="nextQuestion()">Ответить и перейти дальше</button>
     </div>
 
     <div class="card" id="resultBlock" style="display:none;">
@@ -139,56 +233,315 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr5v4YzlLfKFshWPOFsz7_d1GbBihUm-cCTqwsIOI21_CPFBGSqSjqkc5310BBtlqbWQ/exec";
-
     const TEST_VERSION = "Junior Financial Analyst v1";
+    const RETAKE_DAYS = 21;
 
-    const questions = [
+    const rawQuestions = [
       {
         topic: "Выручка",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
         text: "Что показывает выручка?",
         options: [
           "Все деньги на счёте компании",
           "Доход от продажи товаров или услуг",
           "Чистую прибыль компании",
-          "Сумму налогов"
+          "Активы компании"
         ],
-        correct: 1
+        correct: 1,
+        comment: "Выручка отражает доход от основной деятельности, а не остаток денег на счёте."
       },
       {
         topic: "Прибыль",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
         text: "Что такое чистая прибыль?",
         options: [
-          "Выручка минус все расходы",
+          "Выручка минус все расходы, налоги и прочие обязательные вычеты",
           "Деньги на расчётном счёте",
-          "Себестоимость продукции",
-          "Кредиторская задолженность"
+          "EBITDA",
+          "Себестоимость продукции"
         ],
-        correct: 0
+        correct: 0,
+        comment: "Чистая прибыль не равна деньгам на счёте. Это бухгалтерский финансовый результат."
       },
       {
         topic: "Баланс",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
         text: "Что показывает баланс?",
         options: [
           "Доходы и расходы за период",
-          "Активы, обязательства и капитал",
-          "Только движение денег",
-          "Только продажи"
+          "Активы, обязательства и капитал на определённую дату",
+          "Только движение денежных средств",
+          "Только продажи компании"
         ],
-        correct: 1
+        correct: 1,
+        comment: "Баланс показывает финансовое положение компании на дату."
+      },
+      {
+        topic: "Активы",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "Что из перечисленного относится к активам компании?",
+        options: [
+          "Кредиты и займы",
+          "Деньги, запасы и дебиторская задолженность",
+          "Налоги к уплате",
+          "Уставный капитал"
+        ],
+        correct: 1,
+        comment: "Активы это ресурсы компании: деньги, запасы, оборудование, дебиторская задолженность."
+      },
+      {
+        topic: "EBITDA",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 2,
+        text: "EBITDA это:",
+        options: [
+          "Чистая прибыль после налогов",
+          "Прибыль до процентов, налогов и амортизации",
+          "Выручка компании",
+          "Денежный поток от операционной деятельности"
+        ],
+        correct: 1,
+        comment: "EBITDA показывает операционный результат до влияния процентов, налогов и амортизации."
+      },
+      {
+        topic: "EBIT",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 2,
+        text: "Амортизация влияет на:",
+        options: [
+          "Выручку",
+          "EBITDA",
+          "EBIT",
+          "Количество денег на счёте в момент начисления"
+        ],
+        correct: 2,
+        comment: "Амортизация уменьшает EBIT, но не уменьшает EBITDA."
+      },
+      {
+        topic: "Дебиторская задолженность",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "Дебиторская задолженность это:",
+        options: [
+          "Долги компании перед поставщиками",
+          "Деньги, которые клиенты должны компании",
+          "Кредиты банка",
+          "Расходы периода"
+        ],
+        correct: 1,
+        comment: "Дебиторская задолженность возникает, когда компания отгрузила товар или оказала услугу, но деньги ещё не получила."
+      },
+      {
+        topic: "Кредиторская задолженность",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
+        text: "Кредиторская задолженность это:",
+        options: [
+          "Долг клиентов перед компанией",
+          "Долг компании перед поставщиками и другими контрагентами",
+          "Чистая прибыль",
+          "Дебиторская задолженность"
+        ],
+        correct: 1,
+        comment: "Кредиторская задолженность показывает, сколько компания должна другим."
+      },
+      {
+        topic: "Связь отчётности",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Выручка в P&L в конечном счёте может увеличить:",
+        options: [
+          "Только денежный поток",
+          "Капитал через прибыль",
+          "Только обязательства",
+          "Только запасы"
+        ],
+        correct: 1,
+        comment: "Прибыль после признания влияет на нераспределённую прибыль и капитал."
       },
       {
         topic: "Денежный поток",
-        text: "Что такое денежный поток?",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Деньги появляются в отчёте о движении денежных средств, когда:",
+        options: [
+          "Компания признала выручку",
+          "Клиент фактически заплатил",
+          "Компания начислила прибыль",
+          "Компания выставила счёт"
+        ],
+        correct: 1,
+        comment: "Cash flow фиксирует движение денег, а не факт начисления выручки."
+      },
+      {
+        topic: "Дебиторская задолженность",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Рост дебиторской задолженности обычно:",
+        options: [
+          "Увеличивает денежный поток",
+          "Уменьшает денежный поток",
+          "Не влияет на денежный поток",
+          "Всегда увеличивает чистую прибыль"
+        ],
+        correct: 1,
+        comment: "Рост дебиторки означает, что часть выручки ещё не поступила деньгами."
+      },
+      {
+        topic: "CAPEX",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 2,
+        text: "Покупка оборудования чаще всего отражается как:",
+        options: [
+          "Операционный расход в P&L сразу полностью",
+          "Инвестиционный денежный поток и актив в балансе",
+          "Кредиторская задолженность без изменения активов",
+          "EBITDA"
+        ],
+        correct: 1,
+        comment: "Покупка оборудования обычно идёт в CAPEX и отражается в балансе как актив."
+      },
+      {
+        topic: "Кредиторская задолженность",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Рост кредиторской задолженности обычно:",
+        options: [
+          "Уменьшает денежный поток",
+          "Временно поддерживает денежный поток",
+          "Не влияет на денежный поток",
+          "Всегда уменьшает прибыль"
+        ],
+        correct: 1,
+        comment: "Если компания пока не заплатила поставщику, деньги временно остаются внутри компании."
+      },
+      {
+        topic: "Прибыль vs деньги",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Может ли быть прибыль без денег на счёте?",
+        options: [
+          "Нет, прибыль всегда равна деньгам",
+          "Да, например из-за дебиторской задолженности",
+          "Нет, если есть прибыль, деньги уже получены",
+          "Да, только если компания получила кредит"
+        ],
+        correct: 1,
+        comment: "Прибыль и деньги могут расходиться из-за принципа начисления."
+      },
+      {
+        topic: "P&L vs CF",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Главное отличие CF от P&L:",
+        options: [
+          "CF показывает движение денег, а P&L показывает доходы и расходы по начислению",
+          "CF показывает только прибыль",
+          "P&L показывает только активы",
+          "CF нужен только банкам"
+        ],
+        correct: 0,
+        comment: "P&L и CF отвечают на разные вопросы: прибыльность и движение денег."
+      },
+      {
+        topic: "Прибыль vs деньги",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Компания прибыльна, но денег не хватает. Что стоит проверить в первую очередь?",
+        options: [
+          "Только налоговую ставку",
+          "Дебиторскую задолженность, запасы и сроки оплаты",
+          "Только размер уставного капитала",
+          "Только количество сотрудников"
+        ],
+        correct: 1,
+        comment: "Деньги часто застревают в оборотном капитале: дебиторке и запасах."
+      },
+      {
+        topic: "Денежный поток",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
+        text: "Денежный поток это:",
         options: [
           "Бухгалтерская прибыль",
           "Движение денежных средств",
-          "План продаж",
+          "Плановая выручка",
           "Маржинальность"
         ],
-        correct: 1
+        correct: 1,
+        comment: "Денежный поток показывает поступления и выбытия денег."
+      },
+      {
+        topic: "Запасы",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Если запасы растут, то при прочих равных:",
+        options: [
+          "Денежный поток растёт",
+          "Денежный поток снижается",
+          "Денежный поток не меняется",
+          "Выручка автоматически растёт"
+        ],
+        correct: 1,
+        comment: "Покупка запасов требует денег, поэтому cash может снижаться."
+      },
+      {
+        topic: "Отсрочка платежа",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Отсрочка платежа клиенту обычно:",
+        options: [
+          "Ускоряет получение денег",
+          "Замедляет получение денег",
+          "Всегда увеличивает маржу",
+          "Не влияет на оборотный капитал"
+        ],
+        correct: 1,
+        comment: "Отсрочка увеличивает дебиторскую задолженность и замедляет cash collection."
+      },
+      {
+        topic: "Предоплата",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Предоплата от клиента прежде всего:",
+        options: [
+          "Увеличивает cash",
+          "Сразу увеличивает чистую прибыль",
+          "Уменьшает активы",
+          "Уменьшает выручку"
+        ],
+        correct: 0,
+        comment: "Предоплата даёт деньги сейчас, но выручка признаётся по правилам учёта."
       },
       {
         topic: "Маржинальность",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
         text: "Маржинальная прибыль считается как:",
         options: [
           "Выручка минус переменные расходы",
@@ -196,32 +549,44 @@
           "Активы минус обязательства",
           "Прибыль плюс амортизация"
         ],
-        correct: 0
+        correct: 0,
+        comment: "Маржинальная прибыль показывает вклад продаж в покрытие постоянных расходов и прибыль."
       },
       {
-        topic: "План-факт анализ",
-        text: "Что означает план-факт анализ?",
+        topic: "Переменные расходы",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
+        text: "Что ближе всего к переменным расходам?",
         options: [
-          "Сравнение плановых и фактических показателей",
-          "Расчёт налогов",
-          "Составление договора",
-          "Анализ только выручки"
+          "Аренда офиса",
+          "Сырьё и материалы на единицу продукции",
+          "Оклад директора",
+          "Плата за бухгалтерскую программу"
         ],
-        correct: 0
+        correct: 1,
+        comment: "Переменные расходы меняются вместе с объёмом производства или продаж."
       },
       {
-        topic: "Прибыль vs деньги",
-        text: "Если прибыль есть, но денег на счёте нет, это может означать:",
+        topic: "Постоянные расходы",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 3,
+        text: "Постоянные расходы это расходы, которые:",
         options: [
-          "Такого быть не может",
-          "Деньги могли уйти в дебиторскую задолженность, запасы или инвестиции",
-          "Компания точно банкрот",
-          "Выручка всегда равна деньгам"
+          "Прямо зависят от каждой проданной единицы",
+          "В краткосрочном периоде слабо зависят от объёма продаж",
+          "Всегда равны нулю",
+          "Всегда относятся к налогам"
         ],
-        correct: 1
+        correct: 1,
+        comment: "Постоянные расходы сохраняются даже при снижении объёмов."
       },
       {
         topic: "Точка безубыточности",
+        difficulty: "calc",
+        timeLimit: 90,
+        points: 3,
         text: "Точка безубыточности показывает:",
         options: [
           "Объём продаж, при котором прибыль равна нулю",
@@ -229,15 +594,277 @@
           "Размер кредита",
           "Ставку налога"
         ],
-        correct: 0
+        correct: 0,
+        comment: "В точке безубыточности маржинальная прибыль покрывает постоянные расходы."
+      },
+      {
+        topic: "Маржа",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 3,
+        text: "Рост маржи обычно означает:",
+        options: [
+          "Компания получает больше прибыли с единицы выручки",
+          "Компания всегда теряет деньги",
+          "Дебиторка автоматически падает",
+          "Выручка обязательно падает"
+        ],
+        correct: 0,
+        comment: "Рост маржи означает улучшение прибыльности относительно выручки."
+      },
+      {
+        topic: "План-факт анализ",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "План-факт анализ это:",
+        options: [
+          "Сравнение плановых и фактических показателей",
+          "Расчёт налогов",
+          "Составление договора",
+          "Анализ только выручки"
+        ],
+        correct: 0,
+        comment: "План-факт показывает отклонения и помогает понять причины."
+      },
+      {
+        topic: "Отклонение",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "Отклонение обычно можно посчитать как:",
+        options: [
+          "Факт минус план",
+          "Активы минус обязательства",
+          "Выручка плюс расходы",
+          "Cash минус EBITDA"
+        ],
+        correct: 0,
+        comment: "Базовая логика: факт сравнивается с планом."
+      },
+      {
+        topic: "План-факт анализ",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 2,
+        text: "Если фактическая выручка ниже плана, это:",
+        options: [
+          "Негативное отклонение по выручке",
+          "Позитивное отклонение по выручке",
+          "Не отклонение",
+          "Всегда хорошо для компании"
+        ],
+        correct: 0,
+        comment: "Для выручки факт ниже плана обычно считается негативным отклонением."
+      },
+      {
+        topic: "Факторный анализ",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 2,
+        text: "Факторный анализ отклонений нужен, чтобы:",
+        options: [
+          "Разложить отклонение на причины",
+          "Удалить лишние строки в Excel",
+          "Заменить отчётность",
+          "Спрятать убытки"
+        ],
+        correct: 0,
+        comment: "Факторный анализ помогает понять, что именно повлияло на результат."
+      },
+      {
+        topic: "БДР",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "БДР это:",
+        options: [
+          "Бюджет доходов и расходов",
+          "Бюджет движения денежных средств",
+          "Баланс денежных резервов",
+          "База данных расходов"
+        ],
+        correct: 0,
+        comment: "БДР показывает доходы, расходы и финансовый результат."
+      },
+      {
+        topic: "Excel",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "Функция SUM в Excel нужна для:",
+        options: [
+          "Суммирования значений",
+          "Поиска значения",
+          "Проверки условия",
+          "Группировки таблицы"
+        ],
+        correct: 0,
+        comment: "SUM суммирует значения."
+      },
+      {
+        topic: "Excel",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "VLOOKUP / ВПР используется для:",
+        options: [
+          "Поиска значения в таблице",
+          "Построения диаграммы",
+          "Удаления дубликатов",
+          "Сортировки листов"
+        ],
+        correct: 0,
+        comment: "VLOOKUP ищет данные по ключу в таблице."
+      },
+      {
+        topic: "Excel",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "Функция IF / ЕСЛИ нужна для:",
+        options: [
+          "Условной логики",
+          "Только суммирования",
+          "Только поиска текста",
+          "Создания сводной таблицы"
+        ],
+        correct: 0,
+        comment: "IF возвращает один результат при выполнении условия и другой, если условие не выполнено."
+      },
+      {
+        topic: "Excel",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "Pivot table / сводная таблица нужна для:",
+        options: [
+          "Агрегации, группировки и анализа данных",
+          "Только для ввода текста",
+          "Только для форматирования",
+          "Только для удаления формул"
+        ],
+        correct: 0,
+        comment: "Сводные таблицы помогают быстро агрегировать данные."
+      },
+      {
+        topic: "Excel",
+        difficulty: "medium",
+        timeLimit: 45,
+        points: 2,
+        text: "INDEX + MATCH часто используют как:",
+        options: [
+          "Более гибкую альтернативу VLOOKUP",
+          "Формулу для расчёта налогов",
+          "Метод удаления листов",
+          "Форматирование дат"
+        ],
+        correct: 0,
+        comment: "INDEX + MATCH позволяет гибко искать значения в таблице."
+      },
+      {
+        topic: "SQL",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "SELECT в SQL используется для:",
+        options: [
+          "Выбора данных",
+          "Удаления базы данных",
+          "Создания картинки",
+          "Открытия Excel"
+        ],
+        correct: 0,
+        comment: "SELECT выбирает данные из таблицы."
+      },
+      {
+        topic: "SQL",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 2,
+        text: "JOIN в SQL нужен для:",
+        options: [
+          "Соединения таблиц",
+          "Округления чисел",
+          "Удаления строк",
+          "Создания диаграмм"
+        ],
+        correct: 0,
+        comment: "JOIN соединяет данные из разных таблиц."
+      },
+      {
+        topic: "SQL",
+        difficulty: "easy",
+        timeLimit: 25,
+        points: 1,
+        text: "GROUP BY в SQL используется для:",
+        options: [
+          "Группировки данных",
+          "Переименования файла",
+          "Удаления столбца",
+          "Изменения шрифта"
+        ],
+        correct: 0,
+        comment: "GROUP BY группирует строки для агрегатных расчётов."
+      },
+      {
+        topic: "Кейс: прибыльность",
+        difficulty: "case",
+        timeLimit: 150,
+        points: 3,
+        text: "По данным мини-таблицы: выручка выросла, но прибыль снизилась. Какая причина наиболее вероятна?",
+        context: `
+          <table class="context-table">
+            <tr><th>Показатель</th><th>План</th><th>Факт</th></tr>
+            <tr><td>Выручка</td><td>1 000</td><td>1 200</td></tr>
+            <tr><td>Переменные расходы</td><td>600</td><td>850</td></tr>
+            <tr><td>Постоянные расходы</td><td>250</td><td>300</td></tr>
+          </table>
+        `,
+        options: [
+          "Расходы выросли быстрее выручки",
+          "Компания точно стала эффективнее",
+          "Дебиторка исчезла",
+          "Прибыль не может снижаться при росте выручки"
+        ],
+        correct: 0,
+        comment: "Рост выручки сам по себе не гарантирует рост прибыли. Нужно смотреть динамику расходов и маржи."
+      },
+      {
+        topic: "Кейс: прибыль vs cash",
+        difficulty: "case",
+        timeLimit: 150,
+        points: 2,
+        text: "Компания показала прибыль, но денег на счёте мало. Что нужно проверить в первую очередь?",
+        context: `
+          <table class="context-table">
+            <tr><th>Показатель</th><th>Изменение</th></tr>
+            <tr><td>Выручка</td><td>Рост</td></tr>
+            <tr><td>Чистая прибыль</td><td>Положительная</td></tr>
+            <tr><td>Дебиторская задолженность</td><td>Сильный рост</td></tr>
+            <tr><td>Запасы</td><td>Рост</td></tr>
+          </table>
+        `,
+        options: [
+          "Дебиторскую задолженность и запасы",
+          "Только уставный капитал",
+          "Только название компании",
+          "Только количество сотрудников"
+        ],
+        correct: 0,
+        comment: "Деньги могут быть заморожены в дебиторке и запасах."
       }
     ];
 
-    let timeLeft = 600;
-    let timerInterval = null;
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let questionTimeLeft = 0;
+    let questionTimerInterval = null;
     let tabSwitches = 0;
     let testStarted = false;
     let testFinished = false;
+    let currentQuestionStartTime = null;
+    const answers = [];
 
     document.addEventListener("visibilitychange", function () {
       if (testStarted && !testFinished && document.hidden) {
@@ -245,64 +872,285 @@
       }
     });
 
-    function startTest() {
+    document.addEventListener("contextmenu", function (e) {
+      if (testStarted) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("copy", function (e) {
+      if (testStarted) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("cut", function (e) {
+      if (testStarted) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (!testStarted) return;
+
+      const key = e.key.toLowerCase();
+
+      if (
+        (e.ctrlKey && key === "c") ||
+        (e.ctrlKey && key === "u") ||
+        (e.ctrlKey && e.shiftKey && key === "i") ||
+        (e.ctrlKey && e.shiftKey && key === "j") ||
+        key === "f12"
+      ) {
+        e.preventDefault();
+      }
+    });
+
+    function startAttempt() {
       const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const phone = document.getElementById("phone").value.trim();
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const phone = getFullPhone();
+
+      const attemptStatus = document.getElementById("attemptStatus");
+      const startButton = document.getElementById("startButton");
 
       if (!name || !email || !phone) {
         alert("Заполните имя, email и телефон.");
         return;
       }
 
+      startButton.disabled = true;
+      startButton.textContent = "Проверяем повторную попытку...";
+      attemptStatus.innerHTML = "";
+
+      checkAttempt(email, phone)
+        .then(function (result) {
+          if (!result.allowed) {
+            attemptStatus.innerHTML =
+              '<div class="blocked">' +
+              result.message +
+              '<br>Следующая попытка: ' + result.nextDate +
+              '</div>';
+
+            startButton.disabled = false;
+            startButton.textContent = "Начать тест";
+            return;
+          }
+
+          startTest();
+        })
+        .catch(function () {
+          attemptStatus.innerHTML =
+            '<div class="blocked">Не удалось проверить повторную попытку. Проверьте интернет или настройки Apps Script.</div>';
+
+          startButton.disabled = false;
+          startButton.textContent = "Начать тест";
+        });
+    }
+
+    function checkAttempt(email, phone) {
+      return new Promise(function (resolve, reject) {
+        const callbackName = "checkAttemptCallback_" + Date.now();
+
+        window[callbackName] = function (data) {
+          resolve(data);
+          delete window[callbackName];
+          script.remove();
+        };
+
+        const url =
+          GOOGLE_SCRIPT_URL +
+          "?action=checkAttempt" +
+          "&email=" + encodeURIComponent(email) +
+          "&phone=" + encodeURIComponent(phone) +
+          "&callback=" + callbackName;
+
+        const script = document.createElement("script");
+        script.src = url;
+        script.onerror = reject;
+
+        document.body.appendChild(script);
+      });
+    }
+
+    function getFullPhone() {
+      const countryCode = document.getElementById("phoneCountry").value;
+      let phone = document.getElementById("phone").value.trim();
+
+      phone = phone.replace(/\D/g, "");
+
+      if (!phone) {
+        return "";
+      }
+
+      if (countryCode === "+7" && phone.startsWith("8")) {
+        phone = phone.substring(1);
+      }
+
+      if (countryCode === "+7" && phone.startsWith("7")) {
+        phone = phone.substring(1);
+      }
+
+      return countryCode + phone;
+    }
+
+    function startTest() {
+      questions = prepareQuestions(rawQuestions);
+
       document.getElementById("startBlock").style.display = "none";
       document.getElementById("testBlock").style.display = "block";
+      document.getElementById("questionTotal").textContent = questions.length;
 
-      renderQuestions();
-
+      currentQuestionIndex = 0;
+      tabSwitches = 0;
       testStarted = true;
       testFinished = false;
 
-      timerInterval = setInterval(function () {
-        timeLeft--;
-        updateTimer();
+      renderCurrentQuestion();
+    }
 
-        if (timeLeft <= 0) {
-          finishTest();
+    function prepareQuestions(list) {
+      const cloned = list.map(function (q) {
+        const optionObjects = q.options.map(function (optionText, originalIndex) {
+          return {
+            text: optionText,
+            originalIndex: originalIndex
+          };
+        });
+
+        const shuffledOptions = shuffleArray(optionObjects);
+        const newCorrectIndex = shuffledOptions.findIndex(function (option) {
+          return option.originalIndex === q.correct;
+        });
+
+        return {
+          topic: q.topic,
+          difficulty: q.difficulty,
+          timeLimit: q.timeLimit,
+          points: q.points,
+          text: q.text,
+          context: q.context || "",
+          options: shuffledOptions.map(option => option.text),
+          correct: newCorrectIndex,
+          correctAnswerText: q.options[q.correct],
+          comment: q.comment
+        };
+      });
+
+      return shuffleArray(cloned);
+    }
+
+    function shuffleArray(array) {
+      const copy = array.slice();
+
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = copy[i];
+        copy[i] = copy[j];
+        copy[j] = temp;
+      }
+
+      return copy;
+    }
+
+    function renderCurrentQuestion() {
+      clearInterval(questionTimerInterval);
+
+      const question = questions[currentQuestionIndex];
+      questionTimeLeft = question.timeLimit;
+      currentQuestionStartTime = new Date();
+
+      document.getElementById("questionNumber").textContent = currentQuestionIndex + 1;
+      document.getElementById("questionPoints").textContent = question.points;
+
+      const container = document.getElementById("questionContainer");
+
+      let html = '<div class="question">';
+      html += '<h2>' + question.text + '</h2>';
+
+      if (question.context) {
+        html += question.context;
+      }
+
+      question.options.forEach(function (option, index) {
+        html += `
+          <label class="option">
+            <input type="radio" name="answer" value="${index}">
+            ${option}
+          </label>
+        `;
+      });
+
+      html += '</div>';
+
+      container.innerHTML = html;
+
+      updateQuestionTimer();
+
+      questionTimerInterval = setInterval(function () {
+        questionTimeLeft--;
+        updateQuestionTimer();
+
+        if (questionTimeLeft <= 0) {
+          saveCurrentAnswer(true);
+          moveToNextOrFinish();
         }
       }, 1000);
     }
 
-    function updateTimer() {
-      const minutes = Math.floor(timeLeft / 60);
-      const seconds = timeLeft % 60;
+    function updateQuestionTimer() {
+      const minutes = Math.floor(questionTimeLeft / 60);
+      const seconds = questionTimeLeft % 60;
 
-      document.getElementById("timer").textContent =
+      document.getElementById("questionTimer").textContent =
         minutes + ":" + String(seconds).padStart(2, "0");
     }
 
-    function renderQuestions() {
-      const container = document.getElementById("questions");
-      container.innerHTML = "";
+    function nextQuestion() {
+      saveCurrentAnswer(false);
+      moveToNextOrFinish();
+    }
 
-      questions.forEach(function (question, index) {
-        const block = document.createElement("div");
-        block.className = "question";
+    function saveCurrentAnswer(isTimeout) {
+      clearInterval(questionTimerInterval);
 
-        let html = "<h3>" + (index + 1) + ". " + question.text + "</h3>";
+      const question = questions[currentQuestionIndex];
+      const selected = document.querySelector('input[name="answer"]:checked');
+      const selectedIndex = selected ? Number(selected.value) : null;
 
-        question.options.forEach(function (option, optionIndex) {
-          html += `
-            <label>
-              <input type="radio" name="q${index}" value="${optionIndex}">
-              ${option}
-            </label>
-          `;
-        });
+      const isUnanswered = selectedIndex === null;
+      const isCorrect = selectedIndex === question.correct;
 
-        block.innerHTML = html;
-        container.appendChild(block);
+      const timeSpent = Math.max(
+        0,
+        Math.round((new Date().getTime() - currentQuestionStartTime.getTime()) / 1000)
+      );
+
+      answers.push({
+        number: currentQuestionIndex + 1,
+        topic: question.topic,
+        difficulty: question.difficulty,
+        question: question.text,
+        selectedAnswer: selectedIndex !== null ? question.options[selectedIndex] : "Нет ответа",
+        correctAnswer: question.correctAnswerText,
+        isCorrect: isCorrect,
+        status: isTimeout ? "Время вышло" : (isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")),
+        points: question.points,
+        earnedPoints: isCorrect ? question.points : 0,
+        timeLimit: question.timeLimit,
+        timeSpent: timeSpent,
+        comment: question.comment
       });
+    }
+
+    function moveToNextOrFinish() {
+      currentQuestionIndex++;
+
+      if (currentQuestionIndex >= questions.length) {
+        finishTest();
+      } else {
+        renderCurrentQuestion();
+      }
     }
 
     function calculatePenalty(tabSwitches) {
@@ -315,108 +1163,65 @@
     function finishTest() {
       if (testFinished) return;
 
+      clearInterval(questionTimerInterval);
+
       testFinished = true;
       testStarted = false;
 
-      if (timerInterval) {
-        clearInterval(timerInterval);
-      }
+      const total = answers.reduce((sum, answer) => sum + answer.points, 0);
+      const score = answers.reduce((sum, answer) => sum + answer.earnedPoints, 0);
 
-      let score = 0;
-      const answers = [];
-      const weakTopicsArray = [];
-      const unansweredArray = [];
-
-      questions.forEach(function (question, index) {
-        const selected = document.querySelector(`input[name="q${index}"]:checked`);
-        const selectedIndex = selected ? Number(selected.value) : null;
-        const isUnanswered = selectedIndex === null;
-        const isCorrect = selectedIndex === question.correct;
-
-        if (isCorrect) {
-          score++;
-        } else {
-          weakTopicsArray.push(question.topic);
-        }
-
-        if (isUnanswered) {
-          unansweredArray.push("Q" + (index + 1) + ": " + question.text);
-        }
-
-        answers.push({
-          number: index + 1,
-          topic: question.topic,
-          question: question.text,
-          selectedAnswer: selectedIndex !== null ? question.options[selectedIndex] : "Нет ответа",
-          correctAnswer: question.options[question.correct],
-          isCorrect: isCorrect,
-          status: isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")
-        });
-      });
-
-      const total = questions.length;
       const percent = Math.round((score / total) * 100);
-
       const penalty = calculatePenalty(tabSwitches);
       const finalScore = Math.max(0, percent - penalty);
 
       const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
 
-      let finalDecision = "Не годен";
+      const topicStats = buildTopicStats(answers);
+      const weakTopics = getWeakTopics(topicStats);
+      const strongTopics = getStrongTopics(topicStats);
 
-      if (percent >= 70 && tabSwitches <= 2) {
-        finalDecision = "Годен";
-      }
+      const unansweredQuestions = answers
+        .filter(answer => answer.selectedAnswer === "Нет ответа" || answer.status === "Время вышло")
+        .map(answer => "Вопрос " + answer.number + ": " + answer.question)
+        .join("; ") || "Нет";
 
-      const weakTopics = [...new Set(weakTopicsArray)].join(", ") || "Нет";
-      const unansweredQuestions = unansweredArray.join("; ") || "Нет";
+      const badge = getBadge(finalScore, tabSwitches, weakTopics);
+      const finalDecision = badge === "Junior Strong" || badge === "Junior Confirmed"
+        ? "Годен"
+        : "Не годен";
 
-      let txtReport = "";
-      txtReport += "ОТЧЁТ ПО ТЕСТУ\n";
-      txtReport += "====================\n\n";
-      txtReport += "Версия теста: " + TEST_VERSION + "\n";
-      txtReport += "Имя: " + document.getElementById("name").value.trim() + "\n";
-      txtReport += "Email: " + document.getElementById("email").value.trim() + "\n";
-      txtReport += "Телефон: " + document.getElementById("phone").value.trim() + "\n\n";
-      txtReport += "Результат: " + score + " из " + total + "\n";
-      txtReport += "Процент: " + percent + "%\n";
-      txtReport += "Штраф за уходы со вкладки: " + penalty + "\n";
-      txtReport += "Итоговый балл: " + finalScore + "\n";
-      txtReport += "Статус: " + passStatus + "\n";
-      txtReport += "Решение: " + finalDecision + "\n";
-      txtReport += "Уходы со вкладки: " + tabSwitches + "\n";
-      txtReport += "Слабые темы: " + weakTopics + "\n";
-      txtReport += "Неотвеченные вопросы: " + unansweredQuestions + "\n\n";
-      txtReport += "ДЕТАЛЬНЫЙ РАЗБОР\n";
-      txtReport += "====================\n\n";
+      const summary = buildSummary(
+        badge,
+        finalScore,
+        percent,
+        tabSwitches,
+        strongTopics,
+        weakTopics,
+        unansweredQuestions
+      );
 
-      answers.forEach(function (answer) {
-        txtReport += "Вопрос " + answer.number + ": " + answer.question + "\n";
-        txtReport += "Тема: " + answer.topic + "\n";
-        txtReport += "Ответ кандидата: " + answer.selectedAnswer + " - " + answer.status + "\n";
-
-        if (!answer.isCorrect) {
-          txtReport += "Правильный ответ: " + answer.correctAnswer + "\n";
-        }
-
-        txtReport += "\n";
+      const txtReport = buildTxtReport({
+        testVersion: TEST_VERSION,
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim().toLowerCase(),
+        phone: getFullPhone(),
+        score: score,
+        total: total,
+        percent: percent,
+        penalty: penalty,
+        finalScore: finalScore,
+        passStatus: passStatus,
+        finalDecision: finalDecision,
+        badge: badge,
+        tabSwitches: tabSwitches,
+        strongTopics: strongTopics,
+        weakTopics: weakTopics,
+        unansweredQuestions: unansweredQuestions,
+        summary: summary,
+        answers: answers,
+        topicStats: topicStats
       });
-
-      let summary = "";
-
-      if (finalScore >= 85 && tabSwitches === 0) {
-        summary = "Сильный кандидат. Хорошая база, признаков проблемного прохождения нет.";
-      } else if (finalScore >= 70 && tabSwitches <= 2) {
-        summary = "Кандидат годен. Есть отдельные пробелы: " + weakTopics + ".";
-      } else if (percent >= 70 && tabSwitches > 2) {
-        summary = "Знания по баллам приемлемые, но есть риск недобросовестного прохождения из-за уходов со вкладки.";
-      } else {
-        summary = "Кандидат не годен. Основные пробелы: " + weakTopics + ".";
-      }
-
-      if (unansweredQuestions !== "Нет") {
-        summary += " Есть вопросы без ответа.";
-      }
 
       document.getElementById("testBlock").style.display = "none";
       document.getElementById("resultBlock").style.display = "block";
@@ -425,18 +1230,19 @@
         "Ваш результат: <b>" + score + " из " + total + "</b><br>" +
         "Процент: <b>" + percent + "%</b><br>" +
         "Итоговый балл: <b>" + finalScore + "</b><br>" +
-        "Статус: <b>" + passStatus + "</b><br>" +
+        "Плашка: <b>" + badge + "</b><br>" +
         "Решение: <b>" + finalDecision + "</b>";
 
       const resultData = {
         testVersion: TEST_VERSION,
         name: document.getElementById("name").value.trim(),
-        email: document.getElementById("email").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
+        email: document.getElementById("email").value.trim().toLowerCase(),
+        phone: getFullPhone(),
         score: score,
         total: total,
         percent: percent,
         finalScore: finalScore,
+        badge: badge,
         passStatus: passStatus,
         finalDecision: finalDecision,
         tabSwitches: tabSwitches,
@@ -446,6 +1252,246 @@
       };
 
       sendResult(resultData);
+    }
+
+    function buildTopicStats(answers) {
+      const stats = {};
+
+      answers.forEach(function (answer) {
+        if (!stats[answer.topic]) {
+          stats[answer.topic] = {
+            earned: 0,
+            total: 0,
+            correct: 0,
+            count: 0
+          };
+        }
+
+        stats[answer.topic].earned += answer.earnedPoints;
+        stats[answer.topic].total += answer.points;
+        stats[answer.topic].count += 1;
+
+        if (answer.isCorrect) {
+          stats[answer.topic].correct += 1;
+        }
+      });
+
+      return stats;
+    }
+
+    function getWeakTopics(topicStats) {
+      const weak = [];
+
+      Object.keys(topicStats).forEach(function (topic) {
+        const item = topicStats[topic];
+        const ratio = item.total > 0 ? item.earned / item.total : 0;
+
+        if (ratio < 0.6) {
+          weak.push(topic);
+        }
+      });
+
+      return weak.join(", ") || "Нет";
+    }
+
+    function getStrongTopics(topicStats) {
+      const strong = [];
+
+      Object.keys(topicStats).forEach(function (topic) {
+        const item = topicStats[topic];
+        const ratio = item.total > 0 ? item.earned / item.total : 0;
+
+        if (ratio >= 0.75) {
+          strong.push(topic);
+        }
+      });
+
+      return strong.join(", ") || "Нет";
+    }
+
+    function getBadge(finalScore, tabSwitches, weakTopics) {
+      if (finalScore >= 85 && tabSwitches <= 1) {
+        return "Junior Strong";
+      }
+
+      if (finalScore >= 70 && tabSwitches <= 2) {
+        return "Junior Confirmed";
+      }
+
+      if (finalScore >= 60) {
+        return "Borderline";
+      }
+
+      return "Not Confirmed";
+    }
+
+    function buildSummary(badge, finalScore, percent, tabSwitches, strongTopics, weakTopics, unansweredQuestions) {
+      let text = "";
+
+      if (badge === "Junior Strong") {
+        text = "Кандидат показывает уровень сильного junior. Рекомендуется к собеседованию в приоритетном порядке.";
+      } else if (badge === "Junior Confirmed") {
+        text = "Кандидат подтверждает базовый уровень junior. Рекомендуется к собеседованию.";
+      } else if (badge === "Borderline") {
+        text = "Кандидат близок к минимальному уровню, но есть существенные пробелы. Можно рассматривать только при низких требованиях к позиции или при наличии стажировки.";
+      } else {
+        text = "Уровень junior не подтверждён. Рекомендация: не приглашать на следующий этап без дополнительного обучения.";
+      }
+
+      text += " Сильные темы: " + strongTopics + ".";
+      text += " Слабые темы: " + weakTopics + ".";
+
+      if (tabSwitches > 0) {
+        text += " Зафиксированы уходы со вкладки: " + tabSwitches + ".";
+      }
+
+      if (unansweredQuestions !== "Нет") {
+        text += " Есть вопросы без ответа или с истекшим временем.";
+      }
+
+      return text;
+    }
+
+    function buildTxtReport(data) {
+      const dateText = new Date().toLocaleString("ru-RU");
+
+      let report = "";
+
+      report += "ОТЧЁТ ПО ТЕСТИРОВАНИЮ КАНДИДАТА\n";
+      report += "Профиль: Финансовый аналитик Junior\n";
+      report += "Версия теста: " + data.testVersion + "\n";
+      report += "Дата прохождения: " + dateText + "\n";
+      report += "\n";
+
+      report += "==============================\n";
+      report += "1. ДАННЫЕ КАНДИДАТА\n";
+      report += "==============================\n\n";
+      report += "ФИО: " + data.name + "\n";
+      report += "Email: " + data.email + "\n";
+      report += "Телефон: " + data.phone + "\n\n";
+
+      report += "==============================\n";
+      report += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";
+      report += "==============================\n\n";
+      report += "Баллы: " + data.score + " из " + data.total + "\n";
+      report += "Процент: " + data.percent + "%\n";
+      report += "Штраф за уходы со вкладки: " + data.penalty + "\n";
+      report += "Итоговый балл: " + data.finalScore + "\n";
+      report += "Статус теста: " + data.passStatus + "\n";
+      report += "Решение системы: " + data.finalDecision + "\n";
+      report += "Итоговая плашка: " + data.badge + "\n\n";
+
+      report += "==============================\n";
+      report += "3. КРАТКИЙ ВЫВОД\n";
+      report += "==============================\n\n";
+      report += data.summary + "\n\n";
+
+      report += "==============================\n";
+      report += "4. СИЛЬНЫЕ СТОРОНЫ\n";
+      report += "==============================\n\n";
+
+      if (data.strongTopics === "Нет") {
+        report += "Сильные стороны по результатам теста выражены слабо или требуют дополнительной проверки.\n\n";
+      } else {
+        data.strongTopics.split(", ").forEach(function (topic, index) {
+          report += (index + 1) + ". " + topic + "\n";
+        });
+        report += "\n";
+      }
+
+      report += "==============================\n";
+      report += "5. СЛАБЫЕ СТОРОНЫ\n";
+      report += "==============================\n\n";
+
+      if (data.weakTopics === "Нет") {
+        report += "Критичных слабых тем по результатам теста не выявлено.\n\n";
+      } else {
+        data.weakTopics.split(", ").forEach(function (topic, index) {
+          report += (index + 1) + ". " + topic + "\n";
+        });
+        report += "\n";
+      }
+
+      report += "==============================\n";
+      report += "6. РИСКИ ПРОХОЖДЕНИЯ\n";
+      report += "==============================\n\n";
+      report += "Уходы со вкладки: " + data.tabSwitches + "\n";
+
+      if (data.tabSwitches === 0) {
+        report += "Риск недобросовестного прохождения: низкий\n";
+        report += "Комментарий: уходы со страницы не зафиксированы.\n\n";
+      } else if (data.tabSwitches <= 2) {
+        report += "Риск недобросовестного прохождения: умеренный\n";
+        report += "Комментарий: зафиксированы единичные уходы со страницы. Результат можно использовать, но стоит интерпретировать с осторожностью.\n\n";
+      } else {
+        report += "Риск недобросовестного прохождения: повышенный\n";
+        report += "Комментарий: зафиксировано несколько уходов со страницы. Рекомендуется дополнительная проверка кандидата на интервью.\n\n";
+      }
+
+      report += "Неотвеченные вопросы / истекшее время: " + data.unansweredQuestions + "\n\n";
+
+      report += "==============================\n";
+      report += "7. РЕКОМЕНДАЦИЯ РАБОТОДАТЕЛЮ\n";
+      report += "==============================\n\n";
+
+      if (data.badge === "Junior Strong") {
+        report += "Рекомендация: пригласить на собеседование в приоритетном порядке.\n";
+      } else if (data.badge === "Junior Confirmed") {
+        report += "Рекомендация: пригласить на короткое собеседование и проверить практические навыки в Excel.\n";
+      } else if (data.badge === "Borderline") {
+        report += "Рекомендация: рассматривать только при наличии стажировки, наставника или низкого порога входа.\n";
+      } else {
+        report += "Рекомендация: не приглашать на следующий этап без дополнительного обучения или повторной проверки через 21 день.\n";
+      }
+
+      report += "\nЧто проверить на интервью:\n";
+      report += "1. Попросить объяснить связь между P&L, балансом и cash flow.\n";
+      report += "2. Дать короткий Excel-кейс на план-факт анализ.\n";
+      report += "3. Проверить понимание причин расхождения прибыли и денег.\n";
+      report += "4. Задать 1-2 вопроса по SQL: SELECT, JOIN, GROUP BY.\n";
+      report += "5. Попросить объяснить слабые темы из отчёта своими словами.\n\n";
+
+      report += "==============================\n";
+      report += "8. РЕЗУЛЬТАТЫ ПО ТЕМАМ\n";
+      report += "==============================\n\n";
+
+      Object.keys(data.topicStats).forEach(function (topic) {
+        const item = data.topicStats[topic];
+        const ratio = item.total > 0 ? Math.round((item.earned / item.total) * 100) : 0;
+
+        report += topic + ": " + item.earned + " из " + item.total + " (" + ratio + "%)\n";
+      });
+
+      report += "\n";
+
+      report += "==============================\n";
+      report += "9. ДЕТАЛЬНЫЙ РАЗБОР ОТВЕТОВ\n";
+      report += "==============================\n\n";
+
+      data.answers.forEach(function (answer) {
+        report += "Вопрос " + answer.number + ": " + answer.question + "\n";
+        report += "Тема: " + answer.topic + "\n";
+        report += "Сложность: " + answer.difficulty + "\n";
+        report += "Время на вопрос: " + answer.timeLimit + " сек.\n";
+        report += "Фактическое время: " + answer.timeSpent + " сек.\n";
+        report += "Баллы: " + answer.earnedPoints + " из " + answer.points + "\n";
+        report += "Ответ кандидата: " + answer.selectedAnswer + " - " + answer.status + "\n";
+
+        if (!answer.isCorrect) {
+          report += "Правильный ответ: " + answer.correctAnswer + "\n";
+          report += "Комментарий: " + answer.comment + "\n";
+        }
+
+        report += "\n";
+      });
+
+      report += "==============================\n";
+      report += "10. ПРИМЕЧАНИЕ\n";
+      report += "==============================\n\n";
+      report += "Данный отчёт является результатом автоматизированного тестирования и не заменяет полноценное интервью. ";
+      report += "Рекомендуется использовать его как первичный фильтр кандидатов и основу для дальнейшего собеседования.\n";
+
+      return report;
     }
 
     function sendResult(data) {

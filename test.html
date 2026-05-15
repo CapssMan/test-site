@@ -137,21 +137,6 @@
       border-radius: 2px;
       transition: width 0.3s ease;
     }
-    .skill-tag {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-right: 8px;
-      margin-bottom: 8px;
-    }
-    .tag-excel { background: #dcfce7; color: #166534; }
-    .tag-finance { background: #dbeafe; color: #1e40af; }
-    .tag-sql { background: #fef3c7; color: #92400e; }
-    .tag-accounting { background: #fce7f3; color: #9d174d; }
-    .tag-budget { background: #e0e7ff; color: #3730a3; }
-    .tag-report { background: #ccfbf1; color: #0f766e; }
     .difficulty-badge {
       display: inline-block;
       padding: 2px 8px;
@@ -180,9 +165,8 @@
 </head>
 <body>
   <div class="container">
-    <a href="index.html" class="back-link">← На главную</a>
+    <a href="index.html" class="back-link">&larr; На главную</a>
 
-    <!-- БЛОК РЕГИСТРАЦИИ -->
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
@@ -220,15 +204,14 @@
       </select>
 
       <div class="warning">
-        ⚠️ Во время теста фиксируется количество уходов со страницы.
+        &#9888; Во время теста фиксируется количество уходов со страницы.
         Копирование текста и контекстное меню заблокированы.
       </div>
 
-      <button id="startButton" onclick="startAttempt()">Начать тест</button>
+      <button id="startButton" onclick="startAttempt()">Загрузка вопросов...</button>
       <div id="attemptStatus"></div>
     </div>
 
-    <!-- БЛОК ТЕСТА -->
     <div class="card" id="testBlock" style="display:none;">
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="test-top">
@@ -240,9 +223,8 @@
       <button id="nextButton" onclick="nextQuestion()">Ответить и перейти дальше</button>
     </div>
 
-    <!-- БЛОК РЕЗУЛЬТАТА -->
     <div class="card" id="resultBlock" style="display:none;">
-      <h2>🎉 Тест завершён</h2>
+      <h2>&#127881; Тест завершён</h2>
       <div id="resultContent"></div>
       <p id="sendStatus" style="margin-top:16px;"></p>
     </div>
@@ -251,12 +233,12 @@
   <script>
     // ===== КОНФИГУРАЦИЯ =====
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    // 🔧 ОГРАНИЧЕНИЕ ПОВТОРНЫХ ПОПЫТОК
+
+    // &#128295; ОГРАНИЧЕНИЕ ПОВТОРНЫХ ПОПЫТОК
     // true = проверять, проходил ли кандидат этот тест за последние 21 день
     // false = отключить проверку (для тестирования платформы)
     const RETAKE_CHECK_ENABLED = false;
 
-    // Информация о тестах
     const TEST_CONFIG = {
       "fa-junior": {
         title: "Financial Analyst Junior",
@@ -368,11 +350,11 @@
       startBtn.disabled = true;
 
       fetch(file)
-        .then(r => {
+        .then(function(r) {
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
         })
-        .then(data => {
+        .then(function(data) {
           rawQuestions = data.questions || data;
           if (!rawQuestions.length) {
             throw new Error("Вопросы пустые");
@@ -380,12 +362,12 @@
           startBtn.textContent = "Начать тест (" + rawQuestions.length + " вопросов)";
           startBtn.disabled = false;
         })
-        .catch(err => {
+        .catch(function(err) {
           console.error("Ошибка загрузки вопросов:", err);
           startBtn.textContent = "Ошибка загрузки";
           startBtn.disabled = false;
           document.getElementById("attemptStatus").innerHTML =
-            '<div class="blocked">❌ Не удалось загрузить вопросы.<br>Причина: ' + err.message + '<br>Файл: ' + file + '<br><br>Проверьте:<br>1. Что файл существует в папке data/<br>2. Что GitHub Pages включён<br>3. Попробуйте обновить страницу (F5)</div>';
+            '<div class="blocked">&#10060; Не удалось загрузить вопросы.<br>Причина: ' + err.message + '<br>Файл: ' + file + '<br><br>Проверьте:<br>1. Что файл существует в папке data/<br>2. Что GitHub Pages включён<br>3. Попробуйте обновить страницу (F5)</div>';
         });
     }
 
@@ -407,7 +389,7 @@
     });
     document.addEventListener("keydown", function(e) {
       if (!testStarted) return;
-      const key = e.key.toLowerCase();
+      var key = e.key.toLowerCase();
       if ((e.ctrlKey && key === "c") || (e.ctrlKey && key === "u") ||
           (e.ctrlKey && e.shiftKey && (key === "i" || key === "j")) || key === "f12") {
         e.preventDefault();
@@ -415,7 +397,7 @@
     });
 
     function registerTabExit() {
-      const now = Date.now();
+      var now = Date.now();
       if (now - lastTabExitAt < 1000) return;
       tabSwitches++;
       lastTabExitAt = now;
@@ -423,25 +405,76 @@
 
     // ===== РЕГИСТРАЦИЯ =====
     function startAttempt() {
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      const phone = getFullPhone();
-      const englishLevel = document.getElementById("englishLevel").value;
+      var name = document.getElementById("name").value.trim();
+      var email = document.getElementById("email").value.trim().toLowerCase();
+      var phone = getFullPhone();
+      var englishLevel = document.getElementById("englishLevel").value;
+      var startButton = document.getElementById("startButton");
+
+      if (startButton.disabled && startButton.textContent.indexOf("Загрузка") !== -1) {
+        alert("Подождите, вопросы ещё загружаются...");
+        return;
+      }
 
       if (!name || !email || !phone || !englishLevel) {
         alert("Заполните имя, email, телефон и уровень английского.");
         return;
       }
+
       if (!RETAKE_CHECK_ENABLED) {
         startTest();
         return;
       }
-      // ... checkAttempt logic
+
+      startButton.disabled = true;
+      startButton.textContent = "Проверяем повторную попытку...";
+
+      checkAttempt(email, phone, currentTestId)
+        .then(function(result) {
+          if (!result.allowed) {
+            document.getElementById("attemptStatus").innerHTML =
+              '<div class="blocked">' + result.message + '<br>Следующая попытка: ' + result.nextDate + '</div>';
+            startButton.disabled = false;
+            startButton.textContent = "Начать тест";
+            return;
+          }
+          startTest();
+        })
+        .catch(function() {
+          document.getElementById("attemptStatus").innerHTML =
+            '<div class="blocked">Не удалось проверить повторную попытку.</div>';
+          startButton.disabled = false;
+          startButton.textContent = "Начать тест";
+        });
+    }
+
+    function checkAttempt(email, phone, testId) {
+      return new Promise(function(resolve, reject) {
+        var callbackName = "checkAttemptCallback_" + Date.now();
+        var script = document.createElement("script");
+
+        window[callbackName] = function(data) {
+          resolve(data);
+          delete window[callbackName];
+          script.remove();
+        };
+
+        var url = GOOGLE_SCRIPT_URL +
+          "?action=checkAttempt" +
+          "&email=" + encodeURIComponent(email) +
+          "&phone=" + encodeURIComponent(phone) +
+          "&testId=" + encodeURIComponent(testId) +
+          "&callback=" + callbackName;
+
+        script.src = url;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
     }
 
     function getFullPhone() {
-      const countryCode = document.getElementById("phoneCountry").value;
-      let phone = document.getElementById("phone").value.trim().replace(/\D/g, "");
+      var countryCode = document.getElementById("phoneCountry").value;
+      var phone = document.getElementById("phone").value.trim().replace(/\D/g, "");
       if (!phone) return "";
       if (countryCode === "+7" && (phone.startsWith("8") || phone.startsWith("7"))) {
         phone = phone.substring(1);
@@ -451,29 +484,28 @@
 
     // ===== ЛОГИКА ТЕСТА =====
     function startTest() {
-      // Если вопросы не загрузились — пробуем ещё раз или показываем ошибку
       if (!rawQuestions || !rawQuestions.length) {
-        // Попытка загрузить вопросы синхронно (fallback)
-        const startBtn = document.getElementById("startButton");
+        var startBtn = document.getElementById("startButton");
         startBtn.disabled = true;
         startBtn.textContent = "Загрузка вопросов...";
 
         fetch(currentTestConfig.questionsFile)
-          .then(r => r.json())
-          .then(data => {
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
             rawQuestions = data.questions || data;
             startBtn.disabled = false;
             startBtn.textContent = "Начать тест";
-            startTest(); // рекурсивный вызов после загрузки
+            startTest();
           })
-          .catch(err => {
+          .catch(function(err) {
             startBtn.disabled = false;
             startBtn.textContent = "Начать тест";
-            alert("Не удалось загрузить вопросы. Проверьте подключение к интернету и наличие файла " + currentTestConfig.questionsFile);
-            console.error("Ошибка загрузки:", err);
+            alert("Не удалось загрузить вопросы. Проверьте подключение.");
+            console.error(err);
           });
         return;
       }
+
       questions = prepareQuestions(rawQuestions);
       document.getElementById("startBlock").style.display = "none";
       document.getElementById("testBlock").style.display = "block";
@@ -487,7 +519,7 @@
       answers.length = 0;
       blockScores = {};
 
-      Object.keys(currentTestConfig.blocks).forEach(k => {
+      Object.keys(currentTestConfig.blocks).forEach(function(k) {
         blockScores[k] = { earned: 0, total: 0 };
       });
 
@@ -495,12 +527,18 @@
     }
 
     function prepareQuestions(list) {
-      const cloned = list.map(function(q) {
-        const optionObjects = q.options.map(function(text, idx) {
+      var cloned = list.map(function(q) {
+        var optionObjects = q.options.map(function(text, idx) {
           return { text: text, originalIndex: idx };
         });
-        const shuffled = shuffleArray(optionObjects);
-        const newCorrect = shuffled.findIndex(o => o.originalIndex === q.correct);
+        var shuffled = shuffleArray(optionObjects);
+        var newCorrect = -1;
+        for (var i = 0; i < shuffled.length; i++) {
+          if (shuffled[i].originalIndex === q.correct) {
+            newCorrect = i;
+            break;
+          }
+        }
         return {
           topic: q.topic,
           block: q.block || "general",
@@ -509,7 +547,7 @@
           points: q.points,
           text: q.text,
           context: q.context || "",
-          options: shuffled.map(o => o.text),
+          options: shuffled.map(function(o) { return o.text; }),
           correct: newCorrect,
           correctAnswerText: q.options[q.correct],
           comment: q.comment
@@ -519,17 +557,19 @@
     }
 
     function shuffleArray(array) {
-      const copy = array.slice();
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
+      var copy = array.slice();
+      for (var i = copy.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = copy[i];
+        copy[i] = copy[j];
+        copy[j] = temp;
       }
       return copy;
     }
 
     function renderCurrentQuestion() {
       clearInterval(questionTimerInterval);
-      const q = questions[currentQuestionIndex];
+      var q = questions[currentQuestionIndex];
       questionTimeLeft = q.timeLimit;
       currentQuestionStartTime = new Date();
 
@@ -538,8 +578,8 @@
       document.getElementById("progressFill").style.width =
         ((currentQuestionIndex / questions.length) * 100) + "%";
 
-      const container = document.getElementById("questionContainer");
-      let html = '<div class="question">';
+      var container = document.getElementById("questionContainer");
+      var html = '<div class="question">';
       html += '<h2>' + escapeHtml(q.text);
       html += '<span class="difficulty-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
       html += '</h2>';
@@ -566,21 +606,21 @@
     }
 
     function selectOption(label, idx) {
-      document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.option').forEach(function(el) { el.classList.remove('selected'); });
       label.classList.add('selected');
       label.querySelector('input').checked = true;
     }
 
     function highlightOption(input) {
-      document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.option').forEach(function(el) { el.classList.remove('selected'); });
       input.closest('.option').classList.add('selected');
     }
 
     function updateQuestionTimer() {
-      const m = Math.floor(questionTimeLeft / 60);
-      const s = questionTimeLeft % 60;
-      const el = document.getElementById("questionTimer");
-      const pill = document.getElementById("timerPill");
+      var m = Math.floor(questionTimeLeft / 60);
+      var s = questionTimeLeft % 60;
+      var el = document.getElementById("questionTimer");
+      var pill = document.getElementById("timerPill");
       el.textContent = m + ":" + String(s).padStart(2, "0");
       if (questionTimeLeft <= 10) pill.classList.add("warning");
       else pill.classList.remove("warning");
@@ -593,12 +633,12 @@
 
     function saveCurrentAnswer(isTimeout) {
       clearInterval(questionTimerInterval);
-      const q = questions[currentQuestionIndex];
-      const selected = document.querySelector('input[name="answer"]:checked');
-      const selectedIndex = selected ? Number(selected.value) : null;
-      const isUnanswered = selectedIndex === null;
-      const isCorrect = selectedIndex === q.correct;
-      const timeSpent = Math.max(0, Math.round((new Date() - currentQuestionStartTime) / 1000));
+      var q = questions[currentQuestionIndex];
+      var selected = document.querySelector('input[name="answer"]:checked');
+      var selectedIndex = selected ? Number(selected.value) : null;
+      var isUnanswered = selectedIndex === null;
+      var isCorrect = selectedIndex === q.correct;
+      var timeSpent = Math.max(0, Math.round((new Date() - currentQuestionStartTime) / 1000));
 
       answers.push({
         number: currentQuestionIndex + 1,
@@ -617,7 +657,6 @@
         comment: q.comment
       });
 
-      // Считаем баллы по блокам
       if (!blockScores[q.block]) blockScores[q.block] = { earned: 0, total: 0 };
       blockScores[q.block].total += q.points;
       if (isCorrect) blockScores[q.block].earned += q.points;
@@ -646,22 +685,21 @@
       testFinished = true;
       testStarted = false;
 
-      const rawTotal = answers.reduce((s, a) => s + a.points, 0);
-      const rawScore = answers.reduce((s, a) => s + a.earnedPoints, 0);
-      const percent = Math.round((rawScore / rawTotal) * 100);
-      const penalty = calculatePenalty(tabSwitches);
-      const finalScore = Math.max(0, percent - penalty);
+      var rawTotal = answers.reduce(function(s, a) { return s + a.points; }, 0);
+      var rawScore = answers.reduce(function(s, a) { return s + a.earnedPoints; }, 0);
+      var percent = Math.round((rawScore / rawTotal) * 100);
+      var penalty = calculatePenalty(tabSwitches);
+      var finalScore = Math.max(0, percent - penalty);
 
-      const badge = getBadge(finalScore, tabSwitches);
-      const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
-      const finalDecision = (badge === "Junior Strong" || badge === "Junior Confirmed") ? "Годен" : "Не годен";
+      var badge = getBadge(finalScore, tabSwitches);
+      var passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
+      var finalDecision = (badge === "Junior Strong" || badge === "Junior Confirmed") ? "Годен" : "Не годен";
 
-      // Расчёт блоков
-      const blockResults = {};
-      Object.keys(currentTestConfig.blocks).forEach(blockKey => {
-        const block = currentTestConfig.blocks[blockKey];
-        const scores = blockScores[blockKey] || { earned: 0, total: 0 };
-        const pct = scores.total > 0 ? Math.round((scores.earned / scores.total) * 100) : 0;
+      var blockResults = {};
+      Object.keys(currentTestConfig.blocks).forEach(function(blockKey) {
+        var block = currentTestConfig.blocks[blockKey];
+        var scores = blockScores[blockKey] || { earned: 0, total: 0 };
+        var pct = scores.total > 0 ? Math.round((scores.earned / scores.total) * 100) : 0;
         blockResults[blockKey] = {
           name: block.name,
           weight: block.weight,
@@ -671,15 +709,14 @@
         };
       });
 
-      // Trust Score
-      const trustScore = calculateTrustScore(finalScore, tabSwitches, answers);
+      var trustScore = calculateTrustScore(finalScore, tabSwitches, answers);
 
-      const candidateName = document.getElementById("name").value.trim();
-      const candidateEmail = document.getElementById("email").value.trim().toLowerCase();
-      const candidatePhone = getFullPhone();
-      const englishLevel = document.getElementById("englishLevel").value;
+      var candidateName = document.getElementById("name").value.trim();
+      var candidateEmail = document.getElementById("email").value.trim().toLowerCase();
+      var candidatePhone = getFullPhone();
+      var englishLevel = document.getElementById("englishLevel").value;
 
-      const txtReport = buildTxtReport({
+      var txtReport = buildTxtReport({
         testVersion: currentTestConfig.version,
         testTitle: currentTestConfig.title,
         name: candidateName,
@@ -715,7 +752,7 @@
         penalty: penalty
       });
 
-      const resultData = {
+      var resultData = {
         testId: currentTestId,
         testVersion: currentTestConfig.version,
         testTitle: currentTestConfig.title,
@@ -747,11 +784,11 @@
     }
 
     function calculateTrustScore(finalScore, tabs, answers) {
-      let score = finalScore;
+      var score = finalScore;
       if (tabs === 0) score += 5;
       else if (tabs <= 2) score -= 2;
       else score -= 8;
-      const unanswered = answers.filter(a => a.selectedAnswer === "Нет ответа" || a.status === "Время вышло").length;
+      var unanswered = answers.filter(function(a) { return a.selectedAnswer === "Нет ответа" || a.status === "Время вышло"; }).length;
       if (unanswered > 5) score -= 5;
       else if (unanswered > 2) score -= 2;
       return Math.max(0, Math.min(100, score));
@@ -761,9 +798,8 @@
       document.getElementById("testBlock").style.display = "none";
       document.getElementById("resultBlock").style.display = "block";
 
-      let html = '';
+      var html = '';
 
-      // Основные метрики
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">';
       html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
       html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Итоговый балл</div>';
@@ -783,21 +819,18 @@
       html += '</div>';
       html += '</div>';
 
-      // Детали
       html += '<div style="background:#f1f5f9;padding:16px;border-radius:10px;margin-bottom:24px;font-size:14px;color:#475569;">';
       html += 'Сырой результат: <b>' + data.rawScore + ' из ' + data.rawTotal + '</b> (' + data.score + '%)<br>';
       html += 'Штраф за уходы: <b>' + data.penalty + '%</b> (уходов: ' + data.tabSwitches + ')<br>';
-      html += 'Неотвеченных: <b>' + answers.filter(a => a.selectedAnswer === "Нет ответа").length + '</b>';
+      html += 'Неотвеченных: <b>' + answers.filter(function(a) { return a.selectedAnswer === "Нет ответа"; }).length + '</b>';
       html += '</div>';
 
-      // Skill Card — блоки
-      html += '<h3 style="margin-bottom:16px;">📊 Skill Card — разбор по навыкам</h3>';
+      html += '<h3 style="margin-bottom:16px;">&#128202; Skill Card — разбор по навыкам</h3>';
       html += '<div style="display:grid;gap:16px;margin-bottom:24px;">';
 
-      Object.keys(data.blockResults).forEach(blockKey => {
-        const b = data.blockResults[blockKey];
-        const colorClass = b.percent >= 70 ? 'green' : (b.percent >= 50 ? 'yellow' : 'red');
-        const colorHex = b.percent >= 70 ? '#16a34a' : (b.percent >= 50 ? '#eab308' : '#dc2626');
+      Object.keys(data.blockResults).forEach(function(blockKey) {
+        var b = data.blockResults[blockKey];
+        var colorHex = b.percent >= 70 ? '#16a34a' : (b.percent >= 50 ? '#eab308' : '#dc2626');
         html += '<div style="background:white;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
         html += '<span style="font-weight:600;">' + b.name + '</span>';
@@ -806,13 +839,12 @@
         html += '<div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">';
         html += '<div style="height:100%;width:' + b.percent + '%;background:' + colorHex + ';border-radius:4px;transition:width 1s;"></div>';
         html += '</div>';
-        html += '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">' + b.earned + ' из ' + b.total + ' баллов · Вес: ' + Math.round(b.weight * 100) + '%</div>';
+        html += '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">' + b.earned + ' из ' + b.total + ' баллов &middot; Вес: ' + Math.round(b.weight * 100) + '%</div>';
         html += '</div>';
       });
       html += '</div>';
 
-      // Рекомендация
-      let recommendation = '';
+      var recommendation = '';
       if (data.badge === 'Junior Strong') {
         recommendation = 'Отличный результат! Кандидат демонстрирует сильный уровень junior. Рекомендуется к собеседованию в приоритетном порядке.';
       } else if (data.badge === 'Junior Confirmed') {
@@ -823,40 +855,39 @@
         recommendation = 'Уровень junior не подтверждён. Рекомендуется дополнительное обучение или повторная проверка через 21 день.';
       }
       html += '<div style="background:#eff6ff;padding:16px;border-radius:10px;border-left:4px solid #3b82f6;margin-bottom:24px;">';
-      html += '<div style="font-weight:600;color:#1e40af;margin-bottom:4px;">💡 Рекомендация</div>';
+      html += '<div style="font-weight:600;color:#1e40af;margin-bottom:4px;">&#128161; Рекомендация</div>';
       html += '<div style="color:#475569;line-height:1.5;">' + recommendation + '</div>';
       html += '</div>';
 
-      // Кнопки
       html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
-      html += '<button onclick="window.location.href='index.html'" style="width:auto;flex:1;min-width:200px;">← На главную</button>';
-      html += '<button onclick="window.print()" style="width:auto;flex:1;min-width:200px;background:linear-gradient(90deg,#10b981,#059669);">🖨 Распечатать результат</button>';
+      html += '<button onclick="window.location.href=\'index.html\'" style="width:auto;flex:1;min-width:200px;">&larr; На главную</button>';
+      html += '<button onclick="window.print()" style="width:auto;flex:1;min-width:200px;background:linear-gradient(90deg,#10b981,#059669);">&#128424; Распечатать результат</button>';
       html += '</div>';
 
       document.getElementById("resultContent").innerHTML = html;
     }
 
     function buildTxtReport(data) {
-      const dateText = new Date().toLocaleString("ru-RU");
-      let r = "";
-      r += "═══════════════════════════════════════\n";
+      var dateText = new Date().toLocaleString("ru-RU");
+      var r = "";
+      r += "=======================================\n";
       r += "  SKILL CHECK — ОТЧЁТ ПО ТЕСТИРОВАНИЮ\n";
-      r += "═══════════════════════════════════════\n\n";
+      r += "=======================================\n\n";
       r += "Профиль: " + data.testTitle + "\n";
       r += "Версия: " + data.testVersion + "\n";
       r += "Дата: " + dateText + "\n\n";
 
-      r += "───────────────────────────────────────\n";
+      r += "---------------------------------------\n";
       r += "1. ДАННЫЕ КАНДИДАТА\n";
-      r += "───────────────────────────────────────\n\n";
+      r += "---------------------------------------\n\n";
       r += "ФИО: " + data.name + "\n";
       r += "Email: " + data.email + "\n";
       r += "Телефон: " + data.phone + "\n";
       r += "Английский: " + data.englishLevel + "\n\n";
 
-      r += "───────────────────────────────────────\n";
+      r += "---------------------------------------\n";
       r += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";
-      r += "───────────────────────────────────────\n\n";
+      r += "---------------------------------------\n\n";
       r += "Сырой результат: " + data.rawScore + " из " + data.rawTotal + "\n";
       r += "Процент: " + data.percent + "%\n";
       r += "Штраф за уходы: " + data.penalty + "%\n";
@@ -866,30 +897,33 @@
       r += "Статус: " + data.passStatus + "\n";
       r += "Решение: " + data.finalDecision + "\n\n";
 
-      r += "───────────────────────────────────────\n";
+      r += "---------------------------------------\n";
       r += "3. SKILL CARD — БЛОКИ НАВЫКОВ\n";
-      r += "───────────────────────────────────────\n\n";
-      Object.keys(data.blockResults).forEach(k => {
-        const b = data.blockResults[k];
+      r += "---------------------------------------\n\n";
+      Object.keys(data.blockResults).forEach(function(k) {
+        var b = data.blockResults[k];
         r += b.name + ": " + b.earned + "/" + b.total + " (" + b.percent + "%)\n";
       });
       r += "\n";
 
-      r += "───────────────────────────────────────\n";
+      r += "---------------------------------------\n";
       r += "4. ДЕТАЛЬНЫЙ РАЗБОР\n";
-      r += "───────────────────────────────────────\n\n";
-      data.answers.forEach(a => {
+      r += "---------------------------------------\n\n";
+      data.answers.forEach(function(a) {
         r += "Вопрос " + a.number + " [" + a.block + "]: " + a.question + "\n";
         r += "Ответ: " + a.selectedAnswer + " — " + a.status + " (" + a.earnedPoints + "/" + a.points + ")\n";
-        if (!a.isCorrect) r += "Правильно: " + a.correctAnswer + "\n" + a.comment + "\n";
+        if (!a.isCorrect) {
+          r += "Правильно: " + a.correctAnswer + "\n";
+          r += "Комментарий: " + a.comment + "\n";
+        }
         r += "\n";
       });
 
-      r += "───────────────────────────────────────\n";
+      r += "---------------------------------------\n";
       r += "5. РИСКИ И РЕКОМЕНДАЦИИ\n";
-      r += "───────────────────────────────────────\n\n";
+      r += "---------------------------------------\n\n";
       r += "Уходы со вкладки: " + data.tabSwitches + "\n";
-      r += "Неотвеченных: " + data.answers.filter(a => a.selectedAnswer === "Нет ответа").length + "\n\n";
+      r += "Неотвеченных: " + data.answers.filter(function(a) { return a.selectedAnswer === "Нет ответа"; }).length + "\n\n";
 
       if (data.badge === "Junior Strong") {
         r += "Рекомендация: пригласить на собеседование в приоритетном порядке.\n";
@@ -901,31 +935,31 @@
         r += "Рекомендация: не приглашать без дополнительного обучения.\n";
       }
 
-      r += "\n═══════════════════════════════════════\n";
+      r += "\n=======================================\n";
       r += "Отчёт сгенерирован автоматически SkillCheck\n";
-      r += "═══════════════════════════════════════\n";
+      r += "=======================================\n";
 
       return r;
     }
 
     function sendResult(data) {
-      const status = document.getElementById("sendStatus");
+      var status = document.getElementById("sendStatus");
       status.textContent = "Отправка результата...";
       fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         body: JSON.stringify(data)
       })
-      .then(() => {
-        status.innerHTML = '<span class="success">✅ Результат отправлен и сохранён.</span>';
+      .then(function() {
+        status.innerHTML = '<span class="success">&#9989; Результат отправлен и сохранён.</span>';
       })
-      .catch(() => {
-        status.innerHTML = '<span class="error">⚠️ Результат посчитан, но отправка не удалась. Сохраните скриншот.</span>';
+      .catch(function() {
+        status.innerHTML = '<span class="error">&#9888; Результат посчитан, но отправка не удалась. Сохраните скриншот.</span>';
       });
     }
 
     function escapeHtml(text) {
-      const div = document.createElement('div');
+      var div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }

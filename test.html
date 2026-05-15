@@ -344,8 +344,8 @@
     });
 
     function loadQuestions() {
-      const file = currentTestConfig.questionsFile;
-      const startBtn = document.getElementById("startButton");
+      var file = currentTestConfig.questionsFile;
+      var startBtn = document.getElementById("startButton");
       startBtn.textContent = "Загрузка вопросов...";
       startBtn.disabled = true;
 
@@ -359,7 +359,9 @@
           if (!rawQuestions.length) {
             throw new Error("Вопросы пустые");
           }
-          startBtn.textContent = "Начать тест (" + rawQuestions.length + " вопросов)";
+          var totalInPool = rawQuestions.length;
+          var perTest = data.questionsPerTest || totalInPool;
+          startBtn.textContent = "Начать тест (" + perTest + " из " + totalInPool + " вопросов)";
           startBtn.disabled = false;
         })
         .catch(function(err) {
@@ -526,8 +528,20 @@
       renderCurrentQuestion();
     }
 
+    // Выбираем N случайных вопросов из общего пула
+    function selectRandomQuestions(allQuestions, count) {
+      var shuffled = shuffleArray(allQuestions.slice());
+      return shuffled.slice(0, count);
+    }
+
     function prepareQuestions(list) {
-      var cloned = list.map(function(q) {
+      // Если в JSON указано questionsPerTest — выбираем случайный поднабор
+      var questionsToUse = list;
+      if (currentTestConfig.questionsPerTest && list.length > currentTestConfig.questionsPerTest) {
+        questionsToUse = selectRandomQuestions(list, currentTestConfig.questionsPerTest);
+      }
+
+      var cloned = questionsToUse.map(function(q) {
         var optionObjects = q.options.map(function(text, idx) {
           return { text: text, originalIndex: idx };
         });

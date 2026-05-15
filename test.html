@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillCheck — Прохождение теста</title>
+  <style>
+    * { box-sizing: border-box; -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 20px;
+      color: #0f172a;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+    h1, h2, h3 { margin-top: 0; }
+    input, select {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 16px;
+      background: white;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { outline: none; border-color: #3b82f6; }
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 20px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,0.3); }
+    button:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+    .small { font-size: 14px; color: #64748b; line-height: 1.6; }
+    .warning {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #92400e;
+    }
+    .test-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+    }
+    .pill.timer { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+    .pill.timer.warning { animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .question {
+      padding: 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+    .question h2 { font-size: 18px; line-height: 1.5; margin-bottom: 16px; }
+    .option {
+      display: block;
+      margin: 12px 0;
+      padding: 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      line-height: 1.4;
+      transition: all 0.2s;
+    }
+    .option:hover { border-color: #3b82f6; background: #eff6ff; }
+    .option.selected { border-color: #3b82f6; background: #eff6ff; }
+    .option input { width: auto; margin-right: 10px; accent-color: #3b82f6; }
+    .context-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .context-table th,
+    .context-table td {
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      text-align: left;
+    }
+    .context-table th { background: #f1f5f9; font-weight: 600; }
+    .success { color: #16a34a; font-weight: bold; }
+    .error { color: #dc2626; font-weight: bold; }
+    .blocked {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 14px;
+    }
+    .progress-bar {
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .skill-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .tag-excel { background: #dcfce7; color: #166534; }
+    .tag-finance { background: #dbeafe; color: #1e40af; }
+    .tag-sql { background: #fef3c7; color: #92400e; }
+    .tag-accounting { background: #fce7f3; color: #9d174d; }
+    .tag-budget { background: #e0e7ff; color: #3730a3; }
+    .tag-report { background: #ccfbf1; color: #0f766e; }
+    .difficulty-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .diff-easy { background: #dcfce7; color: #166534; }
+    .diff-medium { background: #fef3c7; color: #92400e; }
+    .diff-hard { background: #fee2e2; color: #991b1b; }
+    .diff-calc { background: #e0e7ff; color: #3730a3; }
+    .diff-case { background: #f3e8ff; color: #6b21a8; }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .back-link:hover { color: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← На главную</a>
+
+    <!-- БЛОК РЕГИСТРАЦИИ -->
+    <div class="card" id="startBlock">
+      <h1 id="testTitle">Загрузка теста...</h1>
+      <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
+
+      <p class="small">
+        Вопросы и варианты ответа показываются в случайном порядке.
+        На каждый вопрос отводится отдельное время. Вернуться к предыдущему вопросу нельзя.
+      </p>
+
+      <input id="name" type="text" placeholder="Ваше имя" />
+      <input id="email" type="email" placeholder="Email" />
+
+      <select id="phoneCountry">
+        <option value="+7">Россия +7</option>
+        <option value="+7">Казахстан +7</option>
+        <option value="+375">Беларусь +375</option>
+        <option value="+374">Армения +374</option>
+        <option value="+996">Кыргызстан +996</option>
+        <option value="+998">Узбекистан +998</option>
+        <option value="+994">Азербайджан +994</option>
+        <option value="+992">Таджикистан +992</option>
+        <option value="+373">Молдова +373</option>
+      </select>
+
+      <input id="phone" type="tel" placeholder="Введите номер без кода страны. Например: 9991234567" />
+
+      <select id="englishLevel">
+        <option value="">Уровень английского языка</option>
+        <option value="A1">A1 - Beginner</option>
+        <option value="A2">A2 - Elementary</option>
+        <option value="B1">B1 - Intermediate</option>
+        <option value="B2">B2 - Upper-Intermediate</option>
+        <option value="C1">C1 - Advanced</option>
+        <option value="C2">C2 - Proficiency</option>
+      </select>
+
+      <div class="warning">
+        ⚠️ Во время теста фиксируется количество уходов со страницы.
+        Копирование текста и контекстное меню заблокированы.
+      </div>
+
+      <button id="startButton" onclick="startAttempt()">Начать тест</button>
+      <div id="attemptStatus"></div>
+    </div>
+
+    <!-- БЛОК ТЕСТА -->
+    <div class="card" id="testBlock" style="display:none;">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="test-top">
+        <div class="pill">Вопрос <span id="questionNumber">1</span> из <span id="questionTotal">40</span></div>
+        <div class="pill timer" id="timerPill">Осталось: <span id="questionTimer">00:00</span></div>
+        <div class="pill">Баллы: <span id="questionPoints">0</span></div>
+      </div>
+      <div id="questionContainer"></div>
+      <button id="nextButton" onclick="nextQuestion()">Ответить и перейти дальше</button>
+    </div>
+
+    <!-- БЛОК РЕЗУЛЬТАТА -->
+    <div class="card" id="resultBlock" style="display:none;">
+      <h2>🎉 Тест завершён</h2>
+      <div id="resultContent"></div>
+      <p id="sendStatus" style="margin-top:16px;"></p>
+    </div>
+  </div>
+
+  <script>
+    // ===== КОНФИГУРАЦИЯ =====
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr5v4YzlLfKFshWPOFsz7_d1GbBihUm-cCTqwsIOI21_CPFBGSqSjqkc5310BBtlqbWQ/exec";
+    const RETAKE_CHECK_ENABLED = false;
+
+    // Информация о тестах
+    const TEST_CONFIG = {
+      "fa-junior": {
+        title: "Financial Analyst Junior",
+        description: "Excel, финансовый анализ, отчётность, бюджеты, SQL, бухучёт",
+        version: "FA Junior v2.3",
+        questionsFile: "data/fa-junior.json",
+        blocks: {
+          "excel": { name: "Excel / Google Sheets", weight: 0.20 },
+          "finance": { name: "Финансовый анализ", weight: 0.25 },
+          "reporting": { name: "Отчётность (БДР/БДДС)", weight: 0.20 },
+          "budget": { name: "Budgeting / FP&A", weight: 0.15 },
+          "sql": { name: "SQL", weight: 0.10 },
+          "accounting": { name: "Бухгалтерия", weight: 0.10 }
+        }
+      },
+      "ca-junior": {
+        title: "Credit Analyst Junior",
+        description: "Ликвидность, долговая нагрузка, cash flow, кредитный риск",
+        version: "CA Junior v1.0",
+        questionsFile: "data/ca-junior.json",
+        blocks: {
+          "liquidity": { name: "Ликвидность", weight: 0.20 },
+          "debt": { name: "Долговая нагрузка", weight: 0.25 },
+          "cashflow": { name: "Cash Flow", weight: 0.20 },
+          "credit": { name: "Кредитный риск", weight: 0.20 },
+          "reporting": { name: "Отчётность", weight: 0.15 }
+        }
+      },
+      "fpa-junior": {
+        title: "FP&A / Budget Analyst Junior",
+        description: "БДР, БДДС, план-факт анализ, прогнозирование, сценарный анализ",
+        version: "FP&A Junior v1.0",
+        questionsFile: "data/fpa-junior.json",
+        blocks: {
+          "budget": { name: "Бюджетирование", weight: 0.25 },
+          "planfact": { name: "План-факт", weight: 0.25 },
+          "forecast": { name: "Прогнозирование", weight: 0.20 },
+          "scenario": { name: "Сценарный анализ", weight: 0.15 },
+          "reporting": { name: "Отчётность", weight: 0.15 }
+        }
+      },
+      "acc-junior": {
+        title: "Accounting Junior",
+        description: "Проводки, активы/пассивы, НДС, амортизация, первичная документация",
+        version: "ACC Junior v1.0",
+        questionsFile: "data/acc-junior.json",
+        blocks: {
+          "entries": { name: "Проводки", weight: 0.25 },
+          "assets": { name: "Активы / Пассивы", weight: 0.20 },
+          "vat": { name: "НДС", weight: 0.15 },
+          "amort": { name: "Амортизация", weight: 0.15 },
+          "docs": { name: "Первичная документация", weight: 0.25 }
+        }
+      },
+      "bi-junior": {
+        title: "Finance BI / Data Analyst Junior",
+        description: "SQL, Power BI, визуализация, финансовые метрики, работа с данными",
+        version: "BI Junior v1.0",
+        questionsFile: "data/bi-junior.json",
+        blocks: {
+          "sql": { name: "SQL", weight: 0.30 },
+          "powerbi": { name: "Power BI / Визуализация", weight: 0.25 },
+          "metrics": { name: "Финансовые метрики", weight: 0.20 },
+          "excel": { name: "Excel продвинутый", weight: 0.15 },
+          "data": { name: "Работа с данными", weight: 0.10 }
+        }
+      }
+    };
+
+    // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
+    let currentTestId = "";
+    let currentTestConfig = null;
+    let rawQuestions = [];
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let questionTimeLeft = 0;
+    let questionTimerInterval = null;
+    let tabSwitches = 0;
+    let lastTabExitAt = 0;
+    let testStarted = false;
+    let testFinished = false;
+    let currentQuestionStartTime = null;
+    const answers = [];
+    let blockScores = {};
+
+    // ===== ИНИЦИАЛИЗАЦИЯ =====
+    document.addEventListener("DOMContentLoaded", function() {
+      const params = new URLSearchParams(window.location.search);
+      currentTestId = params.get("test") || "fa-junior";
+      currentTestConfig = TEST_CONFIG[currentTestId];
+
+      if (!currentTestConfig) {
+        document.getElementById("testTitle").textContent = "Тест не найден";
+        document.getElementById("startButton").disabled = true;
+        return;
+      }
+
+      document.getElementById("testTitle").textContent = currentTestConfig.title;
+      document.getElementById("testInfo").innerHTML =
+        currentTestConfig.description + '<br><span style="color:#94a3b8;font-size:12px;">Версия: ' + currentTestConfig.version + '</span>';
+
+      loadQuestions();
+    });
+
+    function loadQuestions() {
+      const file = currentTestConfig.questionsFile;
+      fetch(file)
+        .then(r => r.json())
+        .then(data => {
+          rawQuestions = data.questions || data;
+          document.getElementById("startButton").textContent = "Начать тест (" + rawQuestions.length + " вопросов)";
+        })
+        .catch(err => {
+          console.error("Ошибка загрузки вопросов:", err);
+          document.getElementById("attemptStatus").innerHTML =
+            '<div class="blocked">Не удалось загрузить вопросы. Проверьте файл ' + file + '</div>';
+        });
+    }
+
+    // ===== АНТИ-ЧИТ =====
+    document.addEventListener("visibilitychange", function() {
+      if (document.hidden && testStarted && !testFinished) registerTabExit();
+    });
+    window.addEventListener("blur", function() {
+      if (testStarted && !testFinished) registerTabExit();
+    });
+    document.addEventListener("contextmenu", function(e) {
+      if (testStarted) e.preventDefault();
+    });
+    document.addEventListener("copy", function(e) {
+      if (testStarted) e.preventDefault();
+    });
+    document.addEventListener("cut", function(e) {
+      if (testStarted) e.preventDefault();
+    });
+    document.addEventListener("keydown", function(e) {
+      if (!testStarted) return;
+      const key = e.key.toLowerCase();
+      if ((e.ctrlKey && key === "c") || (e.ctrlKey && key === "u") ||
+          (e.ctrlKey && e.shiftKey && (key === "i" || key === "j")) || key === "f12") {
+        e.preventDefault();
+      }
+    });
+
+    function registerTabExit() {
+      const now = Date.now();
+      if (now - lastTabExitAt < 1000) return;
+      tabSwitches++;
+      lastTabExitAt = now;
+    }
+
+    // ===== РЕГИСТРАЦИЯ =====
+    function startAttempt() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const phone = getFullPhone();
+      const englishLevel = document.getElementById("englishLevel").value;
+
+      if (!name || !email || !phone || !englishLevel) {
+        alert("Заполните имя, email, телефон и уровень английского.");
+        return;
+      }
+      if (!RETAKE_CHECK_ENABLED) {
+        startTest();
+        return;
+      }
+      // ... checkAttempt logic
+    }
+
+    function getFullPhone() {
+      const countryCode = document.getElementById("phoneCountry").value;
+      let phone = document.getElementById("phone").value.trim().replace(/\D/g, "");
+      if (!phone) return "";
+      if (countryCode === "+7" && (phone.startsWith("8") || phone.startsWith("7"))) {
+        phone = phone.substring(1);
+      }
+      return countryCode + phone;
+    }
+
+    // ===== ЛОГИКА ТЕСТА =====
+    function startTest() {
+      if (!rawQuestions.length) {
+        alert("Вопросы ещё загружаются. Подождите немного.");
+        return;
+      }
+      questions = prepareQuestions(rawQuestions);
+      document.getElementById("startBlock").style.display = "none";
+      document.getElementById("testBlock").style.display = "block";
+      document.getElementById("questionTotal").textContent = questions.length;
+
+      currentQuestionIndex = 0;
+      tabSwitches = 0;
+      lastTabExitAt = 0;
+      testStarted = true;
+      testFinished = false;
+      answers.length = 0;
+      blockScores = {};
+
+      Object.keys(currentTestConfig.blocks).forEach(k => {
+        blockScores[k] = { earned: 0, total: 0 };
+      });
+
+      renderCurrentQuestion();
+    }
+
+    function prepareQuestions(list) {
+      const cloned = list.map(function(q) {
+        const optionObjects = q.options.map(function(text, idx) {
+          return { text: text, originalIndex: idx };
+        });
+        const shuffled = shuffleArray(optionObjects);
+        const newCorrect = shuffled.findIndex(o => o.originalIndex === q.correct);
+        return {
+          topic: q.topic,
+          block: q.block || "general",
+          difficulty: q.difficulty,
+          timeLimit: q.timeLimit,
+          points: q.points,
+          text: q.text,
+          context: q.context || "",
+          options: shuffled.map(o => o.text),
+          correct: newCorrect,
+          correctAnswerText: q.options[q.correct],
+          comment: q.comment
+        };
+      });
+      return shuffleArray(cloned);
+    }
+
+    function shuffleArray(array) {
+      const copy = array.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function renderCurrentQuestion() {
+      clearInterval(questionTimerInterval);
+      const q = questions[currentQuestionIndex];
+      questionTimeLeft = q.timeLimit;
+      currentQuestionStartTime = new Date();
+
+      document.getElementById("questionNumber").textContent = currentQuestionIndex + 1;
+      document.getElementById("questionPoints").textContent = q.points;
+      document.getElementById("progressFill").style.width =
+        ((currentQuestionIndex / questions.length) * 100) + "%";
+
+      const container = document.getElementById("questionContainer");
+      let html = '<div class="question">';
+      html += '<h2>' + escapeHtml(q.text);
+      html += '<span class="difficulty-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
+      html += '</h2>';
+
+      if (q.context) html += q.context;
+
+      q.options.forEach(function(opt, idx) {
+        html += '<label class="option" onclick="selectOption(this,' + idx + ')">';
+        html += '<input type="radio" name="answer" value="' + idx + '" onchange="highlightOption(this)"> ';
+        html += escapeHtml(opt) + '</label>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+
+      updateQuestionTimer();
+      questionTimerInterval = setInterval(function() {
+        questionTimeLeft--;
+        updateQuestionTimer();
+        if (questionTimeLeft <= 0) {
+          saveCurrentAnswer(true);
+          moveToNextOrFinish();
+        }
+      }, 1000);
+    }
+
+    function selectOption(label, idx) {
+      document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+      label.classList.add('selected');
+      label.querySelector('input').checked = true;
+    }
+
+    function highlightOption(input) {
+      document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+      input.closest('.option').classList.add('selected');
+    }
+
+    function updateQuestionTimer() {
+      const m = Math.floor(questionTimeLeft / 60);
+      const s = questionTimeLeft % 60;
+      const el = document.getElementById("questionTimer");
+      const pill = document.getElementById("timerPill");
+      el.textContent = m + ":" + String(s).padStart(2, "0");
+      if (questionTimeLeft <= 10) pill.classList.add("warning");
+      else pill.classList.remove("warning");
+    }
+
+    function nextQuestion() {
+      saveCurrentAnswer(false);
+      moveToNextOrFinish();
+    }
+
+    function saveCurrentAnswer(isTimeout) {
+      clearInterval(questionTimerInterval);
+      const q = questions[currentQuestionIndex];
+      const selected = document.querySelector('input[name="answer"]:checked');
+      const selectedIndex = selected ? Number(selected.value) : null;
+      const isUnanswered = selectedIndex === null;
+      const isCorrect = selectedIndex === q.correct;
+      const timeSpent = Math.max(0, Math.round((new Date() - currentQuestionStartTime) / 1000));
+
+      answers.push({
+        number: currentQuestionIndex + 1,
+        topic: q.topic,
+        block: q.block,
+        difficulty: q.difficulty,
+        question: q.text,
+        selectedAnswer: selectedIndex !== null ? q.options[selectedIndex] : "Нет ответа",
+        correctAnswer: q.correctAnswerText,
+        isCorrect: isCorrect,
+        status: isTimeout ? "Время вышло" : (isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")),
+        points: q.points,
+        earnedPoints: isCorrect ? q.points : 0,
+        timeLimit: q.timeLimit,
+        timeSpent: timeSpent,
+        comment: q.comment
+      });
+
+      // Считаем баллы по блокам
+      if (!blockScores[q.block]) blockScores[q.block] = { earned: 0, total: 0 };
+      blockScores[q.block].total += q.points;
+      if (isCorrect) blockScores[q.block].earned += q.points;
+    }
+
+    function moveToNextOrFinish() {
+      currentQuestionIndex++;
+      if (currentQuestionIndex >= questions.length) {
+        finishTest();
+      } else {
+        renderCurrentQuestion();
+      }
+    }
+
+    // ===== ФИНИШ =====
+    function calculatePenalty(tabSwitches) {
+      if (tabSwitches === 0) return 0;
+      if (tabSwitches === 1) return 3;
+      if (tabSwitches <= 3) return 7;
+      return 15;
+    }
+
+    function finishTest() {
+      if (testFinished) return;
+      clearInterval(questionTimerInterval);
+      testFinished = true;
+      testStarted = false;
+
+      const rawTotal = answers.reduce((s, a) => s + a.points, 0);
+      const rawScore = answers.reduce((s, a) => s + a.earnedPoints, 0);
+      const percent = Math.round((rawScore / rawTotal) * 100);
+      const penalty = calculatePenalty(tabSwitches);
+      const finalScore = Math.max(0, percent - penalty);
+
+      const badge = getBadge(finalScore, tabSwitches);
+      const passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
+      const finalDecision = (badge === "Junior Strong" || badge === "Junior Confirmed") ? "Годен" : "Не годен";
+
+      // Расчёт блоков
+      const blockResults = {};
+      Object.keys(currentTestConfig.blocks).forEach(blockKey => {
+        const block = currentTestConfig.blocks[blockKey];
+        const scores = blockScores[blockKey] || { earned: 0, total: 0 };
+        const pct = scores.total > 0 ? Math.round((scores.earned / scores.total) * 100) : 0;
+        blockResults[blockKey] = {
+          name: block.name,
+          weight: block.weight,
+          earned: scores.earned,
+          total: scores.total,
+          percent: pct
+        };
+      });
+
+      // Trust Score
+      const trustScore = calculateTrustScore(finalScore, tabSwitches, answers);
+
+      const candidateName = document.getElementById("name").value.trim();
+      const candidateEmail = document.getElementById("email").value.trim().toLowerCase();
+      const candidatePhone = getFullPhone();
+      const englishLevel = document.getElementById("englishLevel").value;
+
+      const txtReport = buildTxtReport({
+        testVersion: currentTestConfig.version,
+        testTitle: currentTestConfig.title,
+        name: candidateName,
+        email: candidateEmail,
+        phone: candidatePhone,
+        englishLevel: englishLevel,
+        score: percent,
+        total: 100,
+        rawScore: rawScore,
+        rawTotal: rawTotal,
+        percent: percent,
+        penalty: penalty,
+        finalScore: finalScore,
+        passStatus: passStatus,
+        finalDecision: finalDecision,
+        badge: badge,
+        tabSwitches: tabSwitches,
+        trustScore: trustScore,
+        blockResults: blockResults,
+        answers: answers
+      });
+
+      showResult({
+        score: percent,
+        finalScore: finalScore,
+        badge: badge,
+        finalDecision: finalDecision,
+        blockResults: blockResults,
+        trustScore: trustScore,
+        tabSwitches: tabSwitches,
+        rawScore: rawScore,
+        rawTotal: rawTotal,
+        penalty: penalty
+      });
+
+      const resultData = {
+        testId: currentTestId,
+        testVersion: currentTestConfig.version,
+        testTitle: currentTestConfig.title,
+        name: candidateName,
+        email: candidateEmail,
+        phone: candidatePhone,
+        englishLevel: englishLevel,
+        score: percent,
+        total: 100,
+        percent: percent,
+        finalScore: finalScore,
+        badge: badge,
+        passStatus: passStatus,
+        finalDecision: finalDecision,
+        tabSwitches: tabSwitches,
+        trustScore: trustScore,
+        blockResults: blockResults,
+        txtReport: txtReport
+      };
+
+      sendResult(resultData);
+    }
+
+    function getBadge(finalScore, tabSwitches) {
+      if (finalScore >= 85 && tabSwitches <= 1) return "Junior Strong";
+      if (finalScore >= 70 && tabSwitches <= 2) return "Junior Confirmed";
+      if (finalScore >= 60) return "Borderline";
+      return "Not Confirmed";
+    }
+
+    function calculateTrustScore(finalScore, tabs, answers) {
+      let score = finalScore;
+      if (tabs === 0) score += 5;
+      else if (tabs <= 2) score -= 2;
+      else score -= 8;
+      const unanswered = answers.filter(a => a.selectedAnswer === "Нет ответа" || a.status === "Время вышло").length;
+      if (unanswered > 5) score -= 5;
+      else if (unanswered > 2) score -= 2;
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function showResult(data) {
+      document.getElementById("testBlock").style.display = "none";
+      document.getElementById("resultBlock").style.display = "block";
+
+      let html = '';
+
+      // Основные метрики
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">';
+      html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
+      html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Итоговый балл</div>';
+      html += '<div style="font-size:36px;font-weight:800;color:#0f172a;">' + data.finalScore + '%</div>';
+      html += '</div>';
+      html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
+      html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Плашка</div>';
+      html += '<div style="font-size:24px;font-weight:700;color:#3b82f6;">' + data.badge + '</div>';
+      html += '</div>';
+      html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
+      html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Trust Score</div>';
+      html += '<div style="font-size:36px;font-weight:800;color:#0f172a;">' + data.trustScore + '</div>';
+      html += '</div>';
+      html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
+      html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Решение</div>';
+      html += '<div style="font-size:24px;font-weight:700;color:' + (data.finalDecision === 'Годен' ? '#16a34a' : '#dc2626') + ';">' + data.finalDecision + '</div>';
+      html += '</div>';
+      html += '</div>';
+
+      // Детали
+      html += '<div style="background:#f1f5f9;padding:16px;border-radius:10px;margin-bottom:24px;font-size:14px;color:#475569;">';
+      html += 'Сырой результат: <b>' + data.rawScore + ' из ' + data.rawTotal + '</b> (' + data.score + '%)<br>';
+      html += 'Штраф за уходы: <b>' + data.penalty + '%</b> (уходов: ' + data.tabSwitches + ')<br>';
+      html += 'Неотвеченных: <b>' + answers.filter(a => a.selectedAnswer === "Нет ответа").length + '</b>';
+      html += '</div>';
+
+      // Skill Card — блоки
+      html += '<h3 style="margin-bottom:16px;">📊 Skill Card — разбор по навыкам</h3>';
+      html += '<div style="display:grid;gap:16px;margin-bottom:24px;">';
+
+      Object.keys(data.blockResults).forEach(blockKey => {
+        const b = data.blockResults[blockKey];
+        const colorClass = b.percent >= 70 ? 'green' : (b.percent >= 50 ? 'yellow' : 'red');
+        const colorHex = b.percent >= 70 ? '#16a34a' : (b.percent >= 50 ? '#eab308' : '#dc2626');
+        html += '<div style="background:white;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+        html += '<span style="font-weight:600;">' + b.name + '</span>';
+        html += '<span style="font-weight:700;color:' + colorHex + ';">' + b.percent + '%</span>';
+        html += '</div>';
+        html += '<div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">';
+        html += '<div style="height:100%;width:' + b.percent + '%;background:' + colorHex + ';border-radius:4px;transition:width 1s;"></div>';
+        html += '</div>';
+        html += '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">' + b.earned + ' из ' + b.total + ' баллов · Вес: ' + Math.round(b.weight * 100) + '%</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      // Рекомендация
+      let recommendation = '';
+      if (data.badge === 'Junior Strong') {
+        recommendation = 'Отличный результат! Кандидат демонстрирует сильный уровень junior. Рекомендуется к собеседованию в приоритетном порядке.';
+      } else if (data.badge === 'Junior Confirmed') {
+        recommendation = 'Хороший результат. Базовый уровень junior подтверждён. Рекомендуется к собеседованию с проверкой практических навыков.';
+      } else if (data.badge === 'Borderline') {
+        recommendation = 'Результат на грани. Есть существенные пробелы в знаниях. Можно рассматривать при наличии стажировки или наставника.';
+      } else {
+        recommendation = 'Уровень junior не подтверждён. Рекомендуется дополнительное обучение или повторная проверка через 21 день.';
+      }
+      html += '<div style="background:#eff6ff;padding:16px;border-radius:10px;border-left:4px solid #3b82f6;margin-bottom:24px;">';
+      html += '<div style="font-weight:600;color:#1e40af;margin-bottom:4px;">💡 Рекомендация</div>';
+      html += '<div style="color:#475569;line-height:1.5;">' + recommendation + '</div>';
+      html += '</div>';
+
+      // Кнопки
+      html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
+      html += '<button onclick="window.location.href='index.html'" style="width:auto;flex:1;min-width:200px;">← На главную</button>';
+      html += '<button onclick="window.print()" style="width:auto;flex:1;min-width:200px;background:linear-gradient(90deg,#10b981,#059669);">🖨 Распечатать результат</button>';
+      html += '</div>';
+
+      document.getElementById("resultContent").innerHTML = html;
+    }
+
+    function buildTxtReport(data) {
+      const dateText = new Date().toLocaleString("ru-RU");
+      let r = "";
+      r += "═══════════════════════════════════════\n";
+      r += "  SKILL CHECK — ОТЧЁТ ПО ТЕСТИРОВАНИЮ\n";
+      r += "═══════════════════════════════════════\n\n";
+      r += "Профиль: " + data.testTitle + "\n";
+      r += "Версия: " + data.testVersion + "\n";
+      r += "Дата: " + dateText + "\n\n";
+
+      r += "───────────────────────────────────────\n";
+      r += "1. ДАННЫЕ КАНДИДАТА\n";
+      r += "───────────────────────────────────────\n\n";
+      r += "ФИО: " + data.name + "\n";
+      r += "Email: " + data.email + "\n";
+      r += "Телефон: " + data.phone + "\n";
+      r += "Английский: " + data.englishLevel + "\n\n";
+
+      r += "───────────────────────────────────────\n";
+      r += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";
+      r += "───────────────────────────────────────\n\n";
+      r += "Сырой результат: " + data.rawScore + " из " + data.rawTotal + "\n";
+      r += "Процент: " + data.percent + "%\n";
+      r += "Штраф за уходы: " + data.penalty + "%\n";
+      r += "Итоговый балл: " + data.finalScore + "%\n";
+      r += "Плашка: " + data.badge + "\n";
+      r += "Trust Score: " + data.trustScore + "\n";
+      r += "Статус: " + data.passStatus + "\n";
+      r += "Решение: " + data.finalDecision + "\n\n";
+
+      r += "───────────────────────────────────────\n";
+      r += "3. SKILL CARD — БЛОКИ НАВЫКОВ\n";
+      r += "───────────────────────────────────────\n\n";
+      Object.keys(data.blockResults).forEach(k => {
+        const b = data.blockResults[k];
+        r += b.name + ": " + b.earned + "/" + b.total + " (" + b.percent + "%)\n";
+      });
+      r += "\n";
+
+      r += "───────────────────────────────────────\n";
+      r += "4. ДЕТАЛЬНЫЙ РАЗБОР\n";
+      r += "───────────────────────────────────────\n\n";
+      data.answers.forEach(a => {
+        r += "Вопрос " + a.number + " [" + a.block + "]: " + a.question + "\n";
+        r += "Ответ: " + a.selectedAnswer + " — " + a.status + " (" + a.earnedPoints + "/" + a.points + ")\n";
+        if (!a.isCorrect) r += "Правильно: " + a.correctAnswer + "\n" + a.comment + "\n";
+        r += "\n";
+      });
+
+      r += "───────────────────────────────────────\n";
+      r += "5. РИСКИ И РЕКОМЕНДАЦИИ\n";
+      r += "───────────────────────────────────────\n\n";
+      r += "Уходы со вкладки: " + data.tabSwitches + "\n";
+      r += "Неотвеченных: " + data.answers.filter(a => a.selectedAnswer === "Нет ответа").length + "\n\n";
+
+      if (data.badge === "Junior Strong") {
+        r += "Рекомендация: пригласить на собеседование в приоритетном порядке.\n";
+      } else if (data.badge === "Junior Confirmed") {
+        r += "Рекомендация: пригласить на собеседование, проверить практические навыки.\n";
+      } else if (data.badge === "Borderline") {
+        r += "Рекомендация: рассматривать при наличии стажировки или наставника.\n";
+      } else {
+        r += "Рекомендация: не приглашать без дополнительного обучения.\n";
+      }
+
+      r += "\n═══════════════════════════════════════\n";
+      r += "Отчёт сгенерирован автоматически SkillCheck\n";
+      r += "═══════════════════════════════════════\n";
+
+      return r;
+    }
+
+    function sendResult(data) {
+      const status = document.getElementById("sendStatus");
+      status.textContent = "Отправка результата...";
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify(data)
+      })
+      .then(() => {
+        status.innerHTML = '<span class="success">✅ Результат отправлен и сохранён.</span>';
+      })
+      .catch(() => {
+        status.innerHTML = '<span class="error">⚠️ Результат посчитан, но отправка не удалась. Сохраните скриншот.</span>';
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

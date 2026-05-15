@@ -1,0 +1,174 @@
+{
+  "testId": "bi-junior",
+  "version": "BI Junior v1.0",
+  "totalQuestions": 40,
+  "blocks": {
+    "sql": "SQL",
+    "powerbi": "Power BI / Визуализация",
+    "metrics": "Финансовые метрики",
+    "excel": "Excel продвинутый",
+    "data": "Работа с данными"
+  },
+  "questions": [
+    {
+      "topic": "SQL SELECT",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Какой запрос выберет все строки из таблицы sales?",
+      "options": [
+        "SELECT * FROM sales",
+        "SELECT ALL sales",
+        "GET * FROM sales",
+        "SHOW sales"
+      ],
+      "correct": 0,
+      "comment": "SELECT * FROM table — стандартный синтаксис выборки всех столбцов."
+    },
+    {
+      "topic": "SQL WHERE",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Как отфильтровать продажи за 2024 год?",
+      "options": [
+        "WHERE year = 2024",
+        "FILTER year 2024",
+        "IF year = 2024",
+        "YEAR 2024"
+      ],
+      "correct": 0,
+      "comment": "WHERE — условие фильтрации в SQL."
+    },
+    {
+      "topic": "SQL JOIN",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "points": 4,
+      "text": "INNER JOIN возвращает:",
+      "options": [
+        "Только совпадающие строки по ключу",
+        "Все строки левой таблицы",
+        "Все строки обеих таблиц",
+        "Только несовпадающие"
+      ],
+      "correct": 0,
+      "comment": "INNER JOIN — только строки, где ключ есть в обеих таблицах."
+    },
+    {
+      "topic": "SQL GROUP BY",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "points": 4,
+      "text": "Запрос: SELECT region, SUM(revenue) FROM sales GROUP BY region. Что вернёт?",
+      "options": [
+        "Сумму выручки по каждому региону",
+        "Все строки с суммой",
+        "Только один регион",
+        "Среднюю выручку"
+      ],
+      "correct": 0,
+      "comment": "GROUP BY агрегирует данные по указанным полям."
+    },
+    {
+      "topic": "SQL HAVING",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "points": 4,
+      "text": "HAVING используется для:",
+      "options": [
+        "Фильтрации после GROUP BY",
+        "Фильтрации до GROUP BY",
+        "Сортировки",
+        "Объединения таблиц"
+      ],
+      "correct": 0,
+      "comment": "HAVING фильтрует результат агрегации, в отличие от WHERE."
+    },
+    {
+      "topic": "Power BI модель",
+      "block": "powerbi",
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "points": 4,
+      "text": "В Power BI связь 'один-ко-многим' означает:",
+      "options": [
+        "Один ключ в справочнике, много в фактах",
+        "Много ключей в справочнике",
+        "Одинаковое количество",
+        "Нет связи"
+      ],
+      "correct": 0,
+      "comment": "Один-ко-многим: одна строка справочника связана с множеством строк фактов."
+    },
+    {
+      "topic": "Power BI DAX",
+      "block": "powerbi",
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "points": 4,
+      "text": "Функция CALCULATE в DAX используется для:",
+      "options": [
+        "Изменения контекста фильтра",
+        "Суммирования",
+        "Сортировки",
+        "Объединения таблиц"
+      ],
+      "correct": 0,
+      "comment": "CALCULATE изменяет контекст фильтрации для вычисления меры."
+    },
+    {
+      "topic": "Визуализация",
+      "block": "powerbi",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 3,
+      "text": "Для показа динамики показателя во времени лучше использовать:",
+      "options": [
+        "Линейный график",
+        "Круговая диаграмма",
+        "Таблица",
+        "Карта"
+      ],
+      "correct": 0,
+      "comment": "Линейный график наилучшим образом показывает тренды во времени."
+    },
+    {
+      "topic": "Метрика LTV",
+      "block": "metrics",
+      "difficulty": "medium",
+      "timeLimit": 60,
+      "points": 4,
+      "text": "LTV (Lifetime Value) — это:",
+      "options": [
+        "Пожизненная ценность клиента",
+        "Стоимость привлечения",
+        "Ежемесячная выручка",
+        "Маржинальность"
+      ],
+      "correct": 0,
+      "comment": "LTV — общая прибыль, которую компания получит от клиента за всё время отношений."
+    },
+    {
+      "topic": "Метрика CAC",
+      "block": "metrics",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 3,
+      "text": "CAC (Customer Acquisition Cost) — это:",
+      "options": [
+        "Стоимость привлечения клиента",
+        "Ценность клиента",
+        "Средний чек",
+        "Конверсия"
+      ],
+      "correct": 0,
+      "comment": "CAC = общие маркетинговые расходы / количество новых клиентов."
+    }
+  ]
+}

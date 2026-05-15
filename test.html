@@ -176,6 +176,7 @@
     }
     .back-link:hover { color: #3b82f6; }
   </style>
+<base target="_blank">
 </head>
 <body>
   <div class="container">
@@ -250,6 +251,9 @@
   <script>
     // ===== КОНФИГУРАЦИЯ =====
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
+    // 🔧 ОГРАНИЧЕНИЕ ПОВТОРНЫХ ПОПЫТОК
+    // true = проверять, проходил ли кандидат этот тест за последние 21 день
+    // false = отключить проверку (для тестирования платформы)
     const RETAKE_CHECK_ENABLED = false;
 
     // Информация о тестах
@@ -359,16 +363,29 @@
 
     function loadQuestions() {
       const file = currentTestConfig.questionsFile;
+      const startBtn = document.getElementById("startButton");
+      startBtn.textContent = "Загрузка вопросов...";
+      startBtn.disabled = true;
+
       fetch(file)
-        .then(r => r.json())
+        .then(r => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
         .then(data => {
           rawQuestions = data.questions || data;
-          document.getElementById("startButton").textContent = "Начать тест (" + rawQuestions.length + " вопросов)";
+          if (!rawQuestions.length) {
+            throw new Error("Вопросы пустые");
+          }
+          startBtn.textContent = "Начать тест (" + rawQuestions.length + " вопросов)";
+          startBtn.disabled = false;
         })
         .catch(err => {
           console.error("Ошибка загрузки вопросов:", err);
+          startBtn.textContent = "Ошибка загрузки";
+          startBtn.disabled = false;
           document.getElementById("attemptStatus").innerHTML =
-            '<div class="blocked">Не удалось загрузить вопросы. Проверьте файл ' + file + '</div>';
+            '<div class="blocked">❌ Не удалось загрузить вопросы.<br>Причина: ' + err.message + '<br>Файл: ' + file + '<br><br>Проверьте:<br>1. Что файл существует в папке data/<br>2. Что GitHub Pages включён<br>3. Попробуйте обновить страницу (F5)</div>';
         });
     }
 
@@ -434,8 +451,27 @@
 
     // ===== ЛОГИКА ТЕСТА =====
     function startTest() {
-      if (!rawQuestions.length) {
-        alert("Вопросы ещё загружаются. Подождите немного.");
+      // Если вопросы не загрузились — пробуем ещё раз или показываем ошибку
+      if (!rawQuestions || !rawQuestions.length) {
+        // Попытка загрузить вопросы синхронно (fallback)
+        const startBtn = document.getElementById("startButton");
+        startBtn.disabled = true;
+        startBtn.textContent = "Загрузка вопросов...";
+
+        fetch(currentTestConfig.questionsFile)
+          .then(r => r.json())
+          .then(data => {
+            rawQuestions = data.questions || data;
+            startBtn.disabled = false;
+            startBtn.textContent = "Начать тест";
+            startTest(); // рекурсивный вызов после загрузки
+          })
+          .catch(err => {
+            startBtn.disabled = false;
+            startBtn.textContent = "Начать тест";
+            alert("Не удалось загрузить вопросы. Проверьте подключение к интернету и наличие файла " + currentTestConfig.questionsFile);
+            console.error("Ошибка загрузки:", err);
+          });
         return;
       }
       questions = prepareQuestions(rawQuestions);

@@ -238,6 +238,7 @@
     // true = проверять, проходил ли кандидат этот тест за последние 21 день
     // false = отключить проверку (для тестирования платформы)
     const RETAKE_CHECK_ENABLED = false;
+    const QUESTIONS_PER_ATTEMPT = 40;
 
     const TEST_CONFIG = {
       "fa-junior": {
@@ -321,6 +322,7 @@
     let testStarted = false;
     let testFinished = false;
     let currentQuestionStartTime = null;
+    let loadedQuestionBank = null;
     const answers = [];
     let blockScores = {};
 
@@ -355,12 +357,14 @@
           return r.json();
         })
         .then(function(data) {
-          rawQuestions = data.questions || data;
+          loadedQuestionBank = normalizeQuestionBank(data);
+          rawQuestions = loadedQuestionBank.questions;
+          currentTestConfig.blocks = getBlockDefinitions(currentTestConfig.blocks, loadedQuestionBank.meta.blocks);
           if (!rawQuestions.length) {
             throw new Error("Вопросы пустые");
           }
           var totalInPool = rawQuestions.length;
-          var perTest = data.questionsPerTest || totalInPool;
+          var perTest = getQuestionsPerAttempt(totalInPool);
           startBtn.textContent = "Начать тест (" + perTest + " из " + totalInPool + " вопросов)";
           startBtn.disabled = false;
         })
@@ -494,7 +498,9 @@
         fetch(currentTestConfig.questionsFile)
           .then(function(r) { return r.json(); })
           .then(function(data) {
-            rawQuestions = data.questions || data;
+            loadedQuestionBank = normalizeQuestionBank(data);
+            rawQuestions = loadedQuestionBank.questions;
+            currentTestConfig.blocks = getBlockDefinitions(currentTestConfig.blocks, loadedQuestionBank.meta.blocks);
             startBtn.disabled = false;
             startBtn.textContent = "Начать тест";
             startTest();
@@ -534,40 +540,100 @@
       return shuffled.slice(0, count);
     }
 
+    function normalizeQuestionBank(data) {
+      var source = data || {};
+      var list = Array.isArray(source) ? source : (source.questions || []);
+      return {
+        meta: Array.isArray(source) ? {} : source,
+        questions: list.filter(function(q) {
+          return q && q.active !== false;
+        })
+      };
+    }
+
+    function getQuestionsPerAttempt(totalInPool) {
+      return Math.min(totalInPool, QUESTIONS_PER_ATTEMPT);
+    }
+
+    function getBlockDefinitions(configBlocks, bankBlocks) {
+      var source = bankBlocks && Object.keys(bankBlocks).length ? bankBlocks : configBlocks;
+      var keys = Object.keys(source || {});
+      var defaultWeight = keys.length ? 1 / keys.length : 1;
+      var result = {};
+
+      keys.forEach(function(key) {
+        var block = source[key];
+        if (typeof block === "string") {
+          result[key] = { name: block, weight: defaultWeight };
+        } else {
+          result[key] = {
+            name: block.name || key,
+            weight: Number(block.weight || defaultWeight)
+          };
+        }
+      });
+
+      return result;
+    }
+
     function prepareQuestions(list) {
-      // Если в JSON указано questionsPerTest — выбираем случайный поднабор
-      var questionsToUse = list;
-      if (currentTestConfig.questionsPerTest && list.length > currentTestConfig.questionsPerTest) {
-        questionsToUse = selectRandomQuestions(list, currentTestConfig.questionsPerTest);
-      }
+      var questionsToUse = selectRandomQuestions(list, getQuestionsPerAttempt(list.length));
 
       var cloned = questionsToUse.map(function(q) {
-        var optionObjects = q.options.map(function(text, idx) {
+        var normalized = normalizeQuestion(q);
+        var optionObjects = normalized.options.map(function(text, idx) {
           return { text: text, originalIndex: idx };
         });
         var shuffled = shuffleArray(optionObjects);
         var newCorrect = -1;
         for (var i = 0; i < shuffled.length; i++) {
-          if (shuffled[i].originalIndex === q.correct) {
+          if (shuffled[i].originalIndex === normalized.correct) {
             newCorrect = i;
             break;
           }
         }
         return {
-          topic: q.topic,
-          block: q.block || "general",
-          difficulty: q.difficulty,
-          timeLimit: q.timeLimit,
-          points: q.points,
-          text: q.text,
-          context: q.context || "",
+          id: normalized.id,
+          topic: normalized.topic,
+          block: normalized.block,
+          difficulty: normalized.difficulty,
+          timeLimit: normalized.timeLimit,
+          points: normalized.points,
+          text: normalized.text,
+          context: normalized.context,
           options: shuffled.map(function(o) { return o.text; }),
           correct: newCorrect,
-          correctAnswerText: q.options[q.correct],
-          comment: q.comment
+          correctAnswerText: normalized.options[normalized.correct],
+          comment: normalized.comment
         };
       });
       return shuffleArray(cloned);
+    }
+
+    function normalizeQuestion(q) {
+      var options = Array.isArray(q.options) ? q.options : [];
+      var correct = Number(q.correct);
+
+      if ((isNaN(correct) || correct < 0) && q.correctAnswer) {
+        correct = options.indexOf(q.correctAnswer);
+      }
+      if (isNaN(correct) || correct < 0 || correct >= options.length) {
+        correct = 0;
+      }
+
+      return {
+        id: q.id || "",
+        topic: q.topic || "",
+        block: q.block || "general",
+        difficulty: q.difficulty || "medium",
+        timeLimit: Number(q.timeLimit || q.timer || q.seconds || 60),
+        points: Number(q.points || q.score || 1),
+        text: q.text || q.question || "",
+        context: q.context || "",
+        options: options,
+        correct: correct,
+        comment: q.comment || q.explanation || ""
+      };
     }
 
     function shuffleArray(array) {

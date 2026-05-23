@@ -25,6 +25,12 @@ const RESULTS_HEADERS = [
   "Ссылка на TXT отчет"
 ];
 
+const DEPRECATED_RESULTS_HEADERS = [
+  "Решение",
+  "Баллы (сырые)",
+  "Всего (сырые)"
+];
+
 function doGet(e) {
   const action = e.parameter.action;
 
@@ -158,6 +164,8 @@ function ensureHeaders(sheet, headers) {
     return;
   }
 
+  removeDeprecatedColumns(sheet, DEPRECATED_RESULTS_HEADERS);
+
   const current = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0];
   const currentTrimmed = current.slice(0, headers.length).map(String);
   const target = headers.map(String);
@@ -173,6 +181,19 @@ function ensureHeaders(sheet, headers) {
   }
 
   sheet.setFrozenRows(1);
+}
+
+function removeDeprecatedColumns(sheet, deprecatedHeaders) {
+  const lastColumn = sheet.getLastColumn();
+  if (lastColumn < 1) return;
+
+  const headerRow = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+
+  for (let col = headerRow.length - 1; col >= 0; col--) {
+    if (deprecatedHeaders.indexOf(headerRow[col]) !== -1) {
+      sheet.deleteColumn(col + 1);
+    }
+  }
 }
 
 function normalizePhone(phone) {

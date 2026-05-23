@@ -17,7 +17,7 @@ index.html -> test.html?test=<testId> -> data/<testId>.json -> Google Apps Scrip
 Рабочие тесты:
 
 - Financial Analyst Junior — `data/fa-junior.json`;
-- Credit Analyst Junior — `data/ca-junior.json`.
+- Credit Analyst Junior — `data/ca-junior.json`, 80 вопросов, прошёл первичную проверку вариантов ответа по длине.
 
 Черновые тесты:
 

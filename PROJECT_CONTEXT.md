@@ -17,13 +17,12 @@ index.html -> test.html?test=<testId> -> data/<testId>.json -> Google Apps Scrip
 Рабочие тесты:
 
 - Financial Analyst Junior — `data/fa-junior.json`;
-- Credit Analyst Junior — `data/ca-junior.json`, 80 вопросов, прошёл первичную проверку вариантов ответа по длине.
+- Credit Analyst Junior — `data/ca-junior.json`, 80 вопросов, прошёл первичную проверку вариантов ответа по длине;
+- FP&A / Budget Analyst Junior — `data/fpa-junior.json`, 40 вопросов;
+- Accounting / Reporting Junior — `data/acc-junior.json`, 40 вопросов;
+- Finance BI / Data Analyst Junior — `data/bi-junior.json`, 40 вопросов.
 
-Черновые тесты:
-
-- FP&A / Budget Analyst Junior — `data/fpa-junior.json`;
-- Accounting Junior — `data/acc-junior.json`;
-- Finance BI / Data Analyst Junior — `data/bi-junior.json`.
+Все 5 тестов доступны в текущей структуре сайта. Следующий этап — ручное прохождение, проверка отправки результатов и улучшение вопросов по реальным прохождениям.
 
 ## Как работает прохождение
 

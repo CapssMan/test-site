@@ -43,6 +43,14 @@ skillcheck/
 
 Нельзя держать вопросы прямо в HTML, иначе проект быстро станет неуправляемым.
 
+Текущие рабочие банки:
+
+- `fa-junior.json` — Financial Analyst Junior.
+- `ca-junior.json` — Credit Analyst Junior.
+- `fpa-junior.json` — FP&A / Budget Analyst Junior.
+- `acc-junior.json` — Accounting / Reporting Junior.
+- `bi-junior.json` — Finance BI / Data Analyst Junior.
+
 ### `apps-script/`
 
 Папка с кодом Google Apps Script. Этот файл не запускается на GitHub Pages сам по себе. Его нужно вручную скопировать в Apps Script.

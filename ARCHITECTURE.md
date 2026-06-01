@@ -41,8 +41,8 @@ SkillCheck работает как статический сайт на GitHub P
 ```text
 data/fa-junior.json   Financial Analyst Junior
 data/ca-junior.json   Credit Analyst Junior
-data/fpa-junior.json  FP&A Junior
-data/acc-junior.json  Accounting Junior
+data/fpa-junior.json  FP&A / Budget Analyst Junior
+data/acc-junior.json  Accounting / Reporting Junior
 data/bi-junior.json   Finance BI / Data Analyst Junior
 ```
 
@@ -67,7 +67,7 @@ test.html?test=ca-junior
 }
 ```
 
-Если в JSON есть объект `blocks`, движок использует его для Skill Card. Это нужно для совместимости: например, `ca-junior.json` содержит свои блоки `logic`, `pnl`, `balance`, `cashflow`, `debt`, `excel`, `cases`, `final`.
+Если в JSON есть объект `blocks`, движок использует его для Skill Card. Это нужно для совместимости: например, `ca-junior.json`, `fpa-junior.json`, `acc-junior.json` и `bi-junior.json` содержат собственные блоки навыков.
 
 ## Random engine
 
@@ -86,7 +86,7 @@ const QUESTIONS_PER_ATTEMPT = 40;
 5. Правильный ответ пересчитывается по исходному индексу.
 6. Вопросы с `active: false` не попадают в попытку.
 
-Для Credit Analyst Junior банк содержит 80 вопросов, а одна попытка показывает 40 случайных вопросов с перемешанными вариантами ответа.
+Credit Analyst Junior содержит 80 вопросов, поэтому одна попытка показывает случайные 40. FP&A, Accounting и BI сейчас содержат по 40 вопросов, поэтому в попытку попадает весь банк с перемешанными вопросами и вариантами ответа.
 
 Основные функции:
 

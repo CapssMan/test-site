@@ -203,6 +203,25 @@
         <option value="C2">C2 - Proficiency</option>
       </select>
 
+      <select id="candidateSource">
+        <option value="">Источник кандидата</option>
+        <option value="HH.ru">HH.ru</option>
+        <option value="Telegram">Telegram</option>
+        <option value="LinkedIn">LinkedIn</option>
+        <option value="Знакомый / рекомендация">Знакомый / рекомендация</option>
+        <option value="Работодатель">Работодатель</option>
+        <option value="Другое">Другое</option>
+      </select>
+
+      <select id="candidateExperience">
+        <option value="">Опыт</option>
+        <option value="Нет опыта">Нет опыта</option>
+        <option value="Стажировка">Стажировка</option>
+        <option value="До 6 месяцев">До 6 месяцев</option>
+        <option value="6-12 месяцев">6-12 месяцев</option>
+        <option value="1+ год">1+ год</option>
+      </select>
+
       <div class="warning">
         &#9888; Во время теста фиксируется количество уходов со страницы.
         Копирование текста и контекстное меню заблокированы.
@@ -237,7 +256,7 @@
     // &#128295; ОГРАНИЧЕНИЕ ПОВТОРНЫХ ПОПЫТОК
     // true = проверять, проходил ли кандидат этот тест за последние 21 день
     // false = отключить проверку (для тестирования платформы)
-    const RETAKE_CHECK_ENABLED = false;
+    const RETAKE_CHECK_ENABLED = true;
     const QUESTIONS_PER_ATTEMPT = 40;
 
     const TEST_CONFIG = {
@@ -245,6 +264,7 @@
         title: "Financial Analyst Junior",
         description: "Excel, финансовый анализ, отчётность, бюджеты, SQL, бухучёт",
         version: "FA Junior v2.3",
+        bankVersion: "Financial Analyst Junior v1.0",
         questionsFile: "data/fa-junior.json",
         blocks: {
           "excel": { name: "Excel / Google Sheets", weight: 0.20 },
@@ -259,6 +279,7 @@
         title: "Credit Analyst Junior",
         description: "Ликвидность, долговая нагрузка, cash flow, кредитный риск",
         version: "CA Junior v1.0",
+        bankVersion: "Credit Analyst Junior v1.0",
         questionsFile: "data/ca-junior.json",
         blocks: {
           "liquidity": { name: "Ликвидность", weight: 0.20 },
@@ -272,6 +293,7 @@
         title: "FP&A / Budget Analyst Junior",
         description: "БДР, БДДС, план-факт анализ, прогнозирование, сценарный анализ",
         version: "FP&A Junior v1.0",
+        bankVersion: "FP&A / Budget Analyst Junior v1.0",
         questionsFile: "data/fpa-junior.json",
         blocks: {
           "budget": { name: "Бюджетирование", weight: 0.25 },
@@ -282,9 +304,10 @@
         }
       },
       "acc-junior": {
-        title: "Accounting Junior",
+        title: "Accounting / Reporting Junior",
         description: "Проводки, активы/пассивы, НДС, амортизация, первичная документация",
         version: "ACC Junior v1.0",
+        bankVersion: "Accounting / Reporting Junior v1.0",
         questionsFile: "data/acc-junior.json",
         blocks: {
           "entries": { name: "Проводки", weight: 0.25 },
@@ -298,6 +321,7 @@
         title: "Finance BI / Data Analyst Junior",
         description: "SQL, Power BI, визуализация, финансовые метрики, работа с данными",
         version: "BI Junior v1.0",
+        bankVersion: "Finance BI / Data Analyst Junior v1.0",
         questionsFile: "data/bi-junior.json",
         blocks: {
           "sql": { name: "SQL", weight: 0.30 },
@@ -339,11 +363,18 @@
       }
 
       document.getElementById("testTitle").textContent = currentTestConfig.title;
-      document.getElementById("testInfo").innerHTML =
-        currentTestConfig.description + '<br><span style="color:#94a3b8;font-size:12px;">Версия: ' + currentTestConfig.version + '</span>';
+      updateTestInfo();
 
       loadQuestions();
     });
+
+    function updateTestInfo() {
+      var bankVersion = getBankVersion();
+      var versionText = "Версия теста: " + currentTestConfig.version;
+      if (bankVersion) versionText += " · Версия банка: " + bankVersion;
+      document.getElementById("testInfo").innerHTML =
+        currentTestConfig.description + '<br><span style="color:#94a3b8;font-size:12px;">' + versionText + '</span>';
+    }
 
     function loadQuestions() {
       var file = currentTestConfig.questionsFile;
@@ -360,6 +391,7 @@
           loadedQuestionBank = normalizeQuestionBank(data);
           rawQuestions = loadedQuestionBank.questions;
           currentTestConfig.blocks = getBlockDefinitions(currentTestConfig.blocks, loadedQuestionBank.meta.blocks);
+          updateTestInfo();
           if (!rawQuestions.length) {
             throw new Error("Вопросы пустые");
           }
@@ -415,6 +447,8 @@
       var email = document.getElementById("email").value.trim().toLowerCase();
       var phone = getFullPhone();
       var englishLevel = document.getElementById("englishLevel").value;
+      var candidateSource = document.getElementById("candidateSource").value;
+      var candidateExperience = document.getElementById("candidateExperience").value;
       var startButton = document.getElementById("startButton");
 
       if (startButton.disabled && startButton.textContent.indexOf("Загрузка") !== -1) {
@@ -422,8 +456,8 @@
         return;
       }
 
-      if (!name || !email || !phone || !englishLevel) {
-        alert("Заполните имя, email, телефон и уровень английского.");
+      if (!name || !email || !phone || !englishLevel || !candidateSource || !candidateExperience) {
+        alert("Заполните имя, email, телефон, английский, источник кандидата и опыт.");
         return;
       }
 
@@ -439,7 +473,7 @@
         .then(function(result) {
           if (!result.allowed) {
             document.getElementById("attemptStatus").innerHTML =
-              '<div class="blocked">' + result.message + '<br>Следующая попытка: ' + result.nextDate + '</div>';
+              '<div class="blocked">' + formatBlockedAttemptMessage(result) + '</div>';
             startButton.disabled = false;
             startButton.textContent = "Начать тест";
             return;
@@ -470,12 +504,23 @@
           "&email=" + encodeURIComponent(email) +
           "&phone=" + encodeURIComponent(phone) +
           "&testId=" + encodeURIComponent(testId) +
+          "&testTitle=" + encodeURIComponent(currentTestConfig.title) +
           "&callback=" + callbackName;
 
         script.src = url;
         script.onerror = reject;
         document.body.appendChild(script);
       });
+    }
+
+    function formatBlockedAttemptMessage(result) {
+      var testTitle = result.testTitle || currentTestConfig.title || "этот тест";
+      var previousDate = result.previousAttemptDate || "ранее";
+      var nextDate = result.nextDate || "позже";
+      var daysLeft = typeof result.daysLeft === "number" ? result.daysLeft : "";
+      var daysText = daysLeft !== "" ? " Осталось: " + daysLeft + " дн." : "";
+      return "Вы уже проходили тест " + escapeHtml(testTitle) + " " + escapeHtml(previousDate) +
+        ". Повторная попытка будет доступна " + escapeHtml(nextDate) + "." + daysText;
     }
 
     function getFullPhone() {
@@ -501,6 +546,7 @@
             loadedQuestionBank = normalizeQuestionBank(data);
             rawQuestions = loadedQuestionBank.questions;
             currentTestConfig.blocks = getBlockDefinitions(currentTestConfig.blocks, loadedQuestionBank.meta.blocks);
+            updateTestInfo();
             startBtn.disabled = false;
             startBtn.textContent = "Начать тест";
             startTest();
@@ -549,6 +595,13 @@
           return q && q.active !== false;
         })
       };
+    }
+
+    function getBankVersion() {
+      if (loadedQuestionBank && loadedQuestionBank.meta) {
+        return loadedQuestionBank.meta.bankVersion || loadedQuestionBank.meta.version || currentTestConfig.bankVersion || currentTestConfig.version;
+      }
+      return currentTestConfig.bankVersion || currentTestConfig.version;
     }
 
     function getQuestionsPerAttempt(totalInPool) {
@@ -795,14 +848,21 @@
       var candidateEmail = document.getElementById("email").value.trim().toLowerCase();
       var candidatePhone = getFullPhone();
       var englishLevel = document.getElementById("englishLevel").value;
+      var candidateSource = document.getElementById("candidateSource").value;
+      var candidateExperience = document.getElementById("candidateExperience").value;
+      var bankVersion = getBankVersion();
+      var recommendation = getCandidateRecommendation(finalScore, percent, trustScore, tabSwitches);
 
       var txtReport = buildTxtReport({
         testVersion: currentTestConfig.version,
+        bankVersion: bankVersion,
         testTitle: currentTestConfig.title,
         name: candidateName,
         email: candidateEmail,
         phone: candidatePhone,
         englishLevel: englishLevel,
+        candidateSource: candidateSource,
+        candidateExperience: candidateExperience,
         score: percent,
         total: 100,
         rawScore: rawScore,
@@ -812,6 +872,7 @@
         finalScore: finalScore,
         passStatus: passStatus,
         finalDecision: finalDecision,
+        recommendation: recommendation,
         badge: badge,
         tabSwitches: tabSwitches,
         trustScore: trustScore,
@@ -829,17 +890,21 @@
         tabSwitches: tabSwitches,
         rawScore: rawScore,
         rawTotal: rawTotal,
-        penalty: penalty
+        penalty: penalty,
+        recommendation: recommendation
       });
 
       var resultData = {
         testId: currentTestId,
         testVersion: currentTestConfig.version,
+        bankVersion: bankVersion,
         testTitle: currentTestConfig.title,
         name: candidateName,
         email: candidateEmail,
         phone: candidatePhone,
         englishLevel: englishLevel,
+        candidateSource: candidateSource,
+        candidateExperience: candidateExperience,
         score: percent,
         total: 100,
         percent: percent,
@@ -847,6 +912,7 @@
         badge: badge,
         passStatus: passStatus,
         finalDecision: finalDecision,
+        recommendation: recommendation,
         tabSwitches: tabSwitches,
         trustScore: trustScore,
         blockResults: blockResults,
@@ -872,6 +938,19 @@
       if (unanswered > 5) score -= 5;
       else if (unanswered > 2) score -= 2;
       return Math.max(0, Math.min(100, score));
+    }
+
+    function getCandidateRecommendation(finalScore, percent, trustScore, tabSwitches) {
+      if (tabSwitches > 2) {
+        return "Результат требует осторожной интерпретации";
+      }
+      if (finalScore >= 70 && trustScore >= 70) {
+        return "Рекомендуется к интервью";
+      }
+      if (finalScore >= 60 || percent >= 60) {
+        return "Можно рассмотреть при наличии стажировки / junior-позиции";
+      }
+      return "Не рекомендуется без дополнительной проверки";
     }
 
     function showResult(data) {
@@ -924,19 +1003,9 @@
       });
       html += '</div>';
 
-      var recommendation = '';
-      if (data.badge === 'Junior Strong') {
-        recommendation = 'Отличный результат! Кандидат демонстрирует сильный уровень junior. Рекомендуется к собеседованию в приоритетном порядке.';
-      } else if (data.badge === 'Junior Confirmed') {
-        recommendation = 'Хороший результат. Базовый уровень junior подтверждён. Рекомендуется к собеседованию с проверкой практических навыков.';
-      } else if (data.badge === 'Borderline') {
-        recommendation = 'Результат на грани. Есть существенные пробелы в знаниях. Можно рассматривать при наличии стажировки или наставника.';
-      } else {
-        recommendation = 'Уровень junior не подтверждён. Рекомендуется дополнительное обучение или повторная проверка через 21 день.';
-      }
       html += '<div style="background:#eff6ff;padding:16px;border-radius:10px;border-left:4px solid #3b82f6;margin-bottom:24px;">';
       html += '<div style="font-weight:600;color:#1e40af;margin-bottom:4px;">&#128161; Рекомендация</div>';
-      html += '<div style="color:#475569;line-height:1.5;">' + recommendation + '</div>';
+      html += '<div style="color:#475569;line-height:1.5;">' + data.recommendation + '</div>';
       html += '</div>';
 
       html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
@@ -953,8 +1022,24 @@
       r += "=======================================\n";
       r += "  SKILL CHECK — ОТЧЁТ ПО ТЕСТИРОВАНИЮ\n";
       r += "=======================================\n\n";
+      r += "CANDIDATE SUMMARY / КРАТКОЕ РЕЗЮМЕ\n";
+      r += "---------------------------------------\n";
+      r += "Кандидат: " + data.name + "\n";
+      r += "Тест: " + data.testTitle + "\n";
+      r += "Версия банка: " + data.bankVersion + "\n";
+      r += "Итоговый балл: " + data.finalScore + "%\n";
+      r += "Процент: " + data.percent + "%\n";
+      r += "Плашка: " + data.badge + "\n";
+      r += "Статус: " + data.passStatus + "\n";
+      r += "Trust Score: " + data.trustScore + "\n";
+      r += "Уходы со вкладки: " + data.tabSwitches + "\n";
+      r += "Английский: " + data.englishLevel + "\n";
+      r += "Опыт: " + data.candidateExperience + "\n";
+      r += "Источник: " + data.candidateSource + "\n";
+      r += "Рекомендация: " + data.recommendation + "\n\n";
       r += "Профиль: " + data.testTitle + "\n";
-      r += "Версия: " + data.testVersion + "\n";
+      r += "Версия теста: " + data.testVersion + "\n";
+      r += "Версия банка: " + data.bankVersion + "\n";
       r += "Дата: " + dateText + "\n\n";
 
       r += "---------------------------------------\n";
@@ -963,7 +1048,9 @@
       r += "ФИО: " + data.name + "\n";
       r += "Email: " + data.email + "\n";
       r += "Телефон: " + data.phone + "\n";
-      r += "Английский: " + data.englishLevel + "\n\n";
+      r += "Английский: " + data.englishLevel + "\n";
+      r += "Опыт: " + data.candidateExperience + "\n";
+      r += "Источник кандидата: " + data.candidateSource + "\n\n";
 
       r += "---------------------------------------\n";
       r += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";

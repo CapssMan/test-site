@@ -5,15 +5,31 @@ const RETAKE_DAYS = 21;
 const RESULTS_SHEET_NAME = "Results";
 const TOP_SHEET_NAME = "Top Candidates";
 const DASHBOARD_SHEET_NAME = "Dashboard";
+const TOP_TRUST_SCORE_MIN = 70;
+
+const TEST_TITLES_BY_ID = {
+  "fa-junior": "Financial Analyst Junior",
+  "ca-junior": "Credit Analyst Junior",
+  "fpa-junior": "FP&A / Budget Analyst Junior",
+  "acc-junior": "Accounting / Reporting Junior",
+  "bi-junior": "Finance BI / Data Analyst Junior"
+};
+
+const TEST_TITLE_ALIASES_BY_ID = {
+  "acc-junior": ["Accounting Junior"]
+};
 
 const RESULTS_HEADERS = [
   "Дата",
   "Тест",
-  "Версия",
+  "Версия теста",
+  "Версия банка",
   "Имя",
   "Email",
   "Телефон",
   "Английский",
+  "Опыт",
+  "Источник кандидата",
   "Уход со вкладки",
   "Баллы",
   "Всего",
@@ -22,6 +38,7 @@ const RESULTS_HEADERS = [
   "Плашка",
   "Статус",
   "Trust Score",
+  "Следующая попытка",
   "Ссылка на TXT отчет"
 ];
 
@@ -31,16 +48,24 @@ const DEPRECATED_RESULTS_HEADERS = [
   "Всего (сырые)"
 ];
 
+const HEADER_ALIASES = {
+  "Версия теста": ["Версия"],
+  "Источник кандидата": ["Источник"],
+  "Ссылка на TXT отчет": ["Ссылка на TXT отчёт"]
+};
+
 function doGet(e) {
-  const action = e.parameter.action;
+  const params = e && e.parameter ? e.parameter : {};
+  const action = params.action;
 
   if (action === "checkAttempt") {
-    const callback = e.parameter.callback || "callback";
-    const email = String(e.parameter.email || "").trim().toLowerCase();
-    const phone = normalizePhone(String(e.parameter.phone || ""));
-    const testId = String(e.parameter.testId || "").trim();
+    const callback = params.callback || "callback";
+    const email = String(params.email || "").trim().toLowerCase();
+    const phone = normalizePhone(String(params.phone || ""));
+    const testId = String(params.testId || "").trim();
+    const testTitle = getTestTitle(testId, String(params.testTitle || "").trim());
 
-    const result = checkPreviousAttempt(email, phone, testId);
+    const result = checkPreviousAttempt(email, phone, testId, testTitle);
 
     return ContentService
       .createTextOutput(callback + "(" + JSON.stringify(result) + ")")
@@ -58,14 +83,35 @@ function doPost(e) {
 
   ensureHeaders(resultsSheet, RESULTS_HEADERS);
 
-  const folder = DriveApp.getFolderById(FOLDER_ID);
   const data = JSON.parse(e.postData.contents);
+  const now = new Date();
+  const email = String(data.email || "").trim().toLowerCase();
+  const phone = normalizePhone(String(data.phone || ""));
+  const testId = String(data.testId || "").trim();
+  const testTitle = getTestTitle(testId, data.testTitle || data.testId || "Тест");
+
+  const previousAttempt = checkPreviousAttempt(email, phone, testId, testTitle, resultsSheet);
+  if (!previousAttempt.allowed) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: "blocked",
+        blocked: true,
+        message: previousAttempt.message,
+        nextDate: previousAttempt.nextDate,
+        daysLeft: previousAttempt.daysLeft,
+        previousAttemptDate: previousAttempt.previousAttemptDate,
+        testTitle: previousAttempt.testTitle
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const folder = DriveApp.getFolderById(FOLDER_ID);
 
   const safeName = String(data.name || "Кандидат").replace(/[\\/:*?"<>|]/g, "");
-  const testName = data.testTitle || data.testId || "Тест";
+  const testName = testTitle;
 
   const fileName = "Отчет SkillCheck - " + testName + " - " + safeName + " - " + Utilities.formatDate(
-    new Date(),
+    now,
     Session.getScriptTimeZone(),
     "yyyy-MM-dd HH-mm-ss"
   ) + ".txt";
@@ -82,60 +128,72 @@ function doPost(e) {
   );
 
   const txtUrl = txtFile.getUrl();
+  const nextAttemptDate = new Date(now.getTime() + RETAKE_DAYS * 24 * 60 * 60 * 1000);
 
-  resultsSheet.appendRow([
-    new Date(),
-    data.testTitle || data.testId || "",
-    data.testVersion || "",
-    data.name || "",
-    data.email || "",
-    data.phone || "",
-    data.englishLevel || "",
-    Number(data.tabSwitches || 0),
-    Number(data.score || 0),
-    Number(data.total || 100),
-    Number(data.percent || data.score || 0),
-    Number(data.finalScore || 0),
-    data.badge || "",
-    data.passStatus || "",
-    Number(data.trustScore || 0),
-    txtUrl
-  ]);
+  appendResultRow(resultsSheet, {
+    "Дата": now,
+    "Тест": testName,
+    "Версия теста": data.testVersion || "",
+    "Версия банка": data.bankVersion || data.testVersion || "",
+    "Имя": data.name || "",
+    "Email": email,
+    "Телефон": data.phone || "",
+    "Английский": data.englishLevel || "",
+    "Опыт": data.candidateExperience || data.experience || "",
+    "Источник кандидата": data.candidateSource || data.source || "",
+    "Уход со вкладки": Number(data.tabSwitches || 0),
+    "Баллы": Number(data.score || 0),
+    "Всего": Number(data.total || 100),
+    "Процент": Number(data.percent || data.score || 0),
+    "Итоговый балл": Number(data.finalScore || 0),
+    "Плашка": data.badge || "",
+    "Статус": data.passStatus || "",
+    "Trust Score": Number(data.trustScore || 0),
+    "Следующая попытка": nextAttemptDate,
+    "Ссылка на TXT отчет": txtUrl
+  });
 
   formatResultsSheet(resultsSheet);
   rebuildTopCandidates(ss, topSheet);
   rebuildDashboard(ss, dashboardSheet);
 
   return ContentService
-    .createTextOutput(JSON.stringify({ status: "ok", txtUrl: txtUrl }))
+    .createTextOutput(JSON.stringify({
+      status: "ok",
+      txtUrl: txtUrl,
+      nextDate: formatDate(nextAttemptDate)
+    }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function checkPreviousAttempt(email, phone, testId) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(RESULTS_SHEET_NAME);
+function checkPreviousAttempt(email, phone, testId, testTitle, existingSheet) {
+  const ss = existingSheet ? null : SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = existingSheet || ss.getSheetByName(RESULTS_SHEET_NAME);
+  const resolvedTitle = getTestTitle(testId, testTitle);
 
   if (!sheet || sheet.getLastRow() <= 1) {
-    return { allowed: true, message: "Попыток не найдено." };
+    return { allowed: true, message: "Попыток не найдено.", testTitle: resolvedTitle };
   }
 
   const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(String);
+  const indexes = buildHeaderIndexMap(headers);
   const now = new Date();
   const msLimit = RETAKE_DAYS * 24 * 60 * 60 * 1000;
 
   for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
 
-    const attemptDate = row[0];
-    const rowTest = String(row[1] || "").trim();
-    const rowEmail = String(row[4] || "").trim().toLowerCase();
-    const rowPhone = normalizePhone(String(row[5] || ""));
+    const attemptDate = getRowValue(row, indexes, "Дата");
+    const rowTest = String(getRowValue(row, indexes, "Тест") || "").trim();
+    const rowEmail = String(getRowValue(row, indexes, "Email") || "").trim().toLowerCase();
+    const rowPhone = normalizePhone(String(getRowValue(row, indexes, "Телефон") || ""));
 
     if (!(attemptDate instanceof Date)) continue;
 
     const sameEmail = email && rowEmail && email === rowEmail;
     const samePhone = phone && rowPhone && phone === rowPhone;
-    const sameTest = !testId || !rowTest || rowTest.indexOf(testId) !== -1 || testId.indexOf(rowTest) !== -1;
+    const sameTest = isSameTest(rowTest, testId, resolvedTitle);
 
     if ((sameEmail || samePhone) && sameTest) {
       const diffMs = now.getTime() - attemptDate.getTime();
@@ -143,18 +201,22 @@ function checkPreviousAttempt(email, phone, testId) {
       if (diffMs < msLimit) {
         const nextDate = new Date(attemptDate.getTime() + msLimit);
         const daysLeft = Math.ceil((nextDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        const previousAttemptDate = formatDate(attemptDate);
+        const nextDateText = formatDate(nextDate);
 
         return {
           allowed: false,
-          message: "Повторная попытка доступна через " + daysLeft + " дн.",
-          nextDate: Utilities.formatDate(nextDate, Session.getScriptTimeZone(), "dd.MM.yyyy"),
-          daysLeft: daysLeft
+          message: "Вы уже проходили тест " + resolvedTitle + " " + previousAttemptDate + ". Повторная попытка будет доступна " + nextDateText + ". Осталось: " + daysLeft + " дн.",
+          nextDate: nextDateText,
+          daysLeft: daysLeft,
+          previousAttemptDate: previousAttemptDate,
+          testTitle: resolvedTitle
         };
       }
     }
   }
 
-  return { allowed: true, message: "Можно проходить тест." };
+  return { allowed: true, message: "Можно проходить тест.", testTitle: resolvedTitle };
 }
 
 function ensureHeaders(sheet, headers) {
@@ -164,40 +226,98 @@ function ensureHeaders(sheet, headers) {
     return;
   }
 
-  removeDeprecatedColumns(sheet, DEPRECATED_RESULTS_HEADERS);
+  const range = sheet.getDataRange();
+  const values = range.getValues();
+  const currentHeaders = values[0].map(String);
+  const sameHeaders = currentHeaders.length === headers.length &&
+    currentHeaders.join("||") === headers.join("||");
 
-  const current = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0];
-  const currentTrimmed = current.slice(0, headers.length).map(String);
-  const target = headers.map(String);
-
-  const same = currentTrimmed.join("||") === target.join("||");
-
-  if (!same) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-
-    if (sheet.getLastColumn() > headers.length) {
-      sheet.deleteColumns(headers.length + 1, sheet.getLastColumn() - headers.length);
-    }
+  if (sameHeaders) {
+    sheet.setFrozenRows(1);
+    return;
   }
 
+  const migrated = [headers];
+  for (let r = 1; r < values.length; r++) {
+    migrated.push(headers.map(header => {
+      const sourceIndex = findHeaderIndex(currentHeaders, header);
+      return sourceIndex >= 0 ? values[r][sourceIndex] : "";
+    }));
+  }
+
+  sheet.clear();
+  sheet.getRange(1, 1, migrated.length, headers.length).setValues(migrated);
   sheet.setFrozenRows(1);
 }
 
-function removeDeprecatedColumns(sheet, deprecatedHeaders) {
-  const lastColumn = sheet.getLastColumn();
-  if (lastColumn < 1) return;
+function appendResultRow(sheet, result) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  sheet.appendRow(headers.map(header => Object.prototype.hasOwnProperty.call(result, header) ? result[header] : ""));
+}
 
-  const headerRow = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(String);
+function buildHeaderIndexMap(headers) {
+  const result = {};
+  headers.forEach((header, index) => {
+    result[String(header)] = index;
+  });
+  return result;
+}
 
-  for (let col = headerRow.length - 1; col >= 0; col--) {
-    if (deprecatedHeaders.indexOf(headerRow[col]) !== -1) {
-      sheet.deleteColumn(col + 1);
+function findHeaderIndex(headers, targetHeader) {
+  let index = headers.indexOf(targetHeader);
+  if (index >= 0) return index;
+
+  const aliases = HEADER_ALIASES[targetHeader] || [];
+  for (let i = 0; i < aliases.length; i++) {
+    index = headers.indexOf(aliases[i]);
+    if (index >= 0) return index;
+  }
+
+  return -1;
+}
+
+function getRowValue(row, indexes, header) {
+  let index = indexes[header];
+  if (index === undefined) {
+    const aliases = HEADER_ALIASES[header] || [];
+    for (let i = 0; i < aliases.length; i++) {
+      if (indexes[aliases[i]] !== undefined) {
+        index = indexes[aliases[i]];
+        break;
+      }
     }
   }
+  return index === undefined ? "" : row[index];
 }
 
 function normalizePhone(phone) {
   return String(phone || "").replace(/\D/g, "");
+}
+
+function normalizeTestText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getTestTitle(testId, fallbackTitle) {
+  return TEST_TITLES_BY_ID[testId] || String(fallbackTitle || testId || "Тест").trim();
+}
+
+function isSameTest(rowTest, testId, testTitle) {
+  const rowValue = normalizeTestText(rowTest);
+  if (!rowValue) return false;
+
+  const possibleValues = [
+    testId,
+    testTitle,
+    TEST_TITLES_BY_ID[testId]
+  ].map(normalizeTestText).filter(Boolean);
+  (TEST_TITLE_ALIASES_BY_ID[testId] || []).forEach(alias => possibleValues.push(normalizeTestText(alias)));
+
+  return possibleValues.some(value => rowValue === value || rowValue.indexOf(value) !== -1 || value.indexOf(rowValue) !== -1);
+}
+
+function formatDate(date) {
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), "dd.MM.yyyy");
 }
 
 function getOrCreateSheet(ss, name) {
@@ -225,15 +345,19 @@ function rebuildTopCandidates(ss, sheet) {
 
   const headers = [
     "Место",
+    "Дата",
     "Тест",
+    "Версия банка",
     "Имя",
     "Email",
     "Телефон",
     "Английский",
-    "Уход со вкладки",
+    "Опыт",
+    "Источник кандидата",
     "Итоговый балл",
     "Процент",
     "Плашка",
+    "Уход со вкладки",
     "Trust Score",
     "Ссылка на TXT отчет"
   ];
@@ -247,37 +371,53 @@ function rebuildTopCandidates(ss, sheet) {
   }
 
   const data = resultsSheet.getDataRange().getValues();
+  const headerIndexes = buildHeaderIndexMap(data[0].map(String));
   const rows = data.slice(1);
 
   const candidates = rows
-    .filter(row => String(row[13] || "") === "Прошёл" || Number(row[11]) >= 70)
     .map(row => ({
-      test: row[1],
-      name: row[3],
-      email: row[4],
-      phone: row[5],
-      englishLevel: row[6],
-      tabSwitches: row[7],
-      finalScore: Number(row[11]),
-      percent: Number(row[10]),
-      badge: row[12],
-      trustScore: Number(row[14]),
-      txtUrl: row[15]
+      date: getRowValue(row, headerIndexes, "Дата"),
+      test: getRowValue(row, headerIndexes, "Тест"),
+      bankVersion: getRowValue(row, headerIndexes, "Версия банка"),
+      name: getRowValue(row, headerIndexes, "Имя"),
+      email: getRowValue(row, headerIndexes, "Email"),
+      phone: getRowValue(row, headerIndexes, "Телефон"),
+      englishLevel: getRowValue(row, headerIndexes, "Английский"),
+      experience: getRowValue(row, headerIndexes, "Опыт"),
+      source: getRowValue(row, headerIndexes, "Источник кандидата"),
+      tabSwitches: Number(getRowValue(row, headerIndexes, "Уход со вкладки") || 0),
+      finalScore: Number(getRowValue(row, headerIndexes, "Итоговый балл") || 0),
+      percent: Number(getRowValue(row, headerIndexes, "Процент") || 0),
+      badge: getRowValue(row, headerIndexes, "Плашка"),
+      trustScore: Number(getRowValue(row, headerIndexes, "Trust Score") || 0),
+      txtUrl: getRowValue(row, headerIndexes, "Ссылка на TXT отчет")
     }))
-    .sort((a, b) => b.finalScore - a.finalScore);
+    .filter(candidate =>
+      candidate.finalScore >= 70 &&
+      candidate.tabSwitches <= 2 &&
+      candidate.trustScore >= TOP_TRUST_SCORE_MIN
+    )
+    .sort((a, b) => {
+      if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+      return a.tabSwitches - b.tabSwitches;
+    });
 
   candidates.forEach((candidate, index) => {
     sheet.appendRow([
       index + 1,
+      candidate.date,
       candidate.test,
+      candidate.bankVersion,
       candidate.name,
       candidate.email,
       candidate.phone,
       candidate.englishLevel,
-      candidate.tabSwitches,
+      candidate.experience,
+      candidate.source,
       candidate.finalScore,
       candidate.percent,
       candidate.badge,
+      candidate.tabSwitches,
       candidate.trustScore,
       candidate.txtUrl
     ]);
@@ -290,16 +430,18 @@ function rebuildDashboard(ss, sheet) {
   sheet.clear();
 
   const resultsSheet = ss.getSheetByName(RESULTS_SHEET_NAME);
-  const data = resultsSheet && resultsSheet.getLastRow() > 1
-    ? resultsSheet.getDataRange().getValues().slice(1)
+  const values = resultsSheet && resultsSheet.getLastRow() > 1
+    ? resultsSheet.getDataRange().getValues()
     : [];
+  const headerIndexes = values.length ? buildHeaderIndexMap(values[0].map(String)) : {};
+  const data = values.length ? values.slice(1) : [];
 
   const totalCandidates = data.length;
-  const passedCandidates = data.filter(row => String(row[13] || "") === "Прошёл").length;
-  const failedCandidates = data.filter(row => String(row[13] || "") === "Не прошёл").length;
-  const candidatesWithTabs = data.filter(row => Number(row[7]) > 0).length;
+  const passedCandidates = data.filter(row => String(getRowValue(row, headerIndexes, "Статус") || "") === "Прошёл").length;
+  const failedCandidates = data.filter(row => String(getRowValue(row, headerIndexes, "Статус") || "") === "Не прошёл").length;
+  const candidatesWithTabs = data.filter(row => Number(getRowValue(row, headerIndexes, "Уход со вкладки") || 0) > 0).length;
 
-  const scores = data.map(row => Number(row[11])).filter(value => !isNaN(value));
+  const scores = data.map(row => Number(getRowValue(row, headerIndexes, "Итоговый балл"))).filter(value => !isNaN(value));
   const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
   const maxScore = scores.length ? Math.max(...scores) : 0;
 
@@ -307,11 +449,14 @@ function rebuildDashboard(ss, sheet) {
 
   if (data.length > 0) {
     const sorted = data
-      .filter(row => row[11] !== "")
-      .sort((a, b) => Number(b[11]) - Number(a[11]));
+      .filter(row => getRowValue(row, headerIndexes, "Итоговый балл") !== "")
+      .sort((a, b) => Number(getRowValue(b, headerIndexes, "Итоговый балл")) - Number(getRowValue(a, headerIndexes, "Итоговый балл")));
 
     if (sorted.length > 0) {
-      bestCandidate = sorted[0][3] + " | " + sorted[0][1] + " | " + sorted[0][11] + " баллов | " + sorted[0][12];
+      bestCandidate = getRowValue(sorted[0], headerIndexes, "Имя") + " | " +
+        getRowValue(sorted[0], headerIndexes, "Тест") + " | " +
+        getRowValue(sorted[0], headerIndexes, "Итоговый балл") + " баллов | " +
+        getRowValue(sorted[0], headerIndexes, "Плашка");
     }
   }
 

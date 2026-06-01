@@ -18,7 +18,10 @@ skillcheck/
 ├── apps-script/
 │   └── Code.gs
 ├── docs/
-│   └── PROJECT_STRUCTURE.md
+│   ├── PROJECT_STRUCTURE.md
+│   └── QA_REVIEW.md
+├── scripts/
+│   └── validate-tests.js
 ├── README.md
 ├── PROJECT_CONTEXT.md
 ├── TODO.md
@@ -58,6 +61,15 @@ skillcheck/
 ### `docs/`
 
 Дополнительная документация, которую удобно читать в Codex/Cursor/VS Code.
+
+- `PROJECT_STRUCTURE.md` — структура проекта.
+- `QA_REVIEW.md` — первичный QA-аудит банков вопросов без изменения JSON.
+
+### `scripts/`
+
+Локальные вспомогательные проверки.
+
+- `validate-tests.js` — проверяет структуру банков вопросов и долю случаев, где правильный ответ является самым длинным.
 
 ## Почему пока не выносить CSS и JS
 

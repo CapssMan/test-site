@@ -189,6 +189,7 @@
       <p class="small">
         Вопросы и варианты ответа показываются в случайном порядке.
         На каждый вопрос отводится отдельное время. Вернуться к предыдущему вопросу нельзя.
+        Тест не гарантирует трудоустройство и не является итоговым решением о профессиональной пригодности.
       </p>
 
       <input id="name" type="text" placeholder="Ваше имя" />
@@ -233,6 +234,16 @@
       <label class="consent-row">
         <input id="privacyConsent" type="checkbox" />
         <span>Я согласен на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
+      </label>
+
+      <label class="consent-row">
+        <input id="ageConsent" type="checkbox" />
+        <span>Я подтверждаю, что мне исполнилось 18 лет.</span>
+      </label>
+
+      <label class="consent-row">
+        <input id="employerShareConsent" type="checkbox" />
+        <span>Я согласен, что мой результат тестирования может быть передан потенциальному работодателю или партнёру проекта.</span>
       </label>
 
       <button id="startButton" onclick="startAttempt()">Загрузка вопросов...</button>
@@ -461,6 +472,7 @@
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
       var privacyConsent = document.getElementById("privacyConsent").checked;
+      var ageConsent = document.getElementById("ageConsent").checked;
       var startButton = document.getElementById("startButton");
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
       currentBrowserFingerprint = browserFingerprint;
@@ -478,6 +490,12 @@
       if (!privacyConsent) {
         document.getElementById("attemptStatus").innerHTML =
           '<div class="blocked">Для прохождения теста необходимо согласие на обработку персональных данных.</div>';
+        return;
+      }
+
+      if (!ageConsent) {
+        document.getElementById("attemptStatus").innerHTML =
+          '<div class="blocked">Для прохождения теста необходимо подтвердить, что вам исполнилось 18 лет.</div>';
         return;
       }
 
@@ -953,6 +971,7 @@
       var englishLevel = document.getElementById("englishLevel").value;
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
+      var employerShareConsent = document.getElementById("employerShareConsent").checked;
       var bankVersion = getBankVersion();
       var recommendation = getCandidateRecommendation(finalScore, percent, trustScore, tabSwitches);
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
@@ -970,6 +989,7 @@
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
+        employerShareConsent: employerShareConsent,
         browserFingerprint: browserFingerprint,
         score: percent,
         total: 100,
@@ -1012,6 +1032,7 @@
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
+        employerShareConsent: employerShareConsent,
         browserFingerprint: browserFingerprint,
         score: percent,
         total: 100,
@@ -1145,6 +1166,7 @@
       r += "Английский: " + data.englishLevel + "\n";
       r += "Опыт: " + data.candidateExperience + "\n";
       r += "Источник: " + data.candidateSource + "\n";
+      r += "Согласие на передачу результата работодателям: " + formatConsentStatus(data.employerShareConsent) + "\n";
       r += "Fingerprint: " + data.browserFingerprint + "\n";
       r += "Рекомендация: " + data.recommendation + "\n\n";
       r += "Профиль: " + data.testTitle + "\n";
@@ -1160,6 +1182,7 @@
       r += "Английский: " + data.englishLevel + "\n";
       r += "Опыт: " + data.candidateExperience + "\n";
       r += "Источник кандидата: " + data.candidateSource + "\n\n";
+      r += "Согласие на передачу результата работодателям: " + formatConsentStatus(data.employerShareConsent) + "\n";
       r += "Fingerprint: " + data.browserFingerprint + "\n\n";
 
       r += "---------------------------------------\n";
@@ -1239,6 +1262,10 @@
       var div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function formatConsentStatus(value) {
+      return value ? "дано" : "не дано";
     }
   </script>
 </body>

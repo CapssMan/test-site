@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-06-02";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-06-02-diag1";
 const SUCCESS_THRESHOLD = 80;
 const DEFAULT_YANDEX_REPORTS_FOLDER = "disk:/skillcheck/reports";
 const DEFAULT_YANDEX_ADMIN_FILE = "disk:/skillcheck/admin/results.json";
@@ -432,8 +432,9 @@ function yandexResourceExists(path) {
 }
 
 function yandexApiRequest(method, url, payload, contentType) {
+  const normalizedMethod = String(method || "get").toLowerCase();
   const options = {
-    method: method,
+    method: normalizedMethod,
     headers: {
       Authorization: "OAuth " + getRequiredProperty("YANDEX_DISK_TOKEN")
     },
@@ -450,7 +451,12 @@ function yandexApiRequest(method, url, payload, contentType) {
   const text = response.getContentText();
 
   if (status < 200 || status >= 300) {
-    throw new Error("Yandex API error " + status + ": " + text.slice(0, 200));
+    throw new Error(
+      "Yandex API error " + status +
+      " during " + normalizedMethod.toUpperCase() +
+      " " + sanitizeYandexUrl(url) +
+      ": " + sanitizeYandexResponseText(text)
+    );
   }
 
   return text ? JSON.parse(text) : {};
@@ -465,9 +471,11 @@ function ensureYandexFolderExists(folderPath) {
     const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" + encodeURIComponent(currentPath);
 
     try {
-      yandexApiRequest("put", url, null, null);
+      yandexApiRequest("get", url, null, null);
     } catch (error) {
-      if (String(error.message || "").indexOf("Yandex API error 409") === -1) {
+      if (String(error.message || "").indexOf("Yandex API error 404") !== -1) {
+        yandexApiRequest("put", url, null, null);
+      } else {
         throw error;
       }
     }
@@ -489,7 +497,11 @@ function uploadTextToYandexDisk(path, content) {
 
   const status = response.getResponseCode();
   if (status < 200 || status >= 300) {
-    throw new Error("Yandex upload error " + status + ".");
+    throw new Error(
+      "Yandex upload error " + status +
+      " for " + normalizeDiskPath(path) +
+      ": " + sanitizeYandexResponseText(response.getContentText())
+    );
   }
 }
 
@@ -513,7 +525,11 @@ function readTextFromYandexDisk(path) {
   const status = response.getResponseCode();
   if (status === 404) return null;
   if (status < 200 || status >= 300) {
-    throw new Error("Yandex download error " + status + ".");
+    throw new Error(
+      "Yandex download error " + status +
+      " for " + normalizeDiskPath(path) +
+      ": " + sanitizeYandexResponseText(response.getContentText())
+    );
   }
 
   return response.getContentText();
@@ -679,6 +695,13 @@ function sanitizeYandexResponseText(text) {
     .replace(/YANDEX_DISK_TOKEN\s*[:=]\s*[^\s,;]+/g, "YANDEX_DISK_TOKEN=***")
     .replace(/ADMIN_PASSWORD\s*[:=]\s*[^\s,;]+/g, "ADMIN_PASSWORD=***")
     .replace(/ATTEMPT_HASH_SALT\s*[:=]\s*[^\s,;]+/g, "ATTEMPT_HASH_SALT=***")
+    .slice(0, 500);
+}
+
+function sanitizeYandexUrl(url) {
+  return String(url || "")
+    .replace(/oauth_token=[^&]+/gi, "oauth_token=***")
+    .replace(/access_token=[^&]+/gi, "access_token=***")
     .slice(0, 500);
 }
 

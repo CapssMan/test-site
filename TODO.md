@@ -18,7 +18,7 @@
 - [x] Детект ухода со вкладки.
 - [x] TXT-отчёт.
 - [x] Google Sheets integration с актуальными колонками в `apps-script/Code.gs`.
-- [x] 21-day retake lock на фронте и в Apps Script.
+- [x] 21-day retake lock на фронте и в Apps Script по отдельной колонке `ID теста`.
 - [x] Поля `Источник кандидата` и `Опыт`.
 - [x] Candidate Summary в TXT-отчёте.
 - [x] Первичный QA-аудит банков в `docs/QA_REVIEW.md`.
@@ -27,6 +27,7 @@
 
 - [ ] Скопировать обновлённый `apps-script/Code.gs` в Google Apps Script.
 - [ ] Создать новый Apps Script deployment.
+- [ ] Проверить, что в `Results` появилась колонка `ID теста` и в новых строках пишется `testId`.
 - [ ] Проверить `checkAttempt` на повторной попытке одного теста.
 - [ ] Проверить, что разные тесты можно проходить в один день.
 - [ ] Проверить отправку результата из `test.html` в Google Sheets.

@@ -135,6 +135,8 @@ email = trim + lowerCase
 phone = только цифры
 ```
 
+В Google Sheets для этого используется отдельная колонка `ID теста`, куда записывается машинный идентификатор (`fa-junior`, `ca-junior`, `fpa-junior`, `acc-junior`, `bi-junior`). Колонка `Тест` хранит человекочитаемое название и не используется как основной ключ блокировки. Для старых строк без `ID теста` Apps Script оставляет fallback-сравнение по названию теста.
+
 Apps Script возвращает:
 
 ```text
@@ -144,6 +146,10 @@ nextDate
 daysLeft
 previousAttemptDate
 testTitle
+normalizedEmail
+normalizedPhone
+testId
+foundPreviousAttempt
 ```
 
 Если `allowed=false`, сайт показывает кандидату понятную дату предыдущей и следующей попытки.
@@ -178,6 +184,7 @@ Not Confirmed      finalScore < 60
 ```text
 Дата
 Тест
+ID теста
 Версия теста
 Версия банка
 Имя

@@ -22,6 +22,7 @@ const TEST_TITLE_ALIASES_BY_ID = {
 const RESULTS_HEADERS = [
   "Дата",
   "Тест",
+  "ID теста",
   "Версия теста",
   "Версия банка",
   "Имя",
@@ -49,6 +50,7 @@ const DEPRECATED_RESULTS_HEADERS = [
 ];
 
 const HEADER_ALIASES = {
+  "ID теста": ["Test ID", "testId", "TestId", "Тест ID"],
   "Версия теста": ["Версия"],
   "Источник кандидата": ["Источник"],
   "Ссылка на TXT отчет": ["Ссылка на TXT отчёт"]
@@ -133,6 +135,7 @@ function doPost(e) {
   appendResultRow(resultsSheet, {
     "Дата": now,
     "Тест": testName,
+    "ID теста": testId,
     "Версия теста": data.testVersion || "",
     "Версия банка": data.bankVersion || data.testVersion || "",
     "Имя": data.name || "",
@@ -170,9 +173,14 @@ function checkPreviousAttempt(email, phone, testId, testTitle, existingSheet) {
   const ss = existingSheet ? null : SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = existingSheet || ss.getSheetByName(RESULTS_SHEET_NAME);
   const resolvedTitle = getTestTitle(testId, testTitle);
+  const debug = buildRetakeDebug(email, phone, testId);
 
   if (!sheet || sheet.getLastRow() <= 1) {
-    return { allowed: true, message: "Попыток не найдено.", testTitle: resolvedTitle };
+    return Object.assign({
+      allowed: true,
+      message: "Попыток не найдено.",
+      testTitle: resolvedTitle
+    }, debug);
   }
 
   const data = sheet.getDataRange().getValues();
@@ -186,37 +194,52 @@ function checkPreviousAttempt(email, phone, testId, testTitle, existingSheet) {
 
     const attemptDate = getRowValue(row, indexes, "Дата");
     const rowTest = String(getRowValue(row, indexes, "Тест") || "").trim();
+    const rowTestId = String(getRowValue(row, indexes, "ID теста") || "").trim();
     const rowEmail = String(getRowValue(row, indexes, "Email") || "").trim().toLowerCase();
     const rowPhone = normalizePhone(String(getRowValue(row, indexes, "Телефон") || ""));
 
     if (!(attemptDate instanceof Date)) continue;
 
-    const sameEmail = email && rowEmail && email === rowEmail;
-    const samePhone = phone && rowPhone && phone === rowPhone;
-    const sameTest = isSameTest(rowTest, testId, resolvedTitle);
+    const sameEmail = Boolean(email && rowEmail && email === rowEmail);
+    const samePhone = Boolean(phone && rowPhone && phone === rowPhone);
+    const sameCandidate = sameEmail && samePhone;
+    const sameTest = isSameTestById(rowTestId, rowTest, testId, resolvedTitle);
 
-    if ((sameEmail || samePhone) && sameTest) {
+    if (sameCandidate && sameTest) {
       const diffMs = now.getTime() - attemptDate.getTime();
+      debug.foundPreviousAttempt = true;
+      debug.previousAttemptDate = formatDate(attemptDate);
 
       if (diffMs < msLimit) {
         const nextDate = new Date(attemptDate.getTime() + msLimit);
         const daysLeft = Math.ceil((nextDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
         const previousAttemptDate = formatDate(attemptDate);
         const nextDateText = formatDate(nextDate);
+        debug.daysLeft = daysLeft;
 
-        return {
+        return Object.assign({
           allowed: false,
-          message: "Вы уже проходили тест " + resolvedTitle + " " + previousAttemptDate + ". Повторная попытка будет доступна " + nextDateText + ". Осталось: " + daysLeft + " дн.",
+          message: "Вы уже проходили этот тест " + previousAttemptDate + ". Повторная попытка доступна " + nextDateText + ". Осталось " + daysLeft + " дн.",
           nextDate: nextDateText,
           daysLeft: daysLeft,
           previousAttemptDate: previousAttemptDate,
           testTitle: resolvedTitle
-        };
+        }, debug);
       }
+
+      return Object.assign({
+        allowed: true,
+        message: "Предыдущая попытка старше " + RETAKE_DAYS + " дней.",
+        testTitle: resolvedTitle
+      }, debug);
     }
   }
 
-  return { allowed: true, message: "Можно проходить тест.", testTitle: resolvedTitle };
+  return Object.assign({
+    allowed: true,
+    message: "Можно проходить тест.",
+    testTitle: resolvedTitle
+  }, debug);
 }
 
 function ensureHeaders(sheet, headers) {
@@ -314,6 +337,28 @@ function isSameTest(rowTest, testId, testTitle) {
   (TEST_TITLE_ALIASES_BY_ID[testId] || []).forEach(alias => possibleValues.push(normalizeTestText(alias)));
 
   return possibleValues.some(value => rowValue === value || rowValue.indexOf(value) !== -1 || value.indexOf(rowValue) !== -1);
+}
+
+function isSameTestById(rowTestId, rowTestTitle, requestedTestId, requestedTestTitle) {
+  const rowId = normalizeTestText(rowTestId);
+  const requestId = normalizeTestText(requestedTestId);
+
+  if (rowId && requestId) {
+    return rowId === requestId;
+  }
+
+  return isSameTest(rowTestTitle, requestedTestId, requestedTestTitle);
+}
+
+function buildRetakeDebug(email, phone, testId) {
+  return {
+    normalizedEmail: email || "",
+    normalizedPhone: phone || "",
+    testId: testId || "",
+    foundPreviousAttempt: false,
+    previousAttemptDate: "",
+    daysLeft: 0
+  };
 }
 
 function formatDate(date) {

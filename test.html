@@ -514,13 +514,12 @@
     }
 
     function formatBlockedAttemptMessage(result) {
-      var testTitle = result.testTitle || currentTestConfig.title || "этот тест";
       var previousDate = result.previousAttemptDate || "ранее";
       var nextDate = result.nextDate || "позже";
       var daysLeft = typeof result.daysLeft === "number" ? result.daysLeft : "";
-      var daysText = daysLeft !== "" ? " Осталось: " + daysLeft + " дн." : "";
-      return "Вы уже проходили тест " + escapeHtml(testTitle) + " " + escapeHtml(previousDate) +
-        ". Повторная попытка будет доступна " + escapeHtml(nextDate) + "." + daysText;
+      var daysText = daysLeft !== "" ? " Осталось " + daysLeft + " дн." : "";
+      return "Вы уже проходили этот тест " + escapeHtml(previousDate) +
+        ". Повторная попытка доступна " + escapeHtml(nextDate) + "." + daysText;
     }
 
     function getFullPhone() {

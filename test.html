@@ -225,6 +225,7 @@
       <div class="warning">
         &#9888; Во время теста фиксируется количество уходов со страницы.
         Копирование текста и контекстное меню заблокированы.
+        Для защиты от повторных попыток система фиксирует технический идентификатор браузера, уходы со вкладки и результат теста.
       </div>
 
       <button id="startButton" onclick="startAttempt()">Загрузка вопросов...</button>
@@ -257,6 +258,8 @@
     // true = проверять, проходил ли кандидат этот тест за последние 21 день
     // false = отключить проверку (для тестирования платформы)
     const RETAKE_CHECK_ENABLED = true;
+    const RETAKE_DAYS = 21;
+    const RETAKE_MS = RETAKE_DAYS * 24 * 60 * 60 * 1000;
     const QUESTIONS_PER_ATTEMPT = 40;
 
     const TEST_CONFIG = {
@@ -347,6 +350,7 @@
     let testFinished = false;
     let currentQuestionStartTime = null;
     let loadedQuestionBank = null;
+    let currentBrowserFingerprint = "";
     const answers = [];
     let blockScores = {};
 
@@ -355,6 +359,7 @@
       const params = new URLSearchParams(window.location.search);
       currentTestId = params.get("test") || "fa-junior";
       currentTestConfig = TEST_CONFIG[currentTestId];
+      currentBrowserFingerprint = generateBrowserFingerprint();
 
       if (!currentTestConfig) {
         document.getElementById("testTitle").textContent = "Тест не найден";
@@ -450,6 +455,8 @@
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
       var startButton = document.getElementById("startButton");
+      var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
+      currentBrowserFingerprint = browserFingerprint;
 
       if (startButton.disabled && startButton.textContent.indexOf("Загрузка") !== -1) {
         alert("Подождите, вопросы ещё загружаются...");
@@ -466,10 +473,17 @@
         return;
       }
 
+      var localLock = getLocalRetakeLock(currentTestId);
+      if (localLock && localLock.blocked) {
+        document.getElementById("attemptStatus").innerHTML =
+          '<div class="blocked">' + escapeHtml(localLock.message) + '</div>';
+        return;
+      }
+
       startButton.disabled = true;
       startButton.textContent = "Проверяем повторную попытку...";
 
-      checkAttempt(email, phone, currentTestId)
+      checkAttempt(email, phone, currentTestId, browserFingerprint)
         .then(function(result) {
           if (!result.allowed) {
             document.getElementById("attemptStatus").innerHTML =
@@ -488,7 +502,7 @@
         });
     }
 
-    function checkAttempt(email, phone, testId) {
+    function checkAttempt(email, phone, testId, browserFingerprint) {
       return new Promise(function(resolve, reject) {
         var callbackName = "checkAttemptCallback_" + Date.now();
         var script = document.createElement("script");
@@ -504,6 +518,7 @@
           "&email=" + encodeURIComponent(email) +
           "&phone=" + encodeURIComponent(phone) +
           "&testId=" + encodeURIComponent(testId) +
+          "&browserFingerprint=" + encodeURIComponent(browserFingerprint || "") +
           "&testTitle=" + encodeURIComponent(currentTestConfig.title) +
           "&callback=" + callbackName;
 
@@ -514,6 +529,9 @@
     }
 
     function formatBlockedAttemptMessage(result) {
+      if (result.message) {
+        return escapeHtml(result.message);
+      }
       var previousDate = result.previousAttemptDate || "ранее";
       var nextDate = result.nextDate || "позже";
       var daysLeft = typeof result.daysLeft === "number" ? result.daysLeft : "";
@@ -530,6 +548,92 @@
         phone = phone.substring(1);
       }
       return countryCode + phone;
+    }
+
+    function generateBrowserFingerprint() {
+      var timeZone = "";
+      try {
+        timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      } catch (e) {
+        timeZone = "";
+      }
+
+      var parts = [
+        navigator.userAgent || "",
+        navigator.language || "",
+        timeZone,
+        screen.width || "",
+        screen.height || "",
+        window.devicePixelRatio || "",
+        navigator.platform || "",
+        navigator.hardwareConcurrency || "",
+        navigator.deviceMemory || ""
+      ];
+
+      return hashString(parts.join("|"));
+    }
+
+    function hashString(value) {
+      var hash = 2166136261;
+      var str = String(value || "");
+      for (var i = 0; i < str.length; i++) {
+        hash ^= str.charCodeAt(i);
+        hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+      }
+      return ("00000000" + (hash >>> 0).toString(16)).slice(-8);
+    }
+
+    function getLocalRetakeLock(testId) {
+      try {
+        var raw = localStorage.getItem(getAttemptStorageKey(testId));
+        if (!raw) return null;
+
+        var data = JSON.parse(raw);
+        if (!data || data.testId !== testId || !data.nextAttemptAt) return null;
+
+        var nextAttemptAt = new Date(data.nextAttemptAt);
+        if (isNaN(nextAttemptAt.getTime())) return null;
+
+        if (nextAttemptAt.getTime() > Date.now()) {
+          return {
+            blocked: true,
+            nextAttemptAt: data.nextAttemptAt,
+            message: "Вы уже проходили этот тест в этом браузере. Повторная попытка доступна " + formatDateForUser(nextAttemptAt) + "."
+          };
+        }
+
+        localStorage.removeItem(getAttemptStorageKey(testId));
+      } catch (e) {
+        return null;
+      }
+
+      return null;
+    }
+
+    function saveLocalAttemptLock(testId, email, phone, browserFingerprint) {
+      try {
+        var completedAt = new Date();
+        var nextAttemptAt = new Date(completedAt.getTime() + RETAKE_MS);
+        var value = {
+          testId: testId,
+          completedAt: completedAt.toISOString(),
+          nextAttemptAt: nextAttemptAt.toISOString(),
+          emailHash: hashString(String(email || "").trim().toLowerCase()),
+          phoneHash: hashString(String(phone || "").replace(/\D/g, "")),
+          browserFingerprint: browserFingerprint || ""
+        };
+        localStorage.setItem(getAttemptStorageKey(testId), JSON.stringify(value));
+      } catch (e) {
+        console.warn("Не удалось сохранить локальную блокировку попытки:", e);
+      }
+    }
+
+    function getAttemptStorageKey(testId) {
+      return "skillcheck_attempt_" + testId;
+    }
+
+    function formatDateForUser(date) {
+      return date.toLocaleDateString("ru-RU");
     }
 
     // ===== ЛОГИКА ТЕСТА =====
@@ -851,8 +955,13 @@
       var candidateExperience = document.getElementById("candidateExperience").value;
       var bankVersion = getBankVersion();
       var recommendation = getCandidateRecommendation(finalScore, percent, trustScore, tabSwitches);
+      var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
+      currentBrowserFingerprint = browserFingerprint;
+
+      saveLocalAttemptLock(currentTestId, candidateEmail, candidatePhone, browserFingerprint);
 
       var txtReport = buildTxtReport({
+        testId: currentTestId,
         testVersion: currentTestConfig.version,
         bankVersion: bankVersion,
         testTitle: currentTestConfig.title,
@@ -862,6 +971,7 @@
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
+        browserFingerprint: browserFingerprint,
         score: percent,
         total: 100,
         rawScore: rawScore,
@@ -904,6 +1014,7 @@
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
+        browserFingerprint: browserFingerprint,
         score: percent,
         total: 100,
         percent: percent,
@@ -1025,6 +1136,7 @@
       r += "---------------------------------------\n";
       r += "Кандидат: " + data.name + "\n";
       r += "Тест: " + data.testTitle + "\n";
+      r += "ID теста: " + data.testId + "\n";
       r += "Версия банка: " + data.bankVersion + "\n";
       r += "Итоговый балл: " + data.finalScore + "%\n";
       r += "Процент: " + data.percent + "%\n";
@@ -1035,6 +1147,7 @@
       r += "Английский: " + data.englishLevel + "\n";
       r += "Опыт: " + data.candidateExperience + "\n";
       r += "Источник: " + data.candidateSource + "\n";
+      r += "Fingerprint: " + data.browserFingerprint + "\n";
       r += "Рекомендация: " + data.recommendation + "\n\n";
       r += "Профиль: " + data.testTitle + "\n";
       r += "Версия теста: " + data.testVersion + "\n";
@@ -1050,6 +1163,7 @@
       r += "Английский: " + data.englishLevel + "\n";
       r += "Опыт: " + data.candidateExperience + "\n";
       r += "Источник кандидата: " + data.candidateSource + "\n\n";
+      r += "Fingerprint: " + data.browserFingerprint + "\n\n";
 
       r += "---------------------------------------\n";
       r += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";

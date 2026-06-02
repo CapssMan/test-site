@@ -135,7 +135,17 @@ email = trim + lowerCase
 phone = только цифры
 ```
 
-В Google Sheets для этого используется отдельная колонка `ID теста`, куда записывается машинный идентификатор (`fa-junior`, `ca-junior`, `fpa-junior`, `acc-junior`, `bi-junior`). Колонка `Тест` хранит человекочитаемое название и не используется как основной ключ блокировки. Для старых строк без `ID теста` Apps Script оставляет fallback-сравнение по названию теста.
+В Google Sheets для этого используются отдельные колонки `ID теста` и `Fingerprint`. В `ID теста` записывается машинный идентификатор (`fa-junior`, `ca-junior`, `fpa-junior`, `acc-junior`, `bi-junior`), а `Fingerprint` хранит hash технического отпечатка браузера. Колонка `Тест` хранит человекочитаемое название и не используется как основной ключ блокировки. Для старых строк без `ID теста` Apps Script оставляет fallback-сравнение по названию теста.
+
+Retake lock блокирует попытку, если за последние 21 день для того же `testId` найдено совпадение хотя бы по одному признаку:
+
+```text
+email
+phone
+browserFingerprint
+```
+
+На фронте дополнительно используется `localStorage`-ключ `skillcheck_attempt_<testId>`. Он блокирует повторный старт в том же браузере до обращения к Apps Script, но не заменяет серверную проверку.
 
 Apps Script возвращает:
 
@@ -150,6 +160,8 @@ normalizedEmail
 normalizedPhone
 testId
 foundPreviousAttempt
+browserFingerprint
+matchedBy
 ```
 
 Если `allowed=false`, сайт показывает кандидату понятную дату предыдущей и следующей попытки.
@@ -185,6 +197,7 @@ Not Confirmed      finalScore < 60
 Дата
 Тест
 ID теста
+Fingerprint
 Версия теста
 Версия банка
 Имя

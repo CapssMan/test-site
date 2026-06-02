@@ -23,6 +23,7 @@ const RESULTS_HEADERS = [
   "Дата",
   "Тест",
   "ID теста",
+  "Fingerprint",
   "Версия теста",
   "Версия банка",
   "Имя",
@@ -51,6 +52,7 @@ const DEPRECATED_RESULTS_HEADERS = [
 
 const HEADER_ALIASES = {
   "ID теста": ["Test ID", "testId", "TestId", "Тест ID"],
+  "Fingerprint": ["Browser Fingerprint", "browserFingerprint", "Браузерный fingerprint"],
   "Версия теста": ["Версия"],
   "Источник кандидата": ["Источник"],
   "Ссылка на TXT отчет": ["Ссылка на TXT отчёт"]
@@ -65,9 +67,10 @@ function doGet(e) {
     const email = String(params.email || "").trim().toLowerCase();
     const phone = normalizePhone(String(params.phone || ""));
     const testId = String(params.testId || "").trim();
+    const browserFingerprint = String(params.browserFingerprint || "").trim();
     const testTitle = getTestTitle(testId, String(params.testTitle || "").trim());
 
-    const result = checkPreviousAttempt(email, phone, testId, testTitle);
+    const result = checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitle);
 
     return ContentService
       .createTextOutput(callback + "(" + JSON.stringify(result) + ")")
@@ -90,9 +93,10 @@ function doPost(e) {
   const email = String(data.email || "").trim().toLowerCase();
   const phone = normalizePhone(String(data.phone || ""));
   const testId = String(data.testId || "").trim();
+  const browserFingerprint = String(data.browserFingerprint || "").trim();
   const testTitle = getTestTitle(testId, data.testTitle || data.testId || "Тест");
 
-  const previousAttempt = checkPreviousAttempt(email, phone, testId, testTitle, resultsSheet);
+  const previousAttempt = checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitle, resultsSheet);
   if (!previousAttempt.allowed) {
     return ContentService
       .createTextOutput(JSON.stringify({
@@ -102,7 +106,8 @@ function doPost(e) {
         nextDate: previousAttempt.nextDate,
         daysLeft: previousAttempt.daysLeft,
         previousAttemptDate: previousAttempt.previousAttemptDate,
-        testTitle: previousAttempt.testTitle
+        testTitle: previousAttempt.testTitle,
+        matchedBy: previousAttempt.matchedBy
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -136,6 +141,7 @@ function doPost(e) {
     "Дата": now,
     "Тест": testName,
     "ID теста": testId,
+    "Fingerprint": browserFingerprint,
     "Версия теста": data.testVersion || "",
     "Версия банка": data.bankVersion || data.testVersion || "",
     "Имя": data.name || "",
@@ -169,11 +175,11 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function checkPreviousAttempt(email, phone, testId, testTitle, existingSheet) {
+function checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitle, existingSheet) {
   const ss = existingSheet ? null : SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = existingSheet || ss.getSheetByName(RESULTS_SHEET_NAME);
   const resolvedTitle = getTestTitle(testId, testTitle);
-  const debug = buildRetakeDebug(email, phone, testId);
+  const debug = buildRetakeDebug(email, phone, testId, browserFingerprint);
 
   if (!sheet || sheet.getLastRow() <= 1) {
     return Object.assign({
@@ -192,23 +198,26 @@ function checkPreviousAttempt(email, phone, testId, testTitle, existingSheet) {
   for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
 
-    const attemptDate = getRowValue(row, indexes, "Дата");
+    const attemptDate = parseAttemptDate(getRowValue(row, indexes, "Дата"));
     const rowTest = String(getRowValue(row, indexes, "Тест") || "").trim();
     const rowTestId = String(getRowValue(row, indexes, "ID теста") || "").trim();
+    const rowFingerprint = String(getRowValue(row, indexes, "Fingerprint") || "").trim();
     const rowEmail = String(getRowValue(row, indexes, "Email") || "").trim().toLowerCase();
     const rowPhone = normalizePhone(String(getRowValue(row, indexes, "Телефон") || ""));
 
-    if (!(attemptDate instanceof Date)) continue;
+    if (!attemptDate) continue;
 
     const sameEmail = Boolean(email && rowEmail && email === rowEmail);
     const samePhone = Boolean(phone && rowPhone && phone === rowPhone);
-    const sameCandidate = sameEmail && samePhone;
+    const sameFingerprint = Boolean(browserFingerprint && rowFingerprint && browserFingerprint === rowFingerprint);
     const sameTest = isSameTestById(rowTestId, rowTest, testId, resolvedTitle);
+    const matchedBy = getRetakeMatchType(sameEmail, samePhone, sameFingerprint);
 
-    if (sameCandidate && sameTest) {
+    if (sameTest && matchedBy !== "none") {
       const diffMs = now.getTime() - attemptDate.getTime();
       debug.foundPreviousAttempt = true;
       debug.previousAttemptDate = formatDate(attemptDate);
+      debug.matchedBy = matchedBy;
 
       if (diffMs < msLimit) {
         const nextDate = new Date(attemptDate.getTime() + msLimit);
@@ -216,10 +225,15 @@ function checkPreviousAttempt(email, phone, testId, testTitle, existingSheet) {
         const previousAttemptDate = formatDate(attemptDate);
         const nextDateText = formatDate(nextDate);
         debug.daysLeft = daysLeft;
+        debug.nextDate = nextDateText;
+        const fingerprintOnlyMatch = sameFingerprint && !sameEmail && !samePhone;
+        const blockedMessage = fingerprintOnlyMatch
+          ? "Похоже, этот тест уже проходили с данного устройства или браузера. Повторная попытка будет доступна " + nextDateText + "."
+          : "Вы уже проходили этот тест " + previousAttemptDate + ". Повторная попытка доступна " + nextDateText + ". Осталось " + daysLeft + " дн.";
 
         return Object.assign({
           allowed: false,
-          message: "Вы уже проходили этот тест " + previousAttemptDate + ". Повторная попытка доступна " + nextDateText + ". Осталось " + daysLeft + " дн.",
+          message: blockedMessage,
           nextDate: nextDateText,
           daysLeft: daysLeft,
           previousAttemptDate: previousAttemptDate,
@@ -350,15 +364,41 @@ function isSameTestById(rowTestId, rowTestTitle, requestedTestId, requestedTestT
   return isSameTest(rowTestTitle, requestedTestId, requestedTestTitle);
 }
 
-function buildRetakeDebug(email, phone, testId) {
+function getRetakeMatchType(sameEmail, samePhone, sameFingerprint) {
+  if (sameEmail) return "email";
+  if (samePhone) return "phone";
+  if (sameFingerprint) return "fingerprint";
+  return "none";
+}
+
+function buildRetakeDebug(email, phone, testId, browserFingerprint) {
   return {
     normalizedEmail: email || "",
     normalizedPhone: phone || "",
     testId: testId || "",
+    browserFingerprint: browserFingerprint || "",
+    matchedBy: "none",
     foundPreviousAttempt: false,
     previousAttemptDate: "",
+    nextDate: "",
     daysLeft: 0
   };
+}
+
+function parseAttemptDate(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) return value;
+
+  const text = String(value || "").trim();
+  if (!text) return null;
+
+  const ruDate = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (ruDate) {
+    const parsedRuDate = new Date(Number(ruDate[3]), Number(ruDate[2]) - 1, Number(ruDate[1]));
+    return isNaN(parsedRuDate.getTime()) ? null : parsedRuDate;
+  }
+
+  const parsed = new Date(text);
+  return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function formatDate(date) {

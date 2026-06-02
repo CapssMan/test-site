@@ -21,18 +21,17 @@ const TEST_TITLE_ALIASES_BY_ID = {
 
 const RESULTS_HEADERS = [
   "Дата",
-  "Тест",
   "ID теста",
-  "Fingerprint",
+  "Тест",
   "Версия теста",
   "Версия банка",
   "Имя",
   "Email",
-  "Телефон",
   "Английский",
   "Опыт",
   "Источник кандидата",
   "Уход со вкладки",
+  "Fingerprint",
   "Баллы",
   "Всего",
   "Процент",
@@ -50,6 +49,10 @@ const DEPRECATED_RESULTS_HEADERS = [
   "Всего (сырые)"
 ];
 
+const OPTIONAL_LEGACY_RESULTS_HEADERS = [
+  "Телефон"
+];
+
 const HEADER_ALIASES = {
   "ID теста": ["Test ID", "testId", "TestId", "Тест ID"],
   "Fingerprint": ["Browser Fingerprint", "browserFingerprint", "Браузерный fingerprint"],
@@ -65,12 +68,11 @@ function doGet(e) {
   if (action === "checkAttempt") {
     const callback = params.callback || "callback";
     const email = String(params.email || "").trim().toLowerCase();
-    const phone = normalizePhone(String(params.phone || ""));
     const testId = String(params.testId || "").trim();
     const browserFingerprint = String(params.browserFingerprint || "").trim();
     const testTitle = getTestTitle(testId, String(params.testTitle || "").trim());
 
-    const result = checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitle);
+    const result = checkPreviousAttempt(email, testId, browserFingerprint, testTitle);
 
     return ContentService
       .createTextOutput(callback + "(" + JSON.stringify(result) + ")")
@@ -91,12 +93,11 @@ function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const now = new Date();
   const email = String(data.email || "").trim().toLowerCase();
-  const phone = normalizePhone(String(data.phone || ""));
   const testId = String(data.testId || "").trim();
   const browserFingerprint = String(data.browserFingerprint || "").trim();
   const testTitle = getTestTitle(testId, data.testTitle || data.testId || "Тест");
 
-  const previousAttempt = checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitle, resultsSheet);
+  const previousAttempt = checkPreviousAttempt(email, testId, browserFingerprint, testTitle, resultsSheet);
   if (!previousAttempt.allowed) {
     return ContentService
       .createTextOutput(JSON.stringify({
@@ -139,18 +140,17 @@ function doPost(e) {
 
   appendResultRow(resultsSheet, {
     "Дата": now,
-    "Тест": testName,
     "ID теста": testId,
-    "Fingerprint": browserFingerprint,
+    "Тест": testName,
     "Версия теста": data.testVersion || "",
     "Версия банка": data.bankVersion || data.testVersion || "",
     "Имя": data.name || "",
     "Email": email,
-    "Телефон": data.phone || "",
     "Английский": data.englishLevel || "",
     "Опыт": data.candidateExperience || data.experience || "",
     "Источник кандидата": data.candidateSource || data.source || "",
     "Уход со вкладки": Number(data.tabSwitches || 0),
+    "Fingerprint": browserFingerprint,
     "Баллы": Number(data.score || 0),
     "Всего": Number(data.total || 100),
     "Процент": Number(data.percent || data.score || 0),
@@ -175,11 +175,11 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitle, existingSheet) {
+function checkPreviousAttempt(email, testId, browserFingerprint, testTitle, existingSheet) {
   const ss = existingSheet ? null : SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = existingSheet || ss.getSheetByName(RESULTS_SHEET_NAME);
   const resolvedTitle = getTestTitle(testId, testTitle);
-  const debug = buildRetakeDebug(email, phone, testId, browserFingerprint);
+  const debug = buildRetakeDebug(email, testId, browserFingerprint);
 
   if (!sheet || sheet.getLastRow() <= 1) {
     return Object.assign({
@@ -203,15 +203,13 @@ function checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitl
     const rowTestId = String(getRowValue(row, indexes, "ID теста") || "").trim();
     const rowFingerprint = String(getRowValue(row, indexes, "Fingerprint") || "").trim();
     const rowEmail = String(getRowValue(row, indexes, "Email") || "").trim().toLowerCase();
-    const rowPhone = normalizePhone(String(getRowValue(row, indexes, "Телефон") || ""));
 
     if (!attemptDate) continue;
 
     const sameEmail = Boolean(email && rowEmail && email === rowEmail);
-    const samePhone = Boolean(phone && rowPhone && phone === rowPhone);
     const sameFingerprint = Boolean(browserFingerprint && rowFingerprint && browserFingerprint === rowFingerprint);
     const sameTest = isSameTestById(rowTestId, rowTest, testId, resolvedTitle);
-    const matchedBy = getRetakeMatchType(sameEmail, samePhone, sameFingerprint);
+    const matchedBy = getRetakeMatchType(sameEmail, sameFingerprint);
 
     if (sameTest && matchedBy !== "none") {
       const diffMs = now.getTime() - attemptDate.getTime();
@@ -226,7 +224,7 @@ function checkPreviousAttempt(email, phone, testId, browserFingerprint, testTitl
         const nextDateText = formatDate(nextDate);
         debug.daysLeft = daysLeft;
         debug.nextDate = nextDateText;
-        const fingerprintOnlyMatch = sameFingerprint && !sameEmail && !samePhone;
+        const fingerprintOnlyMatch = sameFingerprint && !sameEmail;
         const blockedMessage = fingerprintOnlyMatch
           ? "Похоже, этот тест уже проходили с данного устройства или браузера. Повторная попытка будет доступна " + nextDateText + "."
           : "Вы уже проходили этот тест " + previousAttemptDate + ". Повторная попытка доступна " + nextDateText + ". Осталось " + daysLeft + " дн.";
@@ -266,25 +264,40 @@ function ensureHeaders(sheet, headers) {
   const range = sheet.getDataRange();
   const values = range.getValues();
   const currentHeaders = values[0].map(String);
-  const sameHeaders = currentHeaders.length === headers.length &&
-    currentHeaders.join("||") === headers.join("||");
+  const targetHeaders = getTargetHeadersForExistingSheet(currentHeaders, headers);
+  const sameHeaders = currentHeaders.length === targetHeaders.length &&
+    currentHeaders.join("||") === targetHeaders.join("||");
 
   if (sameHeaders) {
     sheet.setFrozenRows(1);
     return;
   }
 
-  const migrated = [headers];
+  const migrated = [targetHeaders];
   for (let r = 1; r < values.length; r++) {
-    migrated.push(headers.map(header => {
+    migrated.push(targetHeaders.map(header => {
       const sourceIndex = findHeaderIndex(currentHeaders, header);
       return sourceIndex >= 0 ? values[r][sourceIndex] : "";
     }));
   }
 
   sheet.clear();
-  sheet.getRange(1, 1, migrated.length, headers.length).setValues(migrated);
+  sheet.getRange(1, 1, migrated.length, targetHeaders.length).setValues(migrated);
   sheet.setFrozenRows(1);
+}
+
+function getTargetHeadersForExistingSheet(currentHeaders, headers) {
+  const result = headers.slice();
+
+  OPTIONAL_LEGACY_RESULTS_HEADERS.forEach(header => {
+    if (currentHeaders.indexOf(header) === -1 || result.indexOf(header) !== -1) return;
+
+    const emailIndex = result.indexOf("Email");
+    const insertIndex = emailIndex >= 0 ? emailIndex + 1 : result.length;
+    result.splice(insertIndex, 0, header);
+  });
+
+  return result;
 }
 
 function appendResultRow(sheet, result) {
@@ -327,10 +340,6 @@ function getRowValue(row, indexes, header) {
   return index === undefined ? "" : row[index];
 }
 
-function normalizePhone(phone) {
-  return String(phone || "").replace(/\D/g, "");
-}
-
 function normalizeTestText(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -364,17 +373,15 @@ function isSameTestById(rowTestId, rowTestTitle, requestedTestId, requestedTestT
   return isSameTest(rowTestTitle, requestedTestId, requestedTestTitle);
 }
 
-function getRetakeMatchType(sameEmail, samePhone, sameFingerprint) {
+function getRetakeMatchType(sameEmail, sameFingerprint) {
   if (sameEmail) return "email";
-  if (samePhone) return "phone";
   if (sameFingerprint) return "fingerprint";
   return "none";
 }
 
-function buildRetakeDebug(email, phone, testId, browserFingerprint) {
+function buildRetakeDebug(email, testId, browserFingerprint) {
   return {
     normalizedEmail: email || "",
-    normalizedPhone: phone || "",
     testId: testId || "",
     browserFingerprint: browserFingerprint || "",
     matchedBy: "none",
@@ -435,7 +442,6 @@ function rebuildTopCandidates(ss, sheet) {
     "Версия банка",
     "Имя",
     "Email",
-    "Телефон",
     "Английский",
     "Опыт",
     "Источник кандидата",
@@ -466,7 +472,6 @@ function rebuildTopCandidates(ss, sheet) {
       bankVersion: getRowValue(row, headerIndexes, "Версия банка"),
       name: getRowValue(row, headerIndexes, "Имя"),
       email: getRowValue(row, headerIndexes, "Email"),
-      phone: getRowValue(row, headerIndexes, "Телефон"),
       englishLevel: getRowValue(row, headerIndexes, "Английский"),
       experience: getRowValue(row, headerIndexes, "Опыт"),
       source: getRowValue(row, headerIndexes, "Источник кандидата"),
@@ -495,7 +500,6 @@ function rebuildTopCandidates(ss, sheet) {
       candidate.bankVersion,
       candidate.name,
       candidate.email,
-      candidate.phone,
       candidate.englishLevel,
       candidate.experience,
       candidate.source,

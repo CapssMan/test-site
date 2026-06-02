@@ -8,6 +8,7 @@
 skillcheck/
 ├── index.html
 ├── test.html
+├── privacy.html
 ├── admin.html
 ├── data/
 │   ├── fa-junior.json
@@ -36,6 +37,7 @@ skillcheck/
 
 - `index.html` — главная страница.
 - `test.html` — страница прохождения теста.
+- `privacy.html` — политика обработки персональных данных и описание технического идентификатора браузера.
 - `admin.html` — админ-панель / черновик панели результатов.
 
 ### `data/`
@@ -87,6 +89,7 @@ skillcheck/
 skillcheck/
 ├── index.html
 ├── test.html
+├── privacy.html
 ├── admin.html
 ├── assets/
 │   ├── css/

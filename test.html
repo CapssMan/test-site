@@ -160,6 +160,21 @@
       margin-bottom: 16px;
     }
     .back-link:hover { color: #3b82f6; }
+    .consent-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #475569;
+    }
+    .consent-row input {
+      width: auto;
+      margin: 3px 0 0;
+      accent-color: #3b82f6;
+    }
+    .consent-row a { color: #2563eb; }
   </style>
 <base target="_blank">
 </head>
@@ -178,20 +193,6 @@
 
       <input id="name" type="text" placeholder="Ваше имя" />
       <input id="email" type="email" placeholder="Email" />
-
-      <select id="phoneCountry">
-        <option value="+7">Россия +7</option>
-        <option value="+7">Казахстан +7</option>
-        <option value="+375">Беларусь +375</option>
-        <option value="+374">Армения +374</option>
-        <option value="+996">Кыргызстан +996</option>
-        <option value="+998">Узбекистан +998</option>
-        <option value="+994">Азербайджан +994</option>
-        <option value="+992">Таджикистан +992</option>
-        <option value="+373">Молдова +373</option>
-      </select>
-
-      <input id="phone" type="tel" placeholder="Введите номер без кода страны. Например: 9991234567" />
 
       <select id="englishLevel">
         <option value="">Уровень английского языка</option>
@@ -225,8 +226,14 @@
       <div class="warning">
         &#9888; Во время теста фиксируется количество уходов со страницы.
         Копирование текста и контекстное меню заблокированы.
-        Для защиты от повторных попыток система фиксирует технический идентификатор браузера, уходы со вкладки и результат теста.
+        Для проведения тестирования сайт обрабатывает: имя, email, уровень английского, опыт, источник кандидата, ответы на вопросы, результат теста, уходы со вкладки и технические данные прохождения, включая технический идентификатор браузера.
+        Для защиты от повторного прохождения и недобросовестного использования сайт формирует технический идентификатор браузера. Сырые параметры браузера не публикуются и не передаются третьим лицам как отдельный отчёт.
       </div>
+
+      <label class="consent-row">
+        <input id="privacyConsent" type="checkbox" />
+        <span>Я согласен на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
+      </label>
 
       <button id="startButton" onclick="startAttempt()">Загрузка вопросов...</button>
       <div id="attemptStatus"></div>
@@ -450,10 +457,10 @@
     function startAttempt() {
       var name = document.getElementById("name").value.trim();
       var email = document.getElementById("email").value.trim().toLowerCase();
-      var phone = getFullPhone();
       var englishLevel = document.getElementById("englishLevel").value;
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
+      var privacyConsent = document.getElementById("privacyConsent").checked;
       var startButton = document.getElementById("startButton");
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
       currentBrowserFingerprint = browserFingerprint;
@@ -463,8 +470,14 @@
         return;
       }
 
-      if (!name || !email || !phone || !englishLevel || !candidateSource || !candidateExperience) {
-        alert("Заполните имя, email, телефон, английский, источник кандидата и опыт.");
+      if (!name || !email || !englishLevel || !candidateSource || !candidateExperience) {
+        alert("Заполните имя, email, английский, источник кандидата и опыт.");
+        return;
+      }
+
+      if (!privacyConsent) {
+        document.getElementById("attemptStatus").innerHTML =
+          '<div class="blocked">Для прохождения теста необходимо согласие на обработку персональных данных.</div>';
         return;
       }
 
@@ -483,7 +496,7 @@
       startButton.disabled = true;
       startButton.textContent = "Проверяем повторную попытку...";
 
-      checkAttempt(email, phone, currentTestId, browserFingerprint)
+      checkAttempt(email, currentTestId, browserFingerprint)
         .then(function(result) {
           if (!result.allowed) {
             document.getElementById("attemptStatus").innerHTML =
@@ -502,7 +515,7 @@
         });
     }
 
-    function checkAttempt(email, phone, testId, browserFingerprint) {
+    function checkAttempt(email, testId, browserFingerprint) {
       return new Promise(function(resolve, reject) {
         var callbackName = "checkAttemptCallback_" + Date.now();
         var script = document.createElement("script");
@@ -516,7 +529,6 @@
         var url = GOOGLE_SCRIPT_URL +
           "?action=checkAttempt" +
           "&email=" + encodeURIComponent(email) +
-          "&phone=" + encodeURIComponent(phone) +
           "&testId=" + encodeURIComponent(testId) +
           "&browserFingerprint=" + encodeURIComponent(browserFingerprint || "") +
           "&testTitle=" + encodeURIComponent(currentTestConfig.title) +
@@ -538,16 +550,6 @@
       var daysText = daysLeft !== "" ? " Осталось " + daysLeft + " дн." : "";
       return "Вы уже проходили этот тест " + escapeHtml(previousDate) +
         ". Повторная попытка доступна " + escapeHtml(nextDate) + "." + daysText;
-    }
-
-    function getFullPhone() {
-      var countryCode = document.getElementById("phoneCountry").value;
-      var phone = document.getElementById("phone").value.trim().replace(/\D/g, "");
-      if (!phone) return "";
-      if (countryCode === "+7" && (phone.startsWith("8") || phone.startsWith("7"))) {
-        phone = phone.substring(1);
-      }
-      return countryCode + phone;
     }
 
     function generateBrowserFingerprint() {
@@ -610,7 +612,7 @@
       return null;
     }
 
-    function saveLocalAttemptLock(testId, email, phone, browserFingerprint) {
+    function saveLocalAttemptLock(testId, email, browserFingerprint) {
       try {
         var completedAt = new Date();
         var nextAttemptAt = new Date(completedAt.getTime() + RETAKE_MS);
@@ -619,7 +621,6 @@
           completedAt: completedAt.toISOString(),
           nextAttemptAt: nextAttemptAt.toISOString(),
           emailHash: hashString(String(email || "").trim().toLowerCase()),
-          phoneHash: hashString(String(phone || "").replace(/\D/g, "")),
           browserFingerprint: browserFingerprint || ""
         };
         localStorage.setItem(getAttemptStorageKey(testId), JSON.stringify(value));
@@ -949,7 +950,6 @@
 
       var candidateName = document.getElementById("name").value.trim();
       var candidateEmail = document.getElementById("email").value.trim().toLowerCase();
-      var candidatePhone = getFullPhone();
       var englishLevel = document.getElementById("englishLevel").value;
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
@@ -958,7 +958,7 @@
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
       currentBrowserFingerprint = browserFingerprint;
 
-      saveLocalAttemptLock(currentTestId, candidateEmail, candidatePhone, browserFingerprint);
+      saveLocalAttemptLock(currentTestId, candidateEmail, browserFingerprint);
 
       var txtReport = buildTxtReport({
         testId: currentTestId,
@@ -967,7 +967,6 @@
         testTitle: currentTestConfig.title,
         name: candidateName,
         email: candidateEmail,
-        phone: candidatePhone,
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
@@ -1010,7 +1009,6 @@
         testTitle: currentTestConfig.title,
         name: candidateName,
         email: candidateEmail,
-        phone: candidatePhone,
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
@@ -1159,7 +1157,6 @@
       r += "---------------------------------------\n\n";
       r += "ФИО: " + data.name + "\n";
       r += "Email: " + data.email + "\n";
-      r += "Телефон: " + data.phone + "\n";
       r += "Английский: " + data.englishLevel + "\n";
       r += "Опыт: " + data.candidateExperience + "\n";
       r += "Источник кандидата: " + data.candidateSource + "\n\n";

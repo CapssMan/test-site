@@ -2,7 +2,7 @@
 
 ## Общая схема
 
-SkillCheck работает как статический сайт на GitHub Pages с отправкой результатов в Google Apps Script.
+SkillCheck работает как статический сайт на GitHub Pages. GitHub Pages хранит только HTML/CSS/JS и банки вопросов, но не хранит результаты, персональные данные, токены, отчёты или JSON-базы.
 
 ```text
 Пользователь
@@ -10,15 +10,17 @@ SkillCheck работает как статический сайт на GitHub P
   -> privacy.html
   -> test.html?test=<testId>
   -> data/<testId>.json
-  -> Google Apps Script
-  -> Google Sheets + Google Drive TXT report
+  -> Google Apps Script API
+  -> Яндекс Диск REST API
 ```
+
+Google Sheets и Google Drive не используются.
 
 ## Роли файлов
 
 ### `index.html`
 
-Главная страница и карточки тестов. Дизайн и карточки не нужно переписывать без отдельной задачи.
+Главная страница и карточки тестов.
 
 ### `test.html`
 
@@ -32,56 +34,92 @@ SkillCheck работает как статический сайт на GitHub P
 - пересчитывает индекс правильного ответа;
 - показывает вопросы по одному;
 - считает результат, штраф, плашку и Trust Score;
-- генерирует TXT-отчёт;
-- проверяет 21-day retake lock перед стартом;
-- требует согласие на обработку персональных данных перед стартом;
-- требует подтверждение 18+ перед стартом;
-- фиксирует необязательное согласие на передачу результата работодателю в `resultData` и TXT-отчёте;
-- передаёт источник кандидата, опыт, `testVersion` и `bankVersion`;
-- отправляет результат в Google Apps Script.
+- требует согласие на обработку персональных данных;
+- требует подтверждение 18+;
+- фиксирует необязательное согласие на передачу результата работодателю;
+- проверяет анти-повтор через Google Apps Script;
+- отправляет результат в Google Apps Script;
+- показывает пользователю случайный код результата, процент, итоговый балл и статус.
+
+### `admin.html`
+
+Обезличенная админ-панель. Она не хранит данные внутри файла и не содержит персональные данные. После ввода пароля админка запрашивает у Google Apps Script только массив из `results.json`:
+
+```text
+code
+date
+testId
+testTitle
+finalScore
+percent
+status
+badge
+tabSwitches
+reportCreated
+reportPath/reportCode
+```
+
+Админка не показывает имя, email, telegram, fingerprint или сырые ответы кандидата. Вместо персональной ссылки она показывает только технический путь/код отчёта для ручной проверки на закрытом Яндекс Диске.
 
 ### `privacy.html`
 
-Страница политики обработки персональных данных. На неё ведёт ссылка из стартовой формы теста и футера главной страницы. Перед публичным запуском нужно заменить placeholder контакта на рабочий email оператора.
-
-Политика содержит дисклеймер: результат тестирования является предварительной оценкой отдельных навыков и не является самостоятельным решением о найме, отказе в найме или профессиональной пригодности.
-
-### `data/*.json`
-
-Банки вопросов. Один тест = один JSON-файл:
-
-```text
-data/fa-junior.json   Financial Analyst Junior
-data/ca-junior.json   Credit Analyst Junior
-data/fpa-junior.json  FP&A / Budget Analyst Junior
-data/acc-junior.json  Accounting / Reporting Junior
-data/bi-junior.json   Finance BI / Data Analyst Junior
-```
+Политика обработки персональных данных и legal-дисклеймеры MVP.
 
 ### `apps-script/Code.gs`
 
-Код Google Apps Script. Его нужно вручную скопировать в Apps Script и задеплоить новой версией.
+Google Apps Script остаётся backend/API. Он:
 
-## Выбор теста
+- читает секреты только из Script Properties;
+- проверяет анти-повтор через `attempts.json`;
+- генерирует случайный код результата;
+- создаёт TXT-отчёт только для успешных результатов;
+- пишет полный TXT-отчёт на Яндекс Диск;
+- пишет обезличенную запись в `results.json`;
+- отдаёт admin.html только обезличенные данные после проверки `ADMIN_PASSWORD`;
+- отдаёт `?action=health` для диагностики Script Properties, доступа к Яндекс Диску и наличия JSON-файлов.
 
-`test.html` берёт `testId` из URL:
+## Script Properties
+
+В код не вставляются реальные токены, пароли или salt. Нужны только эти Script Properties:
 
 ```text
-test.html?test=ca-junior
+YANDEX_DISK_TOKEN
+YANDEX_DISK_REPORTS_FOLDER
+YANDEX_DISK_ADMIN_FILE
+YANDEX_DISK_ATTEMPTS_FILE
+ATTEMPT_HASH_SALT
+ADMIN_PASSWORD
 ```
 
-Затем `TEST_CONFIG[testId]` указывает файл банка вопросов. Например:
+Ожидаемые пути:
 
-```javascript
-"ca-junior": {
-  title: "Credit Analyst Junior",
-  questionsFile: "data/ca-junior.json"
-}
+```text
+YANDEX_DISK_REPORTS_FOLDER = disk:/skillcheck/reports
+YANDEX_DISK_ADMIN_FILE = disk:/skillcheck/admin/results.json
+YANDEX_DISK_ATTEMPTS_FILE = disk:/skillcheck/private/attempts.json
 ```
 
-Если в JSON есть объект `blocks`, движок использует его для Skill Card. Это нужно для совместимости: например, `ca-junior.json`, `fpa-junior.json`, `acc-junior.json` и `bi-junior.json` содержат собственные блоки навыков.
+## Хранилище Яндекс Диска
 
-## Random engine
+```text
+disk:/skillcheck/reports/<code>.txt
+disk:/skillcheck/admin/results.json
+disk:/skillcheck/private/attempts.json
+```
+
+`reports/<code>.txt` содержит полный отчёт успешного кандидата и персональные данные. Файл не публикуется и не получает публичную ссылку.
+
+`admin/results.json` содержит только обезличенные данные для админки.
+
+`private/attempts.json` содержит только hash попытки:
+
+```text
+SHA-256(testId + emailLower + browserFingerprint + ATTEMPT_HASH_SALT)
+```
+
+В `attempts.json` нельзя хранить email, имя, telegram или fingerprint в открытом виде.
+
+## Random Engine
 
 В `test.html` задан лимит:
 
@@ -98,168 +136,63 @@ const QUESTIONS_PER_ATTEMPT = 40;
 5. Правильный ответ пересчитывается по исходному индексу.
 6. Вопросы с `active: false` не попадают в попытку.
 
-Credit Analyst Junior содержит 80 вопросов, поэтому одна попытка показывает случайные 40. FP&A, Accounting и BI сейчас содержат по 40 вопросов, поэтому в попытку попадает весь банк с перемешанными вопросами и вариантами ответа.
+## Анти-повтор
 
-Основные функции:
-
-- `loadQuestions()` — загружает банк.
-- `normalizeQuestionBank()` — приводит банк к единому виду.
-- `getQuestionsPerAttempt()` — считает количество вопросов в попытке.
-- `selectRandomQuestions()` — выбирает случайный поднабор.
-- `prepareQuestions()` — готовит вопросы и варианты к показу.
-- `normalizeQuestion()` — поддерживает совместимые поля старых банков.
-- `shuffleArray()` — перемешивание.
-
-## Античит
-
-Сейчас реализовано:
-
-- фиксация ухода со вкладки через `visibilitychange`;
-- фиксация потери фокуса через `blur`;
-- защита от двойного засчитывания через `lastTabExitAt`;
-- запрет контекстного меню;
-- запрет копирования и вырезания;
-- запрет части hotkeys;
-- один вопрос на экран;
-- таймер на каждый вопрос.
-
-Ограничение: браузер не может полностью запретить скриншоты или съёмку экрана.
-
-## Retake Lock
-
-Один кандидат может пройти разные тесты в один день, но один и тот же `testId` нельзя пройти повторно раньше чем через 21 день.
-
-`test.html` содержит константу:
-
-```javascript
-const RETAKE_CHECK_ENABLED = true;
-```
-
-Если её временно переключить в `false`, фронтовая проверка отключится для ручного тестирования. Серверная проверка в `apps-script/Code.gs` остаётся обязательной защитой перед записью результата.
-
-Проверка выполняется по:
+Фронт отправляет в `checkAttempt`:
 
 ```text
 testId
-email = trim + lowerCase
-browserFingerprint = hash технического идентификатора браузера
-```
-
-В Google Sheets для этого используются отдельные колонки `ID теста` и `Fingerprint`. В `ID теста` записывается машинный идентификатор (`fa-junior`, `ca-junior`, `fpa-junior`, `acc-junior`, `bi-junior`), а `Fingerprint` хранит hash технического отпечатка браузера. Колонка `Тест` хранит человекочитаемое название и не используется как основной ключ блокировки. Для старых строк без `ID теста` Apps Script оставляет fallback-сравнение по названию теста.
-
-Retake lock блокирует попытку, если за последние 21 день для того же `testId` найдено совпадение хотя бы по одному признаку:
-
-```text
 email
 browserFingerprint
 ```
 
-На фронте дополнительно используется `localStorage`-ключ `skillcheck_attempt_<testId>`. Он блокирует повторный старт в том же браузере до обращения к Apps Script, но не заменяет серверную проверку.
+Backend считает hash с salt из Script Properties и ищет его в `attempts.json`. Если hash уже существует для теста, повторное прохождение запрещается.
 
-Apps Script возвращает:
+Фронт также использует localStorage-ключ `skillcheck_attempt_<testId>` как быстрый локальный стоппер, но настоящая проверка выполняется на backend.
 
-```text
-allowed
-message
-nextDate
-daysLeft
-previousAttemptDate
-testTitle
-normalizedEmail
-testId
-foundPreviousAttempt
-browserFingerprint
-matchedBy
-```
+## Успешность
 
-Если `allowed=false`, сайт показывает кандидату понятную дату предыдущей и следующей попытки.
-
-## Скоринг
-
-Сайт считает:
+Порог успешного прохождения:
 
 ```text
-rawScore = сумма набранных баллов
-rawTotal = максимальная сумма баллов выбранных вопросов
-percent = rawScore / rawTotal * 100
-penalty = штраф за уходы со вкладки
-finalScore = percent - penalty
+SUCCESS_THRESHOLD = 80
 ```
 
-Плашки:
+Если `finalScore >= 80`, статус `passed` и backend создаёт TXT-отчёт. Если `finalScore < 80`, статус `failed`, TXT-отчёт не создаётся, но обезличенная попытка всё равно пишется в `results.json`.
+
+## Яндекс Диск API
+
+`Code.gs` использует REST API Яндекс Диска:
+
+- создаёт папки при необходимости;
+- читает и пишет JSON-файлы;
+- загружает TXT-отчёты;
+- не вызывает publish/share endpoints;
+- использует `LockService` при записи `results.json` и `attempts.json`.
+
+Если `results.json` или `attempts.json` отсутствует, backend создаёт пустой массив `[]`. Если JSON повреждён, backend возвращает ошибку и не перезаписывает файл молча.
+
+## Health Endpoint
+
+После обновления Apps Script можно открыть:
 
 ```text
-Junior Strong      finalScore >= 85 и мало уходов
-Junior Confirmed   finalScore >= 70 и умеренное поведение
-Borderline         finalScore >= 60
-Not Confirmed      finalScore < 60
+<WEB_APP_URL>?action=health
 ```
 
-Также считается `Trust Score`, который учитывает итоговый балл, уходы со вкладки и неотвеченные вопросы.
+Ответ содержит `ok`, `backendVersion`, флаги наличия Script Properties, `yandexDiskAccess`, HTTP-код Яндекс Диска, пути `reportsFolder/adminFile/attemptsFile` и признаки `adminFileExists/attemptsFileExists`.
 
-## Google Sheets
+Endpoint не выводит `YANDEX_DISK_TOKEN`, `ADMIN_PASSWORD` или `ATTEMPT_HASH_SALT`.
 
-`apps-script/Code.gs` пишет в лист `Results` такие колонки:
+## Безопасность
 
-```text
-Дата
-ID теста
-Тест
-Версия теста
-Версия банка
-Имя
-Email
-Английский
-Опыт
-Источник кандидата
-Уход со вкладки
-Fingerprint
-Баллы
-Всего
-Процент
-Итоговый балл
-Плашка
-Статус
-Trust Score
-Следующая попытка
-Ссылка на TXT отчет
-```
+Не коммитить:
 
-Если в старом листе уже была колонка `Телефон`, Apps Script сохраняет её при миграции заголовков для совместимости, но новые строки оставляют её пустой и retake lock её не использует. В новом листе `Results` колонка `Телефон` не создаётся.
-
-Старые колонки удаляются при нормализации заголовков:
-
-```text
-Решение
-Баллы (сырые)
-Всего (сырые)
-```
-
-Запись и чтение данных в Apps Script выполняются по заголовкам, а не по жёстким номерам колонок. Это нужно, чтобы старые листы переживали добавление новых колонок.
-
-Лист `Top Candidates` строится из `Results` и оставляет только кандидатов с:
-
-```text
-Итоговый балл >= 70
-Уход со вкладки <= 2
-Trust Score >= 70
-```
-
-Сортировка: сначала итоговый балл по убыванию, затем меньшее число уходов со вкладки.
-
-## TXT-отчёт
-
-TXT-отчёт формируется на клиенте в `test.html`, отправляется в Apps Script и сохраняется в Google Drive. В таблицу пишется ссылка на файл.
-
-Отчёт начинается с блока `CANDIDATE SUMMARY / КРАТКОЕ РЕЗЮМЕ`, затем включает:
-
-- профиль теста;
-- версию банка;
-- данные кандидата;
-- источник кандидата и опыт;
-- hash технического идентификатора браузера;
-- сырой и итоговый результат;
-- Skill Card по блокам;
-- детальный разбор вопросов;
-- уходы со вкладки;
-- рекомендацию.
+- `results.json`;
+- `attempts.json`;
+- TXT-отчёты;
+- токены;
+- пароли;
+- salt;
+- client secret;
+- любые данные кандидатов.

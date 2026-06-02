@@ -12,59 +12,109 @@
       color: #0f172a;
       min-height: 100vh;
     }
-    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
-      padding-bottom: 24px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
       border-bottom: 1px solid #e2e8f0;
     }
     header h1 { font-size: 28px; font-weight: 700; }
-    header a {
-      color: #3b82f6;
-      text-decoration: none;
+    header p { color: #64748b; font-size: 14px; margin-top: 4px; }
+    header a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+    .panel, .login-card, .table-container {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+    .login-card {
+      max-width: 460px;
+      padding: 24px;
+      margin: 60px auto;
+    }
+    .login-card h2 { font-size: 22px; margin-bottom: 10px; }
+    .login-card p { color: #64748b; font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+    input, select, button {
+      font: inherit;
+    }
+    input, select {
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
       font-size: 14px;
+    }
+    .login-card input { width: 100%; margin-bottom: 12px; }
+    button {
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .primary-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      color: white;
+    }
+    .secondary-btn {
+      padding: 10px 14px;
+      background: #eff6ff;
+      color: #1e40af;
     }
     .filters {
       display: flex;
       gap: 12px;
-      margin-bottom: 24px;
       flex-wrap: wrap;
+      margin-bottom: 20px;
     }
-    .filters select, .filters input {
-      padding: 10px 14px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 14px;
-      background: white;
-    }
+    .filters input { min-width: 220px; }
     .stats-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
     .stat-card {
       background: white;
-      padding: 20px;
+      padding: 18px;
       border-radius: 12px;
       border: 1px solid #e2e8f0;
     }
     .stat-card .label { font-size: 13px; color: #64748b; margin-bottom: 8px; }
-    .stat-card .value { font-size: 28px; font-weight: 700; color: #0f172a; }
-    .stat-card .change { font-size: 12px; margin-top: 4px; }
-    .change.up { color: #16a34a; }
-    .change.down { color: #dc2626; }
-    .table-container {
-      background: white;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
+    .stat-card .value { font-size: 28px; font-weight: 800; }
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .panel { padding: 18px; }
+    .panel h3 { font-size: 16px; margin-bottom: 14px; }
+    .bar-row { margin-bottom: 12px; }
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+    .bar-track {
+      height: 9px;
+      background: #e2e8f0;
+      border-radius: 999px;
       overflow: hidden;
     }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      border-radius: 999px;
+    }
+    .table-container { overflow: hidden; }
     .table-container h3 {
-      padding: 20px 24px;
+      padding: 18px 20px;
       font-size: 18px;
       border-bottom: 1px solid #e2e8f0;
     }
@@ -75,15 +125,14 @@
     }
     th {
       background: #f8fafc;
-      padding: 12px 16px;
+      padding: 12px 14px;
       text-align: left;
-      font-weight: 600;
       color: #475569;
       border-bottom: 1px solid #e2e8f0;
       white-space: nowrap;
     }
     td {
-      padding: 12px 16px;
+      padding: 12px 14px;
       border-bottom: 1px solid #f1f5f9;
       vertical-align: middle;
     }
@@ -93,118 +142,19 @@
       padding: 4px 10px;
       border-radius: 20px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
     }
-    .badge-strong { background: #dcfce7; color: #166534; }
-    .badge-confirmed { background: #dbeafe; color: #1e40af; }
-    .badge-borderline { background: #fef3c7; color: #92400e; }
-    .badge-not { background: #fee2e2; color: #991b1b; }
     .badge-pass { background: #dcfce7; color: #166534; }
     .badge-fail { background: #fee2e2; color: #991b1b; }
-    .trust-score {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 600;
+    .code { font-weight: 800; color: #1e40af; }
+    .error { color: #dc2626; font-weight: 600; margin-top: 10px; }
+    .empty-state { padding: 42px; text-align: center; color: #94a3b8; }
+    .hidden { display: none; }
+    @media (max-width: 800px) {
+      header { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .dashboard { grid-template-columns: 1fr; }
+      .table-container { overflow-x: auto; }
     }
-    .trust-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-    .trust-high { color: #16a34a; }
-    .trust-high .trust-dot { background: #16a34a; }
-    .trust-medium { color: #eab308; }
-    .trust-medium .trust-dot { background: #eab308; }
-    .trust-low { color: #dc2626; }
-    .trust-low .trust-dot { background: #dc2626; }
-    .btn-sm {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn-view { background: #eff6ff; color: #1e40af; }
-    .btn-view:hover { background: #dbeafe; }
-    .tabs {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 24px;
-      background: #f1f5f9;
-      padding: 4px;
-      border-radius: 10px;
-      width: fit-content;
-    }
-    .tab {
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: #64748b;
-    }
-    .tab.active { background: white; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .tab:hover:not(.active) { color: #0f172a; }
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #94a3b8;
-    }
-    .empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.5; }
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      padding: 20px;
-    }
-    .pagination button {
-      padding: 8px 14px;
-      border: 1px solid #e2e8f0;
-      background: white;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .pagination button.active { background: #3b82f6; color: white; border-color: #3b82f6; }
-    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .search-box {
-      position: relative;
-      flex: 1;
-      min-width: 250px;
-      max-width: 400px;
-    }
-    .search-box input {
-      width: 100%;
-      padding: 10px 14px 10px 36px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-    .search-box::before {
-      content: "🔍";
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 14px;
-    }
-    .export-btn {
-      padding: 10px 20px;
-      background: linear-gradient(90deg, #10b981, #059669);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .export-btn:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -212,322 +162,237 @@
     <header>
       <div>
         <h1>SkillCheck — Админ-панель</h1>
-        <p style="color:#64748b;font-size:14px;margin-top:4px;">Управление кандидатами и аналитика тестирования</p>
+        <p>Обезличенные результаты: коды, тесты, баллы, статусы и аналитика.</p>
       </div>
       <a href="index.html">← На главную</a>
     </header>
 
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('all')">Все кандидаты</button>
-      <button class="tab" onclick="switchTab('good')">Годные</button>
-      <button class="tab" onclick="switchTab('top')">Топ кандидаты</button>
-      <button class="tab" onclick="switchTab('dashboard')">Дашборд</button>
-    </div>
+    <section id="loginBlock" class="login-card">
+      <h2>Доступ к админке</h2>
+      <p>Введите пароль администратора. Пароль проверяется на backend через Google Apps Script и не хранится в этом файле.</p>
+      <input id="adminPassword" type="password" placeholder="Пароль администратора" autocomplete="current-password">
+      <button class="primary-btn" onclick="loadAdminResults()">Загрузить обезличенные данные</button>
+      <div id="loginStatus" class="error"></div>
+    </section>
 
-    <div id="allView">
+    <main id="adminBlock" class="hidden">
       <div class="filters">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Поиск по имени, email, телефону..." oninput="filterCandidates()">
-        </div>
-        <select id="testFilter" onchange="filterCandidates()">
+        <input id="codeSearch" type="text" placeholder="Поиск по коду" oninput="renderAdmin()">
+        <select id="testFilter" onchange="renderAdmin()">
           <option value="">Все тесты</option>
           <option value="fa-junior">Financial Analyst</option>
           <option value="ca-junior">Credit Analyst</option>
-          <option value="fpa-junior">FP&A Analyst</option>
+          <option value="fpa-junior">FP&A / Budget</option>
           <option value="acc-junior">Accounting</option>
           <option value="bi-junior">Finance BI</option>
         </select>
-        <select id="badgeFilter" onchange="filterCandidates()">
-          <option value="">Все плашки</option>
-          <option value="Junior Strong">Junior Strong</option>
-          <option value="Junior Confirmed">Junior Confirmed</option>
-          <option value="Borderline">Borderline</option>
-          <option value="Not Confirmed">Not Confirmed</option>
+        <select id="statusFilter" onchange="renderAdmin()">
+          <option value="">Все статусы</option>
+          <option value="passed">Успешные</option>
+          <option value="failed">Неуспешные</option>
         </select>
-        <select id="decisionFilter" onchange="filterCandidates()">
-          <option value="">Все решения</option>
-          <option value="Годен">Годен</option>
-          <option value="Не годен">Не годен</option>
-        </select>
-        <button class="export-btn" onclick="exportToCSV()">📥 Экспорт CSV</button>
+        <button class="secondary-btn" onclick="sortByScore()">Сортировать по баллам</button>
       </div>
 
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="label">Всего кандидатов</div>
+          <div class="label">Всего попыток</div>
           <div class="value" id="totalCount">0</div>
         </div>
         <div class="stat-card">
-          <div class="label">Годных</div>
-          <div class="value" id="goodCount" style="color:#16a34a;">0</div>
+          <div class="label">Успешных</div>
+          <div class="value" id="passedCount">0</div>
         </div>
         <div class="stat-card">
           <div class="label">Средний балл</div>
-          <div class="value" id="avgScore">0%</div>
+          <div class="value" id="avgScore">0</div>
         </div>
         <div class="stat-card">
-          <div class="label">Средний Trust Score</div>
-          <div class="value" id="avgTrust">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">С уходами со вкладки</div>
-          <div class="value" id="tabCount" style="color:#dc2626;">0</div>
+          <div class="label">Лучший балл</div>
+          <div class="value" id="bestScore">0</div>
         </div>
       </div>
 
-      <div class="table-container">
-        <h3>Список кандидатов</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Имя</th>
-              <th>Тест</th>
-              <th>Балл</th>
-              <th>Плашка</th>
-              <th>Trust Score</th>
-              <th>Решение</th>
-              <th>Уходы</th>
-              <th>Отчёт</th>
-            </tr>
-          </thead>
-          <tbody id="candidatesTable">
-            <tr><td colspan="9"><div class="empty-state">Загрузка данных...</div></td></tr>
-          </tbody>
-        </table>
-        <div class="pagination" id="pagination"></div>
-      </div>
-    </div>
+      <section class="dashboard">
+        <div class="panel">
+          <h3>Распределение по тестам</h3>
+          <div id="testBars"></div>
+        </div>
+        <div class="panel">
+          <h3>Топ кодов</h3>
+          <div id="topCodes"></div>
+        </div>
+      </section>
 
-    <div id="topView" style="display:none;">
-      <div class="table-container">
-        <h3>🏆 Топ кандидаты (рейтинг)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Место</th>
-              <th>Имя</th>
-              <th>Тест</th>
-              <th>Итоговый балл</th>
-              <th>Trust Score</th>
-              <th>Плашка</th>
-              <th>Решение</th>
-              <th>Отчёт</th>
-            </tr>
-          </thead>
-          <tbody id="topTable"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="dashboardView" style="display:none;">
-      <div class="stats-cards">
-        <div class="stat-card">
-          <div class="label">Financial Analyst</div>
-          <div class="value" id="faCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Credit Analyst</div>
-          <div class="value" id="caCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">FP&A Analyst</div>
-          <div class="value" id="fpaCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Accounting</div>
-          <div class="value" id="accCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Finance BI</div>
-          <div class="value" id="biCount">0</div>
-        </div>
-      </div>
-      <div class="table-container" style="margin-top:24px;">
-        <h3>📊 Распределение по плашкам</h3>
-        <table>
-          <thead>
-            <tr><th>Плашка</th><th>Количество</th><th>Доля</th></tr>
-          </thead>
-          <tbody id="badgeStats"></tbody>
-        </table>
-      </div>
-    </div>
+      <section class="table-container">
+        <h3>Результаты</h3>
+        <div id="resultsTable"></div>
+      </section>
+    </main>
   </div>
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    let allCandidates = [];
-    let filteredCandidates = [];
-    let currentPage = 1;
-    const perPage = 20;
 
-    // Загрузка данных
-    function loadData() {
-      // В реальности здесь будет запрос к Google Sheets API или Apps Script
-      // Сейчас показываем демо-данные для демонстрации интерфейса
-      showDemoData();
+    let adminResults = [];
+    let scoreSortDesc = true;
+
+    function loadAdminResults() {
+      const password = document.getElementById("adminPassword").value;
+      const status = document.getElementById("loginStatus");
+      status.textContent = "Загрузка...";
+
+      requestAdminResults(password)
+      .then(data => {
+        if (data.ok !== true && data.status !== "ok") {
+          throw new Error(data.errorMessage || data.message || "Нет доступа.");
+        }
+
+        adminResults = Array.isArray(data.results) ? data.results : [];
+        document.getElementById("loginBlock").classList.add("hidden");
+        document.getElementById("adminBlock").classList.remove("hidden");
+        status.textContent = "";
+        renderAdmin();
+      })
+      .catch(error => {
+        status.textContent = error.message || "Не удалось загрузить данные.";
+      });
     }
 
-    function showDemoData() {
-      allCandidates = [
-        { date: "14.05.2026", name: "Иванов А.С.", email: "ivanov@test.ru", phone: "+79991234567", test: "fa-junior", testTitle: "Financial Analyst", score: 78, finalScore: 78, badge: "Junior Confirmed", trustScore: 82, decision: "Годен", tabSwitches: 0, reportUrl: "#" },
-        { date: "13.05.2026", name: "Петрова М.В.", email: "petrova@test.ru", phone: "+79001234567", test: "fa-junior", testTitle: "Financial Analyst", score: 92, finalScore: 89, badge: "Junior Strong", trustScore: 94, decision: "Годен", tabSwitches: 1, reportUrl: "#" },
-        { date: "12.05.2026", name: "Сидоров К.П.", email: "sidorov@test.ru", phone: "+79111234567", test: "fa-junior", testTitle: "Financial Analyst", score: 45, finalScore: 45, badge: "Not Confirmed", trustScore: 38, decision: "Не годен", tabSwitches: 3, reportUrl: "#" },
-        { date: "11.05.2026", name: "Козлова Е.Д.", email: "kozlova@test.ru", phone: "+79221234567", test: "ca-junior", testTitle: "Credit Analyst", score: 65, finalScore: 62, badge: "Borderline", trustScore: 60, decision: "Не годен", tabSwitches: 0, reportUrl: "#" },
-        { date: "10.05.2026", name: "Новиков Р.О.", email: "novikov@test.ru", phone: "+79331234567", test: "fpa-junior", testTitle: "FP&A Analyst", score: 71, finalScore: 71, badge: "Junior Confirmed", trustScore: 73, decision: "Годен", tabSwitches: 0, reportUrl: "#" },
-      ];
-      filterCandidates();
-      updateStats();
-      updateDashboard();
+    function requestAdminResults(password) {
+      return new Promise((resolve, reject) => {
+        const callbackName = "adminResultsCallback_" + Date.now();
+        const script = document.createElement("script");
+
+        window[callbackName] = data => {
+          resolve(data);
+          delete window[callbackName];
+          script.remove();
+        };
+
+        script.onerror = () => {
+          delete window[callbackName];
+          script.remove();
+          reject(new Error("Не удалось получить ответ backend."));
+        };
+
+        script.src = GOOGLE_SCRIPT_URL +
+          "?action=adminResults" +
+          "&password=" + encodeURIComponent(password) +
+          "&callback=" + callbackName;
+        document.body.appendChild(script);
+      });
     }
 
-    function filterCandidates() {
-      const search = document.getElementById("searchInput").value.toLowerCase();
+    function getFilteredResults() {
+      const search = document.getElementById("codeSearch").value.trim().toLowerCase();
       const test = document.getElementById("testFilter").value;
-      const badge = document.getElementById("badgeFilter").value;
-      const decision = document.getElementById("decisionFilter").value;
+      const status = document.getElementById("statusFilter").value;
 
-      filteredCandidates = allCandidates.filter(c => {
-        const matchSearch = !search || c.name.toLowerCase().includes(search) || c.email.toLowerCase().includes(search) || c.phone.includes(search);
-        const matchTest = !test || c.test === test;
-        const matchBadge = !badge || c.badge === badge;
-        const matchDecision = !decision || c.decision === decision;
-        return matchSearch && matchTest && matchBadge && matchDecision;
+      return adminResults
+        .filter(row => !search || String(row.code || "").toLowerCase().indexOf(search) !== -1)
+        .filter(row => !test || row.testId === test)
+        .filter(row => !status || row.status === status)
+        .sort((a, b) => scoreSortDesc
+          ? Number(b.finalScore || 0) - Number(a.finalScore || 0)
+          : Number(a.finalScore || 0) - Number(b.finalScore || 0));
+    }
+
+    function renderAdmin() {
+      const rows = getFilteredResults();
+      renderStats(rows);
+      renderTestBars(rows);
+      renderTopCodes(rows);
+      renderTable(rows);
+    }
+
+    function renderStats(rows) {
+      const total = rows.length;
+      const passed = rows.filter(row => row.status === "passed").length;
+      const scores = rows.map(row => Number(row.finalScore || 0));
+      const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      const best = scores.length ? Math.max.apply(null, scores) : 0;
+
+      document.getElementById("totalCount").textContent = total;
+      document.getElementById("passedCount").textContent = passed;
+      document.getElementById("avgScore").textContent = avg;
+      document.getElementById("bestScore").textContent = best;
+    }
+
+    function renderTestBars(rows) {
+      const counts = {};
+      rows.forEach(row => {
+        const key = row.testId || "unknown";
+        counts[key] = (counts[key] || 0) + 1;
       });
 
-      currentPage = 1;
-      renderTable();
-      renderPagination();
-      updateStats();
+      const max = Math.max.apply(null, Object.values(counts).concat([1]));
+      const html = Object.keys(counts).sort().map(testId => {
+        const count = counts[testId];
+        const width = Math.max(4, Math.round((count / max) * 100));
+        return '<div class="bar-row">' +
+          '<div class="bar-label"><span>' + escapeHtml(testId) + '</span><span>' + count + '</span></div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + width + '%"></div></div>' +
+          '</div>';
+      }).join("");
+
+      document.getElementById("testBars").innerHTML = html || '<div class="empty-state">Нет данных</div>';
     }
 
-    function renderTable() {
-      const tbody = document.getElementById("candidatesTable");
-      const start = (currentPage - 1) * perPage;
-      const pageData = filteredCandidates.slice(start, start + perPage);
+    function renderTopCodes(rows) {
+      const top = rows.slice(0, 5);
+      document.getElementById("topCodes").innerHTML = top.length
+        ? top.map((row, index) => '<div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;">' +
+            '<span><b>' + (index + 1) + '.</b> <span class="code">' + escapeHtml(row.code) + '</span></span>' +
+            '<span>' + Number(row.finalScore || 0) + '</span>' +
+          '</div>').join("")
+        : '<div class="empty-state">Нет данных</div>';
+    }
 
-      if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state">Нет данных по выбранным фильтрам</div></td></tr>';
+    function renderTable(rows) {
+      if (!rows.length) {
+        document.getElementById("resultsTable").innerHTML = '<div class="empty-state">Нет обезличенных результатов</div>';
         return;
       }
 
-      tbody.innerHTML = pageData.map(c => `
-        <tr>
-          <td>${c.date}</td>
-          <td>
-            <div style="font-weight:600;">${c.name}</div>
-            <div style="font-size:12px;color:#94a3b8;">${c.email}</div>
-          </td>
-          <td>${c.testTitle}</td>
-          <td><b>${c.finalScore}%</b></td>
-          <td><span class="badge ${getBadgeClass(c.badge)}">${c.badge}</span></td>
-          <td>
-            <span class="trust-score ${getTrustClass(c.trustScore)}">
-              <span class="trust-dot"></span>${c.trustScore}
-            </span>
-          </td>
-          <td><span class="badge ${c.decision === 'Годен' ? 'badge-pass' : 'badge-fail'}">${c.decision}</span></td>
-          <td>${c.tabSwitches > 0 ? '<span style="color:#dc2626;">⚠️ ' + c.tabSwitches + '</span>' : '—'}</td>
-          <td><a href="${c.reportUrl}" class="btn-sm btn-view" target="_blank">Отчёт</a></td>
-        </tr>
-      `).join('');
+      const body = rows.map(row => '<tr>' +
+        '<td class="code">' + escapeHtml(row.code) + '</td>' +
+        '<td>' + formatDate(row.date) + '</td>' +
+        '<td>' + escapeHtml(row.testTitle || row.testId) + '</td>' +
+        '<td>' + Number(row.finalScore || 0) + '</td>' +
+        '<td>' + Number(row.percent || 0) + '</td>' +
+        '<td><span class="badge ' + (row.status === "passed" ? "badge-pass" : "badge-fail") + '">' +
+          (row.status === "passed" ? "passed" : "failed") + '</span></td>' +
+        '<td>' + escapeHtml(row.badge) + '</td>' +
+        '<td>' + Number(row.tabSwitches || 0) + '</td>' +
+        '<td>' + (row.reportCreated ? "да" : "нет") + '</td>' +
+        '<td>' + escapeHtml(row.reportPath || row.reportCode || "") + '</td>' +
+        '</tr>').join("");
+
+      document.getElementById("resultsTable").innerHTML =
+        '<table><thead><tr>' +
+        '<th>Код</th><th>Дата</th><th>Тест</th><th>Итоговый балл</th><th>Процент</th>' +
+        '<th>Статус</th><th>Плашка</th><th>Уходы</th><th>TXT создан</th><th>Report path/code</th>' +
+        '</tr></thead><tbody>' + body + '</tbody></table>';
     }
 
-    function renderPagination() {
-      const totalPages = Math.ceil(filteredCandidates.length / perPage);
-      const container = document.getElementById("pagination");
-      if (totalPages <= 1) { container.innerHTML = ''; return; }
-
-      let html = '';
-      html += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">←</button>`;
-      for (let i = 1; i <= totalPages; i++) {
-        html += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-      }
-      html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">→</button>`;
-      container.innerHTML = html;
+    function sortByScore() {
+      scoreSortDesc = !scoreSortDesc;
+      renderAdmin();
     }
 
-    function goToPage(p) {
-      currentPage = p;
-      renderTable();
-      renderPagination();
+    function formatDate(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("ru-RU");
     }
 
-    function updateStats() {
-      document.getElementById("totalCount").textContent = filteredCandidates.length;
-      document.getElementById("goodCount").textContent = filteredCandidates.filter(c => c.decision === "Годен").length;
-      const avg = filteredCandidates.length ? Math.round(filteredCandidates.reduce((s, c) => s + c.finalScore, 0) / filteredCandidates.length) : 0;
-      document.getElementById("avgScore").textContent = avg + "%";
-      const avgTrust = filteredCandidates.length ? Math.round(filteredCandidates.reduce((s, c) => s + c.trustScore, 0) / filteredCandidates.length) : 0;
-      document.getElementById("avgTrust").textContent = avgTrust;
-      document.getElementById("tabCount").textContent = filteredCandidates.filter(c => c.tabSwitches > 0).length;
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value === undefined || value === null ? "" : String(value);
+      return div.innerHTML;
     }
-
-    function updateDashboard() {
-      const tests = ['fa-junior', 'ca-junior', 'fpa-junior', 'acc-junior', 'bi-junior'];
-      const ids = ['faCount', 'caCount', 'fpaCount', 'accCount', 'biCount'];
-      tests.forEach((t, i) => {
-        document.getElementById(ids[i]).textContent = allCandidates.filter(c => c.test === t).length;
-      });
-
-      const badges = ['Junior Strong', 'Junior Confirmed', 'Borderline', 'Not Confirmed'];
-      const badgeStats = document.getElementById("badgeStats");
-      badgeStats.innerHTML = badges.map(b => {
-        const count = allCandidates.filter(c => c.badge === b).length;
-        const pct = allCandidates.length ? Math.round((count / allCandidates.length) * 100) : 0;
-        return `<tr><td><span class="badge ${getBadgeClass(b)}">${b}</span></td><td>${count}</td><td>${pct}%</td></tr>`;
-      }).join('');
-
-      // Топ кандидаты
-      const top = [...allCandidates].filter(c => c.decision === "Годен").sort((a, b) => b.finalScore - a.finalScore).slice(0, 10);
-      document.getElementById("topTable").innerHTML = top.map((c, i) => `
-        <tr>
-          <td><b>#${i + 1}</b></td>
-          <td><b>${c.name}</b><br><span style="font-size:12px;color:#94a3b8;">${c.email}</span></td>
-          <td>${c.testTitle}</td>
-          <td><b style="color:#3b82f6;">${c.finalScore}%</b></td>
-          <td><span class="trust-score ${getTrustClass(c.trustScore)}"><span class="trust-dot"></span>${c.trustScore}</span></td>
-          <td><span class="badge ${getBadgeClass(c.badge)}">${c.badge}</span></td>
-          <td><span class="badge badge-pass">${c.decision}</span></td>
-          <td><a href="${c.reportUrl}" class="btn-sm btn-view" target="_blank">Отчёт</a></td>
-        </tr>
-      `).join('');
-    }
-
-    function getBadgeClass(badge) {
-      if (badge === 'Junior Strong') return 'badge-strong';
-      if (badge === 'Junior Confirmed') return 'badge-confirmed';
-      if (badge === 'Borderline') return 'badge-borderline';
-      return 'badge-not';
-    }
-
-    function getTrustClass(score) {
-      if (score >= 80) return 'trust-high';
-      if (score >= 60) return 'trust-medium';
-      return 'trust-low';
-    }
-
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById('allView').style.display = tab === 'all' ? 'block' : 'none';
-      document.getElementById('topView').style.display = tab === 'top' || tab === 'good' ? 'block' : 'none';
-      document.getElementById('dashboardView').style.display = tab === 'dashboard' ? 'block' : 'none';
-    }
-
-    function exportToCSV() {
-      const headers = ['Дата', 'Имя', 'Email', 'Телефон', 'Тест', 'Балл', 'Плашка', 'Trust Score', 'Решение', 'Уходы'];
-      const rows = filteredCandidates.map(c => [c.date, c.name, c.email, c.phone, c.testTitle, c.finalScore, c.badge, c.trustScore, c.decision, c.tabSwitches]);
-      const csv = [headers, ...rows].map(r => r.map(f => '"' + String(f).replace(/"/g, '""') + '"').join(',')).join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'skillcheck_candidates_' + new Date().toISOString().slice(0, 10) + '.csv';
-      link.click();
-    }
-
-    loadData();
   </script>
 </body>
 </html>

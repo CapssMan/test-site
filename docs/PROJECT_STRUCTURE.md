@@ -38,7 +38,7 @@ skillcheck/
 - `index.html` — главная страница.
 - `test.html` — страница прохождения теста.
 - `privacy.html` — политика обработки персональных данных и описание технического идентификатора браузера.
-- `admin.html` — админ-панель / черновик панели результатов.
+- `admin.html` — обезличенная админ-панель по кодам, без персональных данных.
 
 ### `data/`
 
@@ -59,6 +59,14 @@ skillcheck/
 ### `apps-script/`
 
 Папка с кодом Google Apps Script. Этот файл не запускается на GitHub Pages сам по себе. Его нужно вручную скопировать в Apps Script.
+
+Backend больше не использует Google Sheets и Google Drive. Все результаты пишутся через Яндекс.Диск REST API:
+
+- `disk:/skillcheck/reports/<code>.txt` — полные отчёты успешных результатов;
+- `disk:/skillcheck/admin/results.json` — обезличенная база для `admin.html`;
+- `disk:/skillcheck/private/attempts.json` — hash попыток для анти-повтора.
+
+`Code.gs` также отдаёт `?action=health` для диагностики доступа к Яндекс Диску и `?action=adminResults` для загрузки обезличенных результатов после проверки `ADMIN_PASSWORD`.
 
 ### `docs/`
 

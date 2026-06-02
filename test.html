@@ -278,6 +278,7 @@
     const RETAKE_CHECK_ENABLED = true;
     const RETAKE_DAYS = 21;
     const RETAKE_MS = RETAKE_DAYS * 24 * 60 * 60 * 1000;
+    const SUCCESS_THRESHOLD = 80;
     const QUESTIONS_PER_ATTEMPT = 40;
 
     const TEST_CONFIG = {
@@ -350,6 +351,17 @@
           "metrics": { name: "Финансовые метрики", weight: 0.20 },
           "excel": { name: "Excel продвинутый", weight: 0.15 },
           "data": { name: "Работа с данными", weight: 0.10 }
+        }
+      },
+      "dev-quick": {
+        title: "Dev Quick Smoke Test",
+        description: "Быстрый технический тест на один вопрос без retake-блокировки",
+        version: "DEV Quick v1.0",
+        bankVersion: "Dev Quick Smoke Test v1.0",
+        questionsFile: "data/dev-quick.json",
+        skipRetakeCheck: true,
+        blocks: {
+          "smoke": { name: "Smoke test", weight: 1 }
         }
       }
     };
@@ -499,7 +511,7 @@
         return;
       }
 
-      if (!RETAKE_CHECK_ENABLED) {
+      if (!isRetakeCheckEnabledForCurrentTest()) {
         startTest();
         return;
       }
@@ -638,7 +650,6 @@
           testId: testId,
           completedAt: completedAt.toISOString(),
           nextAttemptAt: nextAttemptAt.toISOString(),
-          emailHash: hashString(String(email || "").trim().toLowerCase()),
           browserFingerprint: browserFingerprint || ""
         };
         localStorage.setItem(getAttemptStorageKey(testId), JSON.stringify(value));
@@ -947,8 +958,8 @@
       var finalScore = Math.max(0, percent - penalty);
 
       var badge = getBadge(finalScore, tabSwitches);
-      var passStatus = percent >= 70 ? "Прошёл" : "Не прошёл";
-      var finalDecision = (badge === "Junior Strong" || badge === "Junior Confirmed") ? "Годен" : "Не годен";
+      var passStatus = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
+      var finalDecision = finalScore >= SUCCESS_THRESHOLD ? "Успешно" : "Неуспешно";
 
       var blockResults = {};
       Object.keys(currentTestConfig.blocks).forEach(function(blockKey) {
@@ -976,37 +987,6 @@
       var recommendation = getCandidateRecommendation(finalScore, percent, trustScore, tabSwitches);
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
       currentBrowserFingerprint = browserFingerprint;
-
-      saveLocalAttemptLock(currentTestId, candidateEmail, browserFingerprint);
-
-      var txtReport = buildTxtReport({
-        testId: currentTestId,
-        testVersion: currentTestConfig.version,
-        bankVersion: bankVersion,
-        testTitle: currentTestConfig.title,
-        name: candidateName,
-        email: candidateEmail,
-        englishLevel: englishLevel,
-        candidateSource: candidateSource,
-        candidateExperience: candidateExperience,
-        employerShareConsent: employerShareConsent,
-        browserFingerprint: browserFingerprint,
-        score: percent,
-        total: 100,
-        rawScore: rawScore,
-        rawTotal: rawTotal,
-        percent: percent,
-        penalty: penalty,
-        finalScore: finalScore,
-        passStatus: passStatus,
-        finalDecision: finalDecision,
-        recommendation: recommendation,
-        badge: badge,
-        tabSwitches: tabSwitches,
-        trustScore: trustScore,
-        blockResults: blockResults,
-        answers: answers
-      });
 
       showResult({
         score: percent,
@@ -1045,7 +1025,7 @@
         tabSwitches: tabSwitches,
         trustScore: trustScore,
         blockResults: blockResults,
-        txtReport: txtReport
+        answers: answers
       };
 
       sendResult(resultData);
@@ -1073,7 +1053,7 @@
       if (tabSwitches > 2) {
         return "Результат требует осторожной интерпретации";
       }
-      if (finalScore >= 70 && trustScore >= 70) {
+      if (finalScore >= SUCCESS_THRESHOLD && trustScore >= 70) {
         return "Рекомендуется к интервью";
       }
       if (finalScore >= 60 || percent >= 60) {
@@ -1103,7 +1083,7 @@
       html += '</div>';
       html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
       html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Решение</div>';
-      html += '<div style="font-size:24px;font-weight:700;color:' + (data.finalDecision === 'Годен' ? '#16a34a' : '#dc2626') + ';">' + data.finalDecision + '</div>';
+      html += '<div style="font-size:24px;font-weight:700;color:' + (data.finalDecision === 'Успешно' ? '#16a34a' : '#dc2626') + ';">' + data.finalDecision + '</div>';
       html += '</div>';
       html += '</div>';
 
@@ -1145,116 +1125,48 @@
       document.getElementById("resultContent").innerHTML = html;
     }
 
-    function buildTxtReport(data) {
-      var dateText = new Date().toLocaleString("ru-RU");
-      var r = "";
-      r += "=======================================\n";
-      r += "  SKILL CHECK — ОТЧЁТ ПО ТЕСТИРОВАНИЮ\n";
-      r += "=======================================\n\n";
-      r += "CANDIDATE SUMMARY / КРАТКОЕ РЕЗЮМЕ\n";
-      r += "---------------------------------------\n";
-      r += "Кандидат: " + data.name + "\n";
-      r += "Тест: " + data.testTitle + "\n";
-      r += "ID теста: " + data.testId + "\n";
-      r += "Версия банка: " + data.bankVersion + "\n";
-      r += "Итоговый балл: " + data.finalScore + "%\n";
-      r += "Процент: " + data.percent + "%\n";
-      r += "Плашка: " + data.badge + "\n";
-      r += "Статус: " + data.passStatus + "\n";
-      r += "Trust Score: " + data.trustScore + "\n";
-      r += "Уходы со вкладки: " + data.tabSwitches + "\n";
-      r += "Английский: " + data.englishLevel + "\n";
-      r += "Опыт: " + data.candidateExperience + "\n";
-      r += "Источник: " + data.candidateSource + "\n";
-      r += "Согласие на передачу результата работодателям: " + formatConsentStatus(data.employerShareConsent) + "\n";
-      r += "Fingerprint: " + data.browserFingerprint + "\n";
-      r += "Рекомендация: " + data.recommendation + "\n\n";
-      r += "Профиль: " + data.testTitle + "\n";
-      r += "Версия теста: " + data.testVersion + "\n";
-      r += "Версия банка: " + data.bankVersion + "\n";
-      r += "Дата: " + dateText + "\n\n";
-
-      r += "---------------------------------------\n";
-      r += "1. ДАННЫЕ КАНДИДАТА\n";
-      r += "---------------------------------------\n\n";
-      r += "ФИО: " + data.name + "\n";
-      r += "Email: " + data.email + "\n";
-      r += "Английский: " + data.englishLevel + "\n";
-      r += "Опыт: " + data.candidateExperience + "\n";
-      r += "Источник кандидата: " + data.candidateSource + "\n\n";
-      r += "Согласие на передачу результата работодателям: " + formatConsentStatus(data.employerShareConsent) + "\n";
-      r += "Fingerprint: " + data.browserFingerprint + "\n\n";
-
-      r += "---------------------------------------\n";
-      r += "2. ИТОГОВЫЙ РЕЗУЛЬТАТ\n";
-      r += "---------------------------------------\n\n";
-      r += "Сырой результат: " + data.rawScore + " из " + data.rawTotal + "\n";
-      r += "Процент: " + data.percent + "%\n";
-      r += "Штраф за уходы: " + data.penalty + "%\n";
-      r += "Итоговый балл: " + data.finalScore + "%\n";
-      r += "Плашка: " + data.badge + "\n";
-      r += "Trust Score: " + data.trustScore + "\n";
-      r += "Статус: " + data.passStatus + "\n";
-      r += "Решение: " + data.finalDecision + "\n\n";
-
-      r += "---------------------------------------\n";
-      r += "3. SKILL CARD — БЛОКИ НАВЫКОВ\n";
-      r += "---------------------------------------\n\n";
-      Object.keys(data.blockResults).forEach(function(k) {
-        var b = data.blockResults[k];
-        r += b.name + ": " + b.earned + "/" + b.total + " (" + b.percent + "%)\n";
-      });
-      r += "\n";
-
-      r += "---------------------------------------\n";
-      r += "4. ДЕТАЛЬНЫЙ РАЗБОР\n";
-      r += "---------------------------------------\n\n";
-      data.answers.forEach(function(a) {
-        r += "Вопрос " + a.number + " [" + a.block + "]: " + a.question + "\n";
-        r += "Ответ: " + a.selectedAnswer + " — " + a.status + " (" + a.earnedPoints + "/" + a.points + ")\n";
-        if (!a.isCorrect) {
-          r += "Правильно: " + a.correctAnswer + "\n";
-          r += "Комментарий: " + a.comment + "\n";
-        }
-        r += "\n";
-      });
-
-      r += "---------------------------------------\n";
-      r += "5. РИСКИ И РЕКОМЕНДАЦИИ\n";
-      r += "---------------------------------------\n\n";
-      r += "Уходы со вкладки: " + data.tabSwitches + "\n";
-      r += "Неотвеченных: " + data.answers.filter(function(a) { return a.selectedAnswer === "Нет ответа"; }).length + "\n\n";
-
-      if (data.badge === "Junior Strong") {
-        r += "Рекомендация: пригласить на собеседование в приоритетном порядке.\n";
-      } else if (data.badge === "Junior Confirmed") {
-        r += "Рекомендация: пригласить на собеседование, проверить практические навыки.\n";
-      } else if (data.badge === "Borderline") {
-        r += "Рекомендация: рассматривать при наличии стажировки или наставника.\n";
-      } else {
-        r += "Рекомендация: не приглашать без дополнительного обучения.\n";
-      }
-
-      r += "\n=======================================\n";
-      r += "Отчёт сгенерирован автоматически SkillCheck\n";
-      r += "=======================================\n";
-
-      return r;
-    }
-
     function sendResult(data) {
       var status = document.getElementById("sendStatus");
       status.textContent = "Отправка результата...";
       fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors",
         body: JSON.stringify(data)
       })
-      .then(function() {
-        status.innerHTML = '<span class="success">&#9989; Результат отправлен и сохранён.</span>';
+      .then(function(response) {
+        return response.json();
       })
-      .catch(function() {
-        status.innerHTML = '<span class="error">&#9888; Результат посчитан, но отправка не удалась. Сохраните скриншот.</span>';
+      .then(function(result) {
+        if (result.status === "blocked" || result.blocked) {
+          status.innerHTML = '<span class="error">&#9888; ' + escapeHtml(result.errorMessage || result.message || "Повторное прохождение заблокировано.") + '</span>';
+          return;
+        }
+
+        if (result.ok !== true && result.status !== "ok") {
+          throw new Error(result.errorMessage || result.message || "Backend вернул ошибку.");
+        }
+
+        if (!currentTestConfig.skipRetakeCheck) {
+          saveLocalAttemptLock(data.testId, data.email, data.browserFingerprint);
+        }
+
+        var resultCode = result.resultCode || result.code || "";
+        var reportLine = result.reportCreated
+          ? '<br>TXT-отчёт: создан' + (result.reportPath ? ' (' + escapeHtml(result.reportPath) + ')' : '')
+          : '<br>TXT-отчёт: не создан для результата ниже проходного порога';
+
+        status.innerHTML =
+          '<span class="success">&#9989; Результат сохранён.</span><br>' +
+          '<b>Код результата: ' + escapeHtml(resultCode) + '</b><br>' +
+          'Процент: ' + escapeHtml(result.percent) + '%<br>' +
+          'Итоговый балл: ' + escapeHtml(result.finalScore) + '%<br>' +
+          'Статус: ' + (result.passStatus === "passed" ? "успешно" : "неуспешно") + '<br>' +
+          'Сохранение попытки: ' + (result.savedAttempt ? "да" : "нет") + '<br>' +
+          'Сохранение админ-записи: ' + (result.savedAdmin ? "да" : "нет") +
+          reportLine + '<br>' +
+          '<b>Сохраните код результата.</b>';
+      })
+      .catch(function(error) {
+        status.innerHTML = '<span class="error">&#9888; Результат посчитан, но отправка не удалась: ' + escapeHtml(error.message || "ошибка backend") + '.</span>';
       });
     }
 
@@ -1264,9 +1176,10 @@
       return div.innerHTML;
     }
 
-    function formatConsentStatus(value) {
-      return value ? "дано" : "не дано";
+    function isRetakeCheckEnabledForCurrentTest() {
+      return RETAKE_CHECK_ENABLED && !currentTestConfig.skipRetakeCheck;
     }
+
   </script>
 </body>
 </html>

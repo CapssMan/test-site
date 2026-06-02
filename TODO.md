@@ -16,9 +16,10 @@
 - [x] Случайная выборка до 40 вопросов из банка.
 - [x] Запрет копирования и контекстного меню.
 - [x] Детект ухода со вкладки.
-- [x] TXT-отчёт.
-- [x] Google Sheets integration с актуальными колонками в `apps-script/Code.gs`.
-- [x] 21-day retake lock на фронте и в Apps Script по `ID теста`, email и browser fingerprint.
+- [x] TXT-отчёт для успешных результатов через backend.
+- [x] Google Apps Script API без Google Sheets и Google Drive.
+- [x] Хранение на Яндекс Диске: reports, admin/results.json, private/attempts.json.
+- [x] Анти-повтор через hash попытки в `attempts.json`.
 - [x] localStorage-lock на тот же тест в текущем браузере.
 - [x] Убран сбор телефона из формы и новых результатов.
 - [x] Добавлены `privacy.html` и обязательное согласие перед стартом.
@@ -28,22 +29,28 @@
 
 ## До запуска кандидатов
 
+- [ ] Настроить Script Properties: `YANDEX_DISK_TOKEN`, `YANDEX_DISK_REPORTS_FOLDER`, `YANDEX_DISK_ADMIN_FILE`, `YANDEX_DISK_ATTEMPTS_FILE`, `ATTEMPT_HASH_SALT`, `ADMIN_PASSWORD`.
 - [ ] Скопировать обновлённый `apps-script/Code.gs` в Google Apps Script.
 - [ ] Создать новый Apps Script deployment.
+- [ ] Открыть `<WEB_APP_URL>?action=health` и убедиться, что `ok: true`.
+- [ ] Проверить, что `health` не выводит токен, пароль или salt.
 - [ ] Указать email оператора в `privacy.html`.
 - [ ] Указать реальный email для запросов по персональным данным.
 - [ ] Проверить необходимость уведомления Роскомнадзора перед масштабированием.
-- [ ] Оценить вопрос хранения данных российских пользователей в Google Sheets / Google Drive.
+- [ ] Оценить вопрос хранения данных российских пользователей на Яндекс Диске.
 - [ ] Подготовить отдельное согласие на передачу результата работодателю, если проект начнёт работать с компаниями.
 - [ ] Подготовить регламент удаления данных по запросу пользователя.
-- [ ] Проверить, что в `Results` появились колонки `ID теста` и `Fingerprint`.
-- [ ] Проверить `checkAttempt` на повторной попытке одного теста.
-- [ ] Проверить fingerprint-lock: новый email, но тот же браузер и тот же тест должны блокироваться.
+- [ ] Проверить, что `disk:/skillcheck/admin/results.json` создаётся автоматически.
+- [ ] Проверить, что `disk:/skillcheck/private/attempts.json` создаётся автоматически.
+- [ ] Пройти `dev-quick` на 100% и проверить `savedAttempt`, `savedAdmin`, `reportCreated`, `resultCode`.
+- [ ] Проверить `checkAttempt` через `attempts.json`.
+- [ ] Проверить, что успешный результат создаёт `disk:/skillcheck/reports/<code>.txt`.
+- [ ] Проверить, что неуспешный результат не создаёт TXT-отчёт.
+- [ ] Проверить, что `admin.html` показывает только обезличенные коды.
+- [ ] Проверить, что `admin.html` запрашивает пароль через `action=adminResults` и не содержит моковых кандидатов.
 - [ ] Проверить localStorage-lock до серверного запроса.
 - [ ] Проверить, что разные тесты можно проходить в один день.
-- [ ] Проверить отправку результата из `test.html` в Google Sheets.
-- [ ] Проверить, что TXT-отчёт создаётся и ссылка открывается у работодателя.
-- [ ] Проверить листы `Results`, `Top Candidates`, `Dashboard`.
+- [ ] Проверить отправку результата из `test.html` в Apps Script.
 - [ ] Пройти `fa-junior` локально и на GitHub Pages.
 - [ ] Пройти `ca-junior` локально и на GitHub Pages.
 - [ ] Пройти `fpa-junior` локально и на GitHub Pages.

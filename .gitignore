@@ -1,0 +1,13 @@
+.clasprc.json
+.clasprc.*
+apps-script/.clasp.json
+node_modules/
+.env
+*.secret
+credentials*.json
+client_secret*.json
+token*.json
+*.txt
+results.json
+attempts.json
+secrets.*

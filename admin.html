@@ -149,6 +149,7 @@
     .code { font-weight: 800; color: #1e40af; }
     .error { color: #dc2626; font-weight: 600; margin-top: 10px; }
     .empty-state { padding: 42px; text-align: center; color: #94a3b8; }
+    .build-number { color: #94a3b8; font-size: 12px; margin-top: 6px; }
     .hidden { display: none; }
     @media (max-width: 800px) {
       header { align-items: flex-start; flex-direction: column; gap: 10px; }
@@ -163,6 +164,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Обезличенные результаты: коды, тесты, баллы, статусы и аналитика.</p>
+        <div class="build-number">Build 2026.07.19.1</div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -185,6 +187,7 @@
           <option value="fpa-junior">FP&A / Budget</option>
           <option value="acc-junior">Accounting</option>
           <option value="bi-junior">Finance BI</option>
+          <option value="dev-quick">Dev Quick</option>
         </select>
         <select id="statusFilter" onchange="renderAdmin()">
           <option value="">Все статусы</option>

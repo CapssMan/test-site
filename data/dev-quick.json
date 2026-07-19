@@ -1,0 +1,28 @@
+{
+  "testId": "dev-quick",
+  "version": "Dev Quick Smoke Test v1.0",
+  "totalQuestions": 1,
+  "questionsPerTest": 1,
+  "blocks": {
+    "smoke": "Smoke test"
+  },
+  "questions": [
+    {
+      "id": "dev_quick_001",
+      "topic": "Smoke test",
+      "block": "smoke",
+      "difficulty": "easy",
+      "timeLimit": 60,
+      "points": 100,
+      "text": "Техническая проверка: какой вариант нужно выбрать, чтобы быстро получить успешный результат?",
+      "options": [
+        "Выбрать этот вариант smoke-теста",
+        "Выбрать соседний вариант smoke-теста A",
+        "Выбрать соседний вариант smoke-теста B",
+        "Выбрать соседний вариант smoke-теста C"
+      ],
+      "correct": 0,
+      "comment": "Этот вопрос нужен только для быстрой проверки нового функционала платформы."
+    }
+  ]
+}

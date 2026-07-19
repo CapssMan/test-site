@@ -1,5 +1,7 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-06-02-diag1";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-19-1";
 const SUCCESS_THRESHOLD = 80;
+const RETAKE_WINDOW_DAYS = 21;
+const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 const DEFAULT_YANDEX_REPORTS_FOLDER = "disk:/skillcheck/reports";
 const DEFAULT_YANDEX_ADMIN_FILE = "disk:/skillcheck/admin/results.json";
 const DEFAULT_YANDEX_ATTEMPTS_FILE = "disk:/skillcheck/private/attempts.json";
@@ -140,6 +142,7 @@ function saveTestResult(resultData) {
     const finalScore = Number(resultData.finalScore || 0);
     const percent = Number(resultData.percent || resultData.score || 0);
     const status = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
+    const telegram = normalizeTelegramContact(resultData.telegram);
 
     // Personal data is processed only here and only for successful TXT reports.
     if (status === "passed") {
@@ -147,6 +150,7 @@ function saveTestResult(resultData) {
       uploadTextToYandexDisk(reportPath, buildTxtReport(Object.assign({}, resultData, {
         code: code,
         status: status,
+        telegram: telegram,
         completedAt: now.toISOString()
       })));
       reportCreated = true;
@@ -168,8 +172,10 @@ function saveTestResult(resultData) {
     });
     savedAdmin = true;
 
+    const attemptHashes = hashAttemptIdentifiers(testId, email, fingerprint);
     saveAttemptHash({
-      hash: hashAttempt(testId, email, fingerprint),
+      emailHash: attemptHashes.emailHash,
+      fingerprintHash: attemptHashes.fingerprintHash,
       testId: testId,
       code: code,
       date: now.toISOString(),
@@ -283,14 +289,36 @@ function buildTxtReport(resultData) {
   return report;
 }
 
-function hashAttempt(testId, email, fingerprint) {
+function hashAttemptValue(testId, valueType, value) {
   const salt = getRequiredProperty("ATTEMPT_HASH_SALT");
-  const source = String(testId || "") + String(email || "").toLowerCase() + String(fingerprint || "") + salt;
+  const source = [
+    String(testId || "").trim(),
+    String(valueType || "").trim(),
+    String(value || "").trim().toLowerCase(),
+    salt
+  ].join("|");
+  return sha256Hex(source);
+}
+
+function sha256Hex(source) {
   const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, source, Utilities.Charset.UTF_8);
   return digest.map(byte => {
     const value = byte < 0 ? byte + 256 : byte;
     return ("0" + value.toString(16)).slice(-2);
   }).join("");
+}
+
+function hashAttempt(testId, email, fingerprint) {
+  const salt = getRequiredProperty("ATTEMPT_HASH_SALT");
+  const legacySource = String(testId || "") + String(email || "").toLowerCase() + String(fingerprint || "") + salt;
+  return sha256Hex(legacySource);
+}
+
+function hashAttemptIdentifiers(testId, email, fingerprint) {
+  return {
+    emailHash: email ? hashAttemptValue(testId, "email", email) : "",
+    fingerprintHash: fingerprint ? hashAttemptValue(testId, "fingerprint", fingerprint) : ""
+  };
 }
 
 function checkAttemptHash(testId, email, fingerprint) {
@@ -304,18 +332,33 @@ function checkAttemptHash(testId, email, fingerprint) {
     };
   }
 
-  const hash = hashAttempt(testId, email, fingerprint);
+  const hashes = hashAttemptIdentifiers(testId, email, fingerprint);
+  const legacyHash = hashAttempt(testId, email, fingerprint);
   const attempts = readJsonFromYandexDisk(getAttemptsFilePath(), []);
-  const found = attempts.find(attempt => attempt && attempt.testId === testId && attempt.hash === hash);
+  const now = Date.now();
+  const found = attempts.find(attempt => {
+    if (!attempt || attempt.testId !== testId) return false;
+    const attemptTime = new Date(attempt.date || "").getTime();
+    if (!isFinite(attemptTime) || now - attemptTime >= RETAKE_WINDOW_MS) return false;
+
+    const emailMatches = Boolean(hashes.emailHash && attempt.emailHash === hashes.emailHash);
+    const fingerprintMatches = Boolean(hashes.fingerprintHash && attempt.fingerprintHash === hashes.fingerprintHash);
+    const legacyMatches = Boolean(attempt.hash && attempt.hash === legacyHash);
+    return emailMatches || fingerprintMatches || legacyMatches;
+  });
 
   if (found) {
+    const previousAttemptTime = new Date(found.date).getTime();
+    const nextAttemptTime = previousAttemptTime + RETAKE_WINDOW_MS;
     return {
       allowed: false,
-      message: "Этот тест уже был пройден. Повторное прохождение запрещено.",
+      message: "Этот тест уже был пройден. Повторное прохождение доступно через 21 день.",
       testId: testId,
       foundPreviousAttempt: true,
       code: found.code || "",
       previousAttemptDate: found.date || "",
+      nextDate: new Date(nextAttemptTime).toISOString(),
+      daysLeft: Math.max(1, Math.ceil((nextAttemptTime - now) / (24 * 60 * 60 * 1000))),
       status: found.status || ""
     };
   }
@@ -349,7 +392,11 @@ function buildHealthStatus() {
     adminFile: adminFile,
     attemptsFile: attemptsFile,
     adminFileExists: false,
-    attemptsFileExists: false
+    attemptsFileExists: false,
+    storageDiagnostics: {
+      folders: {},
+      targets: {}
+    }
   };
 
   const diskProbe = probeYandexDiskAccess();
@@ -360,12 +407,21 @@ function buildHealthStatus() {
   if (status.yandexDiskAccess) {
     try {
       ensureSkillCheckFolders();
+      status.storageDiagnostics.folders.reports = listYandexFolderContents(reportsFolder);
+      status.storageDiagnostics.folders.admin = listYandexFolderContents(getParentDiskPath(adminFile));
+      status.storageDiagnostics.folders.private = listYandexFolderContents(getParentDiskPath(attemptsFile));
+      status.storageDiagnostics.targets.adminFileBefore = getYandexResourceMetadata(adminFile);
+      status.storageDiagnostics.targets.attemptsFileBefore = getYandexResourceMetadata(attemptsFile);
       readJsonFromYandexDisk(adminFile, []);
       readJsonFromYandexDisk(attemptsFile, []);
-      status.adminFileExists = yandexResourceExists(adminFile);
-      status.attemptsFileExists = yandexResourceExists(attemptsFile);
+      status.storageDiagnostics.targets.adminFileAfter = getYandexResourceMetadata(adminFile);
+      status.storageDiagnostics.targets.attemptsFileAfter = getYandexResourceMetadata(attemptsFile);
+      status.adminFileExists = status.storageDiagnostics.targets.adminFileAfter.exists;
+      status.attemptsFileExists = status.storageDiagnostics.targets.attemptsFileAfter.exists;
     } catch (error) {
       status.yandexErrorMessage = sanitizeDiagnosticMessage(error);
+      status.storageDiagnostics.targets.adminFileAfter = getYandexResourceMetadataSafely(adminFile);
+      status.storageDiagnostics.targets.attemptsFileAfter = getYandexResourceMetadataSafely(attemptsFile);
     }
   }
 
@@ -417,17 +473,93 @@ function probeYandexDiskAccess() {
 }
 
 function yandexResourceExists(path) {
+  return getYandexResourceMetadata(path).exists;
+}
+
+function getYandexResourceMetadata(path) {
+  const normalizedPath = normalizeDiskPath(path);
+  const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
+    encodeURIComponent(normalizedPath) +
+    "&fields=name,type,path,size,created,modified";
+
   try {
-    yandexApiRequest(
-      "get",
-      "https://cloud-api.yandex.net/v1/disk/resources?path=" + encodeURIComponent(normalizeDiskPath(path)),
-      null,
-      null
-    );
-    return true;
+    const resource = yandexApiRequest("get", url, null, null);
+    return {
+      exists: true,
+      name: String(resource.name || ""),
+      type: String(resource.type || "unknown"),
+      path: String(resource.path || normalizedPath),
+      size: resource.type === "file" ? Number(resource.size || 0) : null,
+      created: String(resource.created || ""),
+      modified: String(resource.modified || "")
+    };
   } catch (error) {
-    if (String(error.message || "").indexOf("Yandex API error 404") !== -1) return false;
+    if (String(error.message || "").indexOf("Yandex API error 404") !== -1) {
+      return {
+        exists: false,
+        name: getDiskPathName(normalizedPath),
+        type: "missing",
+        path: normalizedPath,
+        size: null,
+        created: "",
+        modified: ""
+      };
+    }
     throw error;
+  }
+}
+
+function getYandexResourceMetadataSafely(path) {
+  try {
+    return getYandexResourceMetadata(path);
+  } catch (error) {
+    return {
+      exists: false,
+      name: getDiskPathName(path),
+      type: "unknown",
+      path: normalizeDiskPath(path),
+      error: sanitizeDiagnosticMessage(error)
+    };
+  }
+}
+
+function listYandexFolderContents(folderPath) {
+  const normalizedPath = normalizeDiskPath(folderPath);
+  const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
+    encodeURIComponent(normalizedPath) +
+    "&limit=100&fields=name,type,path,_embedded.items.name,_embedded.items.type,_embedded.items.path";
+
+  try {
+    const resource = yandexApiRequest("get", url, null, null);
+    const items = resource && resource._embedded && Array.isArray(resource._embedded.items)
+      ? resource._embedded.items
+      : [];
+    return {
+      exists: true,
+      type: String(resource.type || "unknown"),
+      path: String(resource.path || normalizedPath),
+      items: items.slice(0, 100).map(item => ({
+        name: String(item.name || ""),
+        type: String(item.type || "unknown"),
+        path: String(item.path || "")
+      }))
+    };
+  } catch (error) {
+    if (String(error.message || "").indexOf("Yandex API error 404") !== -1) {
+      return {
+        exists: false,
+        type: "missing",
+        path: normalizedPath,
+        items: []
+      };
+    }
+    return {
+      exists: false,
+      type: "unknown",
+      path: normalizedPath,
+      items: [],
+      error: sanitizeDiagnosticMessage(error)
+    };
   }
 }
 
@@ -483,15 +615,36 @@ function ensureYandexFolderExists(folderPath) {
 }
 
 function uploadTextToYandexDisk(path, content) {
-  ensureYandexFolderExists(getParentDiskPath(path));
+  const normalizedPath = normalizeDiskPath(path);
+  ensureYandexFolderExists(getParentDiskPath(normalizedPath));
+  const existingResource = getYandexResourceMetadata(normalizedPath);
+
+  if (existingResource.exists && existingResource.type === "dir") {
+    throw new Error(
+      "Yandex path conflict during upload-target-check for " + normalizedPath +
+      ": expected file, found directory. Existing data was not changed."
+    );
+  }
+
   const uploadUrl = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=" +
-    encodeURIComponent(normalizeDiskPath(path)) + "&overwrite=true";
+    encodeURIComponent(normalizedPath) + "&overwrite=true";
   const uploadInfo = yandexApiRequest("get", uploadUrl, null, null);
+  const uploadMethod = String(uploadInfo.method || "PUT").toLowerCase();
+
+  if (!uploadInfo.href || uploadMethod !== "put" || uploadInfo.templated === true) {
+    throw new Error(
+      "Yandex upload link error during upload-url for " + normalizedPath +
+      ": method=" + String(uploadInfo.method || "") +
+      ", templated=" + String(Boolean(uploadInfo.templated)) +
+      ", uploadUrl=" + sanitizeYandexUploadUrl(uploadInfo.href)
+    );
+  }
 
   const response = UrlFetchApp.fetch(uploadInfo.href, {
-    method: "put",
+    method: uploadMethod,
     payload: content,
     contentType: "text/plain; charset=utf-8",
+    escaping: false,
     muteHttpExceptions: true
   });
 
@@ -499,8 +652,11 @@ function uploadTextToYandexDisk(path, content) {
   if (status < 200 || status >= 300) {
     throw new Error(
       "Yandex upload error " + status +
-      " for " + normalizeDiskPath(path) +
-      ": " + sanitizeYandexResponseText(response.getContentText())
+      " during upload-put for " + normalizedPath +
+      "; uploadUrl=" + sanitizeYandexUploadUrl(uploadInfo.href) +
+      "; method=" + uploadMethod.toUpperCase() +
+      "; responseHeaders=" + sanitizeYandexResponseHeaders(response.getAllHeaders()) +
+      "; responseBody=" + sanitizeYandexResponseText(response.getContentText() || "<empty>")
     );
   }
 }
@@ -519,6 +675,7 @@ function readTextFromYandexDisk(path) {
 
   const response = UrlFetchApp.fetch(downloadInfo.href, {
     method: "get",
+    escaping: false,
     muteHttpExceptions: true
   });
 
@@ -578,7 +735,8 @@ function saveAttemptHash(attemptData) {
   const path = getAttemptsFilePath();
   const attempts = readJsonFromYandexDisk(path, []);
   attempts.push({
-    hash: String(attemptData.hash || ""),
+    emailHash: String(attemptData.emailHash || ""),
+    fingerprintHash: String(attemptData.fingerprintHash || ""),
     testId: String(attemptData.testId || ""),
     code: String(attemptData.code || ""),
     date: String(attemptData.date || ""),
@@ -672,8 +830,32 @@ function getParentDiskPath(path) {
   return index <= "disk:".length ? "disk:/" : normalized.slice(0, index);
 }
 
+function getDiskPathName(path) {
+  const normalized = normalizeDiskPath(path).replace(/\/$/, "");
+  const index = normalized.lastIndexOf("/");
+  return index === -1 ? normalized : normalized.slice(index + 1);
+}
+
 function safeText(value) {
   return String(value === undefined || value === null ? "" : value).replace(/\r/g, " ").trim();
+}
+
+function normalizeTelegramContact(value) {
+  let normalized = safeText(value);
+  if (!normalized) return "";
+
+  normalized = normalized
+    .replace(/^https?:\/\/(?:www\.)?t\.me\//i, "")
+    .replace(/^(?:www\.)?t\.me\//i, "")
+    .replace(/^@/, "")
+    .replace(/[\/?#].*$/, "")
+    .trim();
+
+  if (!/^[A-Za-z0-9_]{1,64}$/.test(normalized)) {
+    throw new Error("Некорректный формат Telegram.");
+  }
+
+  return "@" + normalized;
 }
 
 function sanitizeErrorMessage(error) {
@@ -703,6 +885,34 @@ function sanitizeYandexUrl(url) {
     .replace(/oauth_token=[^&]+/gi, "oauth_token=***")
     .replace(/access_token=[^&]+/gi, "access_token=***")
     .slice(0, 500);
+}
+
+function sanitizeYandexUploadUrl(url) {
+  const match = String(url || "").match(/^(https?:\/\/[^\/?#]+)/i);
+  return match ? match[1] + "/..." : "<missing>";
+}
+
+function sanitizeYandexResponseHeaders(headers) {
+  const source = headers || {};
+  const safeHeaders = {};
+  const allowedNames = {
+    "content-length": true,
+    "content-type": true,
+    "date": true,
+    "server": true,
+    "x-error-code": true,
+    "x-error-message": true,
+    "x-request-id": true,
+    "x-yandex-error": true
+  };
+
+  Object.keys(source).forEach(name => {
+    if (allowedNames[String(name).toLowerCase()]) {
+      safeHeaders[name] = String(source[name]).slice(0, 200);
+    }
+  });
+
+  return sanitizeYandexResponseText(JSON.stringify(safeHeaders));
 }
 
 function authorizeYandexDisk() {

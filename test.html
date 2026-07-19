@@ -49,6 +49,12 @@
     button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,0.3); }
     button:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
     .small { font-size: 14px; color: #64748b; line-height: 1.6; }
+    .field-help {
+      margin: 6px 2px 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
     .warning {
       background: #fffbeb;
       border: 1px solid #fcd34d;
@@ -194,6 +200,8 @@
 
       <input id="name" type="text" placeholder="Ваше имя" />
       <input id="email" type="email" placeholder="Email" />
+      <input id="telegram" type="text" placeholder="Telegram для быстрой обратной связи, необязательно" autocomplete="username" />
+      <p class="field-help">Telegram используется только для быстрой обратной связи, если кандидат его укажет.</p>
 
       <select id="englishLevel">
         <option value="">Уровень английского языка</option>
@@ -227,7 +235,7 @@
       <div class="warning">
         &#9888; Во время теста фиксируется количество уходов со страницы.
         Копирование текста и контекстное меню заблокированы.
-        Для проведения тестирования сайт обрабатывает: имя, email, уровень английского, опыт, источник кандидата, ответы на вопросы, результат теста, уходы со вкладки и технические данные прохождения, включая технический идентификатор браузера.
+        Для проведения тестирования сайт обрабатывает: имя, email, необязательный Telegram, уровень английского, опыт, источник кандидата, ответы на вопросы, результат теста, уходы со вкладки и технические данные прохождения, включая технический идентификатор браузера.
         Для защиты от повторного прохождения и недобросовестного использования сайт формирует технический идентификатор браузера. Сырые параметры браузера не публикуются и не передаются третьим лицам как отдельный отчёт.
       </div>
 
@@ -480,6 +488,7 @@
     function startAttempt() {
       var name = document.getElementById("name").value.trim();
       var email = document.getElementById("email").value.trim().toLowerCase();
+      var telegram = "";
       var englishLevel = document.getElementById("englishLevel").value;
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
@@ -488,6 +497,14 @@
       var startButton = document.getElementById("startButton");
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
       currentBrowserFingerprint = browserFingerprint;
+
+      try {
+        telegram = normalizeTelegramContact(document.getElementById("telegram").value);
+        document.getElementById("telegram").value = telegram;
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
 
       if (startButton.disabled && startButton.textContent.indexOf("Загрузка") !== -1) {
         alert("Подождите, вопросы ещё загружаются...");
@@ -979,6 +996,7 @@
 
       var candidateName = document.getElementById("name").value.trim();
       var candidateEmail = document.getElementById("email").value.trim().toLowerCase();
+      var candidateTelegram = normalizeTelegramContact(document.getElementById("telegram").value);
       var englishLevel = document.getElementById("englishLevel").value;
       var candidateSource = document.getElementById("candidateSource").value;
       var candidateExperience = document.getElementById("candidateExperience").value;
@@ -1009,6 +1027,7 @@
         testTitle: currentTestConfig.title,
         name: candidateName,
         email: candidateEmail,
+        telegram: candidateTelegram,
         englishLevel: englishLevel,
         candidateSource: candidateSource,
         candidateExperience: candidateExperience,
@@ -1174,6 +1193,24 @@
       var div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function normalizeTelegramContact(value) {
+      var normalized = String(value || "").trim();
+      if (!normalized) return "";
+
+      normalized = normalized
+        .replace(/^https?:\/\/(?:www\.)?t\.me\//i, "")
+        .replace(/^(?:www\.)?t\.me\//i, "")
+        .replace(/^@/, "")
+        .replace(/[\/?#].*$/, "")
+        .trim();
+
+      if (!/^[A-Za-z0-9_]{1,64}$/.test(normalized)) {
+        throw new Error("Укажите Telegram в формате @username, username или t.me/username либо оставьте поле пустым.");
+      }
+
+      return "@" + normalized;
     }
 
     function isRetakeCheckEnabledForCurrentTest() {

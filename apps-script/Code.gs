@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-19-1";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-19-3";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -640,18 +640,21 @@ function uploadTextToYandexDisk(path, content) {
     );
   }
 
+  const textContent = String(content || "");
+  const uploadContent = /\n$/.test(textContent) ? textContent : textContent + "\n";
+  const bytes = Utilities.newBlob(uploadContent, "text/plain").getBytes();
   const response = UrlFetchApp.fetch(uploadInfo.href, {
     method: uploadMethod,
-    payload: content,
+    payload: bytes,
     contentType: "text/plain; charset=utf-8",
     escaping: false,
     muteHttpExceptions: true
   });
+  const statusCode = response.getResponseCode();
 
-  const status = response.getResponseCode();
-  if (status < 200 || status >= 300) {
+  if (statusCode < 200 || statusCode >= 300) {
     throw new Error(
-      "Yandex upload error " + status +
+      "Yandex upload error " + statusCode +
       " during upload-put for " + normalizedPath +
       "; uploadUrl=" + sanitizeYandexUploadUrl(uploadInfo.href) +
       "; method=" + uploadMethod.toUpperCase() +

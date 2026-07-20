@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
   <title>SkillCheck — Админ-панель</title>
   <style>
     :root {
@@ -115,6 +117,16 @@
       line-height: 1.55;
     }
     .report-policy strong { color: #0f172a; }
+    .score-policy {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-color: #fed7aa;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .score-policy strong { color: #7c2d12; }
     .filters {
       display: grid;
       grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(150px, 1fr)) auto;
@@ -207,7 +219,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Только обезличенные результаты, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.5</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.6</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -236,6 +248,12 @@
       </div>
 
       <div id="dashboardError" class="alert hidden" role="alert"></div>
+
+      <div class="card score-policy">
+        <strong>Баллы пока не являются серверно подтверждёнными.</strong>
+        Backend проверяет формат и внутреннюю согласованность результата, но правильные ответы и итоговый балл всё ещё формируются в браузере.
+        Код подтверждает сохранение записи, а не независимую проверку знаний. Не используйте этот результат как единственное основание решения о кандидате.
+      </div>
 
       <div class="card report-policy">
         <strong>Полный TXT защищён отдельно от кода результата.</strong>
@@ -315,7 +333,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.20.5";
+    const FRONTEND_BUILD = "2026.07.20.6";
     const TECHNICAL_TEST_ID = "dev-quick";
     const TEST_LABELS = {
       "fa-junior": "Financial Analyst",
@@ -452,8 +470,9 @@
         const testId = Object.prototype.hasOwnProperty.call(TEST_LABELS, row.testId) ? String(row.testId) : "unknown";
         const finalScore = finiteNumber(row.finalScore);
         const tabSwitches = finiteNumber(row.tabSwitches);
+        const code = normalizeResultCode(row.code);
         return {
-          code: String(row.code || ""),
+          code: code || "INVALID",
           testId: testId,
           testTitle: TEST_LABELS[testId] || "Неизвестный тест",
           finalScore: finalScore,
@@ -462,7 +481,8 @@
           date: String(row.date || ""),
           status: row.status === "passed" ? "passed" : "failed",
           badge: getAdminBadge(finalScore, tabSwitches),
-          reportCreated: Boolean(row.reportCreated)
+          reportCreated: Boolean(row.reportCreated),
+          scoreVerification: "client-reported-unverified"
         };
       });
     }
@@ -577,6 +597,7 @@
           cell("Итог", formatNumber(row.finalScore)) +
           cell("Процент", formatNumber(row.percent) + "%") +
           cell("Статус", '<span class="badge ' + (row.status === "passed" ? "badge-pass" : "badge-fail") + '">' + (row.status === "passed" ? "Успешно" : "Неуспешно") + "</span>") +
+          cell("Проверка", '<span class="badge badge-fail">Клиентский расчёт</span>') +
           cell("Плашка", escapeHtml(row.badge || "—")) +
           cell("Уходы", formatNumber(row.tabSwitches)) +
           cell("Отчёт", row.reportCreated
@@ -586,7 +607,7 @@
       }).join("");
 
       document.getElementById("resultsTable").innerHTML = '<table><thead><tr>' +
-        "<th>Код</th><th>Дата</th><th>Тест</th><th>Итог</th><th>Процент</th><th>Статус</th><th>Плашка</th><th>Уходы</th><th>Отчёт</th>" +
+        "<th>Код</th><th>Дата</th><th>Тест</th><th>Итог</th><th>Процент</th><th>Статус</th><th>Проверка</th><th>Плашка</th><th>Уходы</th><th>Отчёт</th>" +
         "</tr></thead><tbody>" + body + "</tbody></table>";
     }
 

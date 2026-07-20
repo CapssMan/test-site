@@ -36,7 +36,7 @@ assert.match(testPage, /id="ageConsent"[^>]+required/i, "age confirmation must b
 assert.match(testPage, /id="employerShareConsent"[\s\S]{0,160}<b>Необязательно:<\/b>/i, "employer sharing must be explicitly optional");
 assert.doesNotMatch(testPage, /id="startButton"[^>]+onclick=/i, "start button must not use an inline handler");
 assert.doesNotMatch(testPage, /id="nextButton"[^>]+onclick=/i, "next button must not use an inline handler");
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.7"/, "candidate build must be current");
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.8"/, "candidate build must be current");
 assert.match(testPage, /role="progressbar"[^>]+aria-valuemin="0"[^>]+aria-valuemax="100"/i, "progress must expose ARIA state");
 assert.match(testPage, /Результат является предварительной оценкой отдельных навыков/, "result must include the hiring disclaimer");
 assert.match(testPage, /window\.addEventListener\("beforeunload"/, "candidate must be warned before leaving an active or pending attempt");
@@ -62,6 +62,8 @@ assert.match(sendResult, /pendingResultData = data/, "calculated result must rem
 assert.match(sendResult, /retryButton\.hidden = !retryable/, "retryable send failure must expose retry");
 assert.doesNotMatch(sendResult, /reportPath|savedAttempt|savedAdmin/, "candidate response UI must not expose storage internals");
 assert.match(extractFunction(testPage, "generateSubmissionRequestId"), /sc_/, "each result must get an idempotency key");
+assert.match(extractFunction(testPage, "finishTest"), /action:\s*"saveResult"/, "result payload must use an explicit saveResult action");
+assert.match(extractFunction(testPage, "postResultOnce"), /action:\s*"saveResult"/, "network submission must preserve the explicit saveResult action");
 
 const expectedCards = [
   ["fa-junior", "~40 мин", "6 блоков"],
@@ -95,7 +97,8 @@ assert.equal(helperContext.isValidEmail("candidate@example.com"), true);
 assert.equal(helperContext.isValidEmail("candidate@invalid"), false);
 
 const doPost = extractFunction(backend, "doPost");
-assert.match(doPost, /data\.action === "checkAttempt"/, "backend must accept retake checks via POST");
+assert.match(doPost, /action === "checkAttempt"/, "backend must accept retake checks via POST");
+assert.match(doPost, /action === "saveResult"/, "backend must require an explicit result action");
 assert.match(doPost, /checkAttemptHash\(/, "POST retake route must use the existing server check");
 
 const saveTestResult = extractFunction(backend, "saveTestResult");
@@ -113,6 +116,7 @@ const backendContext = {
   readJsonFromYandexDisk: () => storedRows
 };
 vm.runInNewContext(
+  'const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";\n' +
   extractFunction(backend, "normalizeSubmissionRequestId") + "\n" +
   extractFunction(backend, "findAdminResultByRequestId") + "\n" +
   extractFunction(backend, "buildSavedResultResponse"),
@@ -127,5 +131,6 @@ const replay = backendContext.buildSavedResultResponse(existing, true);
 assert.equal(replay.replayed, true);
 assert.equal(replay.resultCode, "FA-23456");
 assert.equal(Object.hasOwn(replay, "reportPath"), false);
+assert.equal(replay.scoreVerification, "client-reported-unverified");
 
 console.log("Candidate UX tests passed.");

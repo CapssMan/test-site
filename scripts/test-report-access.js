@@ -28,7 +28,7 @@ assert.match(doGetFunction, /требуется POST-запрос/, "admin repor
 assert.doesNotMatch(doGetFunction, /getAdminReport\(/, "GET must never call report retrieval");
 
 const doPostFunction = extractFunction(backend, "doPost");
-assert.match(doPostFunction, /data\.action === "adminReport"/, "admin report must have a POST route");
+assert.match(doPostFunction, /action === "getAdminReport" \|\| action === "adminReport"/, "admin report must have a POST route");
 assert.match(doPostFunction, /getAdminReport\(String\(data\.password/, "POST route must pass the admin password");
 
 const requestReportFunction = extractFunction(frontend, "requestAdminReport");
@@ -61,6 +61,7 @@ let lastTextPath = "";
 const backendContext = {
   String,
   console: { log() {}, error() {} },
+  isAdminPasswordValid: password => password === "correct-admin-password",
   getRequiredProperty: () => "correct-admin-password",
   getAdminFilePath: () => "disk:/skillcheck/admin/results.json",
   getReportsFolderPath: () => "disk:/skillcheck/reports",

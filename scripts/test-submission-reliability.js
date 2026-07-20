@@ -23,13 +23,13 @@ function extractFunction(source, name) {
   throw new Error("Function end not found: " + name);
 }
 
-assert.match(frontend, /const FRONTEND_BUILD = "2026\.07\.20\.7"/);
-assert.match(backend, /const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-6"/);
+assert.match(frontend, /const FRONTEND_BUILD = "2026\.07\.20\.8"/);
+assert.match(backend, /const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-7"/);
 assert.match(frontend, /const PENDING_RESULT_TTL_MS = 24 \* 60 \* 60 \* 1000/, "pending result must expire after 24 hours");
 assert.match(frontend, /const MAX_AUTOMATIC_RETRIES = 2/, "two automatic retries are required");
 assert.match(frontend, /AUTOMATIC_RETRY_DELAYS_MS = \[1500, 4000\]/, "retry must use bounded backoff");
-assert.match(frontend, /если сервер временно недоступен[\s\S]{0,240}не более 24 часов/i, "candidate must be told about local pending storage");
-assert.match(privacy, /локальное хранилище браузера[\s\S]{0,1200}не более чем на 24 часа/i, "privacy page must describe local pending storage");
+assert.match(frontend, /Если сервер временно недоступен[\s\S]{0,240}только в текущей вкладке[\s\S]{0,160}24 часа/i, "candidate must be told about session-scoped pending storage");
+assert.match(privacy, /sessionStorage[\s\S]{0,1200}только в текущей вкладке[\s\S]{0,500}24 часа/i, "privacy page must describe session-scoped pending storage");
 
 const domReady = /document\.addEventListener\("DOMContentLoaded"[\s\S]*?\n    \}\);/.exec(frontend);
 assert(domReady, "DOMContentLoaded handler not found");
@@ -71,6 +71,10 @@ assert.doesNotMatch(doPost, /errorMessage:\s*sanitizeDiagnosticMessage/, "public
 assert.match(doPost, /failureCode: "request_processing_error"/, "public POST errors need a safe machine-readable code");
 
 const storage = new Map();
+const legacyStorage = new Map();
+const scheduledTimers = new Map();
+let nextTimerId = 0;
+let sessionWritesFail = false;
 const frontendContext = {
   String,
   Number,
@@ -80,24 +84,45 @@ const frontendContext = {
   JSON,
   isFinite,
   console: { warn() {} },
-  localStorage: {
+  window: {
+    setTimeout: (callback, delay) => {
+      const timerId = ++nextTimerId;
+      scheduledTimers.set(timerId, { callback, delay });
+      return timerId;
+    },
+    clearTimeout: timerId => scheduledTimers.delete(timerId)
+  },
+  sessionStorage: {
     getItem: key => storage.has(key) ? storage.get(key) : null,
-    setItem: (key, value) => storage.set(key, String(value)),
+    setItem: (key, value) => {
+      if (sessionWritesFail) throw new Error("session storage unavailable");
+      storage.set(key, String(value));
+    },
     removeItem: key => storage.delete(key)
+  },
+  localStorage: {
+    getItem: key => legacyStorage.has(key) ? legacyStorage.get(key) : null,
+    setItem: (key, value) => legacyStorage.set(key, String(value)),
+    removeItem: key => legacyStorage.delete(key)
   }
 };
 
 vm.runInNewContext(
+  "const pendingResultExpiryTimers = Object.create(null);\n" +
+  'const TEST_CONFIG = {"dev-quick":{},"fa-junior":{},"ca-junior":{}};\n' +
   "const PENDING_RESULT_SCHEMA_VERSION = 1;\n" +
   "const PENDING_RESULT_TTL_MS = 86400000;\n" +
   "const QUESTIONS_PER_ATTEMPT = 40;\n" +
   "const AUTOMATIC_RETRY_DELAYS_MS = [1500, 4000];\n" +
   extractFunction(frontend, "getPendingResultStorageKey") + "\n" +
+  extractFunction(frontend, "migrateLegacyPendingResults") + "\n" +
+  extractFunction(frontend, "scheduleStoredPendingResultExpirations") + "\n" +
   extractFunction(frontend, "buildPendingResultEnvelope") + "\n" +
   extractFunction(frontend, "validatePendingResultEnvelope") + "\n" +
   extractFunction(frontend, "persistPendingResult") + "\n" +
   extractFunction(frontend, "loadPendingResult") + "\n" +
   extractFunction(frontend, "clearPendingResult") + "\n" +
+  extractFunction(frontend, "schedulePendingResultExpiry") + "\n" +
   extractFunction(frontend, "isTransientHttpStatus") + "\n" +
   extractFunction(frontend, "getSubmissionRetryDelay"),
   frontendContext
@@ -109,7 +134,7 @@ const pendingData = {
   finalScore: 90,
   percent: 90,
   answers: [{ number: 1 }],
-  blockResults: { smoke: { name: "Smoke", percent: 90 } }
+  blockResults: { smoke: { name: "Smoke", earned: 90, total: 100, weight: 1, percent: 90 } }
 };
 const now = 1000000;
 const envelope = frontendContext.buildPendingResultEnvelope(pendingData, now);
@@ -117,6 +142,35 @@ assert.equal(envelope.expiresAt, now + 86400000);
 assert.equal(frontendContext.validatePendingResultEnvelope(envelope, "dev-quick", now + 1), pendingData);
 assert.equal(frontendContext.validatePendingResultEnvelope(envelope, "dev-quick", envelope.expiresAt), null, "expired pending result must be rejected");
 assert.equal(frontendContext.validatePendingResultEnvelope(envelope, "fa-junior", now + 1), null, "another test must not restore this result");
+const corruptBlockEnvelope = frontendContext.buildPendingResultEnvelope({ ...pendingData, blockResults: { smoke: null } }, now);
+assert.equal(frontendContext.validatePendingResultEnvelope(corruptBlockEnvelope, "dev-quick", now + 1), null, "corrupt pending block data must be rejected");
+
+const currentEnvelope = frontendContext.buildPendingResultEnvelope(pendingData, Date.now());
+const pendingKey = frontendContext.getPendingResultStorageKey("dev-quick");
+legacyStorage.set(pendingKey, JSON.stringify(currentEnvelope));
+frontendContext.migrateLegacyPendingResults();
+assert.equal(storage.get(pendingKey), JSON.stringify(currentEnvelope), "valid Stage 9 pending result must migrate to sessionStorage");
+assert.equal(legacyStorage.has(pendingKey), false, "legacy pending result must be deleted only after successful migration");
+storage.clear();
+legacyStorage.set(pendingKey, JSON.stringify(currentEnvelope));
+sessionWritesFail = true;
+frontendContext.migrateLegacyPendingResults();
+assert.equal(legacyStorage.has(pendingKey), true, "legacy pending result must survive a failed sessionStorage write");
+sessionWritesFail = false;
+legacyStorage.clear();
+
+const secondPendingData = { ...pendingData, testId: "fa-junior", requestId: "sc_1234567890fedcba" };
+const secondEnvelope = frontendContext.buildPendingResultEnvelope(secondPendingData, Date.now());
+const secondPendingKey = frontendContext.getPendingResultStorageKey("fa-junior");
+const expiredPendingKey = frontendContext.getPendingResultStorageKey("ca-junior");
+storage.set(pendingKey, JSON.stringify(currentEnvelope));
+storage.set(secondPendingKey, JSON.stringify(secondEnvelope));
+storage.set(expiredPendingKey, JSON.stringify({ ...secondEnvelope, testId: "ca-junior", requestId: "sc_1234567890aabbcc", expiresAt: Date.now() - 1, data: { ...secondPendingData, testId: "ca-junior", requestId: "sc_1234567890aabbcc" } }));
+scheduledTimers.clear();
+frontendContext.scheduleStoredPendingResultExpirations();
+assert.equal(scheduledTimers.size, 2, "navigation sweep must schedule every valid per-test pending result");
+assert.equal(storage.has(expiredPendingKey), false, "navigation sweep must delete expired pending results");
+storage.clear();
 
 assert.equal(frontendContext.persistPendingResult(pendingData), true);
 assert.equal(frontendContext.loadPendingResult("dev-quick").requestId, pendingData.requestId);
@@ -134,6 +188,7 @@ let attemptRows = [];
 let generatedCodes = 0;
 let reportFailuresRemaining = 1;
 let lockReleases = 0;
+let attemptCheckResponse = { allowed: true };
 
 const backendContext = {
   String,
@@ -155,12 +210,13 @@ const backendContext = {
   normalizeSubmissionRequestId: value => /^sc_[A-Za-z0-9-]{16,80}$/.test(String(value || "")) ? String(value) : "",
   normalizeTelegramContact: value => String(value || ""),
   buildSubmissionPayloadHash: data => "hash:" + data.testId + ":" + data.finalScore + ":" + data.percent,
+  buildLegacySubmissionPayloadHash: data => "legacy-hash:" + data.testId + ":" + data.finalScore + ":" + data.percent,
   findAdminResultByRequestId: requestId => adminRows.find(row => row.requestId === requestId) || null,
   findAttemptByRequestId: requestId => attemptRows.find(row => row.requestId === requestId) || null,
   buildSubmissionConflictResponse: () => ({ ok: false, retryable: false, failureCode: "submission_conflict" }),
   maskRequestIdForLog: () => "...masked",
   buildSavedResultResponse: (row, replayed) => ({ ok: true, status: "ok", code: row.code, resultCode: row.code, testId: row.testId, finalScore: row.finalScore, percent: row.percent, passStatus: row.status, reportCreated: Boolean(row.reportCreated), replayed }),
-  checkAttemptHash: () => ({ allowed: true }),
+  checkAttemptHash: () => attemptCheckResponse,
   generateUniqueResultCode: () => { generatedCodes += 1; return "DEV-STG9A"; },
   hashAttemptIdentifiers: () => ({ emailHash: "email-hash", fingerprintHash: "fingerprint-hash" }),
   upsertAttemptRecord: row => {
@@ -184,9 +240,16 @@ const backendContext = {
   }
 };
 
-vm.runInNewContext(extractFunction(backend, "saveTestResult"), backendContext);
+vm.runInNewContext(
+  'const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";\n' +
+  'const MAX_GENERATED_REPORT_CHARS = 200000;\n' +
+  'const RESERVATION_TTL_MS = 1800000;\n' +
+  extractFunction(backend, "saveTestResult"),
+  backendContext
+);
 
 const submission = {
+  action: "saveResult",
   requestId: "sc_stage9reliable001",
   testId: "dev-quick",
   testTitle: "Dev Quick Smoke Test",
@@ -213,6 +276,7 @@ assert.equal(generatedCodes, 1, "retry must not generate a second code");
 assert.equal(adminRows.length, 1, "retry must create one admin row");
 assert.equal(attemptRows.length, 1, "retry must keep one attempt row");
 assert.equal(attemptRows[0].submissionState, "completed");
+assert.equal(attemptRows[0].scoreVerification, "client-reported-unverified");
 
 response = backendContext.saveTestResult(submission);
 assert.equal(response.replayed, true, "confirmed replay must return the existing result");
@@ -220,6 +284,27 @@ assert.equal(response.code, "DEV-STG9A");
 assert.equal(generatedCodes, 1);
 assert.equal(adminRows.length, 1);
 assert.equal(lockReleases, 3, "every locked submission path must release the lock");
+
+adminRows = [];
+attemptRows = [{
+  requestId: submission.requestId,
+  testId: submission.testId,
+  code: "DEV-OLD22",
+  date: new Date(Date.now() - 1800001).toISOString(),
+  status: "passed",
+  payloadHash: "hash:" + submission.testId + ":" + submission.finalScore + ":" + submission.percent,
+  payloadHashVersion: 2,
+  submissionState: "reserved"
+}];
+reportFailuresRemaining = 0;
+attemptCheckResponse = { allowed: false, nextDate: "2026-08-10T00:00:00.000Z", daysLeft: 21, message: "blocked by a newer attempt" };
+response = backendContext.saveTestResult(submission);
+assert.equal(response.blocked, true, "expired reservation must re-check the retake policy before resume");
+assert.equal(response.retryable, false);
+assert.equal(response.code, undefined, "blocked expired reservation must not be resumed");
+assert.equal(adminRows.length, 0, "blocked expired reservation must not create an admin result");
+assert.equal(lockReleases, 4, "blocked expired reservation must release the lock");
+attemptCheckResponse = { allowed: true };
 
 adminRows = [];
 attemptRows = [];

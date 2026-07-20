@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
   <title>SkillCheck — Прохождение теста</title>
   <style>
     * { box-sizing: border-box; }
@@ -240,7 +242,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.20.7</div>
+      <div class="build-number">Build 2026.07.20.8</div>
 
       <p class="small">
         Вопросы и варианты ответа показываются в случайном порядке.
@@ -305,7 +307,7 @@
         Копирование текста и контекстное меню заблокированы.
         Для проведения тестирования сайт обрабатывает: имя, email, необязательный Telegram, уровень английского, опыт, источник кандидата, ответы на вопросы, результат теста, уходы со вкладки и технические данные прохождения, включая технический идентификатор браузера.
         Для защиты от повторного прохождения и недобросовестного использования сайт формирует технический идентификатор браузера. Сырые параметры браузера не публикуются и не передаются третьим лицам как отдельный отчёт.
-        Если сервер временно недоступен, неподтверждённый результат хранится только в этом браузере не более 24 часов и удаляется после успешной отправки.
+        Если сервер временно недоступен, неподтверждённый результат хранится только в текущей вкладке до её закрытия, подтверждённой отправки или максимум 24 часа.
       </div>
 
       <label class="consent-row">
@@ -358,7 +360,7 @@
     const RETAKE_MS = RETAKE_DAYS * 24 * 60 * 60 * 1000;
     const SUCCESS_THRESHOLD = 80;
     const QUESTIONS_PER_ATTEMPT = 40;
-    const FRONTEND_BUILD = "2026.07.20.7";
+    const FRONTEND_BUILD = "2026.07.20.8";
     const NETWORK_TIMEOUT_MS = 20000;
     const MAX_AUTOMATIC_RETRIES = 2;
     const AUTOMATIC_RETRY_DELAYS_MS = [1500, 4000];
@@ -487,6 +489,7 @@
     let resultSaved = false;
     let pendingResultData = null;
     let pendingResultStoredLocally = false;
+    const pendingResultExpiryTimers = Object.create(null);
 
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     document.addEventListener("DOMContentLoaded", function() {
@@ -494,6 +497,9 @@
       document.getElementById("startButton").addEventListener("click", handleStartButtonClick);
       document.getElementById("nextButton").addEventListener("click", nextQuestion);
       document.getElementById("retrySendButton").addEventListener("click", retryResultSubmission);
+      migrateLegacyPendingResults();
+      scheduleStoredPendingResultExpirations();
+      sanitizeLegacyRetakeMarkers();
 
       const params = new URLSearchParams(window.location.search);
       currentTestId = params.get("test") || "fa-junior";
@@ -833,6 +839,29 @@
       return ("00000000" + (hash >>> 0).toString(16)).slice(-8);
     }
 
+    function sanitizeLegacyRetakeMarkers() {
+      Object.keys(TEST_CONFIG).forEach(function(testId) {
+        var storageKey = "skillcheck_attempt_" + testId;
+        try {
+          var raw = localStorage.getItem(storageKey);
+          if (!raw) return;
+          var marker = JSON.parse(raw);
+          var nextAttemptAt = new Date(marker && marker.nextAttemptAt || "");
+          if (!marker || marker.testId !== testId || isNaN(nextAttemptAt.getTime())) {
+            localStorage.removeItem(storageKey);
+            return;
+          }
+          localStorage.setItem(storageKey, JSON.stringify({
+            testId: testId,
+            completedAt: String(marker.completedAt || ""),
+            nextAttemptAt: nextAttemptAt.toISOString()
+          }));
+        } catch (error) {
+          try { localStorage.removeItem(storageKey); } catch (ignored) {}
+        }
+      });
+    }
+
     function getLocalRetakeLock(testId) {
       try {
         var raw = localStorage.getItem(getAttemptStorageKey(testId));
@@ -867,8 +896,7 @@
         var value = {
           testId: testId,
           completedAt: completedAt.toISOString(),
-          nextAttemptAt: nextAttemptAt.toISOString(),
-          browserFingerprint: browserFingerprint || ""
+          nextAttemptAt: nextAttemptAt.toISOString()
         };
         localStorage.setItem(getAttemptStorageKey(testId), JSON.stringify(value));
       } catch (e) {
@@ -1019,6 +1047,8 @@
     function normalizeQuestion(q) {
       var options = Array.isArray(q.options) ? q.options : [];
       var correct = Number(q.correct);
+      var difficulty = String(q.difficulty || "medium").toLowerCase();
+      if (["easy", "medium", "hard", "calc", "case"].indexOf(difficulty) === -1) difficulty = "medium";
 
       if ((isNaN(correct) || correct < 0) && q.correctAnswer) {
         correct = options.indexOf(q.correctAnswer);
@@ -1031,7 +1061,7 @@
         id: q.id || "",
         topic: q.topic || "",
         block: q.block || "general",
-        difficulty: q.difficulty || "medium",
+        difficulty: difficulty,
         timeLimit: Number(q.timeLimit || q.timer || q.seconds || 60),
         points: Number(q.points || q.score || 1),
         text: q.text || q.question || "",
@@ -1076,10 +1106,10 @@
       var container = document.getElementById("questionContainer");
       var html = '<div class="question">';
       html += '<h2>' + escapeHtml(q.text);
-      html += '<span class="difficulty-badge diff-' + q.difficulty + '">' + q.difficulty + '</span>';
+      html += '<span class="difficulty-badge diff-' + q.difficulty + '">' + escapeHtml(q.difficulty) + '</span>';
       html += '</h2>';
 
-      if (q.context) html += q.context;
+      if (q.context) html += sanitizeQuestionContext(q.context);
 
       q.options.forEach(function(opt, idx) {
         html += '<label class="option" onclick="selectOption(this,' + idx + ')">';
@@ -1140,6 +1170,7 @@
 
       answers.push({
         number: currentQuestionIndex + 1,
+        questionId: q.id,
         topic: q.topic,
         block: q.block,
         difficulty: q.difficulty,
@@ -1272,6 +1303,7 @@
       });
 
       var resultData = {
+        action: "saveResult",
         requestId: generateSubmissionRequestId(),
         testId: currentTestId,
         testVersion: currentTestConfig.version,
@@ -1455,15 +1487,23 @@
             'Итоговый балл: ' + escapeHtml(result.finalScore) + '%<br>' +
             'Статус: ' + (result.passStatus === "passed" ? "успешно" : "неуспешно") +
             reportLine + replayLine + '<br>' +
+            '<span class="small">Код подтверждает сохранение. Балл пока рассчитан в браузере и не проверен закрытым серверным ключом.</span><br>' +
             '<b>Сохраните код результата.</b>';
           return result;
         })
         .catch(function(error) {
           var retryable = isRetryableSubmissionError(error);
           logSubmissionEvent("stopped", data, MAX_AUTOMATIC_RETRIES + 1, error && error.failureCode);
+          if (!retryable) {
+            clearPendingResult(data.testId, data.requestId);
+            pendingResultData = null;
+            pendingResultStoredLocally = false;
+          }
           status.className = "send-panel error";
           status.textContent = retryable
-            ? "Результат рассчитан и сохранён на этом устройстве, но сервер пока не подтвердил запись. Автоматические попытки завершены — нажмите «Повторить отправку», когда связь восстановится."
+            ? (pendingResultStoredLocally
+              ? "Результат рассчитан и временно сохранён в текущей вкладке, но сервер пока не подтвердил запись. Нажмите «Повторить отправку», когда связь восстановится."
+              : "Результат есть только в памяти открытой страницы, а сервер пока не подтвердил запись. Не закрывайте вкладку и нажмите «Повторить отправку», когда связь восстановится.")
             : (error && error.userMessage) || "Результат рассчитан, но запрос отклонён. Обновите страницу теста перед новой попыткой.";
           retryButton.hidden = !retryable;
           return null;
@@ -1490,7 +1530,8 @@
             throw createSubmissionError(
               result.message || "Сервер отклонил результат.",
               result.retryable === true,
-              result.failureCode || "backend_rejected"
+              result.failureCode || "backend_rejected",
+              result.retryAfterSeconds
             );
           }
           return result;
@@ -1498,7 +1539,7 @@
         .catch(function(error) {
           if (!isRetryableSubmissionError(error) || retryIndex >= MAX_AUTOMATIC_RETRIES) throw error;
 
-          var delay = getSubmissionRetryDelay(retryIndex);
+          var delay = getSubmissionRetryDelay(retryIndex, error);
           status.className = "send-panel pending";
           status.textContent = "Связь временно недоступна. Повторим тот же запрос через " + Math.ceil(delay / 1000) + " сек.; новый код не создаётся.";
           logSubmissionEvent("scheduled-retry", data, attemptNumber, error && error.failureCode);
@@ -1514,7 +1555,7 @@
 
       return fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify(Object.assign({}, data, { action: "saveResult" })),
         cache: "no-store",
         credentials: "omit",
         signal: controller.signal
@@ -1534,11 +1575,12 @@
       });
     }
 
-    function createSubmissionError(message, retryable, failureCode) {
+    function createSubmissionError(message, retryable, failureCode, retryAfterSeconds) {
       var error = new Error("Submission failed");
       error.userMessage = String(message || "");
       error.retryable = Boolean(retryable);
       error.failureCode = String(failureCode || "unknown");
+      error.retryAfterSeconds = Math.max(0, Number(retryAfterSeconds || 0));
       return error;
     }
 
@@ -1553,8 +1595,10 @@
       return [408, 425, 429, 500, 502, 503, 504].indexOf(Number(statusCode)) >= 0;
     }
 
-    function getSubmissionRetryDelay(retryIndex) {
-      return AUTOMATIC_RETRY_DELAYS_MS[retryIndex] || AUTOMATIC_RETRY_DELAYS_MS[AUTOMATIC_RETRY_DELAYS_MS.length - 1];
+    function getSubmissionRetryDelay(retryIndex, error) {
+      var baseDelay = AUTOMATIC_RETRY_DELAYS_MS[retryIndex] || AUTOMATIC_RETRY_DELAYS_MS[AUTOMATIC_RETRY_DELAYS_MS.length - 1];
+      var serverDelay = Math.min(60000, Math.max(0, Number(error && error.retryAfterSeconds || 0) * 1000));
+      return Math.max(baseDelay, serverDelay);
     }
 
     function waitForSubmissionRetry(delay) {
@@ -1580,6 +1624,64 @@
       return "skillcheck_pending_result_" + String(testId || "").replace(/[^a-z0-9-]/gi, "");
     }
 
+    function migrateLegacyPendingResults() {
+      Object.keys(TEST_CONFIG).forEach(function(testId) {
+        var storageKey = getPendingResultStorageKey(testId);
+        try {
+          var raw = localStorage.getItem(storageKey);
+          if (!raw) return;
+          if (raw.length > 750000) {
+            localStorage.removeItem(storageKey);
+            return;
+          }
+
+          var envelope;
+          try {
+            envelope = JSON.parse(raw);
+          } catch (parseError) {
+            localStorage.removeItem(storageKey);
+            return;
+          }
+          var data = validatePendingResultEnvelope(envelope, testId, Date.now());
+          if (!data) {
+            localStorage.removeItem(storageKey);
+            return;
+          }
+
+          try {
+            sessionStorage.setItem(storageKey, raw);
+            localStorage.removeItem(storageKey);
+            schedulePendingResultExpiry(envelope);
+          } catch (sessionError) {
+            // Keep the valid legacy copy if sessionStorage is temporarily unavailable.
+          }
+        } catch (ignored) {
+          // Browser storage can be disabled; in that case no migration is possible.
+        }
+      });
+    }
+
+    function scheduleStoredPendingResultExpirations() {
+      Object.keys(TEST_CONFIG).forEach(function(testId) {
+        var storageKey = getPendingResultStorageKey(testId);
+        try {
+          var raw = sessionStorage.getItem(storageKey);
+          if (!raw || raw.length > 750000) {
+            if (raw) sessionStorage.removeItem(storageKey);
+            return;
+          }
+          var envelope = JSON.parse(raw);
+          if (!validatePendingResultEnvelope(envelope, testId, Date.now())) {
+            sessionStorage.removeItem(storageKey);
+            return;
+          }
+          schedulePendingResultExpiry(envelope);
+        } catch (error) {
+          try { sessionStorage.removeItem(storageKey); } catch (ignored) {}
+        }
+      });
+    }
+
     function buildPendingResultEnvelope(data, nowValue) {
       var savedAt = Number(nowValue || Date.now());
       return {
@@ -1595,7 +1697,13 @@
     function validatePendingResultEnvelope(envelope, expectedTestId, nowValue) {
       if (!envelope || envelope.schemaVersion !== PENDING_RESULT_SCHEMA_VERSION) return null;
       if (String(envelope.testId || "") !== String(expectedTestId || "")) return null;
-      if (Number(envelope.expiresAt || 0) <= Number(nowValue || Date.now())) return null;
+      var now = Number(nowValue || Date.now());
+      var savedAt = Number(envelope.savedAt);
+      var expiresAt = Number(envelope.expiresAt);
+      if (!isFinite(savedAt) || !isFinite(expiresAt) || expiresAt <= savedAt ||
+          expiresAt - savedAt > PENDING_RESULT_TTL_MS || expiresAt <= now ||
+          expiresAt > now + PENDING_RESULT_TTL_MS || savedAt > now + 5 * 60 * 1000 ||
+          savedAt < now - PENDING_RESULT_TTL_MS) return null;
       if (!/^sc_[A-Za-z0-9-]{16,80}$/.test(String(envelope.requestId || ""))) return null;
 
       var data = envelope.data;
@@ -1603,6 +1711,22 @@
       if (String(data.requestId || "") !== String(envelope.requestId || "")) return null;
       if (!Array.isArray(data.answers) || data.answers.length < 1 || data.answers.length > QUESTIONS_PER_ATTEMPT) return null;
       if (!data.blockResults || typeof data.blockResults !== "object" || Array.isArray(data.blockResults)) return null;
+      var blockKeys = Object.keys(data.blockResults);
+      if (blockKeys.length < 1 || blockKeys.length > 20) return null;
+      for (var blockIndex = 0; blockIndex < blockKeys.length; blockIndex++) {
+        var blockKey = blockKeys[blockIndex];
+        var block = data.blockResults[blockKey];
+        if (!/^[a-z0-9_-]{1,40}$/i.test(blockKey) || !block ||
+            Object.prototype.toString.call(block) !== "[object Object]" ||
+            typeof block.name !== "string" || block.name.length < 1 || block.name.length > 120) return null;
+        var earned = Number(block.earned);
+        var total = Number(block.total);
+        var weight = Number(block.weight);
+        var blockPercent = Number(block.percent);
+        if (!isFinite(earned) || !isFinite(total) || !isFinite(weight) || !isFinite(blockPercent) ||
+            earned < 0 || total <= 0 || earned > total || weight < 0 || weight > 1 ||
+            blockPercent < 0 || blockPercent > 100) return null;
+      }
       if (!isFinite(Number(data.finalScore)) || !isFinite(Number(data.percent))) return null;
       return data;
     }
@@ -1610,10 +1734,11 @@
     function persistPendingResult(data) {
       try {
         var envelope = buildPendingResultEnvelope(data, Date.now());
-        localStorage.setItem(getPendingResultStorageKey(data.testId), JSON.stringify(envelope));
+        sessionStorage.setItem(getPendingResultStorageKey(data.testId), JSON.stringify(envelope));
+        schedulePendingResultExpiry(envelope);
         return true;
       } catch (error) {
-        console.warn("[SkillCheck submission] Local pending storage is unavailable.");
+        console.warn("[SkillCheck submission] Session pending storage is unavailable.");
         return false;
       }
     }
@@ -1621,34 +1746,61 @@
     function loadPendingResult(testId) {
       var storageKey = getPendingResultStorageKey(testId);
       try {
-        var raw = localStorage.getItem(storageKey);
+        var raw = sessionStorage.getItem(storageKey);
         if (!raw || raw.length > 750000) {
-          if (raw) localStorage.removeItem(storageKey);
+          if (raw) sessionStorage.removeItem(storageKey);
           return null;
         }
 
         var envelope = JSON.parse(raw);
         var data = validatePendingResultEnvelope(envelope, testId, Date.now());
-        if (!data) localStorage.removeItem(storageKey);
+        if (!data) sessionStorage.removeItem(storageKey);
+        else schedulePendingResultExpiry(envelope);
         return data;
       } catch (error) {
-        try { localStorage.removeItem(storageKey); } catch (ignored) {}
+        try { sessionStorage.removeItem(storageKey); } catch (ignored) {}
         return null;
       }
     }
 
     function clearPendingResult(testId, requestId) {
       var storageKey = getPendingResultStorageKey(testId);
+      if (pendingResultExpiryTimers[storageKey]) {
+        window.clearTimeout(pendingResultExpiryTimers[storageKey]);
+        delete pendingResultExpiryTimers[storageKey];
+      }
       try {
-        var raw = localStorage.getItem(storageKey);
+        var raw = sessionStorage.getItem(storageKey);
         if (raw && requestId) {
           var envelope = JSON.parse(raw);
           if (String(envelope.requestId || "") !== String(requestId)) return;
         }
-        localStorage.removeItem(storageKey);
+        sessionStorage.removeItem(storageKey);
+        try { localStorage.removeItem(storageKey); } catch (ignoredLegacyStorage) {}
       } catch (error) {
-        try { localStorage.removeItem(storageKey); } catch (ignored) {}
+        try { sessionStorage.removeItem(storageKey); } catch (ignored) {}
       }
+    }
+
+    function schedulePendingResultExpiry(envelope) {
+      var storageKey = getPendingResultStorageKey(envelope.testId);
+      if (pendingResultExpiryTimers[storageKey]) window.clearTimeout(pendingResultExpiryTimers[storageKey]);
+      var delay = Math.max(0, Number(envelope.expiresAt || 0) - Date.now());
+      pendingResultExpiryTimers[storageKey] = window.setTimeout(function() {
+        var expiringTestId = String(envelope.testId || "");
+        var expiringRequestId = String(envelope.requestId || "");
+        clearPendingResult(expiringTestId, expiringRequestId);
+        if (pendingResultData && String(pendingResultData.requestId || "") === expiringRequestId) {
+          pendingResultData = null;
+          pendingResultStoredLocally = false;
+          var status = document.getElementById("sendStatus");
+          var retryButton = document.getElementById("retrySendButton");
+          status.className = "send-panel error";
+          status.textContent = "Срок временной копии истёк. Результат больше не хранится в браузере и не может быть отправлен повторно.";
+          retryButton.hidden = true;
+          retryButton.disabled = true;
+        }
+      }, Math.min(delay, 2147483647));
     }
 
     function restorePendingResult() {
@@ -1665,8 +1817,8 @@
       var retryButton = document.getElementById("retrySendButton");
       status.className = "send-panel pending";
       status.textContent = navigator.onLine
-        ? "Восстановлен неподтверждённый результат с этого устройства. Сейчас повторим отправку с тем же идентификатором и кодом."
-        : "Восстановлен неподтверждённый результат с этого устройства. Подключитесь к сети и нажмите «Повторить отправку».";
+        ? "Восстановлен неподтверждённый результат из текущей вкладки. Сейчас повторим отправку с тем же идентификатором и кодом."
+        : "Восстановлен неподтверждённый результат из текущей вкладки. Подключитесь к сети и нажмите «Повторить отправку».";
       retryButton.hidden = false;
       retryButton.disabled = false;
 
@@ -1707,6 +1859,38 @@
         return "sc_" + window.crypto.randomUUID();
       }
       return "sc_" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 15);
+    }
+
+    function sanitizeQuestionContext(value) {
+      var source = String(value || "");
+      if (!source) return "";
+      if (source.length > 5000) source = source.slice(0, 5000);
+
+      var template = document.createElement("template");
+      if (!template.content) return escapeHtml(source);
+      template.innerHTML = source;
+
+      var allowedTags = {
+        TABLE: true, THEAD: true, TBODY: true, TFOOT: true, TR: true,
+        TH: true, TD: true, CAPTION: true, COLGROUP: true, COL: true,
+        P: true, BR: true, STRONG: true, B: true, EM: true, SPAN: true
+      };
+      var nodes = Array.prototype.slice.call(template.content.querySelectorAll("*"));
+      nodes.forEach(function(node) {
+        if (!allowedTags[node.tagName]) {
+          if (node.parentNode) node.parentNode.replaceChild(document.createTextNode(node.textContent || ""), node);
+          return;
+        }
+
+        Array.prototype.slice.call(node.attributes || []).forEach(function(attribute) {
+          var name = String(attribute.name || "").toLowerCase();
+          var keepTableClass = node.tagName === "TABLE" && name === "class" && attribute.value === "context-table";
+          var keepSpan = (node.tagName === "TH" || node.tagName === "TD") &&
+            (name === "colspan" || name === "rowspan") && /^(?:[1-9]|1[0-9]|20)$/.test(attribute.value);
+          if (!keepTableClass && !keepSpan) node.removeAttribute(attribute.name);
+        });
+      });
+      return template.innerHTML;
     }
 
     function escapeHtml(text) {

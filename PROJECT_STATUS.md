@@ -4,8 +4,9 @@
 
 ## Текущий этап
 
-- Завершён: этап 9 — надёжность отправки и локальный pending result.
-- Следующий: этап 10 — security-аудит и решение по backend-scoring.
+- Завершён: этап 10 — security-аудит и решение по backend-scoring.
+- Следующий: этап 11 — юридическая и privacy-подготовка.
+- Authoritative backend-scoring + signed attempt/invite остаётся отдельным обязательным pilot gate 10A и требует согласования крупного переноса.
 - Полный план: `ROADMAP.md`.
 
 ## Репозиторий и публикация
@@ -15,19 +16,20 @@
 - Этап 3 опубликован в commit `12868e6`.
 - Этап 4 опубликован в commit `1cd8498`.
 - Этап 5 опубликован в commit `44e0de1`.
-- GitHub Pages: `Build 2026.07.20.7` после публикации текущего коммита.
-- Backend: `yandex-disk-mvp-2026-07-20-6`.
-- Существующий Web App deployment: `@48`; URL не изменён.
+- Candidate frontend: `Build 2026.07.20.8`.
+- Admin frontend: `Build 2026.07.20.6`.
+- Backend: `yandex-disk-mvp-2026-07-20-7`.
+- Существующий Web App deployment: `@49`; URL не изменён.
+- Implementation commit: pending.
 
 ## Live health
 
 На 20 июля 2026 года:
 
 - `ok: true`;
-- доступ к Яндекс.Диску: есть;
-- `results.json`: существует и читается;
-- `attempts.json`: существует и читается;
-- санитизированная ошибка: отсутствует.
+- ответ содержит ровно четыре ключа: `ok`, `status`, `service`, `backendVersion`;
+- `backendVersion: yandex-disk-mvp-2026-07-20-7`;
+- endpoint не обращается к Яндекс Диску, не создаёт файлы и не раскрывает paths/properties/storage state.
 
 ## Завершено
 
@@ -39,7 +41,7 @@
 - Поле Telegram, frontend/backend normalization, передача в успешный TXT.
 - Этап 2 проверен live smoke `DEV-EZ3BY`: нормализованный Telegram есть только в TXT, UTF-8 корректен, служебные JSON персональных полей не содержат.
 - Раздельные email/fingerprint hashes и 21-дневная retake-логика.
-- `dev-quick` доступен повторно и скрывается из обычной аналитики.
+- Внутренняя retake-логика допускает повтор `dev-quick`, а админка скрывает его из обычной аналитики; публичные API для этого теста отключены по умолчанию на этапе 10.
 - Полная автоматическая матрица retake: первый запуск, совпадения email/fingerprint, другой тест, bypass, истечение срока, `localStorage` и точная дата.
 - Live smoke `FA-5DU43`: повтор `fa-junior` заблокирован, другой тест и `dev-quick` разрешены; TXT не создан.
 - Полный аудит расчёта: выбор и shuffle, таймер, баллы, проценты, порог, штрафы, badge, рекомендации, Trust Score и Skill Card.
@@ -71,7 +73,7 @@
 - Backend сохраняет `requestId` и при повторе возвращает тот же код без повторного результата; публичный ответ не содержит путей или внутренних флагов хранилища.
 - Экран результата содержит код, статус сохранения и дисклеймер о том, что тест не заменяет собеседование.
 - `scripts/test-candidate-ux.js`, вся прежняя тестовая матрица и browser-проверка пути кандидата на 1280/390 px проходят.
-- Неподтверждённый результат сохраняется в `localStorage` до 24 часов до первого сетевого запроса, восстанавливается после перезагрузки и удаляется после подтверждения или истечения срока.
+- Новые неподтверждённые результаты сохраняются в `sessionStorage` текущей вкладки. Валидная неистёкшая legacy-копия переносится из `localStorage`; невалидная, слишком большая или истёкшая удаляется. Если session storage недоступен, валидная legacy-копия временно сохраняется от потери.
 - Временные сетевые/HTTP/backend-ошибки получают две ограниченные автоматические попытки с backoff; ручной retry и событие восстановления сети используют тот же payload и `requestId`.
 - Backend сначала резервирует один код в private attempts, затем создаёт TXT, upsert-запись админки и завершает резервацию; частичный отказ продолжает ту же попытку.
 - Резервация связана с hash payload и не содержит имени, email, Telegram или сырого fingerprint; изменённый payload с тем же `requestId` отклоняется.
@@ -80,33 +82,64 @@
 - Privacy-страница и форма кандидата сообщают о локальной 24-часовой резервной копии.
 - `scripts/test-submission-reliability.js` покрывает TTL, восстановление, backoff, частичный сбой, resume, replay, конфликт payload и освобождение lock.
 
-## Открытые проверки следующего этапа 10
+## Завершено на этапе 10
 
-- Провести аудит Git history, CORS/JSONP, XSS, JSON/formula injection, brute force, OAuth scopes, payload limits и серверной валидации.
-- Оценить риск правильных ответов и расчёта на frontend и сравнить варианты backend-scoring без автоматического большого переноса.
-- Проверить rate limiting для публичных действий, health abuse и мусорные загрузки.
-- Зафиксировать security-решение и обязательные блокеры пилота.
+- История Git проверена на высокодостоверные secrets: совпадений не найдено; `.clasp.json` игнорируется и содержит только `scriptId`, OAuth credentials в репозиторий не входят.
+- Apps Script manifest оставляет минимальные scopes текущей архитектуры: external request и Script Properties.
+- GET/JSONP удалены из чувствительных действий; POST принимает только известные `action`.
+- Публичный health сокращён до минимального немутирующего liveness без путей, properties, folder listings и обращений к Яндекс Диску.
+- Backend строго проверяет размер и схему payload, `testId`, версии, поля, диапазоны, ответы и сгенерированный TXT. Порядковые номера обязательны и уникальны; legacy `questionId` пока необязателен, его формат/уникальность проверяются только при наличии.
+- Добавлены advisory rate limits через `CacheService`; это best-effort защита, а не атомарный IP-based gateway.
+- Точный `nextDate` удалён из backend-ответа retake; остаются coarse `daysLeft`/reservation delay и признаки `allowed`/`foundPreviousAttempt`.
+- `dev-quick` hard-disabled в публичных `checkAttempt`/`saveResult` по умолчанию через `PUBLIC_DEV_TEST_ENABLED=false`.
+- Контекст вопроса санитизируется по allowlist, динамические значения экранируются, страницы получили CSP meta и `no-referrer`.
+- TXT очищается от управляющих символов, pending PII переносится в `sessionStorage`.
+- Backend, candidate UI и admin UI явно маркируют scoring как `client-reported-unverified`.
+- Полные выводы: `docs/SECURITY_AUDIT.md`; архитектурная развилка: `docs/BACKEND_SCORING_DECISION.md`.
+
+## Проверка этапа 10
+
+- Полная матрица: 10/10 скриптов PASS.
+- Аудит банков: 240 вопросов, 0 ошибок, 0 предупреждений.
+- Existing deployment обновлён до `@49`, Web App URL не изменён; stale active deployments не обнаружены.
+- GET `checkAttempt` возвращает `method_not_allowed`; неизвестный POST action — `unknown_action`.
+- Публичный `dev-quick` отклонён как `test_not_public`.
+- Неверный admin password отклоняется; шестой запрос в окне получил `rate_limited`.
+- Реальный failed Financial Analyst сохранён с кодом `FA-X5P66`, `reportCreated:false`.
+- Идентичный replay вернул тот же `FA-X5P66` и `replayed:true`, не создавая второй результат.
+- Повторная попытка заблокирована с coarse `daysLeft`; точный `nextDate` отсутствует.
+- Implementation commit: pending.
 
 ## Оценка до финала roadmap
 
-- Осталось 11 этапов (`10–20`).
-- До pilot-ready MVP: ориентировочно 59–106 часов и 460–940 тыс. токенов Codex.
-- До завершения roadmap: ориентировочно 79–146 часов, 570 тыс. – 1,18 млн токенов и 2–4 календарные недели пилота.
+- Осталось 10 плановых этапов (`11–20`) и обязательный pilot gate 10A.
+- До технически готового ограниченного pilot MVP: 91–162 часа и примерно 700 тыс. – 1,38 млн токенов.
+- До конца roadmap: 111–202 часа, 810 тыс. – 1,62 млн токенов и 2–4 календарные недели пилота.
+- Из них базовые этапы 11–17: 43–74 часа / 340–680 тыс. токенов; 10A: 48–88 часов / 360–700 тыс. токенов.
+- Backend question delivery 10B оценивается отдельно в 80–160 часов / 600 тыс. – 1,2 млн токенов и частично пересекается с 10A.
+- Диапазон 10A предполагает mandatory `questionId`, базовый single-use signed attempt/invite и gateway abuse control; полноценные аккаунты/OTP/CAPTCHA зависят от выбранного провайдера и требуют уточнения.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.
 
 ## Известные production smoke-данные
 
-- Успешный dev-quick report: `DEV-Z2VK8.txt`.
-- Успешный Telegram/UTF-8 smoke report: `DEV-EZ3BY.txt`.
-- Неуспешный retake smoke: `FA-5DU43`; TXT не создавался.
-- Успешный scoring smoke report: `DEV-B4ABJ.txt`.
-- Надёжность отправки: failed `DEV-7S2N2`; повтор вернул тот же код с `replayed:true`, TXT не создавался.
+- Исторический успешный dev-quick report: `DEV-Z2VK8.txt`; публичный `dev-quick` теперь отключён.
+- Исторический Telegram/UTF-8 smoke report: `DEV-EZ3BY.txt`.
+- Исторический retake smoke: `FA-5DU43`; TXT не создавался.
+- Исторический scoring smoke report: `DEV-B4ABJ.txt`.
+- Историческая проверка надёжности отправки: failed `DEV-7S2N2`; повтор вернул тот же код с `replayed:true`, TXT не создавался.
+- Security production smoke: failed `FA-X5P66`, `reportCreated:false`; идентичный replay вернул тот же код с `replayed:true`; retake заблокирован без точного `nextDate`.
 - В служебных JSON есть dev-quick smoke-записи; админка их фильтрует.
 - Очистку выполнять только в рамках этапа 12/17 с резервной копией либо после явного подтверждения.
 
 ## Ограничения и риски MVP
 
-- Правильные ответы доступны frontend; перенос расчёта на backend требует отдельного решения этапа 10.
+- Правильные ответы доступны frontend, а backend получает клиентский расчёт. Строгая валидация не превращает его в подтверждённый результат; authoritative backend-scoring — обязательный pilot gate.
+- Backend question delivery рекомендуется для открытого или adversarial пилота; большой перенос не начат без согласования пользователя.
+- Текущие результаты должны интерпретироваться только как `client-reported-unverified`, а не как независимое доказательство знаний.
+- `saveResult` не требует server-issued challenge: обычные публичные банки позволяют создавать согласованные spam writes и расходовать Apps Script/Яндекс.Диск quota. Отключение `dev-quick` закрывает только самый дешёвый bypass.
+- `checkAttempt` остаётся email-enumeration oracle: точная дата скрыта, но `allowed`/`foundPreviousAttempt` раскрывают факт попытки. Полное исправление — invite/OTP/auth и внешний CAPTCHA/gateway perimeter.
+- Retake — deterrence, не identity control: email не верифицирован, 32-bit fingerprint задаёт клиент.
+- Scope Яндекс OAuth-токена неизвестен и, вероятно, шире `disk:/skillcheck`; code path allowlist не ограничивает blast radius токена. До пилота нужны регламент ротации и оценка app-folder/least-privilege доступа.
 - До пилота желательно переписать 4 высокоприоритетных спорных вопроса из `docs/QUESTION_BANK_AUDIT.md`; текущие тексты оставлены без изменений до подтверждения.
 - Четыре банка содержат ровно 40 вопросов; полноценная ротация 40 из 80 есть только у Credit Analyst.
 - Нет backup/удаления — этапы 12–13.
@@ -115,4 +148,4 @@
 
 ## Ручной шаг пользователя
 
-Сейчас не требуется.
+Сейчас не требуется. Список Apps Script deployments сверён: кроме HEAD и текущего стабильного deployment устаревших активных deployments текущего проекта нет.

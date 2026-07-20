@@ -1,8 +1,14 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-6";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-7";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+const RESERVATION_TTL_MS = 30 * 60 * 1000;
 const MAX_ADMIN_REPORT_CHARS = 1000000;
+const MAX_POST_BODY_CHARS = 250000;
+const MAX_GENERATED_REPORT_CHARS = 200000;
+const MAX_ANSWERS_PER_RESULT = 40;
+const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
+const PUBLIC_DEV_TEST_ENABLED = false;
 const DEFAULT_YANDEX_REPORTS_FOLDER = "disk:/skillcheck/reports";
 const DEFAULT_YANDEX_ADMIN_FILE = "disk:/skillcheck/admin/results.json";
 const DEFAULT_YANDEX_ATTEMPTS_FILE = "disk:/skillcheck/private/attempts.json";
@@ -29,83 +35,136 @@ const RETAKE_BYPASS_TEST_IDS = {
   "dev-quick": true
 };
 
+const EXPECTED_ANSWERS_BY_TEST_ID = {
+  "fa-junior": 40,
+  "ca-junior": 40,
+  "fpa-junior": 40,
+  "acc-junior": 40,
+  "bi-junior": 40,
+  "dev-quick": 1
+};
+
+const ALLOWED_ENGLISH_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+const ALLOWED_CANDIDATE_SOURCES = [
+  "HH.ru",
+  "Telegram",
+  "LinkedIn",
+  "Знакомый / рекомендация",
+  "Работодатель",
+  "Другое"
+];
+const ALLOWED_CANDIDATE_EXPERIENCE = [
+  "Нет опыта",
+  "Стажировка",
+  "До 6 месяцев",
+  "6-12 месяцев",
+  "1+ год"
+];
+
+const TEST_VERSIONS_BY_ID = {
+  "fa-junior": "FA Junior v2.3",
+  "ca-junior": "CA Junior v1.0",
+  "fpa-junior": "FP&A Junior v1.0",
+  "acc-junior": "ACC Junior v1.0",
+  "bi-junior": "BI Junior v1.0",
+  "dev-quick": "DEV Quick v1.0"
+};
+
+const BANK_VERSIONS_BY_ID = {
+  "fa-junior": "FA Junior v2.3",
+  "ca-junior": "CA Junior v2.0",
+  "fpa-junior": "FP&A Junior v2.0",
+  "acc-junior": "ACC Junior v2.0",
+  "bi-junior": "BI Junior v2.0",
+  "dev-quick": "Dev Quick Smoke Test v1.0"
+};
+
+const ALLOWED_BLOCKS_BY_TEST_ID = {
+  "fa-junior": ["excel", "finance", "reporting", "budget", "sql", "accounting"],
+  "ca-junior": ["logic", "pnl", "balance", "cashflow", "debt", "excel", "cases", "final"],
+  "fpa-junior": ["budget", "planfact", "forecast", "margin", "capex", "unit", "data", "commentary"],
+  "acc-junior": ["entries", "assets", "revenue", "vat", "amort", "closing", "docs", "excel"],
+  "bi-junior": ["sql", "joins", "dates", "model", "quality", "powerbi", "metrics", "business"],
+  "dev-quick": ["smoke"]
+};
+
 function doGet(e) {
   const params = e && e.parameter ? e.parameter : {};
   const action = String(params.action || "").trim();
 
   if (action === "checkAttempt") {
-    let result;
-
-    try {
-      result = checkAttemptHash(
-        String(params.testId || "").trim(),
-        String(params.email || "").trim().toLowerCase(),
-        String(params.browserFingerprint || "").trim()
-      );
-    } catch (error) {
-      console.error(error && error.stack ? error.stack : error);
-      result = {
-        allowed: false,
-        status: "error",
-        message: sanitizeErrorMessage(error)
-      };
-    }
-
-    return jsonOrJsonpResponse(result, params.callback || "callback");
+    return jsonResponse(methodNotAllowedResponse("Проверка попытки доступна только через POST."));
   }
 
   if (action === "health") {
-    try {
-      return jsonOrJsonpResponse(buildHealthStatus(), params.callback);
-    } catch (error) {
-      console.error(error && error.stack ? error.stack : error);
-      return jsonOrJsonpResponse({
-        ok: false,
-        backendVersion: BACKEND_VERSION,
-        yandexErrorMessage: sanitizeDiagnosticMessage(error),
-        errorMessage: sanitizeDiagnosticMessage(error)
-      }, params.callback);
-    }
+    return jsonResponse(buildPublicHealthStatus());
   }
 
   if (action === "adminResults" || action === "adminReport") {
-    return jsonOrJsonpResponse({
-      ok: false,
-      status: "error",
-      backendVersion: BACKEND_VERSION,
-      message: "Для защищённых административных операций требуется POST-запрос."
-    }, params.callback);
+    return jsonResponse(methodNotAllowedResponse("Для административных операций требуется POST-запрос."));
   }
 
   return jsonResponse({
     ok: true,
     status: "ok",
-    message: "SkillCheck Apps Script backend работает через Яндекс Диск API."
+    backendVersion: BACKEND_VERSION,
+    message: "SkillCheck backend доступен."
   });
 }
 
 function doPost(e) {
   try {
     const data = parseRequestBody(e);
+    const action = String(data.action || "").trim();
 
-    if (data.action === "getAdminResults" || data.action === "adminResults") {
+    if (action === "getAdminResults" || action === "adminResults") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "results");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
       return jsonResponse(getAdminResults(String(data.password || "")));
     }
 
-    if (data.action === "getAdminReport" || data.action === "adminReport") {
+    if (action === "getAdminReport" || action === "adminReport") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "report");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
       return jsonResponse(getAdminReport(String(data.password || ""), String(data.code || "")));
     }
 
-    if (data.action === "checkAttempt") {
+    if (action === "checkAttempt") {
+      const validatedAttempt = validateCheckAttemptRequest(data);
+      if (!validatedAttempt.ok) return jsonResponse(validatedAttempt.response);
+      const attemptLimit = consumeRateLimit(
+        "check-attempt",
+        validatedAttempt.data.testId + "|" + validatedAttempt.data.email + "|" + validatedAttempt.data.browserFingerprint,
+        8,
+        60
+      );
+      const globalAttemptLimit = consumeRateLimit("check-attempt-global", "shared", 120, 60);
+      if (!attemptLimit.allowed || !globalAttemptLimit.allowed) {
+        return jsonResponse(buildRateLimitedResponse(Math.max(attemptLimit.retryAfterSeconds, globalAttemptLimit.retryAfterSeconds)));
+      }
       return jsonResponse(checkAttemptHash(
-        String(data.testId || "").trim(),
-        String(data.email || "").trim().toLowerCase(),
-        String(data.browserFingerprint || "").trim()
+        validatedAttempt.data.testId,
+        validatedAttempt.data.email,
+        validatedAttempt.data.browserFingerprint
       ));
     }
 
-    return jsonResponse(saveTestResult(data));
+    if (action === "saveResult") {
+      const validatedResult = validateSubmissionRequest(data);
+      if (!validatedResult.ok) return jsonResponse(validatedResult.response);
+      const submissionLimit = consumeRateLimit("save-result", validatedResult.data.requestId, 6, 60);
+      const globalSubmissionLimit = consumeRateLimit("save-result-global", "shared", 60, 60);
+      if (!submissionLimit.allowed || !globalSubmissionLimit.allowed) {
+        return jsonResponse(buildRateLimitedResponse(Math.max(submissionLimit.retryAfterSeconds, globalSubmissionLimit.retryAfterSeconds)));
+      }
+      return jsonResponse(saveTestResult(validatedResult.data));
+    }
+
+    return jsonResponse(buildValidationErrorResponse("unknown_action", "Неизвестное действие запроса."));
   } catch (error) {
+    if (error && error.publicRequestError) {
+      return jsonResponse(buildValidationErrorResponse(error.failureCode, error.publicMessage));
+    }
     console.error("POST request failed before a safe response could be created.");
     return jsonResponse({
       ok: false,
@@ -115,6 +174,466 @@ function doPost(e) {
       message: "Сервис временно не обработал запрос. Повторите отправку."
     });
   }
+}
+
+function buildPublicHealthStatus() {
+  return {
+    ok: true,
+    status: "alive",
+    service: "skillcheck-backend",
+    backendVersion: BACKEND_VERSION
+  };
+}
+
+function methodNotAllowedResponse(message) {
+  return {
+    ok: false,
+    status: "method_not_allowed",
+    retryable: false,
+    failureCode: "method_not_allowed",
+    backendVersion: BACKEND_VERSION,
+    message: String(message || "Для этого действия требуется другой HTTP-метод.")
+  };
+}
+
+function buildValidationErrorResponse(failureCode, message) {
+  return {
+    ok: false,
+    status: "invalid_request",
+    retryable: false,
+    failureCode: String(failureCode || "invalid_request"),
+    backendVersion: BACKEND_VERSION,
+    message: String(message || "Запрос не прошёл проверку.")
+  };
+}
+
+function buildRateLimitedResponse(retryAfterSeconds) {
+  return {
+    ok: false,
+    status: "rate_limited",
+    retryable: true,
+    failureCode: "rate_limited",
+    retryAfterSeconds: Math.max(1, Number(retryAfterSeconds || 60)),
+    backendVersion: BACKEND_VERSION,
+    message: "Слишком много запросов. Повторите действие немного позже."
+  };
+}
+
+function publicRequestError(failureCode, message) {
+  const error = new Error("Public request validation failed.");
+  error.publicRequestError = true;
+  error.failureCode = String(failureCode || "invalid_request");
+  error.publicMessage = String(message || "Запрос не прошёл проверку.");
+  return error;
+}
+
+function validateCheckAttemptRequest(data) {
+  try {
+    assertAllowedObjectKeys(data, ["action", "testId", "email", "browserFingerprint"], "checkAttempt");
+    const testId = validateTestId(data.testId);
+    assertPublicTestEnabled(testId);
+    const email = validateEmail(data.email);
+    const browserFingerprint = validateBrowserFingerprint(data.browserFingerprint);
+    return {
+      ok: true,
+      data: {
+        action: "checkAttempt",
+        testId: testId,
+        email: email,
+        browserFingerprint: browserFingerprint
+      }
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) {
+      return { ok: false, response: buildValidationErrorResponse(error.failureCode, error.publicMessage) };
+    }
+    throw error;
+  }
+}
+
+function validateSubmissionRequest(data) {
+  try {
+    assertAllowedObjectKeys(data, [
+      "action", "requestId", "testId", "testVersion", "bankVersion", "testTitle",
+      "name", "email", "telegram", "englishLevel", "candidateSource", "candidateExperience",
+      "employerShareConsent", "browserFingerprint", "score", "total", "rawScore", "rawTotal",
+      "unansweredCount", "percent", "finalScore", "penalty", "badge", "passStatus",
+      "finalDecision", "recommendation", "tabSwitches", "trustScore", "blockResults", "answers"
+    ], "saveResult");
+
+    const requestId = normalizeSubmissionRequestId(data.requestId);
+    if (!requestId) throw publicRequestError("invalid_request_id", "Некорректный идентификатор отправки.");
+
+    const testId = validateTestId(data.testId);
+    assertPublicTestEnabled(testId);
+    const testVersion = validateBoundedText(data.testVersion, 100, true, "Версия теста");
+    const bankVersion = validateBoundedText(data.bankVersion, 100, true, "Версия банка");
+    if (testVersion !== TEST_VERSIONS_BY_ID[testId] || bankVersion !== BANK_VERSIONS_BY_ID[testId]) {
+      throw publicRequestError("unsupported_test_version", "Версия теста устарела. Обновите страницу и начните новую попытку.");
+    }
+
+    const name = validateBoundedText(data.name, 120, true, "Имя");
+    const email = validateEmail(data.email);
+    const telegram = validateTelegramForRequest(data.telegram);
+    const englishLevel = validateEnum(data.englishLevel, ALLOWED_ENGLISH_LEVELS, "Уровень английского");
+    const candidateSource = validateEnum(data.candidateSource, ALLOWED_CANDIDATE_SOURCES, "Источник кандидата");
+    const candidateExperience = validateEnum(data.candidateExperience, ALLOWED_CANDIDATE_EXPERIENCE, "Опыт кандидата");
+    const employerShareConsent = validateBoolean(data.employerShareConsent, "Согласие на передачу работодателю");
+    const browserFingerprint = validateBrowserFingerprint(data.browserFingerprint);
+    const tabSwitches = validateInteger(data.tabSwitches, 0, 1000, "Количество уходов со вкладки");
+    const answers = validateSubmissionAnswers(data.answers, testId);
+
+    const rawTotal = answers.reduce((sum, answer) => sum + answer.points, 0);
+    const rawScore = answers.reduce((sum, answer) => sum + answer.earnedPoints, 0);
+    const percent = rawTotal > 0 ? Math.round(rawScore * 100 / rawTotal) : 0;
+    const penalty = calculateServerPenalty(tabSwitches);
+    const finalScore = Math.max(0, Math.min(100, percent - penalty));
+    const unansweredCount = answers.filter(answer => answer.selectedAnswer === "Нет ответа").length;
+    const trustScore = calculateServerTrustScore(finalScore, tabSwitches, unansweredCount);
+
+    assertReportedNumber(data.rawTotal, rawTotal, "rawTotal");
+    assertReportedNumber(data.rawScore, rawScore, "rawScore");
+    assertReportedNumber(data.percent, percent, "percent");
+    assertReportedNumber(data.score, percent, "score");
+    assertReportedNumber(data.finalScore, finalScore, "finalScore");
+    assertReportedNumber(data.penalty, penalty, "penalty");
+    assertReportedNumber(data.unansweredCount, unansweredCount, "unansweredCount");
+    assertReportedNumber(data.trustScore, trustScore, "trustScore");
+
+    const status = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
+    const blockResults = buildValidatedBlockResults(answers, data.blockResults, rawTotal, testId);
+
+    return {
+      ok: true,
+      data: {
+        action: "saveResult",
+        requestId: requestId,
+        testId: testId,
+        testVersion: testVersion,
+        bankVersion: bankVersion,
+        testTitle: TEST_TITLES_BY_ID[testId],
+        name: name,
+        email: email,
+        telegram: telegram,
+        englishLevel: englishLevel,
+        candidateSource: candidateSource,
+        candidateExperience: candidateExperience,
+        employerShareConsent: employerShareConsent,
+        browserFingerprint: browserFingerprint,
+        score: percent,
+        total: 100,
+        rawScore: rawScore,
+        rawTotal: rawTotal,
+        unansweredCount: unansweredCount,
+        percent: percent,
+        finalScore: finalScore,
+        penalty: penalty,
+        badge: getAdminBadge(finalScore, tabSwitches),
+        passStatus: status,
+        finalDecision: status === "passed" ? "Успешно" : "Неуспешно",
+        recommendation: getServerRecommendation(finalScore, percent, trustScore, tabSwitches),
+        tabSwitches: tabSwitches,
+        trustScore: trustScore,
+        blockResults: blockResults,
+        answers: answers,
+        scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
+      }
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) {
+      return { ok: false, response: buildValidationErrorResponse(error.failureCode, error.publicMessage) };
+    }
+    throw error;
+  }
+}
+
+function validateSubmissionAnswers(value, testId) {
+  if (!Array.isArray(value)) throw publicRequestError("invalid_answers", "Ответы имеют неверный формат.");
+  const expectedCount = EXPECTED_ANSWERS_BY_TEST_ID[testId];
+  if (value.length !== expectedCount || value.length > MAX_ANSWERS_PER_RESULT) {
+    throw publicRequestError("invalid_answers_count", "Количество ответов не соответствует тесту.");
+  }
+
+  const seenNumbers = Object.create(null);
+  const seenQuestionIds = Object.create(null);
+  return value.map((source, index) => {
+    if (!isPlainObject(source)) throw publicRequestError("invalid_answer", "Один из ответов имеет неверный формат.");
+    assertAllowedObjectKeys(source, [
+      "number", "questionId", "topic", "block", "difficulty", "question", "selectedAnswer",
+      "correctAnswer", "isCorrect", "timedOut", "status", "points", "earnedPoints",
+      "timeLimit", "timeSpent", "comment"
+    ], "answer");
+
+    const number = validateInteger(source.number, 1, expectedCount, "Номер ответа");
+    if (seenNumbers[number]) throw publicRequestError("duplicate_answer", "В ответах найден повтор номера вопроса.");
+    seenNumbers[number] = true;
+
+    const questionId = validateOptionalIdentifier(source.questionId, 64, "ID вопроса");
+    if (questionId) {
+      if (seenQuestionIds[questionId]) throw publicRequestError("duplicate_question", "В ответах найден повтор ID вопроса.");
+      seenQuestionIds[questionId] = true;
+    }
+
+    const block = validateEnum(source.block, ALLOWED_BLOCKS_BY_TEST_ID[testId] || [], "Блок вопроса");
+    const points = validateNumber(source.points, 0.01, 100, "Баллы вопроса");
+    const isCorrect = validateBoolean(source.isCorrect, "Признак правильного ответа");
+    const earnedPoints = validateNumber(source.earnedPoints, 0, points, "Полученные баллы");
+    if ((isCorrect && earnedPoints !== points) || (!isCorrect && earnedPoints !== 0)) {
+      throw publicRequestError("inconsistent_answer_score", "Баллы одного из ответов противоречат его статусу.");
+    }
+
+    const selectedAnswer = validateBoundedText(source.selectedAnswer, 500, true, "Ответ кандидата");
+    if (selectedAnswer === "Нет ответа" && isCorrect) {
+      throw publicRequestError("inconsistent_answer", "Неотвеченный вопрос не может быть отмечен как верный.");
+    }
+
+    const timedOut = validateBoolean(source.timedOut, "Признак таймаута");
+    return {
+      number: number,
+      questionId: questionId,
+      topic: validateBoundedText(source.topic, 120, false, "Тема вопроса"),
+      block: block,
+      difficulty: validateEnum(source.difficulty, ["easy", "medium", "hard", "calc", "case"], "Сложность вопроса"),
+      question: validateBoundedText(source.question, 1000, true, "Текст вопроса"),
+      selectedAnswer: selectedAnswer,
+      correctAnswer: validateBoundedText(source.correctAnswer, 500, true, "Правильный ответ"),
+      isCorrect: isCorrect,
+      timedOut: timedOut,
+      status: selectedAnswer === "Нет ответа" ? (timedOut ? "Время вышло" : "Нет ответа") : (isCorrect ? "Верно" : "Неверно"),
+      points: points,
+      earnedPoints: earnedPoints,
+      timeLimit: validateNumber(source.timeLimit, 1, 600, "Лимит времени"),
+      timeSpent: validateNumber(source.timeSpent, 0, 3600, "Время ответа"),
+      comment: validateBoundedText(source.comment, 1500, false, "Комментарий к ответу")
+    };
+  });
+}
+
+function buildValidatedBlockResults(answers, sourceBlocks, rawTotal, testId) {
+  if (!isPlainObject(sourceBlocks) || Object.keys(sourceBlocks).length > 12) {
+    throw publicRequestError("invalid_blocks", "Skill Card имеет неверный формат.");
+  }
+  const allowedBlocks = ALLOWED_BLOCKS_BY_TEST_ID[testId] || [];
+  if (Object.keys(sourceBlocks).some(blockKey => allowedBlocks.indexOf(blockKey) === -1)) {
+    throw publicRequestError("invalid_blocks", "Skill Card содержит неизвестный блок.");
+  }
+
+  const totals = Object.create(null);
+  answers.forEach(answer => {
+    if (!totals[answer.block]) totals[answer.block] = { earned: 0, total: 0 };
+    totals[answer.block].earned += answer.earnedPoints;
+    totals[answer.block].total += answer.points;
+  });
+
+  const result = Object.create(null);
+  Object.keys(totals).forEach(blockKey => {
+    const source = isPlainObject(sourceBlocks[blockKey]) ? sourceBlocks[blockKey] : {};
+    const total = totals[blockKey].total;
+    const earned = totals[blockKey].earned;
+    result[blockKey] = {
+      name: validateBoundedText(source.name || blockKey, 120, true, "Название блока"),
+      weight: rawTotal > 0 ? total / rawTotal : 0,
+      earned: earned,
+      total: total,
+      percent: total > 0 ? Math.round(earned * 100 / total) : 0
+    };
+  });
+  return result;
+}
+
+function validateTestId(value) {
+  const testId = String(value || "").trim();
+  if (!Object.prototype.hasOwnProperty.call(TEST_TITLES_BY_ID, testId)) {
+    throw publicRequestError("invalid_test_id", "Неизвестный тест.");
+  }
+  return testId;
+}
+
+function assertPublicTestEnabled(testId) {
+  if (testId === "dev-quick" && !PUBLIC_DEV_TEST_ENABLED) {
+    throw publicRequestError("test_not_public", "Этот служебный тест недоступен в публичном режиме.");
+  }
+}
+
+function validateEmail(value) {
+  const email = String(value || "").trim().toLowerCase();
+  if (email.length < 3 || email.length > 254 || /[\u0000-\u0020\u007f]/.test(email) ||
+      !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    throw publicRequestError("invalid_email", "Укажите корректный email.");
+  }
+  return email;
+}
+
+function validateBrowserFingerprint(value) {
+  const fingerprint = String(value || "").trim().toLowerCase();
+  if (!/^[a-f0-9]{8}$/.test(fingerprint)) {
+    throw publicRequestError("invalid_browser_fingerprint", "Не удалось проверить технический идентификатор браузера.");
+  }
+  return fingerprint;
+}
+
+function validateTelegramForRequest(value) {
+  try {
+    return normalizeTelegramContact(value);
+  } catch (error) {
+    throw publicRequestError("invalid_telegram", "Некорректный формат Telegram.");
+  }
+}
+
+function validateBoundedText(value, maxLength, required, fieldName) {
+  const text = String(value === undefined || value === null ? "" : value).trim();
+  if ((required && !text) || text.length > maxLength || /[\u0000-\u001f\u007f]/.test(text)) {
+    throw publicRequestError("invalid_field", String(fieldName || "Поле") + " имеет неверный формат.");
+  }
+  return text;
+}
+
+function validateIdentifier(value, maxLength, fieldName) {
+  const identifier = String(value || "").trim();
+  if (!identifier || identifier.length > maxLength || !/^[A-Za-z0-9_-]+$/.test(identifier)) {
+    throw publicRequestError("invalid_identifier", String(fieldName || "Идентификатор") + " имеет неверный формат.");
+  }
+  return identifier;
+}
+
+function validateOptionalIdentifier(value, maxLength, fieldName) {
+  const identifier = String(value || "").trim();
+  return identifier ? validateIdentifier(identifier, maxLength, fieldName) : "";
+}
+
+function validateEnum(value, allowedValues, fieldName) {
+  const normalized = String(value || "").trim();
+  if (allowedValues.indexOf(normalized) === -1) {
+    throw publicRequestError("invalid_enum", String(fieldName || "Поле") + " имеет недопустимое значение.");
+  }
+  return normalized;
+}
+
+function validateBoolean(value, fieldName) {
+  if (typeof value !== "boolean") {
+    throw publicRequestError("invalid_boolean", String(fieldName || "Поле") + " имеет неверный формат.");
+  }
+  return value;
+}
+
+function validateNumber(value, min, max, fieldName) {
+  const number = Number(value);
+  if (!isFinite(number) || number < min || number > max) {
+    throw publicRequestError("invalid_number", String(fieldName || "Число") + " вне допустимого диапазона.");
+  }
+  return Math.round(number * 1000000) / 1000000;
+}
+
+function validateInteger(value, min, max, fieldName) {
+  const number = Number(value);
+  if (!isFinite(number) || Math.floor(number) !== number || number < min || number > max) {
+    throw publicRequestError("invalid_integer", String(fieldName || "Число") + " имеет неверный формат.");
+  }
+  return number;
+}
+
+function assertReportedNumber(reportedValue, expectedValue, fieldName) {
+  const reported = Number(reportedValue);
+  if (!isFinite(reported) || Math.abs(reported - expectedValue) > 0.000001) {
+    throw publicRequestError("inconsistent_result", "Расчёт результата не прошёл проверку: " + fieldName + ".");
+  }
+}
+
+function assertAllowedObjectKeys(value, allowedKeys, objectName) {
+  if (!isPlainObject(value)) {
+    throw publicRequestError("invalid_object", String(objectName || "Объект") + " имеет неверный формат.");
+  }
+  const allowed = {};
+  allowedKeys.forEach(key => { allowed[key] = true; });
+  const unknown = Object.keys(value).find(key => !allowed[key]);
+  if (unknown) throw publicRequestError("unknown_field", "Запрос содержит неизвестное поле.");
+}
+
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) &&
+    (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null));
+}
+
+function calculateServerPenalty(tabSwitches) {
+  if (tabSwitches === 0) return 0;
+  if (tabSwitches === 1) return 3;
+  if (tabSwitches <= 3) return 7;
+  return 15;
+}
+
+function calculateServerTrustScore(finalScore, tabSwitches, unansweredCount) {
+  let score = finalScore;
+  if (tabSwitches === 0) score += 5;
+  else if (tabSwitches <= 2) score -= 2;
+  else score -= 8;
+  if (unansweredCount > 5) score -= 5;
+  else if (unansweredCount > 2) score -= 2;
+  return Math.max(0, Math.min(100, score));
+}
+
+function getServerRecommendation(finalScore, percent, trustScore, tabSwitches) {
+  if (tabSwitches > 2) return "Результат требует осторожной интерпретации";
+  if (finalScore >= SUCCESS_THRESHOLD && trustScore >= 70) return "Рекомендуется к интервью";
+  if (finalScore >= 60 || percent >= 60) return "Можно рассмотреть при наличии стажировки / junior-позиции";
+  return "Не рекомендуется без дополнительной проверки";
+}
+
+function consumeRateLimit(scope, identifier, maxRequests, windowSeconds) {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const bucket = Math.floor(nowSeconds / windowSeconds);
+  const retryAfterSeconds = windowSeconds - (nowSeconds % windowSeconds);
+  const cacheKey = "rl-" + String(scope || "request").replace(/[^a-z0-9-]/gi, "").slice(0, 30) + "-" +
+    sha256Hex(String(identifier || "shared")).slice(0, 24) + "-" + bucket;
+
+  try {
+    if (typeof CacheService === "undefined") return { allowed: true, retryAfterSeconds: retryAfterSeconds };
+    const cache = CacheService.getScriptCache();
+    const current = Number(cache.get(cacheKey) || 0);
+    if (current >= maxRequests) return { allowed: false, retryAfterSeconds: retryAfterSeconds };
+    cache.put(cacheKey, String(current + 1), Math.min(21600, windowSeconds + 5));
+  } catch (error) {
+    console.error("Rate limiter unavailable; request continued without cache protection.");
+  }
+  return { allowed: true, retryAfterSeconds: retryAfterSeconds };
+}
+
+function guardAdminRequest(password, operation) {
+  const supplied = String(password || "");
+  const authGate = consumeRateLimit("admin-auth-global", "shared", 60, 300);
+  if (!authGate.allowed) {
+    return { ok: false, response: buildRateLimitedResponse(authGate.retryAfterSeconds) };
+  }
+  if (isAdminPasswordValid(supplied)) {
+    const allowedOperation = consumeRateLimit("admin-" + operation, "authorized", 60, 300);
+    return allowedOperation.allowed
+      ? { ok: true }
+      : { ok: false, response: buildRateLimitedResponse(allowedOperation.retryAfterSeconds) };
+  }
+
+  const perPassword = consumeRateLimit("admin-invalid-password", supplied.slice(0, 256), 5, 300);
+  if (!perPassword.allowed) {
+    return { ok: false, response: buildRateLimitedResponse(perPassword.retryAfterSeconds) };
+  }
+  return {
+    ok: false,
+    response: {
+      ok: false,
+      status: "error",
+      backendVersion: BACKEND_VERSION,
+      message: "Доступ запрещён."
+    }
+  };
+}
+
+function isAdminPasswordValid(password) {
+  const expected = getRequiredProperty("ADMIN_PASSWORD");
+  const left = sha256Hex(String(password || ""));
+  const right = sha256Hex(String(expected || ""));
+  let difference = left.length ^ right.length;
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    difference |= (left.charCodeAt(i % left.length) ^ right.charCodeAt(i % right.length));
+  }
+  return difference === 0;
 }
 
 function saveTestResult(resultData) {
@@ -153,19 +672,26 @@ function saveTestResult(resultData) {
     }
 
     failureStage = "payload-hash";
-    const payloadHash = buildSubmissionPayloadHash(Object.assign({}, resultData, {
+    const payloadForHash = Object.assign({}, resultData, {
       testId: testId,
       email: email,
       browserFingerprint: fingerprint,
       telegram: telegram,
       finalScore: finalScore,
       percent: percent
-    }));
+    });
+    const payloadHash = buildSubmissionPayloadHash(payloadForHash);
+    const legacyPayloadHash = buildLegacySubmissionPayloadHash(payloadForHash);
     failureStage = "existing-result";
     const existingResult = findAdminResultByRequestId(requestId);
 
     if (existingResult) {
-      if (String(existingResult.testId || "") !== testId) {
+      const existingResultHash = String(existingResult.payloadHash || "");
+      const existingResultHashMatches = !existingResultHash ||
+        (Number(existingResult.payloadHashVersion || 1) === 2
+          ? existingResultHash === payloadHash
+          : (existingResultHash === legacyPayloadHash || existingResultHash === payloadHash));
+      if (String(existingResult.testId || "") !== testId || !existingResultHashMatches) {
         return buildSubmissionConflictResponse();
       }
       console.log("Idempotent result replay: " + maskRequestIdForLog(requestId));
@@ -178,10 +704,31 @@ function saveTestResult(resultData) {
     let now = null;
 
     if (existingAttempt) {
+      const existingAttemptHash = String(existingAttempt.payloadHash || "");
+      const existingAttemptHashMatches = Number(existingAttempt.payloadHashVersion || 1) === 2
+        ? existingAttemptHash === payloadHash
+        : (existingAttemptHash === legacyPayloadHash || existingAttemptHash === payloadHash);
       if (String(existingAttempt.testId || "") !== testId ||
-          String(existingAttempt.payloadHash || "") !== payloadHash ||
+          !existingAttemptHashMatches ||
           !String(existingAttempt.code || "")) {
         return buildSubmissionConflictResponse();
+      }
+
+      const existingAttemptTime = new Date(existingAttempt.date || "").getTime();
+      const reservationExpired = existingAttempt.submissionState === "reserved" &&
+        (!isFinite(existingAttemptTime) || Date.now() - existingAttemptTime >= RESERVATION_TTL_MS);
+      if (reservationExpired) {
+        const retryAttemptCheck = checkAttemptHash(testId, email, fingerprint);
+        if (!retryAttemptCheck.allowed) {
+          return Object.assign({}, retryAttemptCheck, {
+            ok: false,
+            status: "blocked",
+            blocked: true,
+            retryable: false,
+            reportCreated: false,
+            message: retryAttemptCheck.message || "Повторная попытка заблокирована."
+          });
+        }
       }
 
       code = String(existingAttempt.code);
@@ -216,6 +763,7 @@ function saveTestResult(resultData) {
         status: status,
         requestId: requestId,
         payloadHash: payloadHash,
+        payloadHashVersion: 2,
         submissionState: "reserved",
         finalScore: finalScore,
         percent: percent,
@@ -227,12 +775,16 @@ function saveTestResult(resultData) {
     if (status === "passed") {
       failureStage = "report-write";
       reportPath = joinDiskPath(getReportsFolderPath(), code + ".txt");
-      uploadTextToYandexDisk(reportPath, buildTxtReport(Object.assign({}, resultData, {
+      const reportText = buildTxtReport(Object.assign({}, resultData, {
         code: code,
         status: status,
         telegram: telegram,
         completedAt: now.toISOString()
-      })));
+      }));
+      if (reportText.length > MAX_GENERATED_REPORT_CHARS) {
+        return buildValidationErrorResponse("report_too_large", "Отчёт превышает допустимый размер.");
+      }
+      uploadTextToYandexDisk(reportPath, reportText);
       reportCreated = true;
     }
 
@@ -250,7 +802,10 @@ function saveTestResult(resultData) {
       reportCreated: reportCreated,
       reportPath: reportPath,
       reportCode: code,
-      requestId: requestId
+      requestId: requestId,
+      payloadHash: payloadHash,
+      payloadHashVersion: 2,
+      scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
     });
     failureStage = "attempt-complete";
     const attemptHashes = hashAttemptIdentifiers(testId, email, fingerprint);
@@ -263,10 +818,12 @@ function saveTestResult(resultData) {
       status: status,
       requestId: requestId,
       payloadHash: payloadHash,
+      payloadHashVersion: 2,
       submissionState: "completed",
       finalScore: finalScore,
       percent: percent,
-      reportCreated: reportCreated
+      reportCreated: reportCreated,
+      scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
     });
     failureStage = "done";
     return buildSavedResultResponse({
@@ -275,7 +832,8 @@ function saveTestResult(resultData) {
       finalScore: finalScore,
       percent: percent,
       status: status,
-      reportCreated: reportCreated
+      reportCreated: reportCreated,
+      scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
     }, false);
   } catch (error) {
     console.error("Result submission failed; stage=" + failureStage + "; request=" + maskRequestIdForLog(requestIdForLog));
@@ -335,7 +893,8 @@ function buildTxtReport(resultData) {
   report += "Код результата: " + safeText(resultData.code) + "\n";
   report += "Test ID: " + safeText(resultData.testId) + "\n";
   report += "Тест: " + safeText(testTitle) + "\n";
-  report += "Дата и время прохождения: " + safeText(resultData.completedAt) + "\n\n";
+  report += "Дата и время прохождения: " + safeText(resultData.completedAt) + "\n";
+  report += "Проверка балла: клиентский расчёт, структурно проверен backend, но не подтверждён закрытым ключом ответов\n\n";
 
   report += "КАНДИДАТ\n";
   report += "--------\n";
@@ -438,7 +997,10 @@ function checkAttemptHash(testId, email, fingerprint) {
   const found = attempts.find(attempt => {
     if (!attempt || attempt.testId !== testId) return false;
     const attemptTime = new Date(attempt.date || "").getTime();
-    if (!isFinite(attemptTime) || now - attemptTime >= RETAKE_WINDOW_MS) return false;
+    if (!isFinite(attemptTime)) return false;
+    const age = now - attemptTime;
+    if (age < 0 || age >= RETAKE_WINDOW_MS) return false;
+    if (attempt.submissionState === "reserved" && age >= RESERVATION_TTL_MS) return false;
 
     const emailMatches = Boolean(hashes.emailHash && attempt.emailHash === hashes.emailHash);
     const fingerprintMatches = Boolean(hashes.fingerprintHash && attempt.fingerprintHash === hashes.fingerprintHash);
@@ -448,18 +1010,19 @@ function checkAttemptHash(testId, email, fingerprint) {
 
   if (found) {
     const previousAttemptTime = new Date(found.date).getTime();
-    const nextAttemptTime = previousAttemptTime + RETAKE_WINDOW_MS;
-    return {
+    const isReservation = found.submissionState === "reserved";
+    const nextAttemptTime = previousAttemptTime + (isReservation ? RESERVATION_TTL_MS : RETAKE_WINDOW_MS);
+    const blockedResponse = {
       allowed: false,
-      message: "Этот тест уже был пройден. Повторное прохождение пока недоступно.",
+      message: isReservation
+        ? "Предыдущая отправка этого теста ещё обрабатывается. Повторите проверку позже."
+        : "Этот тест уже был пройден. Повторное прохождение пока недоступно.",
       testId: testId,
-      foundPreviousAttempt: true,
-      code: found.code || "",
-      previousAttemptDate: found.date || "",
-      nextDate: new Date(nextAttemptTime).toISOString(),
-      daysLeft: Math.max(1, Math.ceil((nextAttemptTime - now) / (24 * 60 * 60 * 1000))),
-      status: found.status || ""
+      foundPreviousAttempt: true
     };
+    if (isReservation) blockedResponse.retryAfterSeconds = Math.max(1, Math.ceil((nextAttemptTime - now) / 1000));
+    else blockedResponse.daysLeft = Math.max(1, Math.ceil((nextAttemptTime - now) / (24 * 60 * 60 * 1000)));
+    return blockedResponse;
   }
 
   return {
@@ -830,7 +1393,10 @@ function appendAdminResult(summaryData) {
     reportCreated: Boolean(summaryData.reportCreated),
     reportPath: String(summaryData.reportPath || ""),
     reportCode: String(summaryData.reportCode || summaryData.code || ""),
-    requestId: normalizedRequestId
+    requestId: normalizedRequestId,
+    payloadHash: String(summaryData.payloadHash || ""),
+    payloadHashVersion: Number(summaryData.payloadHashVersion || 0) === 2 ? 2 : 1,
+    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
   };
   const existingIndex = results.findIndex(result => result && (
     (normalizedRequestId && result.requestId === normalizedRequestId) ||
@@ -863,6 +1429,65 @@ function buildSubmissionConflictResponse() {
 }
 
 function buildSubmissionPayloadHash(resultData) {
+  const answers = Array.isArray(resultData.answers) ? resultData.answers : [];
+  const blocks = isPlainObject(resultData.blockResults) ? resultData.blockResults : {};
+  const canonical = {
+    schemaVersion: 2,
+    testId: String(resultData.testId || "").trim(),
+    testVersion: String(resultData.testVersion || ""),
+    bankVersion: String(resultData.bankVersion || ""),
+    name: String(resultData.name || "").trim(),
+    email: String(resultData.email || "").trim().toLowerCase(),
+    telegram: String(resultData.telegram || ""),
+    englishLevel: String(resultData.englishLevel || ""),
+    candidateSource: String(resultData.candidateSource || ""),
+    candidateExperience: String(resultData.candidateExperience || ""),
+    employerShareConsent: Boolean(resultData.employerShareConsent),
+    browserFingerprint: String(resultData.browserFingerprint || ""),
+    rawScore: Number(resultData.rawScore || 0),
+    rawTotal: Number(resultData.rawTotal || 0),
+    unansweredCount: Number(resultData.unansweredCount || 0),
+    percent: Number(resultData.percent || resultData.score || 0),
+    finalScore: Number(resultData.finalScore || 0),
+    penalty: Number(resultData.penalty || 0),
+    tabSwitches: Number(resultData.tabSwitches || 0),
+    trustScore: Number(resultData.trustScore || 0),
+    badge: String(resultData.badge || ""),
+    passStatus: String(resultData.passStatus || ""),
+    finalDecision: String(resultData.finalDecision || ""),
+    recommendation: String(resultData.recommendation || ""),
+    blockResults: Object.keys(blocks).sort().map(blockKey => ({
+      key: blockKey,
+      name: String(blocks[blockKey] && blocks[blockKey].name || ""),
+      weight: Number(blocks[blockKey] && blocks[blockKey].weight || 0),
+      earned: Number(blocks[blockKey] && blocks[blockKey].earned || 0),
+      total: Number(blocks[blockKey] && blocks[blockKey].total || 0),
+      percent: Number(blocks[blockKey] && blocks[blockKey].percent || 0)
+    })),
+    answers: answers.map(answer => ({
+      number: Number(answer.number || 0),
+      questionId: String(answer.questionId || ""),
+      topic: String(answer.topic || ""),
+      block: String(answer.block || ""),
+      difficulty: String(answer.difficulty || ""),
+      question: String(answer.question || ""),
+      selectedAnswer: String(answer.selectedAnswer || ""),
+      correctAnswer: String(answer.correctAnswer || ""),
+      isCorrect: Boolean(answer.isCorrect),
+      timedOut: Boolean(answer.timedOut),
+      status: String(answer.status || ""),
+      earnedPoints: Number(answer.earnedPoints || 0),
+      points: Number(answer.points || 0),
+      timeSpent: Number(answer.timeSpent || 0),
+      timeLimit: Number(answer.timeLimit || 0),
+      comment: String(answer.comment || "")
+    }))
+  };
+  const salt = getRequiredProperty("ATTEMPT_HASH_SALT");
+  return sha256Hex(JSON.stringify(canonical) + "|" + salt);
+}
+
+function buildLegacySubmissionPayloadHash(resultData) {
   const answers = Array.isArray(resultData.answers) ? resultData.answers : [];
   const canonical = {
     testId: String(resultData.testId || "").trim(),
@@ -925,6 +1550,7 @@ function buildSavedResultResponse(row, replayed) {
     passStatus: row.status === "passed" ? "passed" : "failed",
     reportCreated: Boolean(row.reportCreated),
     replayed: Boolean(replayed),
+    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED,
     message: "Сохраните код результата: " + String(row.code || "")
   };
 }
@@ -956,10 +1582,12 @@ function upsertAttemptRecord(attemptData) {
     status: attemptData.status === "passed" ? "passed" : "failed",
     requestId: requestId,
     payloadHash: String(attemptData.payloadHash || ""),
+    payloadHashVersion: Number(attemptData.payloadHashVersion || 0) === 2 ? 2 : 1,
     submissionState: attemptData.submissionState === "completed" ? "completed" : "reserved",
     finalScore: Number(attemptData.finalScore || 0),
     percent: Number(attemptData.percent || 0),
-    reportCreated: Boolean(attemptData.reportCreated)
+    reportCreated: Boolean(attemptData.reportCreated),
+    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
   };
   const existingIndex = attempts.findIndex(attempt => attempt && (
     (requestId && attempt.requestId === requestId) ||
@@ -972,7 +1600,7 @@ function upsertAttemptRecord(attemptData) {
 }
 
 function getAdminResults(password) {
-  if (password !== getRequiredProperty("ADMIN_PASSWORD")) {
+  if (!isAdminPasswordValid(password)) {
     return {
       ok: false,
       status: "error",
@@ -993,7 +1621,7 @@ function getAdminResults(password) {
 }
 
 function getAdminReport(password, code) {
-  if (password !== getRequiredProperty("ADMIN_PASSWORD")) {
+  if (!isAdminPasswordValid(password)) {
     return {
       ok: false,
       status: "error",
@@ -1066,9 +1694,10 @@ function sanitizeAdminResult(row) {
     : "unknown";
   const finalScore = Number(row.finalScore || 0);
   const tabSwitches = Number(row.tabSwitches || 0);
+  const code = normalizeResultCode(row.code);
 
   return {
-    code: String(row.code || ""),
+    code: code || "INVALID",
     testId: testId,
     testTitle: TEST_TITLES_BY_ID[testId] || "Неизвестный тест",
     finalScore: finalScore,
@@ -1077,7 +1706,8 @@ function sanitizeAdminResult(row) {
     date: String(row.date || ""),
     status: row.status === "passed" ? "passed" : "failed",
     badge: getAdminBadge(finalScore, tabSwitches),
-    reportCreated: Boolean(row.reportCreated)
+    reportCreated: Boolean(row.reportCreated),
+    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
   };
 }
 
@@ -1097,24 +1727,33 @@ function ensureSkillCheckFolders() {
 
 function parseRequestBody(e) {
   if (!e || !e.postData || !e.postData.contents) {
-    throw new Error("Пустой запрос.");
+    throw publicRequestError("empty_request", "Пустой запрос.");
   }
-  return JSON.parse(e.postData.contents);
+  const body = String(e.postData.contents || "");
+  const declaredLength = Number(e.postData.length || e.contentLength || body.length);
+  if (body.length > MAX_POST_BODY_CHARS || (isFinite(declaredLength) && declaredLength > MAX_POST_BODY_CHARS)) {
+    throw publicRequestError("payload_too_large", "Запрос превышает допустимый размер.");
+  }
+
+  const contentType = String(e.postData.type || "").split(";", 1)[0].trim().toLowerCase();
+  if (contentType && contentType !== "text/plain" && contentType !== "application/json") {
+    throw publicRequestError("unsupported_content_type", "Неподдерживаемый формат запроса.");
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(body);
+  } catch (error) {
+    throw publicRequestError("invalid_json", "Запрос содержит некорректный JSON.");
+  }
+  if (!isPlainObject(parsed)) throw publicRequestError("invalid_json_object", "Ожидался JSON-объект.");
+  return parsed;
 }
 
 function jsonResponse(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-function jsonOrJsonpResponse(payload, callback) {
-  const safeCallback = String(callback || "").replace(/[^\w.$]/g, "");
-  if (!safeCallback) return jsonResponse(payload);
-
-  return ContentService
-    .createTextOutput(safeCallback + "(" + JSON.stringify(payload) + ")")
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
 function getRequiredProperty(name) {
@@ -1128,7 +1767,7 @@ function getScriptProperty(name) {
 }
 
 function getConfiguredDiskPath(name, defaultValue) {
-  return getScriptProperty(name) || defaultValue;
+  return validateSkillCheckDiskPath(getScriptProperty(name) || defaultValue);
 }
 
 function getReportsFolderPath() {
@@ -1145,6 +1784,16 @@ function getAttemptsFilePath() {
 
 function normalizeDiskPath(path) {
   return String(path || "").replace(/\/+/g, "/").replace(/^disk:\//, "disk:/");
+}
+
+function validateSkillCheckDiskPath(path) {
+  const source = String(path || "");
+  const normalized = normalizeDiskPath(source);
+  if (/[\u0000-\u001f\u007f]/.test(source) || source.indexOf("..") !== -1 ||
+      !/^disk:\/skillcheck(?:\/[A-Za-z0-9._-]+)*$/.test(normalized)) {
+    throw new Error("Некорректный путь хранилища SkillCheck.");
+  }
+  return normalized;
 }
 
 function joinDiskPath(folderPath, fileName) {
@@ -1164,7 +1813,10 @@ function getDiskPathName(path) {
 }
 
 function safeText(value) {
-  return String(value === undefined || value === null ? "" : value).replace(/\r/g, " ").trim();
+  return String(value === undefined || value === null ? "" : value)
+    .replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeTelegramContact(value) {

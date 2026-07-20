@@ -16,7 +16,9 @@ index.html -> test.html?test=<testId> -> data/<testId>.json -> Google Apps Scrip
 
 Google Apps Script остаётся backend/API. Google Sheets и Google Drive больше не используются.
 
-Backend имеет диагностический endpoint `?action=health`. Он проверяет наличие нужных Script Properties, доступ к Яндекс Диску, папки `reports/admin/private`, а также создаёт `admin/results.json` и `private/attempts.json` как `[]`, если они ещё отсутствуют.
+Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Защищённая расширенная диагностика запланирована отдельно.
+
+Этап 10 завершён и опубликован в существующем deployment `@49` без смены URL: backend `yandex-disk-mvp-2026-07-20-7`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`. Реализованы строгий API-контракт, allowlist тестов/версий, ограничения payload/TXT, advisory rate limits, XSS/TXT-санитизация, CSP meta и перенос полной pending-копии в `sessionStorage`. Валидный неистёкший legacy envelope мигрирует из `localStorage`, invalid/expired удаляется. Sensitive GET и JSONP удалены. Полная матрица: 10/10 скриптов PASS; 240 вопросов, 0 ошибок и 0 предупреждений. Implementation commit: pending.
 
 Рабочие тесты:
 
@@ -63,10 +65,10 @@ status
 badge
 tabSwitches
 reportCreated
-reportPath/reportCode
+scoreVerification
 ```
 
-Узнать, кто стоит за кодом, нельзя через сайт или `admin.html`. Это возможно только вручную через закрытый Яндекс Диск и TXT-файл с соответствующим кодом.
+Узнать, кто стоит за кодом, нельзя через публичный список. Полный TXT загружается отдельным защищённым POST-запросом только после входа в админку и не вставляется в DOM.
 
 ## Как работает прохождение
 
@@ -77,13 +79,15 @@ reportPath/reportCode
 5. Вопросы и варианты ответа перемешиваются.
 6. Перед стартом проверяется согласие на ПДн, 18+ и анти-повтор.
 7. Кандидат отвечает по одному вопросу с таймером.
-8. Сайт считает баллы, штраф за уходы, итоговый балл и Trust Score.
+8. Сайт считает предварительные баллы, штраф за уходы, итоговый балл и Trust Score.
 9. Frontend отправляет результат в Google Apps Script.
 10. Backend генерирует случайный код результата.
 11. Backend пишет обезличенную запись в `results.json`.
-12. Backend пишет hash попытки в `attempts.json`. Dev quick-test сохраняет попытку, но не блокирует повторный запуск.
+12. Backend пишет hash попытки в `attempts.json`. Внутренняя retake-логика умеет bypass для dev quick-test, но публичные `checkAttempt`/`saveResult` отклоняют `dev-quick` как `test_not_public` при production-флаге по умолчанию.
 13. Если `finalScore >= 80`, backend создаёт TXT-отчёт на Яндекс Диске.
-14. Frontend показывает код результата, процент, итоговый балл, статус и диагностические признаки сохранения.
+14. Frontend показывает код результата, процент, итоговый балл, статус сохранения и предупреждение о клиентском расчёте.
+
+Backend пока не имеет закрытого answer key: он проверяет строгую схему и внутреннюю согласованность, но сохраняет `scoreVerification: client-reported-unverified`. Правильные ответы доступны в публичных JSON. Authoritative backend-scoring обязателен до пилота; для открытого/adversarial сценария рекомендуется backend question delivery. Большая миграция не начата без отдельного согласования пользователя.
 
 ## Что нельзя ломать
 
@@ -94,3 +98,18 @@ reportPath/reportCode
 - Google Script URL без отдельного запроса;
 - секреты Script Properties;
 - правило: GitHub Pages не хранит результаты, персональные данные, токены или JSON-базы.
+
+## Security-границы текущего MVP
+
+- Публичный Apps Script endpoint остаётся анонимным, потому что кандидат не обязан иметь Google-аккаунт.
+- `checkAttempt`, `saveResult`, административные результаты и TXT используют только POST и известные `action`.
+- `CacheService` rate limits — best-effort, не IP-based и не заменяют gateway/WAF.
+- Точный retake `nextDate` удалён, но `allowed`/`foundPreviousAttempt` остаются email-enumeration oracle; email не верифицирован, 32-bit fingerprint контролируется клиентом.
+- `saveResult` не требует server-issued challenge. Публичные answer keys допускают согласованный quota-spam; `dev-quick` hard-disabled по умолчанию через `PUBLIC_DEV_TEST_ENABLED=false`, но обычным тестам нужен signed attempt/invite в 10A.
+- `questionId` совместим с legacy и пока необязателен; уникальность проверяется только при его наличии.
+- CSP задана через meta и допускает inline JS/CSS текущих single-file страниц; это полезное ограничение, но не эквивалент полного набора HTTP security headers.
+- Полная pending-копия ПДн хранится только в `sessionStorage`; `localStorage` используется для неперсонального retake marker.
+- Текущий код результата подтверждает сохранение, а не независимую проверку знаний.
+- Scope Яндекс OAuth-токена не подтверждён и может быть шире `disk:/skillcheck`; нужны ротация и оценка app-folder/least-privilege credential.
+
+Подробности: `docs/SECURITY_AUDIT.md` и `docs/BACKEND_SCORING_DECISION.md`.

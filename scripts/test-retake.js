@@ -97,7 +97,7 @@ backendContext.currentAttempts = [{
 const blocked = backendContext.checkAttemptHash(testId, email, "another-browser");
 assert.equal(blocked.allowed, false, "same test and email must be blocked");
 assert(!blocked.message.includes("через 21 день"), "backend message must not contain a stale fixed countdown");
-assert.equal(blocked.nextDate, new FixedDate(Date.parse(recentDate) + 21 * 24 * 60 * 60 * 1000).toISOString());
+assert.equal(Object.hasOwn(blocked, "nextDate"), false, "backend must not disclose an exact retake date");
 assert.equal(blocked.daysLeft, 20);
 assert.equal(
   backendContext.checkAttemptHash(testId, "another@example.test", fingerprint).allowed,
@@ -148,23 +148,45 @@ const frontendContext = {
 };
 
 const frontendFunctions = [
+  "sanitizeLegacyRetakeMarkers",
   "formatBlockedAttemptMessage",
   "getLocalRetakeLock",
   "getAttemptStorageKey",
   "formatDateForUser"
 ].map(name => extractFunction(frontend, name)).join("\n");
-vm.runInNewContext(frontendFunctions, frontendContext);
+vm.runInNewContext(
+  'const TEST_CONFIG = {"fa-junior":{},"ca-junior":{}};\n' + frontendFunctions,
+  frontendContext
+);
 
-const expectedDate = new FixedDate(blocked.nextDate).toLocaleDateString("ru-RU");
+const expectedNextDate = new FixedDate(Date.parse(recentDate) + 21 * 24 * 60 * 60 * 1000).toISOString();
+const expectedDate = new FixedDate(expectedNextDate).toLocaleDateString("ru-RU");
 const blockedMessage = frontendContext.formatBlockedAttemptMessage(blocked);
-assert(blockedMessage.includes(expectedDate), "frontend must show the exact next-attempt date");
 assert(blockedMessage.includes("20 дн."), "frontend must show remaining days");
+assert(!blockedMessage.includes("Точная дата"), "frontend must not invent an exact date absent from backend response");
 
 const localKey = frontendContext.getAttemptStorageKey(testId);
+const legacyCompletedAt = new FixedDate(fixedNow - 24 * 60 * 60 * 1000).toISOString();
+storage.set(localKey, JSON.stringify({
+  testId,
+  completedAt: legacyCompletedAt,
+  nextAttemptAt: expectedNextDate,
+  browserFingerprint: "legacy-fingerprint",
+  email: "legacy@example.test"
+}));
+storage.set("skillcheck_attempt_ca-junior", "not-json");
+frontendContext.sanitizeLegacyRetakeMarkers();
+const sanitizedMarker = JSON.parse(storage.get(localKey));
+assert.deepEqual(Object.keys(sanitizedMarker).sort(), ["completedAt", "nextAttemptAt", "testId"], "legacy marker must be rewritten without fingerprint or email");
+assert.equal(storage.has("skillcheck_attempt_ca-junior"), false, "invalid legacy marker must be removed");
+const sanitizedRaw = storage.get(localKey);
+frontendContext.sanitizeLegacyRetakeMarkers();
+assert.equal(storage.get(localKey), sanitizedRaw, "legacy-marker sanitization must be idempotent");
+
 storage.set(localKey, JSON.stringify({
   testId,
   completedAt: new FixedDate(fixedNow - 24 * 60 * 60 * 1000).toISOString(),
-  nextAttemptAt: blocked.nextDate,
+  nextAttemptAt: expectedNextDate,
   browserFingerprint: "local-hash"
 }));
 const localBlock = frontendContext.getLocalRetakeLock(testId);
@@ -183,6 +205,8 @@ assert(!/\bemail\s*:/.test(attemptWriter), "attempts.json must not store raw ema
 assert(!/telegram/i.test(attemptWriter), "attempts.json must not store Telegram");
 assert(!/browserFingerprint\s*:/.test(attemptWriter), "attempts.json must not store raw browser parameters");
 assert(/emailHash/.test(attemptWriter) && /fingerprintHash/.test(attemptWriter), "attempts.json must store hashes");
+assert.doesNotMatch(extractFunction(frontend, "saveLocalAttemptLock"), /browserFingerprint\s*:/, "new local retake markers must not store a raw browser fingerprint");
+assert.match(frontend, /DOMContentLoaded[\s\S]{0,500}sanitizeLegacyRetakeMarkers\(\)/, "legacy retake markers must be sanitized during startup");
 assert(/\"dev-quick\"[\s\S]*?skipRetakeCheck:\s*true/.test(frontend), "dev-quick frontend bypass is missing");
 
 console.log("Retake stage checks: OK");

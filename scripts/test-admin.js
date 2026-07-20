@@ -41,6 +41,7 @@ assert.match(doGetFunction, /административных операций �
 
 const frontendContext = { Array, Boolean, Date, Number, Object, String };
 const frontendFunctions = [
+  "normalizeResultCode",
   "normalizeAdminRows",
   "filterAndSortResults",
   "calculateAdminMetrics",
@@ -60,7 +61,7 @@ vm.runInNewContext(
 
 const fixture = [
   {
-    code: "FA-AAAA1",
+    code: "FA-AAAA2",
     testId: "fa-junior",
     testTitle: "private@example.com",
     finalScore: 90,
@@ -107,7 +108,7 @@ const fixture = [
 const normalized = frontendContext.normalizeAdminRows(fixture);
 assert.deepEqual(
   Object.keys(normalized[0]).sort(),
-  ["badge", "code", "date", "finalScore", "percent", "reportCreated", "status", "tabSwitches", "testId", "testTitle"].sort(),
+  ["badge", "code", "date", "finalScore", "percent", "reportCreated", "scoreVerification", "status", "tabSwitches", "testId", "testTitle"].sort(),
   "frontend must keep only the anonymous contract"
 );
 assert.equal(normalized[0].email, undefined, "email must be stripped");
@@ -115,9 +116,10 @@ assert.equal(normalized[0].fingerprintHash, undefined, "hash must be stripped");
 assert.equal(normalized[0].reportPath, undefined, "report path must be stripped");
 assert.equal(normalized[0].testTitle, "Financial Analyst", "test title must be derived from known test id");
 assert.equal(normalized[0].badge, "Junior Strong", "badge must be derived from score and tab switches");
+assert.equal(normalized[0].scoreVerification, "client-reported-unverified", "admin must label client-reported scores as unverified");
 
 const defaultRows = frontendContext.filterAndSortResults(normalized, { sortOrder: "date-desc" });
-assert.deepEqual(Array.from(defaultRows, row => row.code), ["FA-AAAA1", "CA-BBBB2", "FA-DDDD4"], "technical rows hidden by default and dates sorted newest first");
+assert.deepEqual(Array.from(defaultRows, row => row.code), ["FA-AAAA2", "CA-BBBB2", "FA-DDDD4"], "technical rows hidden by default and dates sorted newest first");
 
 const devRows = frontendContext.filterAndSortResults(normalized, { test: "dev-quick", sortOrder: "date-desc" });
 assert.deepEqual(Array.from(devRows, row => row.code), ["DEV-CCCC3"], "technical test can be selected explicitly");
@@ -148,6 +150,7 @@ const backendContext = {
   Number,
   String,
   Boolean,
+  isAdminPasswordValid: password => password === "correct-password",
   getRequiredProperty: () => "correct-password",
   getAdminFilePath: () => "disk:/skillcheck/admin/results.json",
   readJsonFromYandexDisk: () => storedRows
@@ -155,7 +158,9 @@ const backendContext = {
 
 vm.runInNewContext(
   'const BACKEND_VERSION = "' + backendVersion[1] + '";\n' +
+    'const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";\n' +
     'const TEST_TITLES_BY_ID = {"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budgeting Junior","acc-junior":"Accounting Junior","bi-junior":"Finance BI Junior","dev-quick":"Dev Quick Test"};\n' +
+    extractFunction(backend, "normalizeResultCode") + "\n" +
     extractFunction(backend, "getAdminBadge") + "\n" +
     extractFunction(backend, "sanitizeAdminResult") + "\n" +
     extractFunction(backend, "getAdminResults"),
@@ -177,8 +182,9 @@ assert.equal(allowed.results[0].testTitle, "Financial Analyst Junior", "backend 
 assert.equal(allowed.results[0].badge, "Junior Strong", "backend must derive the badge");
 assert.deepEqual(
   Object.keys(allowed.results[0]).sort(),
-  ["badge", "code", "date", "finalScore", "percent", "reportCreated", "status", "tabSwitches", "testId", "testTitle"].sort(),
+  ["badge", "code", "date", "finalScore", "percent", "reportCreated", "scoreVerification", "status", "tabSwitches", "testId", "testTitle"].sort(),
   "backend anonymous contract"
 );
+assert.equal(allowed.results[0].scoreVerification, "client-reported-unverified", "backend must label client-reported scores as unverified");
 
 console.log("Admin panel tests passed: transport, access rejection, privacy contract, filters, sorting, metrics, distributions and escaping.");

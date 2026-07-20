@@ -26,31 +26,43 @@
 - [x] Поля `Источник кандидата` и `Опыт`.
 - [x] Candidate Summary в TXT-отчёте.
 - [x] Первичный QA-аудит банков в `docs/QA_REVIEW.md`.
+- [x] Security-аудит этапа 10 и решение по backend-scoring задокументированы.
+- [x] Подготовлены POST-only API, строгая backend-валидация, минимальный health, advisory rate limits, XSS/TXT-санитизация и CSP meta.
+- [x] Новая pending-копия с ПДн перенесена в `sessionStorage`; valid legacy envelope мигрирует, invalid/oversized/expired удаляется; scoring явно помечается `client-reported-unverified`.
 
 ## До запуска кандидатов
 
-- [ ] Настроить Script Properties: `YANDEX_DISK_TOKEN`, `YANDEX_DISK_REPORTS_FOLDER`, `YANDEX_DISK_ADMIN_FILE`, `YANDEX_DISK_ATTEMPTS_FILE`, `ATTEMPT_HASH_SALT`, `ADMIN_PASSWORD`.
-- [ ] Скопировать обновлённый `apps-script/Code.gs` в Google Apps Script.
-- [ ] Создать новый Apps Script deployment.
-- [ ] Открыть `<WEB_APP_URL>?action=health` и убедиться, что `ok: true`.
-- [ ] Проверить, что `health` не выводит токен, пароль или salt.
+- [x] Настроить Script Properties: `YANDEX_DISK_TOKEN`, `YANDEX_DISK_REPORTS_FOLDER`, `YANDEX_DISK_ADMIN_FILE`, `YANDEX_DISK_ATTEMPTS_FILE`, `ATTEMPT_HASH_SALT`, `ADMIN_PASSWORD`.
+- [x] После полной локальной матрицы обновить существующий Apps Script deployment этапа 10 до `@49` без смены URL.
+- [x] Открыть `<WEB_APP_URL>?action=health`: ровно `ok/status/service/backendVersion`, backend `yandex-disk-mvp-2026-07-20-7`.
+- [x] Проверить, что `health` не выводит token/password/salt, пути, properties, folder listings и состояние JSON, не обращается к storage и ничего не создаёт.
+- [x] Сверить список Apps Script deployments: кроме HEAD и текущего стабильного deployment устаревших активных deployments не обнаружено.
+- [x] Hard-disable публичный `dev-quick` по умолчанию (`PUBLIC_DEV_TEST_ENABLED=false`, `test_not_public`).
+- [ ] Согласовать и реализовать authoritative backend-scoring, mandatory `questionId`, single-use signed attempt/invite и gateway abuse control до приглашения реальных кандидатов.
+- [ ] Убрать публичный email-enumeration lookup: controlled pilot через invite token; публичный поток через OTP/auth и при необходимости CAPTCHA.
+- [ ] Зафиксировать, что retake — deterrence, и выбрать уровень identity verification для пилота.
+- [ ] Проверить scope/возраст Яндекс OAuth-токена, выполнить безопасную ротацию по регламенту и оценить app-folder/least-privilege credential.
+- [ ] Для открытого/adversarial пилота решить, требуется ли backend question delivery.
 - [ ] Указать email оператора в `privacy.html`.
 - [ ] Указать реальный email для запросов по персональным данным.
 - [ ] Проверить необходимость уведомления Роскомнадзора перед масштабированием.
 - [ ] Оценить вопрос хранения данных российских пользователей на Яндекс Диске.
 - [ ] Подготовить отдельное согласие на передачу результата работодателю, если проект начнёт работать с компаниями.
 - [ ] Подготовить регламент удаления данных по запросу пользователя.
-- [ ] Проверить, что `disk:/skillcheck/admin/results.json` создаётся автоматически.
-- [ ] Проверить, что `disk:/skillcheck/private/attempts.json` создаётся автоматически.
-- [ ] Пройти `dev-quick` на 100% и проверить `savedAttempt`, `savedAdmin`, `reportCreated`, `resultCode`.
-- [ ] Проверить `checkAttempt` через `attempts.json`.
-- [ ] Проверить, что успешный результат создаёт `disk:/skillcheck/reports/<code>.txt`.
-- [ ] Проверить, что неуспешный результат не создаёт TXT-отчёт.
-- [ ] Проверить, что `admin.html` показывает только обезличенные коды.
-- [ ] Проверить, что `admin.html` запрашивает пароль через `action=adminResults` и не содержит моковых кандидатов.
-- [ ] Проверить localStorage-lock до серверного запроса.
-- [ ] Проверить, что разные тесты можно проходить в один день.
-- [ ] Проверить отправку результата из `test.html` в Apps Script.
+- [x] Проверить, что `disk:/skillcheck/admin/results.json` существует и читается.
+- [x] Проверить, что `disk:/skillcheck/private/attempts.json` существует и читается.
+- [x] Пройти `dev-quick` и проверить запись результата, admin JSON, TXT-условие и код.
+- [x] Проверить `checkAttempt` через `attempts.json` и POST.
+- [x] Проверить, что успешный результат создаёт `disk:/skillcheck/reports/<code>.txt`.
+- [x] Проверить, что неуспешный результат не создаёт TXT-отчёт.
+- [x] Проверить, что `admin.html` показывает только обезличенные коды.
+- [x] Проверить, что `admin.html` запрашивает пароль через `action=adminResults` и не содержит моковых кандидатов.
+- [x] Проверить localStorage retake-lock до серверного запроса и отсутствие fingerprint в нём.
+- [x] Проверить, что разные тесты можно проходить в один день.
+- [x] Проверить отправку результата из `test.html` в Apps Script.
+- [x] Прогнать `scripts/test-security.js` и полную прежнюю тестовую матрицу: 10/10 PASS; 240 вопросов, 0 ошибок, 0 предупреждений.
+- [x] Выполнить production smoke: minimal health, GET `method_not_allowed`, `unknown_action`, `dev-quick` → `test_not_public`, шестой неверный admin password → `rate_limited`.
+- [x] Проверить реальное сохранение/replay/retake: failed `FA-X5P66`, `reportCreated:false`, тот же код при replay с `replayed:true`, coarse `daysLeft` без `nextDate`.
 - [ ] Пройти `fa-junior` локально и на GitHub Pages.
 - [ ] Пройти `ca-junior` локально и на GitHub Pages.
 - [ ] Пройти `fpa-junior` локально и на GitHub Pages.
@@ -73,7 +85,7 @@
 
 ## Следующий этап
 
-После доведения всех пяти тестов до минимально рабочего состояния нужно пройти их вручную, собрать первые тестовые результаты и улучшить вопросы по фактической статистике. Спорные вопросы и методические риски зафиксированы в `docs/QA_REVIEW.md`.
+Этап 10 закрыт. Перейти к этапу 11 — юридической и privacy-подготовке. Authoritative backend-scoring остаётся отдельным обязательным pilot gate 10A и начинается только после согласования scope. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
 
 ## Financial Analyst Junior
 
@@ -114,6 +126,6 @@
 - [ ] Сделать распределение случайной выборки по блокам, а не просто общий random.
 - [ ] Добавить поддержку `active: false` в редакторский процесс банков.
 - [ ] Улучшить TXT-отчёт: сильные/слабые темы и блок `Что проверить на интервью`.
-- [ ] Решить, нужна ли текущая `admin.html`.
+- [x] Реализовать обезличенную `admin.html` с защищённой выдачей TXT.
 - [ ] Рассмотреть PDF-отчёты.
 - [ ] Собрать первые 20-50 прохождений и улучшить вопросы по статистике.

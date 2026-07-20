@@ -2,7 +2,7 @@
 
 ## Общая схема
 
-SkillCheck работает как статический сайт на GitHub Pages. GitHub Pages хранит только HTML/CSS/JS и банки вопросов, но не хранит результаты, персональные данные, токены, отчёты или JSON-базы.
+SkillCheck работает как статический сайт на GitHub Pages. GitHub Pages хранит только HTML/CSS/JS и банки вопросов, но не хранит результаты, персональные данные, токены, отчёты или JSON-базы. В текущем MVP банки всё ещё содержат правильные ответы, поэтому scoring считается клиентским и неподтверждённым.
 
 ```text
 Пользователь
@@ -33,13 +33,13 @@ Google Sheets и Google Drive не используются.
 - перемешивает вопросы и варианты ответа;
 - пересчитывает индекс правильного ответа;
 - показывает вопросы по одному;
-- считает результат, штраф, плашку и Trust Score;
+- считает предварительный результат, штраф, плашку и Trust Score;
 - требует согласие на обработку персональных данных;
 - требует подтверждение 18+;
 - фиксирует необязательное согласие на передачу результата работодателю;
 - проверяет анти-повтор через Google Apps Script;
 - отправляет результат в Google Apps Script;
-- показывает пользователю случайный код результата, процент, итоговый балл и статус.
+- показывает пользователю случайный код результата, процент, итоговый балл, статус и предупреждение, что балл не подтверждён независимым серверным расчётом.
 
 ### `admin.html`
 
@@ -56,10 +56,10 @@ status
 badge
 tabSwitches
 reportCreated
-reportPath/reportCode
+scoreVerification
 ```
 
-Админка не показывает имя, email, telegram, fingerprint или сырые ответы кандидата. Вместо персональной ссылки она показывает только технический путь/код отчёта для ручной проверки на закрытом Яндекс Диске.
+Админка не показывает имя, email, telegram, fingerprint, внутренний путь или сырые ответы кандидата. Полный TXT можно скачать только отдельным защищённым POST-запросом после проверки админ-пароля. Таблица явно помечает текущий scoring как клиентский.
 
 ### `privacy.html`
 
@@ -71,12 +71,16 @@ Google Apps Script остаётся backend/API. Он:
 
 - читает секреты только из Script Properties;
 - проверяет анти-повтор через `attempts.json`;
+- проверяет строгий JSON-контракт, размеры, `testId`, версии, типы, длины и диапазоны;
 - генерирует случайный код результата;
 - создаёт TXT-отчёт только для успешных результатов;
 - пишет полный TXT-отчёт на Яндекс Диск;
 - пишет обезличенную запись в `results.json`;
 - отдаёт admin.html только обезличенные данные после проверки `ADMIN_PASSWORD`;
-- отдаёт `?action=health` для диагностики Script Properties, доступа к Яндекс Диску и наличия JSON-файлов.
+- применяет best-effort rate limits через `CacheService`;
+- отдаёт `?action=health` только как минимальный немутирующий liveness.
+
+Backend пока не имеет закрытого answer key и не пересчитывает знания независимо: он проверяет формат и внутреннюю согласованность клиентского результата и сохраняет `scoreVerification: client-reported-unverified`. Целевая модель до пилота описана в `docs/BACKEND_SCORING_DECISION.md`.
 
 ## Script Properties
 
@@ -111,10 +115,11 @@ disk:/skillcheck/private/attempts.json
 
 `admin/results.json` содержит только обезличенные данные для админки.
 
-`private/attempts.json` содержит только hash попытки:
+`private/attempts.json` содержит только отдельные salted hash для email и browser fingerprint, а также техническую reservation повторной отправки:
 
 ```text
-SHA-256(testId + emailLower + browserFingerprint + ATTEMPT_HASH_SALT)
+SHA-256(testId + emailLower + ATTEMPT_HASH_SALT)
+SHA-256(testId + browserFingerprint + ATTEMPT_HASH_SALT)
 ```
 
 В `attempts.json` нельзя хранить email, имя, telegram или fingerprint в открытом виде.
@@ -148,7 +153,9 @@ browserFingerprint
 
 Backend считает hash с salt из Script Properties и ищет его в `attempts.json`. Если hash уже существует для теста, повторное прохождение запрещается.
 
-Фронт также использует localStorage-ключ `skillcheck_attempt_<testId>` как быстрый локальный стоппер, но настоящая проверка выполняется на backend.
+Фронт также использует `localStorage`-ключ `skillcheck_attempt_<testId>` как быстрый локальный стоппер без сохранения fingerprint, но настоящая проверка выполняется на backend. Новая полная неподтверждённая отправка хранится в `sessionStorage` текущей вкладки и удаляется после подтверждения, закрытия вкладки или TTL. При обновлении валидный неистёкший legacy envelope мигрирует из `localStorage`; invalid/oversized/expired удаляется, а при недоступном `sessionStorage` валидная копия временно остаётся в прежнем storage.
+
+Эта схема ограничивает повтор, но не подтверждает identity: email не верифицируется, browser fingerprint — клиентское 32-bit значение. `checkAttempt` больше не выдаёт точный `nextDate`, но `allowed`/`foundPreviousAttempt` остаются email-enumeration oracle. Для controlled pilot нужны одноразовые server-issued invitations/attempts; для публичного потока — OTP/auth и anti-automation perimeter.
 
 ## Успешность
 
@@ -158,7 +165,7 @@ Backend считает hash с salt из Script Properties и ищет его в
 SUCCESS_THRESHOLD = 80
 ```
 
-Если `finalScore >= 80`, статус `passed` и backend создаёт TXT-отчёт. Если `finalScore < 80`, статус `failed`, TXT-отчёт не создаётся, но обезличенная попытка всё равно пишется в `results.json`.
+Если клиентский `finalScore >= 80`, текущий backend создаёт TXT-отчёт; при результате ниже порога TXT не создаётся, но обезличенная попытка пишется в `results.json`. Это поведение является техническим MVP-контрактом, а не авторитетной проверкой результата. До пилота порог и статус должен рассчитывать backend по закрытому ключу ответов.
 
 ## Яндекс Диск API
 
@@ -180,11 +187,21 @@ SUCCESS_THRESHOLD = 80
 <WEB_APP_URL>?action=health
 ```
 
-Ответ содержит `ok`, `backendVersion`, флаги наличия Script Properties, `yandexDiskAccess`, HTTP-код Яндекс Диска, пути `reportsFolder/adminFile/attemptsFile` и признаки `adminFileExists/attemptsFileExists`.
+Ответ содержит только минимальные поля liveness: `ok`, `status`, `service`, `backendVersion`.
 
-Endpoint не выводит `YANDEX_DISK_TOKEN`, `ADMIN_PASSWORD` или `ATTEMPT_HASH_SALT`.
+Endpoint не читает Script Properties или Яндекс Диск, ничего не создаёт и не раскрывает пути/состояние хранилища. Расширенная диагностика должна быть отдельной защищённой административной операцией этапа 14.
 
 ## Безопасность
+
+Публичный API принимает только известные POST actions и ограниченный JSON-объект. Backend проверяет allowlist тестов и версий, длины/типы/диапазоны полей, максимум 40 ответов, размер body и размер TXT. GET не выполняет чувствительные операции, JSONP удалён.
+
+У ответов обязательны уникальные порядковые номера. `questionId` пока legacy-optional: если он передан, backend проверяет формат и уникальность, но отсутствие ID не связывает ответ с вопросом банка. `saveResult` пока не требует server-issued attempt/challenge, поэтому согласованный spam может расходовать квоты. Самый дешёвый dev path закрыт: `PUBLIC_DEV_TEST_ENABLED=false`, а `checkAttempt`/`saveResult` отклоняют `dev-quick` с `test_not_public`.
+
+`CacheService` ограничивает частоту проверки попытки, сохранения и административных операций. Эти лимиты advisory и не заменяют атомарный IP-based gateway. Candidate/admin страницы используют escaping, allowlist-санитизацию question context, CSP meta и `referrer=no-referrer`. Управляющие символы в TXT нормализуются.
+
+Критический остаточный риск: публичные answer keys и frontend-scoring. Результаты помечаются `client-reported-unverified`; authoritative backend-scoring обязателен до пилота, а backend question delivery рекомендуется для открытого запуска.
+
+10A должен включать закрытый answer key, mandatory `questionId`, одноразовый signed attempt/invite и gateway abuse control. Фактический scope Яндекс OAuth-токена не подтверждён и может быть шире настроенных путей: code path allowlist защищает штатные вызовы, но не blast radius украденного токена. Нужны ротация и оценка app-folder/least-privilege credential.
 
 Не коммитить:
 
@@ -196,3 +213,5 @@ Endpoint не выводит `YANDEX_DISK_TOKEN`, `ADMIN_PASSWORD` или `ATTEM
 - salt;
 - client secret;
 - любые данные кандидатов.
+
+Результаты аудита и ограничения: `docs/SECURITY_AUDIT.md`.

@@ -245,7 +245,7 @@ Live smoke `DEV-EZ3BY`: Telegram нормализован в TXT, UTF-8 подт
 
 Production smoke: minimal health содержит ровно `ok/status/service/backendVersion`; GET `checkAttempt` возвращает `method_not_allowed`; неизвестный action — `unknown_action`; `dev-quick` — `test_not_public`; шестая попытка с неверным админ-паролем — `rate_limited`. Реальный failed Financial Analyst сохранён как `FA-X5P66`, `reportCreated:false`; идентичный replay вернул тот же код и `replayed:true`; retake заблокирован с coarse `daysLeft` без `nextDate`.
 
-Публикация этапа 10: backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, Web App URL не изменён; implementation commit: pending.
+Публикация этапа 10: backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, Web App URL не изменён; implementation commit: `e251be3`.
 
 ## Этап 11. Юридическая и privacy-подготовка MVP
 

@@ -2,7 +2,7 @@
 
 Дата аудита: 20 июля 2026 года.
 
-Статус: этап завершён 20 июля 2026 года. Защитные изменения прошли полную матрицу, опубликованы в существующем Apps Script deployment `@49` без смены URL и подтверждены production smoke. Implementation commit: pending.
+Статус: этап завершён 20 июля 2026 года. Защитные изменения прошли полную матрицу, опубликованы в существующем Apps Script deployment `@49` без смены URL и подтверждены production smoke. Implementation commit: `e251be3`.
 
 ## Резюме
 
@@ -143,8 +143,8 @@
 - [x] `dev-quick` hard-disabled по умолчанию через `PUBLIC_DEV_TEST_ENABLED=false`; обе публичные операции проверяют флаг.
 - [x] Зафиксированы backend `yandex-disk-mvp-2026-07-20-7`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6` и deployment `@49`.
 - [x] Список deployments сверён; устаревших активных deployments текущего проекта не обнаружено.
-- [ ] Зафиксировать SHA implementation commit: pending.
+- [x] Зафиксирован SHA implementation commit: `e251be3`.
 
 Production evidence: health содержит ровно `ok/status/service/backendVersion`; GET `checkAttempt` → `method_not_allowed`; неизвестный action → `unknown_action`; `dev-quick` → `test_not_public`; шестой неверный admin password → `rate_limited`. Реальный failed результат `FA-X5P66` сохранён с `reportCreated:false`; идентичный replay вернул тот же код и `replayed:true`; retake возвращает coarse `daysLeft` без `nextDate`.
 
-Публикация: backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, Web App URL не изменён; implementation commit: pending.
+Публикация: backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, Web App URL не изменён; implementation commit: `e251be3`.

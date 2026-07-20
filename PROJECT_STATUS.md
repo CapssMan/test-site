@@ -20,7 +20,7 @@
 - Admin frontend: `Build 2026.07.20.6`.
 - Backend: `yandex-disk-mvp-2026-07-20-7`.
 - Существующий Web App deployment: `@49`; URL не изменён.
-- Implementation commit: pending.
+- Implementation commit: `e251be3`.
 
 ## Live health
 
@@ -108,7 +108,7 @@
 - Реальный failed Financial Analyst сохранён с кодом `FA-X5P66`, `reportCreated:false`.
 - Идентичный replay вернул тот же `FA-X5P66` и `replayed:true`, не создавая второй результат.
 - Повторная попытка заблокирована с coarse `daysLeft`; точный `nextDate` отсутствует.
-- Implementation commit: pending.
+- Implementation commit: `e251be3`.
 
 ## Оценка до финала roadmap
 

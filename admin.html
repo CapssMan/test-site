@@ -5,156 +5,180 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkillCheck — Админ-панель</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #f8fafc;
-      color: #0f172a;
-      min-height: 100vh;
+    :root {
+      color-scheme: light;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --surface: #ffffff;
+      --canvas: #f8fafc;
+      --blue: #2563eb;
+      --violet: #7c3aed;
+      --green: #15803d;
+      --red: #b91c1c;
     }
-    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--canvas);
+      color: var(--ink);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .65; }
+    .container { width: min(100% - 32px, 1280px); margin: 0 auto; padding: 24px 0 40px; }
     header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 28px;
+      align-items: flex-start;
+      gap: 20px;
       padding-bottom: 20px;
-      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--line);
     }
-    header h1 { font-size: 28px; font-weight: 700; }
-    header p { color: #64748b; font-size: 14px; margin-top: 4px; }
-    header a { color: #3b82f6; text-decoration: none; font-size: 14px; }
-    .panel, .login-card, .table-container {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
+    h1 { margin: 0; font-size: clamp(24px, 4vw, 30px); }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    header a { color: var(--blue); font-size: 14px; text-decoration: none; white-space: nowrap; }
+    .version-line { margin-top: 7px; color: #94a3b8; font-size: 12px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, .04);
     }
-    .login-card {
-      max-width: 460px;
-      padding: 24px;
-      margin: 60px auto;
-    }
-    .login-card h2 { font-size: 22px; margin-bottom: 10px; }
-    .login-card p { color: #64748b; font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
-    input, select, button {
-      font: inherit;
-    }
+    .login-card { max-width: 460px; margin: 64px auto; padding: 28px; }
+    .login-card h2 { margin: 0 0 10px; font-size: 22px; }
+    .login-card p { margin: 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    label { display: block; margin-bottom: 6px; color: #334155; font-size: 13px; font-weight: 700; }
     input, select {
-      padding: 10px 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      background: white;
-      font-size: 14px;
+      min-height: 42px;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      background: #fff;
+      color: var(--ink);
     }
-    .login-card input { width: 100%; margin-bottom: 12px; }
-    button {
+    input:focus, select:focus, button:focus-visible, a:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, .2);
+      outline-offset: 2px;
+    }
+    .login-card input { width: 100%; }
+    .primary-btn, .secondary-btn, .ghost-btn {
+      min-height: 42px;
+      padding: 10px 15px;
+      border-radius: 9px;
       border: 0;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .primary-btn {
-      width: 100%;
-      padding: 12px 16px;
-      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-      color: white;
-    }
-    .secondary-btn {
-      padding: 10px 14px;
-      background: #eff6ff;
-      color: #1e40af;
-    }
-    .filters {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-    .filters input { min-width: 220px; }
-    .stats-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .stat-card {
-      background: white;
-      padding: 18px;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-    }
-    .stat-card .label { font-size: 13px; color: #64748b; margin-bottom: 8px; }
-    .stat-card .value { font-size: 28px; font-weight: 800; }
-    .dashboard {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .panel { padding: 18px; }
-    .panel h3 { font-size: 16px; margin-bottom: 14px; }
-    .bar-row { margin-bottom: 12px; }
-    .bar-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: #475569;
-      margin-bottom: 5px;
-    }
-    .bar-track {
-      height: 9px;
-      background: #e2e8f0;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-      border-radius: 999px;
-    }
-    .table-container { overflow: hidden; }
-    .table-container h3 {
-      padding: 18px 20px;
-      font-size: 18px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    th {
-      background: #f8fafc;
-      padding: 12px 14px;
-      text-align: left;
-      color: #475569;
-      border-bottom: 1px solid #e2e8f0;
-      white-space: nowrap;
-    }
-    td {
-      padding: 12px 14px;
-      border-bottom: 1px solid #f1f5f9;
-      vertical-align: middle;
-    }
-    tr:hover { background: #f8fafc; }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
       font-weight: 700;
     }
-    .badge-pass { background: #dcfce7; color: #166534; }
-    .badge-fail { background: #fee2e2; color: #991b1b; }
-    .code { font-weight: 800; color: #1e40af; }
-    .error { color: #dc2626; font-weight: 600; margin-top: 10px; }
-    .empty-state { padding: 42px; text-align: center; color: #94a3b8; }
-    .build-number { color: #94a3b8; font-size: 12px; margin-top: 6px; }
-    .hidden { display: none; }
-    @media (max-width: 800px) {
-      header { align-items: flex-start; flex-direction: column; gap: 10px; }
-      .dashboard { grid-template-columns: 1fr; }
-      .table-container { overflow-x: auto; }
+    .primary-btn { width: 100%; margin-top: 12px; color: #fff; background: linear-gradient(90deg, var(--blue), var(--violet)); }
+    .secondary-btn { color: #1e40af; background: #eff6ff; }
+    .ghost-btn { color: #475569; background: #f1f5f9; }
+    .status { min-height: 22px; margin-top: 12px; font-size: 14px; font-weight: 600; }
+    .status.error { color: var(--red); }
+    .status.success { color: var(--green); }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .load-meta { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .toolbar-actions { display: flex; gap: 8px; }
+    .alert {
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: #fef2f2;
+      color: #991b1b;
+      font-size: 14px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(150px, 1fr)) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .field input, .field select { width: 100%; }
+    .technical-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .technical-toggle input { min-height: auto; width: 16px; height: 16px; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat-card { padding: 16px; }
+    .stat-card .label { min-height: 34px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .stat-card .value { margin-top: 6px; font-size: 27px; font-weight: 800; }
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(250px, 1fr);
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .panel { padding: 18px; }
+    .panel h2 { margin: 0 0 16px; font-size: 17px; }
+    .bar-row { margin-bottom: 13px; }
+    .bar-row:last-child { margin-bottom: 0; }
+    .bar-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; color: #475569; font-size: 13px; }
+    .bar-track { height: 9px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
+    .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--violet)); }
+    .bar-fill.pass { background: #22c55e; }
+    .bar-fill.fail { background: #ef4444; }
+    .table-card { overflow: hidden; }
+    .table-heading { display: flex; justify-content: space-between; gap: 14px; padding: 17px 18px; border-bottom: 1px solid var(--line); }
+    .table-heading h2 { margin: 0; font-size: 18px; }
+    .table-heading span { color: var(--muted); font-size: 13px; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 11px 12px; background: #f8fafc; color: #475569; text-align: left; white-space: nowrap; }
+    td { padding: 12px; border-top: 1px solid #f1f5f9; vertical-align: middle; }
+    tbody tr:hover { background: #f8fafc; }
+    .code { color: #1e40af; font-weight: 800; white-space: nowrap; }
+    .badge { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .badge-pass { color: #166534; background: #dcfce7; }
+    .badge-fail { color: #991b1b; background: #fee2e2; }
+    .empty-state { padding: 42px 18px; color: #64748b; text-align: center; line-height: 1.55; }
+    .empty-state strong { display: block; margin-bottom: 4px; color: #334155; font-size: 16px; }
+    .hidden { display: none !important; }
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+      .filters { grid-template-columns: repeat(2, 1fr); }
+      .filters .search-field { grid-column: 1 / -1; }
+    }
+    @media (max-width: 720px) {
+      .container { width: min(100% - 24px, 1280px); padding-top: 16px; }
+      header, .toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar-actions { width: 100%; }
+      .toolbar-actions button { flex: 1; }
+      .login-card { margin: 34px auto; padding: 22px; }
+      .filters, .stats-grid, .dashboard { grid-template-columns: 1fr; }
+      .filters .search-field { grid-column: auto; }
+      .stat-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .stat-card .label { min-height: 0; }
+      .stat-card .value { margin: 0; font-size: 23px; }
+      .table-scroll { overflow: visible; }
+      table, tbody, tr, td { display: block; }
+      thead { display: none; }
+      tbody { padding: 10px; }
+      tbody tr { margin-bottom: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; }
+      tbody tr:last-child { margin-bottom: 0; }
+      td { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; border: 0; text-align: right; }
+      td::before { content: attr(data-label); color: var(--muted); font-weight: 600; text-align: left; }
+      .table-heading { align-items: baseline; }
     }
   </style>
 </head>
@@ -163,238 +187,411 @@
     <header>
       <div>
         <h1>SkillCheck — Админ-панель</h1>
-        <p>Обезличенные результаты: коды, тесты, баллы, статусы и аналитика.</p>
-        <div class="build-number">Build 2026.07.20.3</div>
+        <p>Только обезличенные результаты, итоговые метрики и технические признаки прохождения.</p>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.4</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
 
-    <section id="loginBlock" class="login-card">
-      <h2>Доступ к админке</h2>
-      <p>Введите пароль администратора. Пароль проверяется на backend через Google Apps Script и не хранится в этом файле.</p>
-      <input id="adminPassword" type="password" placeholder="Пароль администратора" autocomplete="current-password">
-      <button class="primary-btn" onclick="loadAdminResults()">Загрузить обезличенные данные</button>
-      <div id="loginStatus" class="error"></div>
+    <section id="loginBlock" class="card login-card">
+      <h2>Защищённый доступ</h2>
+      <p>Пароль отправляется только POST-запросом на backend, не добавляется в URL и не сохраняется в localStorage или sessionStorage.</p>
+      <form id="loginForm">
+        <label for="adminPassword">Пароль администратора</label>
+        <input id="adminPassword" type="password" autocomplete="current-password" required>
+        <button id="loginButton" class="primary-btn" type="submit">Загрузить данные</button>
+      </form>
+      <div id="loginStatus" class="status" role="status" aria-live="polite"></div>
     </section>
 
     <main id="adminBlock" class="hidden">
-      <div class="filters">
-        <input id="codeSearch" type="text" placeholder="Поиск по коду" oninput="renderAdmin()">
-        <select id="testFilter" onchange="renderAdmin()">
-          <option value="">Все тесты</option>
-          <option value="fa-junior">Financial Analyst</option>
-          <option value="ca-junior">Credit Analyst</option>
-          <option value="fpa-junior">FP&A / Budget</option>
-          <option value="acc-junior">Accounting</option>
-          <option value="bi-junior">Finance BI</option>
-          <option value="dev-quick">Dev Quick</option>
-        </select>
-        <select id="statusFilter" onchange="renderAdmin()">
-          <option value="">Все статусы</option>
-          <option value="passed">Успешные</option>
-          <option value="failed">Неуспешные</option>
-        </select>
-        <button class="secondary-btn" onclick="sortByScore()">Сортировать по баллам</button>
+      <div class="toolbar">
+        <div class="load-meta">
+          Последняя загрузка: <strong id="loadedAt">—</strong><br>
+          Отображаются только поля безопасного административного контракта.
+        </div>
+        <div class="toolbar-actions">
+          <button id="refreshButton" class="secondary-btn" type="button">Обновить</button>
+          <button id="logoutButton" class="ghost-btn" type="button">Выйти</button>
+        </div>
       </div>
 
-      <div class="stats-cards">
-        <div class="stat-card">
-          <div class="label">Всего попыток</div>
-          <div class="value" id="totalCount">0</div>
+      <div id="dashboardError" class="alert hidden" role="alert"></div>
+
+      <section class="card filters" aria-label="Фильтры результатов">
+        <div class="field search-field">
+          <label for="codeSearch">Код результата</label>
+          <input id="codeSearch" type="search" placeholder="Например, FA-5DU43" autocomplete="off">
         </div>
-        <div class="stat-card">
-          <div class="label">Успешных</div>
-          <div class="value" id="passedCount">0</div>
+        <div class="field">
+          <label for="testFilter">Тест</label>
+          <select id="testFilter">
+            <option value="">Все рабочие тесты</option>
+            <option value="fa-junior">Financial Analyst</option>
+            <option value="ca-junior">Credit Analyst</option>
+            <option value="fpa-junior">FP&amp;A / Budget</option>
+            <option value="acc-junior">Accounting</option>
+            <option value="bi-junior">Finance BI</option>
+            <option value="dev-quick">Dev Quick</option>
+          </select>
         </div>
-        <div class="stat-card">
-          <div class="label">Средний балл</div>
-          <div class="value" id="avgScore">0</div>
+        <div class="field">
+          <label for="statusFilter">Статус</label>
+          <select id="statusFilter">
+            <option value="">Все статусы</option>
+            <option value="passed">Успешные</option>
+            <option value="failed">Неуспешные</option>
+          </select>
         </div>
-        <div class="stat-card">
-          <div class="label">Лучший балл</div>
-          <div class="value" id="bestScore">0</div>
+        <div class="field">
+          <label for="sortOrder">Сортировка</label>
+          <select id="sortOrder">
+            <option value="date-desc">Сначала новые</option>
+            <option value="date-asc">Сначала старые</option>
+            <option value="score-desc">Баллы: по убыванию</option>
+            <option value="score-asc">Баллы: по возрастанию</option>
+            <option value="code-asc">Код: А–Я</option>
+          </select>
         </div>
-      </div>
+        <button id="clearFiltersButton" class="ghost-btn" type="button">Сбросить</button>
+      </section>
+
+      <label class="technical-toggle" for="showTechnical">
+        <input id="showTechnical" type="checkbox">
+        Показывать технические записи dev-quick в общей аналитике
+      </label>
+
+      <section class="stats-grid" aria-label="Сводные метрики">
+        <div class="card stat-card"><div class="label">Всего попыток</div><div class="value" id="totalCount">0</div></div>
+        <div class="card stat-card"><div class="label">Успешных</div><div class="value" id="passedCount">0</div></div>
+        <div class="card stat-card"><div class="label">Неуспешных</div><div class="value" id="failedCount">0</div></div>
+        <div class="card stat-card"><div class="label">Доля успешных</div><div class="value" id="passRate">0%</div></div>
+        <div class="card stat-card"><div class="label">Средний балл</div><div class="value" id="avgScore">0</div></div>
+        <div class="card stat-card"><div class="label">TXT создан</div><div class="value" id="reportCount">0</div></div>
+      </section>
 
       <section class="dashboard">
-        <div class="panel">
-          <h3>Распределение по тестам</h3>
+        <div class="card panel">
+          <h2>Распределение по тестам</h2>
           <div id="testBars"></div>
         </div>
-        <div class="panel">
-          <h3>Топ кодов</h3>
-          <div id="topCodes"></div>
+        <div class="card panel">
+          <h2>Распределение по статусам</h2>
+          <div id="statusBars"></div>
         </div>
       </section>
 
-      <section class="table-container">
-        <h3>Результаты</h3>
-        <div id="resultsTable"></div>
+      <section class="card table-card">
+        <div class="table-heading"><h2>Результаты</h2><span id="visibleCount">0 записей</span></div>
+        <div id="resultsTable" class="table-scroll"></div>
       </section>
     </main>
   </div>
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
+    const FRONTEND_BUILD = "2026.07.20.4";
+    const TECHNICAL_TEST_ID = "dev-quick";
+    const TEST_LABELS = {
+      "fa-junior": "Financial Analyst",
+      "ca-junior": "Credit Analyst",
+      "fpa-junior": "FP&A / Budget",
+      "acc-junior": "Accounting",
+      "bi-junior": "Finance BI",
+      "dev-quick": "Dev Quick"
+    };
 
     let adminResults = [];
-    let scoreSortDesc = true;
+    let activePassword = "";
+    let isLoading = false;
 
-    function loadAdminResults() {
-      const password = document.getElementById("adminPassword").value;
-      const status = document.getElementById("loginStatus");
-      status.textContent = "Загрузка...";
+    document.getElementById("frontendVersion").textContent = "Build " + FRONTEND_BUILD;
+    document.getElementById("loginForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      const input = document.getElementById("adminPassword");
+      activePassword = input.value;
+      input.value = "";
+      loadAdminResults(false);
+    });
+    ["codeSearch", "testFilter", "statusFilter", "sortOrder", "showTechnical"].forEach(function(id) {
+      document.getElementById(id).addEventListener(id === "codeSearch" ? "input" : "change", renderAdmin);
+    });
+    document.getElementById("refreshButton").addEventListener("click", function() { loadAdminResults(true); });
+    document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
+    document.getElementById("clearFiltersButton").addEventListener("click", clearFilters);
 
-      requestAdminResults(password)
-      .then(data => {
-        if (data.ok !== true && data.status !== "ok") {
-          throw new Error(data.errorMessage || data.message || "Нет доступа.");
+    async function loadAdminResults(isRefresh) {
+      if (isLoading || !activePassword) return;
+      isLoading = true;
+      setLoadingState(true, isRefresh);
+      setDashboardError("");
+
+      try {
+        const data = await requestAdminResults(activePassword);
+        if (data.ok !== true || data.status !== "ok") {
+          throw new Error(data.message || "Доступ запрещён.");
         }
 
-        adminResults = Array.isArray(data.results) ? data.results : [];
+        adminResults = normalizeAdminRows(data.results);
+        document.getElementById("backendVersion").textContent = data.backendVersion || "не указан";
+        document.getElementById("loadedAt").textContent = formatDate(data.loadedAt || new Date().toISOString());
         document.getElementById("loginBlock").classList.add("hidden");
         document.getElementById("adminBlock").classList.remove("hidden");
-        status.textContent = "";
+        setLoginStatus("", "");
         renderAdmin();
-      })
-      .catch(error => {
-        status.textContent = error.message || "Не удалось загрузить данные.";
+      } catch (error) {
+        const message = error && error.message ? error.message : "Не удалось загрузить данные.";
+        if (isRefresh && !document.getElementById("adminBlock").classList.contains("hidden")) {
+          setDashboardError(message + " Ранее загруженные данные оставлены на экране.");
+        } else {
+          activePassword = "";
+          setLoginStatus(message, "error");
+        }
+      } finally {
+        isLoading = false;
+        setLoadingState(false, isRefresh);
+      }
+    }
+
+    async function requestAdminResults(password) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(function() { controller.abort(); }, 20000);
+
+      try {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "adminResults", password: password }),
+          cache: "no-store",
+          credentials: "omit",
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error("Backend ответил с ошибкой HTTP " + response.status + ".");
+        return await response.json();
+      } catch (error) {
+        if (error && error.name === "AbortError") throw new Error("Backend не ответил за 20 секунд.");
+        throw error;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
+    function normalizeAdminRows(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map(function(row) {
+        row = row && typeof row === "object" ? row : {};
+        const testId = Object.prototype.hasOwnProperty.call(TEST_LABELS, row.testId) ? String(row.testId) : "unknown";
+        const finalScore = finiteNumber(row.finalScore);
+        const tabSwitches = finiteNumber(row.tabSwitches);
+        return {
+          code: String(row.code || ""),
+          testId: testId,
+          testTitle: TEST_LABELS[testId] || "Неизвестный тест",
+          finalScore: finalScore,
+          percent: finiteNumber(row.percent),
+          tabSwitches: tabSwitches,
+          date: String(row.date || ""),
+          status: row.status === "passed" ? "passed" : "failed",
+          badge: getAdminBadge(finalScore, tabSwitches),
+          reportCreated: Boolean(row.reportCreated)
+        };
       });
     }
 
-    function requestAdminResults(password) {
-      return new Promise((resolve, reject) => {
-        const callbackName = "adminResultsCallback_" + Date.now();
-        const script = document.createElement("script");
+    function filterAndSortResults(rows, filters) {
+      const search = String(filters.search || "").trim().toLowerCase();
+      const selectedTest = String(filters.test || "");
+      const selectedStatus = String(filters.status || "");
+      const showTechnical = Boolean(filters.showTechnical);
+      const sortOrder = String(filters.sortOrder || "date-desc");
 
-        window[callbackName] = data => {
-          resolve(data);
-          delete window[callbackName];
-          script.remove();
-        };
-
-        script.onerror = () => {
-          delete window[callbackName];
-          script.remove();
-          reject(new Error("Не удалось получить ответ backend."));
-        };
-
-        script.src = GOOGLE_SCRIPT_URL +
-          "?action=adminResults" +
-          "&password=" + encodeURIComponent(password) +
-          "&callback=" + callbackName;
-        document.body.appendChild(script);
-      });
+      return rows.filter(function(row) {
+        if (!showTechnical && !selectedTest && row.testId === TECHNICAL_TEST_ID) return false;
+        if (search && row.code.toLowerCase().indexOf(search) === -1) return false;
+        if (selectedTest && row.testId !== selectedTest) return false;
+        if (selectedStatus && row.status !== selectedStatus) return false;
+        return true;
+      }).map(function(row, index) {
+        return { row: row, index: index };
+      }).sort(function(a, b) {
+        let result = 0;
+        if (sortOrder === "date-asc") result = dateValue(a.row.date) - dateValue(b.row.date);
+        else if (sortOrder === "score-desc") result = b.row.finalScore - a.row.finalScore;
+        else if (sortOrder === "score-asc") result = a.row.finalScore - b.row.finalScore;
+        else if (sortOrder === "code-asc") result = a.row.code.localeCompare(b.row.code, "ru");
+        else result = dateValue(b.row.date) - dateValue(a.row.date);
+        return result || a.index - b.index;
+      }).map(function(item) { return item.row; });
     }
 
-    function getFilteredResults() {
-      const search = document.getElementById("codeSearch").value.trim().toLowerCase();
-      const test = document.getElementById("testFilter").value;
-      const status = document.getElementById("statusFilter").value;
+    function calculateAdminMetrics(rows) {
+      const total = rows.length;
+      const passed = rows.filter(function(row) { return row.status === "passed"; }).length;
+      const failed = total - passed;
+      const scoreSum = rows.reduce(function(sum, row) { return sum + row.finalScore; }, 0);
+      return {
+        total: total,
+        passed: passed,
+        failed: failed,
+        passRate: total ? Math.round(passed * 100 / total) : 0,
+        averageScore: total ? Math.round(scoreSum / total) : 0,
+        reports: rows.filter(function(row) { return row.reportCreated; }).length
+      };
+    }
 
-      return adminResults
-        .filter(row => !search || String(row.code || "").toLowerCase().indexOf(search) !== -1)
-        .filter(row => !test || row.testId === test)
-        .filter(row => !status || row.status === status)
-        .sort((a, b) => scoreSortDesc
-          ? Number(b.finalScore || 0) - Number(a.finalScore || 0)
-          : Number(a.finalScore || 0) - Number(b.finalScore || 0));
+    function buildTestDistribution(rows) {
+      return rows.reduce(function(counts, row) {
+        const key = row.testId || "unknown";
+        counts[key] = (counts[key] || 0) + 1;
+        return counts;
+      }, {});
     }
 
     function renderAdmin() {
-      const rows = getFilteredResults();
+      const filters = {
+        search: document.getElementById("codeSearch").value,
+        test: document.getElementById("testFilter").value,
+        status: document.getElementById("statusFilter").value,
+        sortOrder: document.getElementById("sortOrder").value,
+        showTechnical: document.getElementById("showTechnical").checked
+      };
+      const rows = filterAndSortResults(adminResults, filters);
       renderStats(rows);
       renderTestBars(rows);
-      renderTopCodes(rows);
-      renderTable(rows);
+      renderStatusBars(rows);
+      renderTable(rows, filters);
     }
 
     function renderStats(rows) {
-      const total = rows.length;
-      const passed = rows.filter(row => row.status === "passed").length;
-      const scores = rows.map(row => Number(row.finalScore || 0));
-      const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-      const best = scores.length ? Math.max.apply(null, scores) : 0;
-
-      document.getElementById("totalCount").textContent = total;
-      document.getElementById("passedCount").textContent = passed;
-      document.getElementById("avgScore").textContent = avg;
-      document.getElementById("bestScore").textContent = best;
+      const metrics = calculateAdminMetrics(rows);
+      document.getElementById("totalCount").textContent = metrics.total;
+      document.getElementById("passedCount").textContent = metrics.passed;
+      document.getElementById("failedCount").textContent = metrics.failed;
+      document.getElementById("passRate").textContent = metrics.passRate + "%";
+      document.getElementById("avgScore").textContent = metrics.averageScore;
+      document.getElementById("reportCount").textContent = metrics.reports;
     }
 
     function renderTestBars(rows) {
-      const counts = {};
-      rows.forEach(row => {
-        const key = row.testId || "unknown";
-        counts[key] = (counts[key] || 0) + 1;
-      });
-
-      const max = Math.max.apply(null, Object.values(counts).concat([1]));
-      const html = Object.keys(counts).sort().map(testId => {
-        const count = counts[testId];
-        const width = Math.max(4, Math.round((count / max) * 100));
-        return '<div class="bar-row">' +
-          '<div class="bar-label"><span>' + escapeHtml(testId) + '</span><span>' + count + '</span></div>' +
-          '<div class="bar-track"><div class="bar-fill" style="width:' + width + '%"></div></div>' +
-          '</div>';
-      }).join("");
-
-      document.getElementById("testBars").innerHTML = html || '<div class="empty-state">Нет данных</div>';
+      const counts = buildTestDistribution(rows);
+      const keys = Object.keys(counts).sort(function(a, b) { return testLabel(a).localeCompare(testLabel(b), "ru"); });
+      const max = Math.max.apply(null, keys.map(function(key) { return counts[key]; }).concat([1]));
+      document.getElementById("testBars").innerHTML = keys.length ? keys.map(function(testId) {
+        return barHtml(testLabel(testId), counts[testId], Math.round(counts[testId] * 100 / max), "");
+      }).join("") : emptyMiniState();
     }
 
-    function renderTopCodes(rows) {
-      const top = rows.slice(0, 5);
-      document.getElementById("topCodes").innerHTML = top.length
-        ? top.map((row, index) => '<div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;">' +
-            '<span><b>' + (index + 1) + '.</b> <span class="code">' + escapeHtml(row.code) + '</span></span>' +
-            '<span>' + Number(row.finalScore || 0) + '</span>' +
-          '</div>').join("")
-        : '<div class="empty-state">Нет данных</div>';
+    function renderStatusBars(rows) {
+      const metrics = calculateAdminMetrics(rows);
+      const max = Math.max(metrics.passed, metrics.failed, 1);
+      document.getElementById("statusBars").innerHTML = rows.length
+        ? barHtml("Успешные", metrics.passed, Math.round(metrics.passed * 100 / max), "pass") +
+          barHtml("Неуспешные", metrics.failed, Math.round(metrics.failed * 100 / max), "fail")
+        : emptyMiniState();
     }
 
-    function renderTable(rows) {
+    function renderTable(rows, filters) {
+      document.getElementById("visibleCount").textContent = formatRecordCount(rows.length);
       if (!rows.length) {
-        document.getElementById("resultsTable").innerHTML = '<div class="empty-state">Нет обезличенных результатов</div>';
+        const hasFilters = Boolean(filters.search || filters.test || filters.status || filters.showTechnical);
+        document.getElementById("resultsTable").innerHTML = '<div class="empty-state"><strong>' +
+          (hasFilters ? "По выбранным условиям ничего не найдено" : "Результатов пока нет") +
+          '</strong>' + (hasFilters ? "Измените или сбросьте фильтры." : "Новые обезличенные попытки появятся здесь после прохождения тестов.") + '</div>';
         return;
       }
 
-      const body = rows.map(row => '<tr>' +
-        '<td class="code">' + escapeHtml(row.code) + '</td>' +
-        '<td>' + formatDate(row.date) + '</td>' +
-        '<td>' + escapeHtml(row.testTitle || row.testId) + '</td>' +
-        '<td>' + Number(row.finalScore || 0) + '</td>' +
-        '<td>' + Number(row.percent || 0) + '</td>' +
-        '<td><span class="badge ' + (row.status === "passed" ? "badge-pass" : "badge-fail") + '">' +
-          (row.status === "passed" ? "passed" : "failed") + '</span></td>' +
-        '<td>' + escapeHtml(row.badge) + '</td>' +
-        '<td>' + Number(row.tabSwitches || 0) + '</td>' +
-        '<td>' + (row.reportCreated ? "да" : "нет") + '</td>' +
-        '<td>' + escapeHtml(row.reportPath || row.reportCode || "") + '</td>' +
-        '</tr>').join("");
+      const body = rows.map(function(row) {
+        return "<tr>" +
+          cell("Код", '<span class="code">' + escapeHtml(row.code) + "</span>") +
+          cell("Дата", escapeHtml(formatDate(row.date))) +
+          cell("Тест", escapeHtml(row.testTitle || testLabel(row.testId))) +
+          cell("Итог", formatNumber(row.finalScore)) +
+          cell("Процент", formatNumber(row.percent) + "%") +
+          cell("Статус", '<span class="badge ' + (row.status === "passed" ? "badge-pass" : "badge-fail") + '">' + (row.status === "passed" ? "Успешно" : "Неуспешно") + "</span>") +
+          cell("Плашка", escapeHtml(row.badge || "—")) +
+          cell("Уходы", formatNumber(row.tabSwitches)) +
+          cell("TXT", row.reportCreated ? "Есть" : "Нет") +
+          "</tr>";
+      }).join("");
 
-      document.getElementById("resultsTable").innerHTML =
-        '<table><thead><tr>' +
-        '<th>Код</th><th>Дата</th><th>Тест</th><th>Итоговый балл</th><th>Процент</th>' +
-        '<th>Статус</th><th>Плашка</th><th>Уходы</th><th>TXT создан</th><th>Report path/code</th>' +
-        '</tr></thead><tbody>' + body + '</tbody></table>';
+      document.getElementById("resultsTable").innerHTML = '<table><thead><tr>' +
+        "<th>Код</th><th>Дата</th><th>Тест</th><th>Итог</th><th>Процент</th><th>Статус</th><th>Плашка</th><th>Уходы</th><th>TXT</th>" +
+        "</tr></thead><tbody>" + body + "</tbody></table>";
     }
 
-    function sortByScore() {
-      scoreSortDesc = !scoreSortDesc;
+    function clearFilters() {
+      document.getElementById("codeSearch").value = "";
+      document.getElementById("testFilter").value = "";
+      document.getElementById("statusFilter").value = "";
+      document.getElementById("sortOrder").value = "date-desc";
+      document.getElementById("showTechnical").checked = false;
       renderAdmin();
     }
 
-    function formatDate(value) {
-      if (!value) return "";
-      const date = new Date(value);
-      if (isNaN(date.getTime())) return String(value);
-      return date.toLocaleString("ru-RU");
+    function logoutAdmin() {
+      activePassword = "";
+      adminResults = [];
+      clearFilters();
+      document.getElementById("adminBlock").classList.add("hidden");
+      document.getElementById("loginBlock").classList.remove("hidden");
+      document.getElementById("backendVersion").textContent = "до входа не загружен";
+      document.getElementById("loadedAt").textContent = "—";
+      document.getElementById("adminPassword").focus();
     }
 
+    function setLoadingState(loading, isRefresh) {
+      const loginButton = document.getElementById("loginButton");
+      const refreshButton = document.getElementById("refreshButton");
+      loginButton.disabled = loading;
+      refreshButton.disabled = loading;
+      loginButton.textContent = loading && !isRefresh ? "Загрузка…" : "Загрузить данные";
+      refreshButton.textContent = loading && isRefresh ? "Обновление…" : "Обновить";
+      if (loading && !isRefresh) setLoginStatus("Проверяем доступ и загружаем данные…", "");
+    }
+
+    function setLoginStatus(message, type) {
+      const node = document.getElementById("loginStatus");
+      node.textContent = message;
+      node.className = "status" + (type ? " " + type : "");
+    }
+
+    function setDashboardError(message) {
+      const node = document.getElementById("dashboardError");
+      node.textContent = message;
+      node.classList.toggle("hidden", !message);
+    }
+
+    function barHtml(label, count, width, className) {
+      return '<div class="bar-row"><div class="bar-label"><span>' + escapeHtml(label) + "</span><span>" + count +
+        '</span></div><div class="bar-track"><div class="bar-fill ' + className + '" style="width:' + Math.max(count ? 4 : 0, width) + '%"></div></div></div>';
+    }
+
+    function emptyMiniState() { return '<div class="empty-state">Нет данных для распределения</div>'; }
+    function cell(label, value) { return '<td data-label="' + label + '">' + value + "</td>"; }
+    function testLabel(testId) { return TEST_LABELS[testId] || testId || "Неизвестный тест"; }
+    function getAdminBadge(finalScore, tabSwitches) {
+      if (finalScore >= 85 && tabSwitches <= 1) return "Junior Strong";
+      if (finalScore >= 70 && tabSwitches <= 2) return "Junior Confirmed";
+      if (finalScore >= 60) return "Borderline";
+      return "Not Confirmed";
+    }
+    function finiteNumber(value) { const number = Number(value); return Number.isFinite(number) ? number : 0; }
+    function dateValue(value) { const time = new Date(value).getTime(); return Number.isFinite(time) ? time : 0; }
+    function formatNumber(value) { return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(finiteNumber(value)); }
+    function formatDate(value) {
+      if (!value) return "—";
+      const date = new Date(value);
+      if (!Number.isFinite(date.getTime())) return "—";
+      return new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short" }).format(date);
+    }
+    function formatRecordCount(count) {
+      const mod10 = count % 10;
+      const mod100 = count % 100;
+      const word = mod10 === 1 && mod100 !== 11 ? "запись" : (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? "записи" : "записей");
+      return count + " " + word;
+    }
     function escapeHtml(value) {
-      const div = document.createElement("div");
-      div.textContent = value === undefined || value === null ? "" : String(value);
-      return div.innerHTML;
+      return String(value === undefined || value === null ? "" : value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
     }
   </script>
 </body>

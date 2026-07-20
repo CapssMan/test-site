@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-2";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-3";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -68,17 +68,12 @@ function doGet(e) {
   }
 
   if (action === "adminResults") {
-    try {
-      return jsonOrJsonpResponse(getAdminResults(String(params.password || "")), params.callback);
-    } catch (error) {
-      console.error(error && error.stack ? error.stack : error);
-      return jsonOrJsonpResponse({
-        ok: false,
-        status: "error",
-        message: sanitizeErrorMessage(error),
-        errorMessage: sanitizeDiagnosticMessage(error)
-      }, params.callback);
-    }
+    return jsonOrJsonpResponse({
+      ok: false,
+      status: "error",
+      backendVersion: BACKEND_VERSION,
+      message: "Для админ-панели требуется POST-запрос."
+    }, params.callback);
   }
 
   return jsonResponse({
@@ -740,13 +735,13 @@ function appendAdminResult(summaryData) {
   results.push({
     code: String(summaryData.code || ""),
     testId: String(summaryData.testId || ""),
-    testTitle: String(summaryData.testTitle || ""),
+    testTitle: TEST_TITLES_BY_ID[summaryData.testId] || "Неизвестный тест",
     finalScore: Number(summaryData.finalScore || 0),
     percent: Number(summaryData.percent || 0),
     tabSwitches: Number(summaryData.tabSwitches || 0),
     date: String(summaryData.date || ""),
     status: summaryData.status === "passed" ? "passed" : "failed",
-    badge: String(summaryData.badge || ""),
+    badge: getAdminBadge(Number(summaryData.finalScore || 0), Number(summaryData.tabSwitches || 0)),
     reportCreated: Boolean(summaryData.reportCreated),
     reportPath: String(summaryData.reportPath || ""),
     reportCode: String(summaryData.reportCode || summaryData.code || "")
@@ -773,15 +768,49 @@ function getAdminResults(password) {
     return {
       ok: false,
       status: "error",
+      backendVersion: BACKEND_VERSION,
       message: "Доступ запрещён."
     };
   }
 
+  const storedResults = readJsonFromYandexDisk(getAdminFilePath(), []);
+
   return {
     ok: true,
     status: "ok",
-    results: readJsonFromYandexDisk(getAdminFilePath(), [])
+    backendVersion: BACKEND_VERSION,
+    loadedAt: new Date().toISOString(),
+    results: storedResults.map(sanitizeAdminResult)
   };
+}
+
+function sanitizeAdminResult(row) {
+  row = row && typeof row === "object" ? row : {};
+  const testId = Object.prototype.hasOwnProperty.call(TEST_TITLES_BY_ID, row.testId)
+    ? String(row.testId)
+    : "unknown";
+  const finalScore = Number(row.finalScore || 0);
+  const tabSwitches = Number(row.tabSwitches || 0);
+
+  return {
+    code: String(row.code || ""),
+    testId: testId,
+    testTitle: TEST_TITLES_BY_ID[testId] || "Неизвестный тест",
+    finalScore: finalScore,
+    percent: Number(row.percent || 0),
+    tabSwitches: tabSwitches,
+    date: String(row.date || ""),
+    status: row.status === "passed" ? "passed" : "failed",
+    badge: getAdminBadge(finalScore, tabSwitches),
+    reportCreated: Boolean(row.reportCreated)
+  };
+}
+
+function getAdminBadge(finalScore, tabSwitches) {
+  if (finalScore >= 85 && tabSwitches <= 1) return "Junior Strong";
+  if (finalScore >= 70 && tabSwitches <= 2) return "Junior Confirmed";
+  if (finalScore >= 60) return "Borderline";
+  return "Not Confirmed";
 }
 
 function ensureSkillCheckFolders() {

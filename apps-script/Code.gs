@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-1";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-2";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -245,6 +245,9 @@ function generateUniqueResultCode(testId) {
 
 function buildTxtReport(resultData) {
   const answers = Array.isArray(resultData.answers) ? resultData.answers : [];
+  const blockResults = resultData.blockResults && typeof resultData.blockResults === "object"
+    ? resultData.blockResults
+    : {};
   const testTitle = resultData.testTitle || TEST_TITLES_BY_ID[resultData.testId] || resultData.testId || "Тест";
   let report = "";
 
@@ -267,12 +270,27 @@ function buildTxtReport(resultData) {
 
   report += "РЕЗУЛЬТАТ\n";
   report += "---------\n";
+  report += "Сырой результат: " + Number(resultData.rawScore || 0) + "/" + Number(resultData.rawTotal || 0) + "\n";
   report += "Итоговый балл: " + Number(resultData.finalScore || 0) + "\n";
   report += "Процент: " + Number(resultData.percent || resultData.score || 0) + "\n";
   report += "Штрафы: " + Number(resultData.penalty || 0) + "\n";
   report += "Уходы со вкладки: " + Number(resultData.tabSwitches || 0) + "\n";
+  report += "Trust Score: " + Number(resultData.trustScore || 0) + "\n";
+  report += "Плашка: " + safeText(resultData.badge || "") + "\n";
   report += "Статус: " + safeText(resultData.status || resultData.passStatus || "") + "\n";
   report += "Итоговый вывод: " + safeText(resultData.recommendation || resultData.finalDecision || "") + "\n\n";
+
+  if (Object.keys(blockResults).length) {
+    report += "SKILL CARD\n";
+    report += "----------\n";
+    Object.keys(blockResults).forEach(blockKey => {
+      const block = blockResults[blockKey] || {};
+      report += safeText(block.name || blockKey) + ": " + Number(block.percent || 0) + "%";
+      report += " (" + Number(block.earned || 0) + "/" + Number(block.total || 0) + " баллов";
+      report += ", вес " + Math.round(Number(block.weight || 0) * 100) + "%)\n";
+    });
+    report += "\n";
+  }
 
   report += "ВОПРОСЫ И ОТВЕТЫ\n";
   report += "----------------\n";
@@ -281,7 +299,9 @@ function buildTxtReport(resultData) {
     report += "Ответ кандидата: " + safeText(answer.selectedAnswer) + "\n";
     report += "Правильный ответ: " + safeText(answer.correctAnswer) + "\n";
     report += "Результат: " + (answer.isCorrect ? "верно" : "неверно") + "\n";
+    report += "Статус ответа: " + safeText(answer.status || "") + "\n";
     report += "Баллы: " + Number(answer.earnedPoints || 0) + "/" + Number(answer.points || 0) + "\n";
+    report += "Время: " + Number(answer.timeSpent || 0) + "/" + Number(answer.timeLimit || 0) + " сек.\n";
     if (answer.comment) report += "Комментарий: " + safeText(answer.comment) + "\n";
     report += "\n";
   });

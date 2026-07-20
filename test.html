@@ -935,7 +935,8 @@
         selectedAnswer: selectedIndex !== null ? q.options[selectedIndex] : "Нет ответа",
         correctAnswer: q.correctAnswerText,
         isCorrect: isCorrect,
-        status: isTimeout ? "Время вышло" : (isUnanswered ? "Нет ответа" : (isCorrect ? "Верно" : "Неверно")),
+        timedOut: Boolean(isTimeout),
+        status: isUnanswered ? (isTimeout ? "Время вышло" : "Нет ответа") : (isCorrect ? "Верно" : "Неверно"),
         points: q.points,
         earnedPoints: isCorrect ? q.points : 0,
         timeLimit: q.timeLimit,
@@ -965,37 +966,66 @@
       return 15;
     }
 
+    function calculateTestResult(answerList, tabExitCount, blockDefinitions, scoresByBlock) {
+      var rawTotal = answerList.reduce(function(sum, answer) { return sum + Number(answer.points || 0); }, 0);
+      var rawScore = answerList.reduce(function(sum, answer) { return sum + Number(answer.earnedPoints || 0); }, 0);
+      var percent = rawTotal > 0 ? Math.round((rawScore / rawTotal) * 100) : 0;
+      percent = Math.max(0, Math.min(100, percent));
+
+      var penalty = calculatePenalty(tabExitCount);
+      var finalScore = Math.max(0, Math.min(100, percent - penalty));
+      var badge = getBadge(finalScore, tabExitCount);
+      var passStatus = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
+      var finalDecision = passStatus === "passed" ? "Успешно" : "Неуспешно";
+      var blockResults = {};
+
+      Object.keys(blockDefinitions || {}).forEach(function(blockKey) {
+        var block = blockDefinitions[blockKey];
+        var scores = (scoresByBlock || {})[blockKey] || { earned: 0, total: 0 };
+        var blockPercent = scores.total > 0 ? Math.round((scores.earned / scores.total) * 100) : 0;
+        blockResults[blockKey] = {
+          name: block.name,
+          weight: block.weight,
+          earned: scores.earned,
+          total: scores.total,
+          percent: Math.max(0, Math.min(100, blockPercent))
+        };
+      });
+
+      var trustScore = calculateTrustScore(finalScore, tabExitCount, answerList);
+
+      return {
+        rawTotal: rawTotal,
+        rawScore: rawScore,
+        percent: percent,
+        penalty: penalty,
+        finalScore: finalScore,
+        badge: badge,
+        passStatus: passStatus,
+        finalDecision: finalDecision,
+        blockResults: blockResults,
+        trustScore: trustScore,
+        recommendation: getCandidateRecommendation(finalScore, percent, trustScore, tabExitCount)
+      };
+    }
+
     function finishTest() {
       if (testFinished) return;
       clearInterval(questionTimerInterval);
       testFinished = true;
       testStarted = false;
 
-      var rawTotal = answers.reduce(function(s, a) { return s + a.points; }, 0);
-      var rawScore = answers.reduce(function(s, a) { return s + a.earnedPoints; }, 0);
-      var percent = Math.round((rawScore / rawTotal) * 100);
-      var penalty = calculatePenalty(tabSwitches);
-      var finalScore = Math.max(0, percent - penalty);
-
-      var badge = getBadge(finalScore, tabSwitches);
-      var passStatus = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
-      var finalDecision = finalScore >= SUCCESS_THRESHOLD ? "Успешно" : "Неуспешно";
-
-      var blockResults = {};
-      Object.keys(currentTestConfig.blocks).forEach(function(blockKey) {
-        var block = currentTestConfig.blocks[blockKey];
-        var scores = blockScores[blockKey] || { earned: 0, total: 0 };
-        var pct = scores.total > 0 ? Math.round((scores.earned / scores.total) * 100) : 0;
-        blockResults[blockKey] = {
-          name: block.name,
-          weight: block.weight,
-          earned: scores.earned,
-          total: scores.total,
-          percent: pct
-        };
-      });
-
-      var trustScore = calculateTrustScore(finalScore, tabSwitches, answers);
+      var calculation = calculateTestResult(answers, tabSwitches, currentTestConfig.blocks, blockScores);
+      var rawTotal = calculation.rawTotal;
+      var rawScore = calculation.rawScore;
+      var percent = calculation.percent;
+      var penalty = calculation.penalty;
+      var finalScore = calculation.finalScore;
+      var badge = calculation.badge;
+      var passStatus = calculation.passStatus;
+      var finalDecision = calculation.finalDecision;
+      var blockResults = calculation.blockResults;
+      var trustScore = calculation.trustScore;
 
       var candidateName = document.getElementById("name").value.trim();
       var candidateEmail = document.getElementById("email").value.trim().toLowerCase();
@@ -1005,7 +1035,7 @@
       var candidateExperience = document.getElementById("candidateExperience").value;
       var employerShareConsent = document.getElementById("employerShareConsent").checked;
       var bankVersion = getBankVersion();
-      var recommendation = getCandidateRecommendation(finalScore, percent, trustScore, tabSwitches);
+      var recommendation = calculation.recommendation;
       var browserFingerprint = currentBrowserFingerprint || generateBrowserFingerprint();
       currentBrowserFingerprint = browserFingerprint;
 
@@ -1038,8 +1068,11 @@
         browserFingerprint: browserFingerprint,
         score: percent,
         total: 100,
+        rawScore: rawScore,
+        rawTotal: rawTotal,
         percent: percent,
         finalScore: finalScore,
+        penalty: penalty,
         badge: badge,
         passStatus: passStatus,
         finalDecision: finalDecision,
@@ -1065,7 +1098,7 @@
       if (tabs === 0) score += 5;
       else if (tabs <= 2) score -= 2;
       else score -= 8;
-      var unanswered = answers.filter(function(a) { return a.selectedAnswer === "Нет ответа" || a.status === "Время вышло"; }).length;
+      var unanswered = answers.filter(function(a) { return a.selectedAnswer === "Нет ответа"; }).length;
       if (unanswered > 5) score -= 5;
       else if (unanswered > 2) score -= 2;
       return Math.max(0, Math.min(100, score));

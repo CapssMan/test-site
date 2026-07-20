@@ -41,6 +41,7 @@ Workflow `.github/workflows/ci.yml` запускается на:
 - только `permissions: contents: read`;
 - один job на `ubuntu-latest`, timeout 10 минут;
 - `actions/checkout@v6` и `actions/setup-node@v6` закреплены полными commit SHA, checkout credentials не сохраняются, Node.js 24;
+- checkout получает полную Git history, потому что проверка private-bank bootstrap сверяет immutable legacy commit `70e569cf…`;
 - нет `${{ secrets.* }}`, environments, deploy, `clasp`, production URL или внешнего storage;
 - повторный push отменяет устаревший run той же ветки;
 - CI только читает checkout и выполняет локальные проверки.

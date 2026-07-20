@@ -110,6 +110,7 @@
 - `${{ secrets.* }}`, environment, deploy, `clasp`, Apps Script URL и Яндекс credential в workflow отсутствуют.
 - `npm ci --ignore-scripts` использует lockfile без внешних пакетов; install не выполняет lifecycle code.
 - GitHub-owned actions закреплены полными commit SHA, а checkout выполняется с `persist-credentials:false`.
+- Full history checkout необходим для fail-closed сверки immutable legacy bank commit; shallow checkout не считается основанием отключать эту проверку.
 - Repository scanner проверяет tracked и новые неигнорируемые файлы, credential filenames, private artifacts и высокодостоверные token/key patterns.
 - Отдельный regression test блокирует появление write permissions, secret context, production deploy или ослабление обязательной матрицы.
 - CI не заменяет Dependabot/code scanning и не доказывает безопасность произвольной будущей dependency; любые новые пакеты требуют отдельного review.

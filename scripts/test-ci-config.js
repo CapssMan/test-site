@@ -22,6 +22,7 @@ assert.doesNotMatch(workflow, /pull_request_target|schedule:|deployment|environm
 assert.match(workflow, /^permissions:\s*\n\s{2}contents: read$/m, "workflow must have read-only repository permissions");
 assert.doesNotMatch(workflow, /\b(?:contents|actions|checks|packages|pull-requests): write\b/);
 assert.match(workflow, /uses: actions\/checkout@[a-f0-9]{40} # v6/);
+assert.match(workflow, /fetch-depth: 0/, "CI needs immutable legacy commits for bank anchor verification");
 assert.match(workflow, /persist-credentials: false/);
 assert.match(workflow, /uses: actions\/setup-node@[a-f0-9]{40} # v6/);
 assert.match(workflow, /node-version: "24"/);

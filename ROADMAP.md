@@ -343,6 +343,7 @@ Production smoke был немутирующим: health подтвердил `.
 - [x] GitHub Actions имеет только `contents: read`, не использует secrets/environments и не выполняет deploy/production smoke.
 - [x] Locked install выполняется с `--ignore-scripts`; внешних npm dependencies и платной инфраструктуры нет.
 - [x] GitHub-owned actions закреплены полными commit SHA, checkout credentials не сохраняются.
+- [x] CI загружает полную history для воспроизводимой проверки immutable legacy bank anchors.
 - [x] Контракт workflow защищён отдельным `test-ci-config.js`, инструкции находятся в `docs/TESTING.md`.
 
 ## Этап 16. Документация

@@ -186,6 +186,7 @@
 - GitHub Actions запускается для push в `main`, pull request и вручную; устаревший run той же ветки отменяется.
 - Workflow имеет только `contents: read`, Node 24, timeout 10 минут, locked `npm ci --ignore-scripts` и не использует production secrets/environments/deploy.
 - Checkout/setup actions закреплены полными commit SHA; `persist-credentials:false` не оставляет workflow token в локальном Git config.
+- Full history checkout нужен только для проверки legacy commit anchors; первый shallow run выявил эту зависимость и был исправлен без ослабления теста.
 - CI configuration защищена regression-тестом; полная локальная матрица — 22/22 проверки.
 
 ## Оценка до финала roadmap

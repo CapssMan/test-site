@@ -36,7 +36,7 @@ assert.match(testPage, /id="ageConsent"[^>]+required/i, "age confirmation must b
 assert.match(testPage, /id="employerShareConsent"[\s\S]{0,160}<b>Необязательно:<\/b>/i, "employer sharing must be explicitly optional");
 assert.doesNotMatch(testPage, /id="startButton"[^>]+onclick=/i, "start button must not use an inline handler");
 assert.doesNotMatch(testPage, /id="nextButton"[^>]+onclick=/i, "next button must not use an inline handler");
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.6"/, "candidate build must be current");
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.7"/, "candidate build must be current");
 assert.match(testPage, /role="progressbar"[^>]+aria-valuemin="0"[^>]+aria-valuemax="100"/i, "progress must expose ARIA state");
 assert.match(testPage, /Результат является предварительной оценкой отдельных навыков/, "result must include the hiring disclaimer");
 assert.match(testPage, /window\.addEventListener\("beforeunload"/, "candidate must be warned before leaving an active or pending attempt");
@@ -57,9 +57,9 @@ assert.match(saveCurrentAnswer, /if \(currentQuestionSaved\) return false/, "ans
 
 const sendResult = extractFunction(testPage, "sendResult");
 assert.match(sendResult, /resultSubmissionInFlight \|\| resultSaved/, "result send must reject duplicate clicks");
-assert.match(sendResult, /new AbortController\(\)/, "result send must have a timeout controller");
+assert.match(extractFunction(testPage, "postResultOnce"), /new AbortController\(\)/, "result send must have a timeout controller");
 assert.match(sendResult, /pendingResultData = data/, "calculated result must remain available for retry");
-assert.match(sendResult, /retryButton\.hidden = false/, "failed send must expose retry");
+assert.match(sendResult, /retryButton\.hidden = !retryable/, "retryable send failure must expose retry");
 assert.doesNotMatch(sendResult, /reportPath|savedAttempt|savedAdmin/, "candidate response UI must not expose storage internals");
 assert.match(extractFunction(testPage, "generateSubmissionRequestId"), /sc_/, "each result must get an idempotency key");
 

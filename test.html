@@ -153,6 +153,7 @@
       line-height: 1.55;
     }
     .send-panel:empty { display: none; }
+    .send-panel.pending { border-color: #93c5fd; background: #eff6ff; color: #1e3a8a; }
     .retry-button {
       width: auto;
       margin-top: 12px;
@@ -239,7 +240,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.20.6</div>
+      <div class="build-number">Build 2026.07.20.7</div>
 
       <p class="small">
         Вопросы и варианты ответа показываются в случайном порядке.
@@ -304,6 +305,7 @@
         Копирование текста и контекстное меню заблокированы.
         Для проведения тестирования сайт обрабатывает: имя, email, необязательный Telegram, уровень английского, опыт, источник кандидата, ответы на вопросы, результат теста, уходы со вкладки и технические данные прохождения, включая технический идентификатор браузера.
         Для защиты от повторного прохождения и недобросовестного использования сайт формирует технический идентификатор браузера. Сырые параметры браузера не публикуются и не передаются третьим лицам как отдельный отчёт.
+        Если сервер временно недоступен, неподтверждённый результат хранится только в этом браузере не более 24 часов и удаляется после успешной отправки.
       </div>
 
       <label class="consent-row">
@@ -356,8 +358,12 @@
     const RETAKE_MS = RETAKE_DAYS * 24 * 60 * 60 * 1000;
     const SUCCESS_THRESHOLD = 80;
     const QUESTIONS_PER_ATTEMPT = 40;
-    const FRONTEND_BUILD = "2026.07.20.6";
+    const FRONTEND_BUILD = "2026.07.20.7";
     const NETWORK_TIMEOUT_MS = 20000;
+    const MAX_AUTOMATIC_RETRIES = 2;
+    const AUTOMATIC_RETRY_DELAYS_MS = [1500, 4000];
+    const PENDING_RESULT_TTL_MS = 24 * 60 * 60 * 1000;
+    const PENDING_RESULT_SCHEMA_VERSION = 1;
 
     const TEST_CONFIG = {
       "fa-junior": {
@@ -480,6 +486,7 @@
     let resultSubmissionInFlight = false;
     let resultSaved = false;
     let pendingResultData = null;
+    let pendingResultStoredLocally = false;
 
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     document.addEventListener("DOMContentLoaded", function() {
@@ -504,6 +511,7 @@
       document.getElementById("testTitle").textContent = currentTestConfig.title;
       updateTestInfo();
 
+      if (restorePendingResult()) return;
       loadQuestions();
     });
 
@@ -511,6 +519,12 @@
       if ((testStarted && !testFinished) || resultSubmissionInFlight || pendingResultData) {
         event.preventDefault();
         event.returnValue = "";
+      }
+    });
+
+    window.addEventListener("online", function() {
+      if (pendingResultData && !resultSaved && !resultSubmissionInFlight) {
+        sendResult(pendingResultData, { reason: "connection-restored" });
       }
     });
 
@@ -1253,6 +1267,7 @@
         rawScore: rawScore,
         rawTotal: rawTotal,
         penalty: penalty,
+        unansweredCount: answers.filter(function(answer) { return answer.selectedAnswer === "Нет ответа"; }).length,
         recommendation: recommendation
       });
 
@@ -1274,6 +1289,7 @@
         total: 100,
         rawScore: rawScore,
         rawTotal: rawTotal,
+        unansweredCount: answers.filter(function(answer) { return answer.selectedAnswer === "Нет ответа"; }).length,
         percent: percent,
         finalScore: finalScore,
         penalty: penalty,
@@ -1288,6 +1304,7 @@
       };
 
       pendingResultData = resultData;
+      pendingResultStoredLocally = persistPendingResult(resultData);
       sendResult(resultData);
     }
 
@@ -1323,6 +1340,7 @@
     }
 
     function showResult(data) {
+      document.getElementById("startBlock").style.display = "none";
       document.getElementById("testBlock").style.display = "none";
       document.getElementById("resultBlock").style.display = "block";
 
@@ -1331,26 +1349,26 @@
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">';
       html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
       html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Итоговый балл</div>';
-      html += '<div style="font-size:36px;font-weight:800;color:#0f172a;">' + data.finalScore + '%</div>';
+      html += '<div style="font-size:36px;font-weight:800;color:#0f172a;">' + escapeHtml(normalizeResultNumber(data.finalScore)) + '%</div>';
       html += '</div>';
       html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
       html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Плашка</div>';
-      html += '<div style="font-size:24px;font-weight:700;color:#3b82f6;">' + data.badge + '</div>';
+      html += '<div style="font-size:24px;font-weight:700;color:#3b82f6;">' + escapeHtml(data.badge) + '</div>';
       html += '</div>';
       html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
       html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Trust Score</div>';
-      html += '<div style="font-size:36px;font-weight:800;color:#0f172a;">' + data.trustScore + '</div>';
+      html += '<div style="font-size:36px;font-weight:800;color:#0f172a;">' + escapeHtml(normalizeResultNumber(data.trustScore)) + '</div>';
       html += '</div>';
       html += '<div style="background:#f8fafc;padding:20px;border-radius:12px;text-align:center;">';
       html += '<div style="font-size:14px;color:#64748b;margin-bottom:4px;">Решение</div>';
-      html += '<div style="font-size:24px;font-weight:700;color:' + (data.finalDecision === 'Успешно' ? '#16a34a' : '#dc2626') + ';">' + data.finalDecision + '</div>';
+      html += '<div style="font-size:24px;font-weight:700;color:' + (data.finalDecision === 'Успешно' ? '#16a34a' : '#dc2626') + ';">' + escapeHtml(data.finalDecision) + '</div>';
       html += '</div>';
       html += '</div>';
 
       html += '<div style="background:#f1f5f9;padding:16px;border-radius:10px;margin-bottom:24px;font-size:14px;color:#475569;">';
-      html += 'Сырой результат: <b>' + data.rawScore + ' из ' + data.rawTotal + '</b> (' + data.score + '%)<br>';
-      html += 'Штраф за уходы: <b>' + data.penalty + '%</b> (уходов: ' + data.tabSwitches + ')<br>';
-      html += 'Неотвеченных: <b>' + answers.filter(function(a) { return a.selectedAnswer === "Нет ответа"; }).length + '</b>';
+      html += 'Сырой результат: <b>' + escapeHtml(normalizeResultNumber(data.rawScore)) + ' из ' + escapeHtml(normalizeResultNumber(data.rawTotal)) + '</b> (' + escapeHtml(normalizeResultNumber(data.score)) + '%)<br>';
+      html += 'Штраф за уходы: <b>' + escapeHtml(normalizeResultNumber(data.penalty)) + '%</b> (уходов: ' + escapeHtml(normalizeResultNumber(data.tabSwitches)) + ')<br>';
+      html += 'Неотвеченных: <b>' + escapeHtml(normalizeResultNumber(data.unansweredCount)) + '</b>';
       html += '</div>';
 
       html += '<h3 style="margin-bottom:16px;">&#128202; Skill Card — разбор по навыкам</h3>';
@@ -1358,23 +1376,24 @@
 
       Object.keys(data.blockResults).forEach(function(blockKey) {
         var b = data.blockResults[blockKey];
-        var colorHex = b.percent >= 70 ? '#16a34a' : (b.percent >= 50 ? '#eab308' : '#dc2626');
+        var blockPercent = Math.max(0, Math.min(100, normalizeResultNumber(b.percent)));
+        var colorHex = blockPercent >= 70 ? '#16a34a' : (blockPercent >= 50 ? '#eab308' : '#dc2626');
         html += '<div style="background:white;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-        html += '<span style="font-weight:600;">' + b.name + '</span>';
-        html += '<span style="font-weight:700;color:' + colorHex + ';">' + b.percent + '%</span>';
+        html += '<span style="font-weight:600;">' + escapeHtml(b.name) + '</span>';
+        html += '<span style="font-weight:700;color:' + colorHex + ';">' + escapeHtml(blockPercent) + '%</span>';
         html += '</div>';
         html += '<div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">';
-        html += '<div style="height:100%;width:' + b.percent + '%;background:' + colorHex + ';border-radius:4px;transition:width 1s;"></div>';
+        html += '<div style="height:100%;width:' + blockPercent + '%;background:' + colorHex + ';border-radius:4px;transition:width 1s;"></div>';
         html += '</div>';
-        html += '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">' + b.earned + ' из ' + b.total + ' баллов &middot; Вес: ' + Math.round(b.weight * 100) + '%</div>';
+        html += '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">' + escapeHtml(normalizeResultNumber(b.earned)) + ' из ' + escapeHtml(normalizeResultNumber(b.total)) + ' баллов &middot; Вес: ' + escapeHtml(normalizeResultNumber(Math.round(Number(b.weight || 0) * 100))) + '%</div>';
         html += '</div>';
       });
       html += '</div>';
 
       html += '<div style="background:#eff6ff;padding:16px;border-radius:10px;border-left:4px solid #3b82f6;margin-bottom:24px;">';
       html += '<div style="font-weight:600;color:#1e40af;margin-bottom:4px;">&#128161; Рекомендация</div>';
-      html += '<div style="color:#475569;line-height:1.5;">' + data.recommendation + '</div>';
+      html += '<div style="color:#475569;line-height:1.5;">' + escapeHtml(data.recommendation) + '</div>';
       html += '</div>';
 
       html += '<div class="result-disclaimer">Результат является предварительной оценкой отдельных навыков. Он не заменяет собеседование и не должен использоваться как единственное основание для решения о найме.</div>';
@@ -1387,18 +1406,111 @@
       document.getElementById("resultContent").innerHTML = html;
     }
 
-    function sendResult(data) {
+    function sendResult(data, options) {
       if (!data || resultSubmissionInFlight || resultSaved) return Promise.resolve(null);
 
+      options = options || {};
       var status = document.getElementById("sendStatus");
       var retryButton = document.getElementById("retrySendButton");
-      var controller = new AbortController();
-      var timeout = window.setTimeout(function() { controller.abort(); }, NETWORK_TIMEOUT_MS);
       resultSubmissionInFlight = true;
       pendingResultData = data;
+      if (!pendingResultStoredLocally) pendingResultStoredLocally = persistPendingResult(data);
       retryButton.hidden = true;
       retryButton.disabled = true;
-      status.textContent = "Сохраняем результат… Не закрывайте страницу.";
+      status.className = "send-panel pending";
+      status.textContent = pendingResultStoredLocally
+        ? "Сохраняем результат. Резервная копия останется на этом устройстве до подтверждения."
+        : "Сохраняем результат. Не закрывайте страницу: локальную резервную копию создать не удалось.";
+
+      return sendResultAttempt(data, 0)
+        .then(function(result) {
+          if (result.status === "blocked" || result.blocked) {
+            status.textContent = result.message || "Повторное прохождение заблокировано.";
+            status.className = "send-panel error";
+            clearPendingResult(data.testId, data.requestId);
+            pendingResultData = null;
+            pendingResultStoredLocally = false;
+            return result;
+          }
+
+          resultSaved = true;
+          clearPendingResult(data.testId, data.requestId);
+          pendingResultData = null;
+          pendingResultStoredLocally = false;
+          if (!currentTestConfig.skipRetakeCheck) {
+            saveLocalAttemptLock(data.testId, data.email, data.browserFingerprint);
+          }
+
+          var resultCode = result.resultCode || result.code || "";
+          var reportLine = result.reportCreated
+            ? "<br>Подробный TXT-отчёт создан и доступен администратору."
+            : "<br>TXT-отчёт не создаётся для результата ниже проходного порога.";
+          var replayLine = result.replayed ? "<br>Повторный запрос подтверждён без создания дубля." : "";
+
+          status.className = "send-panel";
+          status.innerHTML =
+            '<span class="success">&#9989; Результат сохранён.</span><br>' +
+            '<b>Код результата: ' + escapeHtml(resultCode) + '</b><br>' +
+            'Процент: ' + escapeHtml(result.percent) + '%<br>' +
+            'Итоговый балл: ' + escapeHtml(result.finalScore) + '%<br>' +
+            'Статус: ' + (result.passStatus === "passed" ? "успешно" : "неуспешно") +
+            reportLine + replayLine + '<br>' +
+            '<b>Сохраните код результата.</b>';
+          return result;
+        })
+        .catch(function(error) {
+          var retryable = isRetryableSubmissionError(error);
+          logSubmissionEvent("stopped", data, MAX_AUTOMATIC_RETRIES + 1, error && error.failureCode);
+          status.className = "send-panel error";
+          status.textContent = retryable
+            ? "Результат рассчитан и сохранён на этом устройстве, но сервер пока не подтвердил запись. Автоматические попытки завершены — нажмите «Повторить отправку», когда связь восстановится."
+            : (error && error.userMessage) || "Результат рассчитан, но запрос отклонён. Обновите страницу теста перед новой попыткой.";
+          retryButton.hidden = !retryable;
+          return null;
+        })
+        .finally(function() {
+          resultSubmissionInFlight = false;
+          retryButton.disabled = resultSaved || !pendingResultData;
+        });
+    }
+
+    function sendResultAttempt(data, retryIndex) {
+      var status = document.getElementById("sendStatus");
+      var attemptNumber = retryIndex + 1;
+      status.className = "send-panel pending";
+      status.textContent = retryIndex === 0
+        ? "Отправляем результат на сервер…"
+        : "Повторяем отправку: попытка " + attemptNumber + " из " + (MAX_AUTOMATIC_RETRIES + 1) + "…";
+      logSubmissionEvent("attempt", data, attemptNumber, "");
+
+      return postResultOnce(data)
+        .then(function(result) {
+          if (result.status === "blocked" || result.blocked) return result;
+          if (result.ok !== true && result.status !== "ok") {
+            throw createSubmissionError(
+              result.message || "Сервер отклонил результат.",
+              result.retryable === true,
+              result.failureCode || "backend_rejected"
+            );
+          }
+          return result;
+        })
+        .catch(function(error) {
+          if (!isRetryableSubmissionError(error) || retryIndex >= MAX_AUTOMATIC_RETRIES) throw error;
+
+          var delay = getSubmissionRetryDelay(retryIndex);
+          status.className = "send-panel pending";
+          status.textContent = "Связь временно недоступна. Повторим тот же запрос через " + Math.ceil(delay / 1000) + " сек.; новый код не создаётся.";
+          logSubmissionEvent("scheduled-retry", data, attemptNumber, error && error.failureCode);
+          return waitForSubmissionRetry(delay).then(function() {
+            return sendResultAttempt(data, retryIndex + 1);
+          });
+        });
+    }
+
+    function postResultOnce(data) {
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function() { controller.abort(); }, NETWORK_TIMEOUT_MS);
 
       return fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
@@ -1408,63 +1520,186 @@
         signal: controller.signal
       })
       .then(function(response) {
-        if (!response.ok) throw new Error("HTTP " + response.status);
+        if (!response.ok) {
+          throw createSubmissionError(
+            "Сервер временно недоступен.",
+            isTransientHttpStatus(response.status),
+            "http_" + response.status
+          );
+        }
         return response.json();
-      })
-      .then(function(result) {
-        if (result.status === "blocked" || result.blocked) {
-          status.textContent = result.message || "Повторное прохождение заблокировано.";
-          status.className = "send-panel error";
-          pendingResultData = null;
-          return result;
-        }
-
-        if (result.ok !== true && result.status !== "ok") {
-          throw new Error(result.message || "Backend вернул ошибку.");
-        }
-
-        resultSaved = true;
-        pendingResultData = null;
-        if (!currentTestConfig.skipRetakeCheck) {
-          saveLocalAttemptLock(data.testId, data.email, data.browserFingerprint);
-        }
-
-        var resultCode = result.resultCode || result.code || "";
-        var reportLine = result.reportCreated
-          ? "<br>Подробный TXT-отчёт создан и доступен администратору."
-          : "<br>TXT-отчёт не создаётся для результата ниже проходного порога.";
-        var replayLine = result.replayed ? "<br>Повторный запрос подтверждён без создания дубля." : "";
-
-        status.className = "send-panel";
-        status.innerHTML =
-          '<span class="success">&#9989; Результат сохранён.</span><br>' +
-          '<b>Код результата: ' + escapeHtml(resultCode) + '</b><br>' +
-          'Процент: ' + escapeHtml(result.percent) + '%<br>' +
-          'Итоговый балл: ' + escapeHtml(result.finalScore) + '%<br>' +
-          'Статус: ' + (result.passStatus === "passed" ? "успешно" : "неуспешно") +
-          reportLine + replayLine + '<br>' +
-          '<b>Сохраните код результата.</b>';
-        return result;
-      })
-      .catch(function(error) {
-        console.error("Ошибка сохранения результата:", error);
-        status.className = "send-panel error";
-        status.textContent = error && error.name === "AbortError"
-          ? "Результат рассчитан, но backend не ответил вовремя. Нажмите «Повторить отправку» — тот же запрос не создаст дубль."
-          : "Результат рассчитан, но сохранение не подтверждено. Проверьте подключение и повторите отправку; дубль создан не будет.";
-        retryButton.hidden = false;
-        return null;
       })
       .finally(function() {
         window.clearTimeout(timeout);
-        resultSubmissionInFlight = false;
-        retryButton.disabled = resultSaved || !pendingResultData;
+      });
+    }
+
+    function createSubmissionError(message, retryable, failureCode) {
+      var error = new Error("Submission failed");
+      error.userMessage = String(message || "");
+      error.retryable = Boolean(retryable);
+      error.failureCode = String(failureCode || "unknown");
+      return error;
+    }
+
+    function isRetryableSubmissionError(error) {
+      if (!error) return true;
+      if (error.retryable === false) return false;
+      if (error.name === "AbortError") return true;
+      return error.retryable === true || !navigator.onLine || !error.failureCode;
+    }
+
+    function isTransientHttpStatus(statusCode) {
+      return [408, 425, 429, 500, 502, 503, 504].indexOf(Number(statusCode)) >= 0;
+    }
+
+    function getSubmissionRetryDelay(retryIndex) {
+      return AUTOMATIC_RETRY_DELAYS_MS[retryIndex] || AUTOMATIC_RETRY_DELAYS_MS[AUTOMATIC_RETRY_DELAYS_MS.length - 1];
+    }
+
+    function waitForSubmissionRetry(delay) {
+      return new Promise(function(resolve) { window.setTimeout(resolve, delay); });
+    }
+
+    function logSubmissionEvent(eventName, data, attemptNumber, failureCode) {
+      var requestId = String(data && data.requestId || "");
+      console.info("[SkillCheck submission]", {
+        event: String(eventName || ""),
+        request: requestId ? "..." + requestId.slice(-8) : "missing",
+        attempt: Number(attemptNumber || 0),
+        failureCode: String(failureCode || "")
       });
     }
 
     function retryResultSubmission() {
       if (!pendingResultData || resultSaved || resultSubmissionInFlight) return;
-      sendResult(pendingResultData);
+      sendResult(pendingResultData, { reason: "manual" });
+    }
+
+    function getPendingResultStorageKey(testId) {
+      return "skillcheck_pending_result_" + String(testId || "").replace(/[^a-z0-9-]/gi, "");
+    }
+
+    function buildPendingResultEnvelope(data, nowValue) {
+      var savedAt = Number(nowValue || Date.now());
+      return {
+        schemaVersion: PENDING_RESULT_SCHEMA_VERSION,
+        savedAt: savedAt,
+        expiresAt: savedAt + PENDING_RESULT_TTL_MS,
+        testId: String(data && data.testId || ""),
+        requestId: String(data && data.requestId || ""),
+        data: data
+      };
+    }
+
+    function validatePendingResultEnvelope(envelope, expectedTestId, nowValue) {
+      if (!envelope || envelope.schemaVersion !== PENDING_RESULT_SCHEMA_VERSION) return null;
+      if (String(envelope.testId || "") !== String(expectedTestId || "")) return null;
+      if (Number(envelope.expiresAt || 0) <= Number(nowValue || Date.now())) return null;
+      if (!/^sc_[A-Za-z0-9-]{16,80}$/.test(String(envelope.requestId || ""))) return null;
+
+      var data = envelope.data;
+      if (!data || String(data.testId || "") !== String(expectedTestId || "")) return null;
+      if (String(data.requestId || "") !== String(envelope.requestId || "")) return null;
+      if (!Array.isArray(data.answers) || data.answers.length < 1 || data.answers.length > QUESTIONS_PER_ATTEMPT) return null;
+      if (!data.blockResults || typeof data.blockResults !== "object" || Array.isArray(data.blockResults)) return null;
+      if (!isFinite(Number(data.finalScore)) || !isFinite(Number(data.percent))) return null;
+      return data;
+    }
+
+    function persistPendingResult(data) {
+      try {
+        var envelope = buildPendingResultEnvelope(data, Date.now());
+        localStorage.setItem(getPendingResultStorageKey(data.testId), JSON.stringify(envelope));
+        return true;
+      } catch (error) {
+        console.warn("[SkillCheck submission] Local pending storage is unavailable.");
+        return false;
+      }
+    }
+
+    function loadPendingResult(testId) {
+      var storageKey = getPendingResultStorageKey(testId);
+      try {
+        var raw = localStorage.getItem(storageKey);
+        if (!raw || raw.length > 750000) {
+          if (raw) localStorage.removeItem(storageKey);
+          return null;
+        }
+
+        var envelope = JSON.parse(raw);
+        var data = validatePendingResultEnvelope(envelope, testId, Date.now());
+        if (!data) localStorage.removeItem(storageKey);
+        return data;
+      } catch (error) {
+        try { localStorage.removeItem(storageKey); } catch (ignored) {}
+        return null;
+      }
+    }
+
+    function clearPendingResult(testId, requestId) {
+      var storageKey = getPendingResultStorageKey(testId);
+      try {
+        var raw = localStorage.getItem(storageKey);
+        if (raw && requestId) {
+          var envelope = JSON.parse(raw);
+          if (String(envelope.requestId || "") !== String(requestId)) return;
+        }
+        localStorage.removeItem(storageKey);
+      } catch (error) {
+        try { localStorage.removeItem(storageKey); } catch (ignored) {}
+      }
+    }
+
+    function restorePendingResult() {
+      var data = loadPendingResult(currentTestId);
+      if (!data) return false;
+
+      pendingResultData = data;
+      pendingResultStoredLocally = true;
+      resultSaved = false;
+      testFinished = true;
+      showResult(buildResultViewData(data));
+
+      var status = document.getElementById("sendStatus");
+      var retryButton = document.getElementById("retrySendButton");
+      status.className = "send-panel pending";
+      status.textContent = navigator.onLine
+        ? "Восстановлен неподтверждённый результат с этого устройства. Сейчас повторим отправку с тем же идентификатором и кодом."
+        : "Восстановлен неподтверждённый результат с этого устройства. Подключитесь к сети и нажмите «Повторить отправку».";
+      retryButton.hidden = false;
+      retryButton.disabled = false;
+
+      if (navigator.onLine) {
+        window.setTimeout(function() {
+          if (pendingResultData && !resultSubmissionInFlight && !resultSaved) {
+            sendResult(pendingResultData, { reason: "restored" });
+          }
+        }, 800);
+      }
+      return true;
+    }
+
+    function buildResultViewData(data) {
+      return {
+        score: data.percent,
+        finalScore: data.finalScore,
+        badge: data.badge,
+        finalDecision: data.finalDecision,
+        blockResults: data.blockResults,
+        trustScore: data.trustScore,
+        tabSwitches: data.tabSwitches,
+        rawScore: data.rawScore,
+        rawTotal: data.rawTotal,
+        penalty: data.penalty,
+        unansweredCount: data.unansweredCount,
+        recommendation: data.recommendation
+      };
+    }
+
+    function normalizeResultNumber(value) {
+      var number = Number(value);
+      return isFinite(number) ? Math.round(number * 100) / 100 : 0;
     }
 
     function generateSubmissionRequestId() {
@@ -1476,7 +1711,7 @@
 
     function escapeHtml(text) {
       var div = document.createElement('div');
-      div.textContent = text;
+      div.textContent = text === undefined || text === null ? "" : String(text);
       return div.innerHTML;
     }
 

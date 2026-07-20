@@ -27,9 +27,9 @@ assert.equal(inlineScripts.length, 1, "admin page must contain one inline applic
 new vm.Script(inlineScripts[0][1], { filename: "admin.html" });
 new vm.Script(backend, { filename: "Code.gs" });
 
-const requestFunction = extractFunction(frontend, "requestAdminResults");
+const requestFunction = extractFunction(frontend, "requestAdminAction");
 assert.match(requestFunction, /method:\s*"POST"/, "admin data must use POST");
-assert.match(requestFunction, /JSON\.stringify\(\{\s*action:\s*"adminResults",\s*password:/, "password must be in POST body");
+assert.match(requestFunction, /JSON\.stringify\(Object\.assign\([^\n]+password:\s*password/, "password must be in POST body");
 assert.doesNotMatch(requestFunction, /[?&]password=/, "password must never be added to URL");
 assert.doesNotMatch(frontend, /adminResultsCallback_|createElement\("script"\)/, "password-bearing JSONP must be removed");
 assert.doesNotMatch(frontend, /reportPath|reportCode/, "internal report locations must not reach the admin UI");
@@ -37,7 +37,7 @@ assert.doesNotMatch(frontend, /mock(?:Data|Results)|ADMIN_PASSWORD\s*=|password\
 
 const doGetFunction = extractFunction(backend, "doGet");
 assert.doesNotMatch(doGetFunction, /params\.password/, "GET must not accept the admin password");
-assert.match(doGetFunction, /Для админ-панели требуется POST-запрос/, "legacy admin GET must be rejected");
+assert.match(doGetFunction, /административных операций требуется POST-запрос/, "legacy admin GET must be rejected");
 
 const frontendContext = { Array, Boolean, Date, Number, Object, String };
 const frontendFunctions = [

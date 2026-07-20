@@ -1,7 +1,8 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-3";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-4";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+const MAX_ADMIN_REPORT_CHARS = 1000000;
 const DEFAULT_YANDEX_REPORTS_FOLDER = "disk:/skillcheck/reports";
 const DEFAULT_YANDEX_ADMIN_FILE = "disk:/skillcheck/admin/results.json";
 const DEFAULT_YANDEX_ATTEMPTS_FILE = "disk:/skillcheck/private/attempts.json";
@@ -67,12 +68,12 @@ function doGet(e) {
     }
   }
 
-  if (action === "adminResults") {
+  if (action === "adminResults" || action === "adminReport") {
     return jsonOrJsonpResponse({
       ok: false,
       status: "error",
       backendVersion: BACKEND_VERSION,
-      message: "Для админ-панели требуется POST-запрос."
+      message: "Для защищённых административных операций требуется POST-запрос."
     }, params.callback);
   }
 
@@ -89,6 +90,10 @@ function doPost(e) {
 
     if (data.action === "getAdminResults" || data.action === "adminResults") {
       return jsonResponse(getAdminResults(String(data.password || "")));
+    }
+
+    if (data.action === "getAdminReport" || data.action === "adminReport") {
+      return jsonResponse(getAdminReport(String(data.password || ""), String(data.code || "")));
     }
 
     return jsonResponse(saveTestResult(data));
@@ -781,6 +786,73 @@ function getAdminResults(password) {
     backendVersion: BACKEND_VERSION,
     loadedAt: new Date().toISOString(),
     results: storedResults.map(sanitizeAdminResult)
+  };
+}
+
+function getAdminReport(password, code) {
+  if (password !== getRequiredProperty("ADMIN_PASSWORD")) {
+    return {
+      ok: false,
+      status: "error",
+      backendVersion: BACKEND_VERSION,
+      message: "Доступ запрещён."
+    };
+  }
+
+  const normalizedCode = normalizeResultCode(code);
+  if (!normalizedCode) return buildUnavailableAdminReportResponse();
+
+  try {
+    const storedResults = readJsonFromYandexDisk(getAdminFilePath(), []);
+    const result = storedResults.find(row =>
+      row && String(row.code || "").toUpperCase() === normalizedCode
+    );
+
+    if (!result || result.status !== "passed" || !result.reportCreated) {
+      return buildUnavailableAdminReportResponse();
+    }
+
+    const reportPath = joinDiskPath(getReportsFolderPath(), normalizedCode + ".txt");
+    const reportText = readTextFromYandexDisk(reportPath);
+
+    if (reportText === null || reportText.length > MAX_ADMIN_REPORT_CHARS) {
+      return buildUnavailableAdminReportResponse();
+    }
+
+    console.log("Admin report retrieved: " + normalizedCode);
+    return {
+      ok: true,
+      status: "ok",
+      backendVersion: BACKEND_VERSION,
+      code: normalizedCode,
+      filename: normalizedCode + ".txt",
+      contentType: "text/plain;charset=UTF-8",
+      reportText: reportText
+    };
+  } catch (error) {
+    console.error(error && error.stack ? error.stack : error);
+    return {
+      ok: false,
+      status: "error",
+      backendVersion: BACKEND_VERSION,
+      message: "Не удалось получить отчёт."
+    };
+  }
+}
+
+function normalizeResultCode(value) {
+  const code = String(value || "").trim().toUpperCase();
+  return /^(FA|CA|FPA|ACC|BI|DEV)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(code)
+    ? code
+    : "";
+}
+
+function buildUnavailableAdminReportResponse() {
+  return {
+    ok: false,
+    status: "not_found",
+    backendVersion: BACKEND_VERSION,
+    message: "Отчёт недоступен."
   };
 }
 

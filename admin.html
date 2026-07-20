@@ -75,6 +75,17 @@
     .primary-btn { width: 100%; margin-top: 12px; color: #fff; background: linear-gradient(90deg, var(--blue), var(--violet)); }
     .secondary-btn { color: #1e40af; background: #eff6ff; }
     .ghost-btn { color: #475569; background: #f1f5f9; }
+    .download-btn {
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
     .status { min-height: 22px; margin-top: 12px; font-size: 14px; font-weight: 600; }
     .status.error { color: var(--red); }
     .status.success { color: var(--green); }
@@ -96,6 +107,14 @@
       color: #991b1b;
       font-size: 14px;
     }
+    .report-policy {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .report-policy strong { color: #0f172a; }
     .filters {
       display: grid;
       grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(150px, 1fr)) auto;
@@ -188,7 +207,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Только обезличенные результаты, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.4</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.5</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -217,6 +236,12 @@
       </div>
 
       <div id="dashboardError" class="alert hidden" role="alert"></div>
+
+      <div class="card report-policy">
+        <strong>Полный TXT защищён отдельно от кода результата.</strong>
+        Скачать его можно только после входа в админку. Отчёт содержит персональные данные и не должен передаваться работодателю без согласия кандидата.
+        <div id="reportStatus" class="status" role="status" aria-live="polite"></div>
+      </div>
 
       <section class="card filters" aria-label="Фильтры результатов">
         <div class="field search-field">
@@ -290,7 +315,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.20.4";
+    const FRONTEND_BUILD = "2026.07.20.5";
     const TECHNICAL_TEST_ID = "dev-quick";
     const TEST_LABELS = {
       "fa-junior": "Financial Analyst",
@@ -319,6 +344,11 @@
     document.getElementById("refreshButton").addEventListener("click", function() { loadAdminResults(true); });
     document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
     document.getElementById("clearFiltersButton").addEventListener("click", clearFilters);
+    document.getElementById("resultsTable").addEventListener("click", function(event) {
+      const button = event.target.closest("[data-report-code]");
+      if (!button || !document.getElementById("resultsTable").contains(button)) return;
+      downloadAdminReport(button.getAttribute("data-report-code"), button);
+    });
 
     async function loadAdminResults(isRefresh) {
       if (isLoading || !activePassword) return;
@@ -354,13 +384,21 @@
     }
 
     async function requestAdminResults(password) {
+      return requestAdminAction("adminResults", password, {});
+    }
+
+    async function requestAdminReport(password, code) {
+      return requestAdminAction("adminReport", password, { code: code });
+    }
+
+    async function requestAdminAction(action, password, payload) {
       const controller = new AbortController();
       const timeout = window.setTimeout(function() { controller.abort(); }, 20000);
 
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
-          body: JSON.stringify({ action: "adminResults", password: password }),
+          body: JSON.stringify(Object.assign({}, payload, { action: action, password: password })),
           cache: "no-store",
           credentials: "omit",
           signal: controller.signal
@@ -372,6 +410,38 @@
         throw error;
       } finally {
         window.clearTimeout(timeout);
+      }
+    }
+
+    async function downloadAdminReport(code, button) {
+      const normalizedCode = normalizeResultCode(code);
+      if (!activePassword || !normalizedCode || button.disabled) return;
+
+      button.disabled = true;
+      button.textContent = "Загрузка…";
+      setReportStatus("Загружаем защищённый TXT…", "");
+
+      try {
+        const data = await requestAdminReport(activePassword, normalizedCode);
+        if (data.ok !== true || data.status !== "ok" || typeof data.reportText !== "string") {
+          throw new Error(data.message || "Отчёт недоступен.");
+        }
+
+        const blob = new Blob(["\uFEFF", data.reportText], { type: "text/plain;charset=UTF-8" });
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = normalizedCode + ".txt";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(function() { URL.revokeObjectURL(objectUrl); }, 0);
+        setReportStatus("Отчёт " + normalizedCode + ".txt скачан.", "success");
+      } catch (error) {
+        setReportStatus(error && error.message ? error.message : "Не удалось скачать отчёт.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Скачать TXT";
       }
     }
 
@@ -509,12 +579,14 @@
           cell("Статус", '<span class="badge ' + (row.status === "passed" ? "badge-pass" : "badge-fail") + '">' + (row.status === "passed" ? "Успешно" : "Неуспешно") + "</span>") +
           cell("Плашка", escapeHtml(row.badge || "—")) +
           cell("Уходы", formatNumber(row.tabSwitches)) +
-          cell("TXT", row.reportCreated ? "Есть" : "Нет") +
+          cell("Отчёт", row.reportCreated
+            ? '<button class="download-btn" type="button" data-report-code="' + escapeHtml(row.code) + '">Скачать TXT</button>'
+            : "Не создан") +
           "</tr>";
       }).join("");
 
       document.getElementById("resultsTable").innerHTML = '<table><thead><tr>' +
-        "<th>Код</th><th>Дата</th><th>Тест</th><th>Итог</th><th>Процент</th><th>Статус</th><th>Плашка</th><th>Уходы</th><th>TXT</th>" +
+        "<th>Код</th><th>Дата</th><th>Тест</th><th>Итог</th><th>Процент</th><th>Статус</th><th>Плашка</th><th>Уходы</th><th>Отчёт</th>" +
         "</tr></thead><tbody>" + body + "</tbody></table>";
     }
 
@@ -535,6 +607,7 @@
       document.getElementById("loginBlock").classList.remove("hidden");
       document.getElementById("backendVersion").textContent = "до входа не загружен";
       document.getElementById("loadedAt").textContent = "—";
+      setReportStatus("", "");
       document.getElementById("adminPassword").focus();
     }
 
@@ -560,6 +633,12 @@
       node.classList.toggle("hidden", !message);
     }
 
+    function setReportStatus(message, type) {
+      const node = document.getElementById("reportStatus");
+      node.textContent = message;
+      node.className = "status" + (type ? " " + type : "");
+    }
+
     function barHtml(label, count, width, className) {
       return '<div class="bar-row"><div class="bar-label"><span>' + escapeHtml(label) + "</span><span>" + count +
         '</span></div><div class="bar-track"><div class="bar-fill ' + className + '" style="width:' + Math.max(count ? 4 : 0, width) + '%"></div></div></div>';
@@ -568,6 +647,10 @@
     function emptyMiniState() { return '<div class="empty-state">Нет данных для распределения</div>'; }
     function cell(label, value) { return '<td data-label="' + label + '">' + value + "</td>"; }
     function testLabel(testId) { return TEST_LABELS[testId] || testId || "Неизвестный тест"; }
+    function normalizeResultCode(value) {
+      const code = String(value || "").trim().toUpperCase();
+      return /^(FA|CA|FPA|ACC|BI|DEV)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(code) ? code : "";
+    }
     function getAdminBadge(finalScore, tabSwitches) {
       if (finalScore >= 85 && tabSwitches <= 1) return "Junior Strong";
       if (finalScore >= 70 && tabSwitches <= 2) return "Junior Confirmed";

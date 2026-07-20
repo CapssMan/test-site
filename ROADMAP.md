@@ -66,7 +66,7 @@
 | 8 | UX кандидата | Завершён |
 | 9 | Надёжность отправки результата | Завершён |
 | 10 | Безопасность | Завершён |
-| 10A | Authoritative scoring и controlled invitations | Технически завершён; production rollout pending; pilot locked до ротации банков |
+| 10A | Authoritative scoring и controlled invitations | Завершён и production-verified; pilot locked до ротации банков |
 | 11 | Юридическая и privacy-подготовка | Частично реализован |
 | 12 | Удаление и срок хранения | Не начат |
 | 13 | Резервные копии | Не начат |
@@ -250,7 +250,7 @@ Production smoke: minimal health содержит ровно `ok/status/service/
 
 ## Этап 10A. Authoritative scoring и controlled invitations
 
-Статус: техническая реализация завершена 20 июля 2026 года. Подготовлены candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9` и backend `yandex-disk-mvp-2026-07-20-9`. Production rollout в существующий deployment, production smoke и implementation commit пока `pending`; Web App URL менять нельзя.
+Статус: завершён и опубликован 20 июля 2026 года в существующем deployment `@51` без смены Web App URL. Production-версии: candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`; implementation commit `2addd59`. Полная матрица 14/14 скриптов и live browser QA на desktop/mobile прошли.
 
 - [x] Public banks переведены на schema v2: display-only вопросы, opaque option IDs и проверяемый `publicDigest`, без `correct` и комментариев к ответу.
 - [x] Закрытые versioned private banks хранят answer key на Яндекс.Диске; их SHA-256 anchors находятся в Script Properties и дают fail-closed проверку целостности.
@@ -264,10 +264,12 @@ Production smoke: minimal health содержит ровно `ok/status/service/
 - [x] Добавлены специализированные проверки secrecy, токенов, authoritative scoring и recovery; содержательные тексты и правильные ответы при структурной миграции не менялись.
 - [x] Bootstrap привязан к полному immutable Git commit `70e569cf267e043aabc780e81cc4307db7e149b1` и точным SHA-256 legacy-файлов; любое расхождение отклоняется до миграции.
 - [x] Bootstrap/issuance/invite/begin/save fail closed, если private storage Яндекс.Диска имеет `public_key`, `public_url` или `share`; publish/share endpoints не используются.
-- [ ] Завершить production rollout, зафиксировать реальный deployment/commit и production smoke — не подставлять значения заранее.
+- [x] Production rollout выполнен в deployment `@51` без смены URL; owner smoke `FA-LDUB2` подтвердил authoritative result и exact replay, issuance после проверки выключен.
 - [ ] До первого реального приглашения отдельно согласовать и выполнить содержательную ротацию банков с SME review. Старые answer keys сохраняются в Git history, клонах и кэшах; rewrite истории сам по себе не отзывает их.
 
 После технического 10A осталось 10 плановых этапов (`11–20`): 63–114 часов, 450–920 тыс. токенов и 2–4 недели пилота. Ротация банков оценивается отдельно в 50–100 часов и 400–800 тыс. токенов плюс SME review. До limited-pilot readiness (`11–17` + ротация) — 93–174 часа / 740 тыс. – 1,48 млн токенов; до полного roadmap вместе с ротацией — 113–214 часов / 850 тыс. – 1,72 млн токенов + 2–4 недели.
+
+Production evidence 10A: owner smoke `FA-LDUB2` получил raw/final/percent `0`, failed, `server-verified`, `authoritative-v1`, `attempt-v1`, telemetry `client-reported-unverified`, `reportCreated:false`; exact replay вернул тот же код с `replayed:true`. `ATTEMPT_ISSUANCE_ENABLED=false` восстановлен после smoke. Временный cutover bridge удалён и отвечает `unknown_action`.
 
 ## Этап 11. Юридическая и privacy-подготовка MVP
 
@@ -311,10 +313,9 @@ JSON и структура банков, известные шаблоны secre
 
 ## Ближайшая очередь
 
-1. Завершить production rollout/проверку 10A и зафиксировать только фактические deployment, smoke и commit.
-2. Перейти к этапу 11 — юридической и privacy-подготовке; рекомендуемый режим `высокий`.
-3. Отдельно получить подтверждение на содержательную ротацию банков — обязательный pilot blocker; рекомендуемый режим `ультра`.
-4. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
+1. Перейти к этапу 11 — юридической и privacy-подготовке; рекомендуемый режим `высокий`.
+2. Отдельно получить подтверждение на содержательную ротацию банков — обязательный pilot blocker; рекомендуемый режим `ультра`.
+3. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 
 ## Ограничения работы
 

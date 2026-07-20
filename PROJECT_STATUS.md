@@ -4,8 +4,8 @@
 
 ## Текущий этап
 
-- Технически завершён: этап 10A — authoritative backend-scoring, private banks и signed single-use invitation/attempt.
-- Production rollout 10A в существующий Web App ещё выполняется; deployment, smoke и implementation commit: `pending`.
+- Завершён и опубликован: этап 10A — authoritative backend-scoring, private banks и signed single-use invitation/attempt.
+- Production rollout выполнен в существующий deployment `@51` без смены Web App URL; owner smoke и live browser QA пройдены.
 - Следующий плановый этап: 11 — юридическая и privacy-подготовка, рекомендуемый режим `высокий`.
 - Реальный пилот заблокирован до отдельно согласованной содержательной ротации банков и SME review; для этой работы нужен режим `ультра`.
 - Полный план: `ROADMAP.md`.
@@ -17,10 +17,10 @@
 - Этап 3 опубликован в commit `12868e6`.
 - Этап 4 опубликован в commit `1cd8498`.
 - Этап 5 опубликован в commit `44e0de1`.
-- Текущий live baseline этапа 10: candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, implementation commit `e251be3`.
-- Подготовленные версии 10A: candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`.
-- Production deployment 10A: `pending`; Web App URL должен остаться прежним.
-- Implementation commit 10A: `pending`.
+- Historical baseline этапа 10: candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, implementation commit `e251be3`.
+- Production 10A: candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`, deployment `@51`.
+- Web App URL не изменён.
+- Implementation commit 10A: `2addd59`.
 
 ## Live health
 
@@ -28,7 +28,7 @@
 
 - `ok: true`;
 - ответ содержит ровно четыре ключа: `ok`, `status`, `service`, `backendVersion`;
-- `backendVersion: yandex-disk-mvp-2026-07-20-7`;
+- `backendVersion: yandex-disk-mvp-2026-07-20-9`;
 - endpoint не обращается к Яндекс Диску, не создаёт файлы и не раскрывает paths/properties/storage state.
 
 ## Завершено
@@ -125,7 +125,7 @@
 - `ATTEMPT_ISSUANCE_ENABLED=false`; admin и candidate UI показывают pilot lock.
 - Bootstrap читает legacy source только из полного commit `70e569cf267e043aabc780e81cc4307db7e149b1` и проверяет точные SHA-256 файлов; mismatch обрабатывается fail closed.
 - Любой признак публикации private storage (`public_key`, `public_url`, `share`) блокирует bootstrap, issuance, invite, begin/save; publish/share endpoints не вызываются.
-- Добавлены проверки public-bank secrecy, токенов, server scoring и recovery. Production rollout и smoke 10A ещё `pending`.
+- Добавлены проверки public-bank secrecy, токенов, server scoring и recovery; полная матрица 14/14 скриптов и live browser QA на desktop/mobile прошли.
 
 Техническая миграция не отзывает старые answer keys из Git history, клонов и кэшей. Поэтому включение приглашений для реальных кандидатов запрещено до отдельно подтверждённой содержательной ротации банков и SME review.
 
@@ -146,7 +146,8 @@
 - Исторический scoring smoke report: `DEV-B4ABJ.txt`.
 - Историческая проверка надёжности отправки: failed `DEV-7S2N2`; повтор вернул тот же код с `replayed:true`, TXT не создавался.
 - Security production smoke: failed `FA-X5P66`, `reportCreated:false`; идентичный replay вернул тот же код с `replayed:true`; retake заблокирован без точного `nextDate`.
-- Production smoke этапа 10A: `pending`; код или результат заранее не заявляются.
+- Production owner smoke 10A: `FA-LDUB2`, raw/final/percent `0`, failed, `server-verified`, `authoritative-v1`, `attempt-v1`, telemetry `client-reported-unverified`, `reportCreated:false`; exact replay вернул тот же код с `replayed:true`.
+- После smoke issuance выключен; временный bridge удалён и возвращает `unknown_action`.
 - В служебных JSON есть dev-quick smoke-записи; админка их фильтрует.
 - Очистку выполнять только в рамках этапа 12/17 с резервной копией либо после явного подтверждения.
 
@@ -166,4 +167,4 @@
 
 ## Ручной шаг пользователя
 
-Сейчас не требуется. Production rollout 10A выполняется без смены Web App URL; выдача приглашений останется выключенной. Содержательная ротация банков начнётся только после отдельного явного подтверждения пользователя.
+Сейчас не требуется. Production rollout 10A завершён без смены Web App URL; выдача приглашений выключена. Содержательная ротация банков начнётся только после отдельного явного подтверждения пользователя.

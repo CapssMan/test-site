@@ -42,7 +42,7 @@
 - [x] Hard-disable публичный `dev-quick` по умолчанию (`PUBLIC_DEV_TEST_ENABLED=false`, `test_not_public`).
 - [x] Реализовать authoritative backend-scoring, обязательные `questionId`/`optionId`, single-use signed attempt/invite и best-effort abuse limits.
 - [x] Убрать публичный email-enumeration lookup из controlled-pilot потока: попытка начинается только по email/test-bound invite.
-- [ ] Завершить production rollout 10A в существующий deployment без смены URL; зафиксировать deployment/commit и production smoke только по факту.
+- [x] Завершить production rollout 10A в существующий deployment `@51` без смены URL; implementation commit `2addd59`, owner smoke `FA-LDUB2`, 14/14 suite и desktop/mobile browser QA подтверждены.
 - [ ] Выполнить отдельно согласованную содержательную ротацию банков и SME review: старые answer keys остаются в Git history, клонах и кэшах.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
@@ -91,7 +91,7 @@
 
 ## Следующий этап
 
-Этап 10A технически завершён; его production rollout ещё `pending`, а выдача приглашений выключена. Следующий плановый этап — 11, юридическая и privacy-подготовка; рекомендуемый режим — `высокий`. Отдельный pilot blocker — содержательная ротация банков с SME review; для неё нужен режим `ультра` и явное подтверждение пользователя. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
+Этап 10A завершён и production-verified в deployment `@51`; выдача приглашений после owner smoke выключена. Следующий плановый этап — 11, юридическая и privacy-подготовка; рекомендуемый режим — `высокий`. Отдельный pilot blocker — содержательная ротация банков с SME review; для неё нужен режим `ультра` и явное подтверждение пользователя. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
 
 ## Financial Analyst Junior
 

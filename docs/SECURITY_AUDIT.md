@@ -2,7 +2,7 @@
 
 Дата аудита: 20 июля 2026 года.
 
-Статус baseline этапа 10: опубликован в Apps Script deployment `@49` без смены URL и подтверждён production smoke; implementation commit `e251be3`. Статус 10A: техническая реализация authoritative scoring/private banks/invitations завершена; production deployment, smoke и implementation commit пока `pending`. Подготовлены candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`; `ATTEMPT_ISSUANCE_ENABLED=false`.
+Статус baseline этапа 10: опубликован в Apps Script deployment `@49` без смены URL и подтверждён production smoke; implementation commit `e251be3`. Этап 10A опубликован в существующем deployment `@51` без смены URL и подтверждён owner smoke; implementation commit `2addd59`. Production-версии: candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`; `ATTEMPT_ISSUANCE_ENABLED=false`.
 
 ## Резюме
 
@@ -132,14 +132,14 @@
 - Bootstrap загружает legacy sources только из полного immutable commit `70e569cf267e043aabc780e81cc4307db7e149b1` и до JSON parse сверяет точный SHA-256 каждого файла. Commit или content mismatch останавливает миграцию.
 - Metadata-проверка охватывает private root/banks/invites/sessions/attempts и связанные файлы. Любой `public_key`, `public_url` или `share` блокирует bootstrap, включение issuance, выпуск invite, begin и save; publish/share endpoints код не вызывает.
 
-Production rollout и production smoke этой реализации пока `pending`. До их фактического завершения нельзя приписывать 10A номер deployment, SHA commit или smoke-код.
+Production evidence 10A: deployment `@51`, Web App URL не изменён; owner smoke `FA-LDUB2` получил raw/final/percent `0`, failed, `server-verified`, `authoritative-v1`, `attempt-v1`, telemetry `client-reported-unverified`, `reportCreated:false`. Exact replay вернул тот же код с `replayed:true`. После smoke issuance выключен; временный bridge удалён и возвращает `unknown_action`. Полная матрица 14/14 скриптов и live browser QA на desktop/mobile прошли.
 
 ## Остаточные риски и pilot gate после 10A
 
 | Риск | Уровень | Состояние / действие |
 |---|---|---|
 | Исторически опубликованные answer keys | Критический | Удалены из текущего HEAD, но остаются в Git history, клонах и кэшах. До реального пилота нужна отдельно согласованная содержательная ротация вопросов/вариантов/ключей и SME review; rewrite истории недостаточен. |
-| Production rollout 10A не завершён | Высокий до проверки | Deployment/commit/smoke остаются `pending`; обновлять только существующий Web App URL, затем выполнить закрытый owner smoke и снова оставить issuance выключенным. |
+| Production rollout 10A | Закрыт | Deployment `@51`, commit `2addd59`, owner smoke `FA-LDUB2`, exact replay, 14/14 suite и desktop/mobile browser QA подтверждены; issuance после проверки выключен. |
 | Ошибочное включение выдачи | Закрыт gate по умолчанию | `ATTEMPT_ISSUANCE_ENABLED=false`; admin/candidate показывают pilot lock. Не включать до content rotation и checklist этапа 17. |
 | Identity без OTP/account | Высокий | Email-bound invite и fingerprint ограничивают поток, но не доказывают личность. Для более сильной идентификации нужны OTP/magic link или аккаунт. |
 | Анонимный Apps Script endpoint и best-effort rate limits | Высокий при открытом запуске | Controlled flow сужен invite/token/state. `CacheService` не является атомарным IP-based limiter; для открытого трафика нужен внешний gateway/WAF/CAPTCHA. |

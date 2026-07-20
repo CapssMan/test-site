@@ -305,7 +305,19 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Этап 13. Резервные копии
 
-Backup `results.json` и `attempts.json` перед записью, ограниченная ротация, восстановление после повреждения, JSON-валидация перед заменой, отсутствие персональных данных в публичных местах. Не создавать бесконечные копии.
+Статус: технически завершён и опубликован 20 июля 2026 года в deployment `@55` без смены Web App URL. Production-версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-12`; API `attempt-v2`.
+
+- [x] Перед заменой `results`, `attempts`, attempt sessions и invites создаётся проверенный snapshot предыдущей валидной версии.
+- [x] Envelope содержит store/path binding, timestamps, число строк и SHA-256; snapshot и active-файл повторно читаются после записи.
+- [x] На каждый store сохраняются не более 12 snapshots; одинаковая запись не создаёт копию.
+- [x] Обычная запись fail closed отказывается перезаписывать уже повреждённый JSON.
+- [x] Editor-only restore разрешён только при закрытых legal/issuance gate, сохраняет valid pre-restore snapshot либо bounded corrupt-artifact и проверяет digest результата.
+- [x] Публичных backup/status/restore routes нет; папки и отдельные файлы проверяются на `public_key`, `public_url` и `share`.
+- [x] Удаление этапа 12 очищает связанные строки из ротационных snapshots и не создаёт новую копию удаляемых данных.
+- [x] Добавлены `docs/BACKUP_AND_RECOVERY.md` и сценарии snapshot/rotation/tamper/corruption/restore/deletion-redaction.
+- [x] Production baseline для четырёх stores и последующая inventory-проверка выполнены из Apps Script editor; существующие primary JSON не изменялись.
+
+Это application-level versioning на том же Яндекс Диске, а не независимая off-site/disaster-recovery копия. Ротация OAuth credential и отдельный failure-domain остаются pilot checklist.
 
 ## Этап 14. Наблюдаемость и диагностика
 

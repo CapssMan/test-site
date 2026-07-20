@@ -30,11 +30,14 @@ assert.match(consent, /Наименование\/ФИО оператора: не
 assert.match(consent, /Email для обращений по персональным данным: не указан/);
 assert.match(consent, /не разрешает[\s\S]*передавать результат работодателю/);
 assert.match(consent, /Срок серверного хранения ещё не утверждён/);
+assert.match(consent, /до 12 проверяемых резервных версий/i);
 
-assert.match(privacy, /skillcheck-privacy-2026-07-20-v2/);
+assert.match(privacy, /skillcheck-privacy-2026-07-20-v3/);
 assert.match(privacy, /псевдонимизированной, а не полностью обезличенной/);
 assert.match(privacy, /автоматическое удаление по сроку выключено/i);
-assert.match(privacy, /закрытая транзакционная копия[\s\S]*безвозвратно уничтожается/);
+assert.match(privacy, /закрыт(?:ая|ую) транзакционн(?:ая|ую) копи(?:я|ю)[\s\S]*безвозвратно уничтож/);
+assert.match(privacy, /до 12 закрытых проверяемых версий/i);
+assert.match(privacy, /удаляет связанные строки из обычных резервных версий/i);
 assert.match(privacy, /Передача работодателю или партнёру[\s\S]*выключена/);
 assert.doesNotMatch(privacy, /хран(?:ится|ение)[^<]{0,100}не более 12 месяцев/i, "privacy page must not promise an unimplemented retention period");
 

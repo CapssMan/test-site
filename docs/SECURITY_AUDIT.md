@@ -1,8 +1,8 @@
-# SkillCheck — security-аудит этапов 10, 10A и addendum 11–12
+# SkillCheck — security-аудит этапов 10, 10A и addendum 11–13
 
 Дата аудита: 20 июля 2026 года.
 
-Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-11`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-12`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
 ## Addendum 11: consent binding и legal gate
 
@@ -22,6 +22,16 @@
 - Exact replay и editor-only recovery продолжают зарегистрированную незавершённую операцию без создания нового удаления.
 - Технический журнал не содержит PII, ответов, отчёта, identity hashes или bearer-токенов. Автоматический retention выключен до внешнего решения оператора.
 - Production smoke ограничен health и неверным паролем; существующие данные не удалялись.
+
+## Addendum 13: backup и recovery
+
+- Предыдущая валидная версия admin results, attempts, sessions и invites сохраняется до замены; идентичная запись не создаёт копию.
+- Envelope и active-файл повторно читаются, проверяются по store/path binding, bounded JSON schema, row count и SHA-256.
+- Ротация ограничена 12 snapshots на store, corrupt forensic artifacts — тремя; публичных status/backup/restore routes нет.
+- Restore требует закрытых legal/issuance gate до и после получения `ScriptLock`, проверяет выбранный backup и сохраняет valid pre-restore snapshot либо повреждённый raw artifact.
+- Metadata-проверка распространяется на backup folders и отдельные файлы. Backups содержат те же категории закрытых данных и не могут публиковаться.
+- Удаление данных выполняет redaction связанных строк в snapshots и проверяет их отсутствие до purge транзакционной копии.
+- Production baseline четырёх stores и inventory выполнены editor-only; primary JSON намеренно не повреждались для smoke.
 
 ## Резюме
 
@@ -164,7 +174,7 @@ Production evidence 10A: deployment `@51`, Web App URL не изменён; owne
 | Анонимный Apps Script endpoint и best-effort rate limits | Высокий при открытом запуске | Controlled flow сужен invite/token/state. `CacheService` не является атомарным IP-based limiter; для открытого трафика нужен внешний gateway/WAF/CAPTCHA. |
 | Широкий/неподтверждённый scope Яндекс-токена | Высокий | Code path allowlist не ограничивает украденный токен; определить scope, безопасно ротировать credential и оценить app-folder/least privilege. |
 | Shared admin password | Высокий | POST + advisory limit; до масштабирования перейти на индивидуальную аутентификацию/MFA и безопасный audit trail. |
-| Нет автоматического retention и регулярного backup private state | Высокий | Ручное удаление этапа 12 реализовано; сроки должен утвердить оператор, а rotating backup/recovery выполняется на этапе 13. |
+| Нет автоматического retention и независимой off-site копии | Высокий | Ручное удаление и bounded application-level backup/restore реализованы; сроки должен утвердить оператор, а отдельный failure-domain/credential остаётся pilot checklist. |
 | CSP только через meta и inline code | Средний | Вынести JS/CSS и выставлять заголовки на управляемом hosting при следующем усилении. |
 | Юридические заглушки и контакты | Высокий | Этап 11 и профильная юридическая проверка; реальные приглашения не выдавать. |
 

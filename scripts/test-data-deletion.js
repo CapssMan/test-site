@@ -98,6 +98,8 @@ function makeHarness(options = {}) {
       return { exists, type: exists ? "file" : "missing", size: exists ? String(state.files[storagePath]).length : null, modified: exists ? "2026-07-20T10:00:00.000Z" : "" };
     },
     ensureYandexFolderExists() {},
+    collectOperationalBackupDeletionEntries() { return []; },
+    scrubOperationalBackupsForDeletion() {},
     assertAuthoritativePrivateStorageNotShared() {},
     assertAllowedObjectKeys(value, allowed) {
       if (!value || Object.keys(value).some(key => !allowed.includes(key))) throw new Error("unknown field");

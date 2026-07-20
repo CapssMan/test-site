@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-11";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-12";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -21,8 +21,14 @@ const DEFAULT_YANDEX_SESSIONS_FILE = "disk:/skillcheck/private/attempt-sessions-
 const DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER = "disk:/skillcheck/private/banks";
 const DEFAULT_YANDEX_DELETION_LOG_FILE = "disk:/skillcheck/private/deletion-log-v1.json";
 const DEFAULT_YANDEX_DELETION_BACKUPS_FOLDER = "disk:/skillcheck/private/deletion-backups";
+const DEFAULT_YANDEX_OPERATIONAL_BACKUPS_FOLDER = "disk:/skillcheck/private/backups-v1";
 const DELETION_PREVIEW_TTL_SECONDS = 10 * 60;
 const RETENTION_AUTOMATION_ENABLED = false;
+const OPERATIONAL_BACKUP_SCHEMA_VERSION = 1;
+const OPERATIONAL_BACKUP_LIMIT_PER_STORE = 12;
+const OPERATIONAL_CORRUPT_ARTIFACT_LIMIT_PER_STORE = 3;
+const MAX_OPERATIONAL_STORE_ROWS = 100000;
+const MAX_OPERATIONAL_STORE_CHARS = 20 * 1024 * 1024;
 const LEGACY_PUBLIC_BANK_COMMIT = "70e569cf267e043aabc780e81cc4307db7e149b1";
 const LEGACY_PUBLIC_BANK_BASE_URL = "https://raw.githubusercontent.com/CapssMan/test-site/" +
   LEGACY_PUBLIC_BANK_COMMIT + "/data/";
@@ -1492,7 +1498,8 @@ function listYandexFolderContents(folderPath) {
   const normalizedPath = normalizeDiskPath(folderPath);
   const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
     encodeURIComponent(normalizedPath) +
-    "&limit=100&fields=name,type,path,_embedded.items.name,_embedded.items.type,_embedded.items.path";
+    "&limit=100&fields=name,type,path,_embedded.items.name,_embedded.items.type,_embedded.items.path," +
+    "_embedded.items.public_key,_embedded.items.public_url,_embedded.items.share";
 
   try {
     const resource = yandexApiRequest("get", url, null, null);
@@ -1506,7 +1513,10 @@ function listYandexFolderContents(folderPath) {
       items: items.slice(0, 100).map(item => ({
         name: String(item.name || ""),
         type: String(item.type || "unknown"),
-        path: String(item.path || "")
+        path: String(item.path || ""),
+        publicKey: String(item.public_key || ""),
+        publicUrl: String(item.public_url || ""),
+        shared: Boolean(item.share)
       }))
     };
   } catch (error) {
@@ -1741,7 +1751,7 @@ function appendAdminResult(summaryData) {
   } else {
     results.push(row);
   }
-  writeJsonToYandexDisk(path, results);
+  writeRequiredJsonArray(path, results);
 }
 
 function normalizeSubmissionRequestId(value) {
@@ -1904,7 +1914,7 @@ function saveAttemptHash(attemptData) {
     date: String(attemptData.date || ""),
     status: attemptData.status === "passed" ? "passed" : "failed"
   });
-  writeJsonToYandexDisk(path, attempts);
+  writeRequiredJsonArray(path, attempts);
 }
 
 function upsertAttemptRecord(attemptData) {
@@ -1939,7 +1949,7 @@ function upsertAttemptRecord(attemptData) {
 
   if (existingIndex >= 0) attempts[existingIndex] = Object.assign({}, attempts[existingIndex], row);
   else attempts.push(row);
-  writeJsonToYandexDisk(path, attempts);
+  writeRequiredJsonArray(path, attempts);
 }
 
 function getAdminResults(password) {
@@ -2239,10 +2249,118 @@ function parseDeletionBackup(text, requestId, code, scope) {
     throw new Error("Deletion backup is corrupt.");
   }
   if (!isPlainObject(backup) || Number(backup.schemaVersion) !== 1 || backup.requestId !== requestId || backup.code !== code || backup.scope !== scope ||
-      !Array.isArray(backup.adminRows) || !Array.isArray(backup.attemptRows) || !Array.isArray(backup.sessionRows) || !Array.isArray(backup.inviteRows)) {
+      !Array.isArray(backup.adminRows) || !Array.isArray(backup.attemptRows) || !Array.isArray(backup.sessionRows) || !Array.isArray(backup.inviteRows) ||
+      (backup.operationalBackupEntries !== undefined && !Array.isArray(backup.operationalBackupEntries))) {
     throw new Error("Deletion backup context mismatch.");
   }
+  backup.operationalBackupEntries = Array.isArray(backup.operationalBackupEntries) ? backup.operationalBackupEntries : [];
   return backup;
+}
+
+function buildOperationalBackupDeletionCriteria(source) {
+  return {
+    code: String(source.code || "").toUpperCase(),
+    scope: normalizeDeletionScope(source.scope),
+    attemptIds: uniqueDeletionIds(source.attemptIds || []),
+    inviteIds: uniqueDeletionIds(source.inviteIds || [])
+  };
+}
+
+function operationalBackupRowMatchesDeletion(storeKey, row, criteria) {
+  if (!row || !isPlainObject(row)) return false;
+  const codeMatches = String(row.code || "").toUpperCase() === criteria.code;
+  const attemptMatches = criteria.attemptIds.indexOf(String(row.attemptId || "")) !== -1;
+  const inviteMatches = criteria.inviteIds.indexOf(String(row.inviteId || "")) !== -1;
+  if (storeKey === "admin-results") return codeMatches;
+  if (criteria.scope !== "full_attempt") return false;
+  if (storeKey === "attempts") return codeMatches || attemptMatches;
+  if (storeKey === "attempt-sessions") return codeMatches || attemptMatches || inviteMatches;
+  if (storeKey === "invites") return attemptMatches || inviteMatches;
+  return false;
+}
+
+function collectOperationalBackupDeletionEntries(source) {
+  const criteria = buildOperationalBackupDeletionCriteria(source);
+  const storeKeys = criteria.scope === "full_attempt"
+    ? getOperationalStoreKeys()
+    : ["admin-results"];
+  const entries = [];
+  let totalChars = 0;
+  storeKeys.forEach(storeKey => {
+    const descriptor = getOperationalStoreDescriptor(storeKey);
+    listOperationalBackupFiles(storeKey).forEach(item => {
+      const backupPath = joinDiskPath(getOperationalBackupStoreFolder(storeKey), item.name);
+      const envelopeText = readTextFromYandexDisk(backupPath);
+      if (envelopeText === null) return;
+      const envelope = parseOperationalBackupEnvelope(envelopeText, storeKey, descriptor.path);
+      const removedRows = envelope.rows.filter(row => operationalBackupRowMatchesDeletion(storeKey, row, criteria)).length;
+      if (!removedRows) return;
+      totalChars += envelopeText.length;
+      if (totalChars > MAX_OPERATIONAL_STORE_CHARS) throw new Error("Deletion backup redaction checkpoint exceeds the safe limit.");
+      entries.push({
+        storeKey: storeKey,
+        backupName: item.name,
+        removedRows: removedRows,
+        envelopeText: envelopeText
+      });
+    });
+  });
+  return entries;
+}
+
+function scrubOperationalBackupsForDeletion(deletionBackup) {
+  const criteria = buildOperationalBackupDeletionCriteria(deletionBackup);
+  const originalEntries = Array.isArray(deletionBackup.operationalBackupEntries) ? deletionBackup.operationalBackupEntries : [];
+  const originalsByKey = Object.create(null);
+  originalEntries.forEach(entry => {
+    if (entry && typeof entry.storeKey === "string" && typeof entry.backupName === "string" && typeof entry.envelopeText === "string") {
+      originalsByKey[entry.storeKey + "/" + entry.backupName] = entry.envelopeText;
+    }
+  });
+  let currentEntries;
+  try {
+    currentEntries = collectOperationalBackupDeletionEntries(deletionBackup);
+  } catch (error) {
+    originalEntries.forEach(entry => {
+      if (!entry || !originalsByKey[entry.storeKey + "/" + entry.backupName]) return;
+      const path = joinDiskPath(getOperationalBackupStoreFolder(entry.storeKey), entry.backupName);
+      const text = readTextFromYandexDisk(path);
+      if (text === null) return;
+      try {
+        parseOperationalBackupEnvelope(text, entry.storeKey, getOperationalStoreDescriptor(entry.storeKey).path);
+      } catch (parseError) {
+        uploadTextToYandexDisk(path, entry.envelopeText);
+      }
+    });
+    currentEntries = collectOperationalBackupDeletionEntries(deletionBackup);
+  }
+  currentEntries.forEach(entry => {
+    const descriptor = getOperationalStoreDescriptor(entry.storeKey);
+    const path = joinDiskPath(getOperationalBackupStoreFolder(entry.storeKey), entry.backupName);
+    let text = readTextFromYandexDisk(path);
+    if (text === null) return;
+    let envelope;
+    try {
+      envelope = parseOperationalBackupEnvelope(text, entry.storeKey, descriptor.path);
+    } catch (error) {
+      const originalText = originalsByKey[entry.storeKey + "/" + entry.backupName];
+      if (!originalText) throw error;
+      uploadTextToYandexDisk(path, originalText);
+      envelope = parseOperationalBackupEnvelope(originalText, entry.storeKey, descriptor.path);
+    }
+    const remainingRows = envelope.rows.filter(row => !operationalBackupRowMatchesDeletion(entry.storeKey, row, criteria));
+    const normalized = normalizeOperationalStoreRows(remainingRows, descriptor.label + " redacted backup");
+    envelope.reason = "deletion-redaction";
+    envelope.updatedAt = new Date().toISOString();
+    envelope.rowCount = normalized.rows.length;
+    envelope.contentSha256 = normalized.contentSha256;
+    envelope.rows = normalized.rows;
+    uploadTextToYandexDisk(path, JSON.stringify(envelope));
+    const verified = parseOperationalBackupEnvelope(readTextFromYandexDisk(path), entry.storeKey, descriptor.path);
+    if (verified.rows.some(row => operationalBackupRowMatchesDeletion(entry.storeKey, row, criteria))) {
+      throw new Error("Operational backup deletion redaction verification failed.");
+    }
+  });
 }
 
 function removeDeletionTargetsFromStores(backup) {
@@ -2252,23 +2370,23 @@ function removeDeletionTargetsFromStores(backup) {
   const inviteIds = uniqueDeletionIds((backup.inviteIds || []).concat((backup.sessionRows || []).map(row => row && row.inviteId)));
   const results = readRequiredJsonArray(getAdminFilePath(), "Admin result store");
   const nextResults = results.filter(row => !row || String(row.code || "").toUpperCase() !== code);
-  if (nextResults.length !== results.length) writeRequiredJsonArray(getAdminFilePath(), nextResults);
+  if (nextResults.length !== results.length) writeRequiredJsonArray(getAdminFilePath(), nextResults, { skipBackup: true });
   if (fullAttempt) {
     const attempts = readRequiredJsonArray(getAttemptsFilePath(), "Attempt store");
     const nextAttempts = attempts.filter(row => !row || (
       String(row.code || "").toUpperCase() !== code && attemptIds.indexOf(String(row.attemptId || "")) === -1
     ));
-    if (nextAttempts.length !== attempts.length) writeRequiredJsonArray(getAttemptsFilePath(), nextAttempts);
+    if (nextAttempts.length !== attempts.length) writeRequiredJsonArray(getAttemptsFilePath(), nextAttempts, { skipBackup: true });
     const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
     const nextSessions = sessions.filter(row => !row || (
       String(row.code || "").toUpperCase() !== code && attemptIds.indexOf(String(row.attemptId || "")) === -1 && inviteIds.indexOf(String(row.inviteId || "")) === -1
     ));
-    if (nextSessions.length !== sessions.length) writeRequiredJsonArray(getAttemptSessionsFilePath(), nextSessions);
+    if (nextSessions.length !== sessions.length) writeRequiredJsonArray(getAttemptSessionsFilePath(), nextSessions, { skipBackup: true });
     const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
     const nextInvites = invites.filter(row => !row || (
       attemptIds.indexOf(String(row.attemptId || "")) === -1 && inviteIds.indexOf(String(row.inviteId || "")) === -1
     ));
-    if (nextInvites.length !== invites.length) writeRequiredJsonArray(getInvitesFilePath(), nextInvites);
+    if (nextInvites.length !== invites.length) writeRequiredJsonArray(getInvitesFilePath(), nextInvites, { skipBackup: true });
   }
   deleteYandexDiskFileIfExists(joinDiskPath(getReportsFolderPath(), code + ".txt"));
 }
@@ -2322,6 +2440,7 @@ function adminDeleteResult(data) {
       if (!verifyDeletionPreviewToken(data.previewToken, snapshot)) {
         return buildValidationErrorResponse("deletion_preview_expired", "Данные изменились или предварительная проверка истекла. Выполните её снова.");
       }
+      const operationalBackupEntries = collectOperationalBackupDeletionEntries(snapshot);
       backup = {
         schemaVersion: 1,
         requestId: requestId,
@@ -2336,7 +2455,8 @@ function adminDeleteResult(data) {
         attemptIds: snapshot.attemptIds,
         inviteIds: snapshot.inviteIds,
         reportExists: snapshot.reportExists,
-        reportText: snapshot.reportText
+        reportText: snapshot.reportText,
+        operationalBackupEntries: operationalBackupEntries
       };
       failureStage = "backup-write";
       uploadTextToYandexDisk(backupPath, JSON.stringify(backup));
@@ -2359,9 +2479,12 @@ function adminDeleteResult(data) {
     }
     failureStage = "primary-delete";
     removeDeletionTargetsFromStores(backup);
+    failureStage = "operational-backup-redaction";
+    scrubOperationalBackupsForDeletion(backup);
     failureStage = "primary-verify";
     const afterSnapshot = buildDeletionSnapshot(code, scope, false);
     if (afterSnapshot.found) throw new Error("Deletion verification failed.");
+    if (collectOperationalBackupDeletionEntries(backup).length) throw new Error("Deletion remains present in operational backups.");
     logEntry = Object.assign({}, logEntry, { state: "primary_deleted_backup_pending", updatedAt: new Date().toISOString() });
     upsertDeletionLogEntry(logs, logEntry);
     writeDeletionLog(logs);
@@ -2506,6 +2629,11 @@ function ensureSkillCheckFolders() {
   ensureYandexFolderExists(getParentDiskPath(getAttemptSessionsFilePath()));
   ensureYandexFolderExists(getPrivateBanksFolderPath());
   ensureYandexFolderExists(getDeletionBackupsFolderPath());
+  ensureYandexFolderExists(getOperationalBackupsFolderPath());
+  getOperationalStoreKeys().forEach(storeKey => {
+    ensureYandexFolderExists(getOperationalBackupStoreFolder(storeKey));
+    ensureYandexFolderExists(getOperationalCorruptStoreFolder(storeKey));
+  });
 }
 
 function assertAuthoritativePrivateStorageNotShared(testId) {
@@ -2521,8 +2649,14 @@ function assertAuthoritativePrivateStorageNotShared(testId) {
     getAttemptSessionsFilePath(),
     getAttemptsFilePath(),
     getDeletionLogFilePath(),
-    getDeletionBackupsFolderPath()
+    getDeletionBackupsFolderPath(),
+    getOperationalBackupsFolderPath(),
+    joinDiskPath(getOperationalBackupsFolderPath(), "corrupt")
   ];
+  getOperationalStoreKeys().forEach(storeKey => {
+    targets.push(getOperationalBackupStoreFolder(storeKey));
+    targets.push(getOperationalCorruptStoreFolder(storeKey));
+  });
   const testIds = testId ? [validateTestId(testId)] : Object.keys(BANK_VERSIONS_BY_ID);
   testIds.forEach(id => {
     targets.push(getAuthoritativePrivateBankPath(id, BANK_VERSIONS_BY_ID[id]));
@@ -2615,6 +2749,10 @@ function getDeletionLogFilePath() {
 
 function getDeletionBackupsFolderPath() {
   return getConfiguredDiskPath("YANDEX_DISK_DELETION_BACKUPS_FOLDER", DEFAULT_YANDEX_DELETION_BACKUPS_FOLDER);
+}
+
+function getOperationalBackupsFolderPath() {
+  return getConfiguredDiskPath("YANDEX_DISK_OPERATIONAL_BACKUPS_FOLDER", DEFAULT_YANDEX_OPERATIONAL_BACKUPS_FOLDER);
 }
 
 function normalizeDiskPath(path) {
@@ -2857,6 +2995,206 @@ function calculateAuthoritativePublicDigest(privateBank) {
   return sha256Hex(JSON.stringify(buildAuthoritativePublicBank(privateBank)));
 }
 
+function getOperationalStoreKeys() {
+  return ["admin-results", "attempts", "attempt-sessions", "invites"];
+}
+
+function getOperationalStoreDescriptor(storeKey) {
+  const key = String(storeKey || "");
+  const descriptors = {
+    "admin-results": { storeKey: "admin-results", label: "Admin result store", path: getAdminFilePath() },
+    "attempts": { storeKey: "attempts", label: "Attempt store", path: getAttemptsFilePath() },
+    "attempt-sessions": { storeKey: "attempt-sessions", label: "Attempt session store", path: getAttemptSessionsFilePath() },
+    "invites": { storeKey: "invites", label: "Invite store", path: getInvitesFilePath() }
+  };
+  if (!Object.prototype.hasOwnProperty.call(descriptors, key)) throw new Error("Unsupported operational store.");
+  return descriptors[key];
+}
+
+function getOperationalStoreDescriptorByPath(path) {
+  const normalizedPath = normalizeDiskPath(path);
+  const keys = getOperationalStoreKeys();
+  for (let index = 0; index < keys.length; index++) {
+    const descriptor = getOperationalStoreDescriptor(keys[index]);
+    if (normalizeDiskPath(descriptor.path) === normalizedPath) return descriptor;
+  }
+  return null;
+}
+
+function getOperationalBackupStoreFolder(storeKey) {
+  return joinDiskPath(getOperationalBackupsFolderPath(), getOperationalStoreDescriptor(storeKey).storeKey);
+}
+
+function getOperationalCorruptStoreFolder(storeKey) {
+  return joinDiskPath(joinDiskPath(getOperationalBackupsFolderPath(), "corrupt"), getOperationalStoreDescriptor(storeKey).storeKey);
+}
+
+function normalizeOperationalStoreRows(rows, label) {
+  const storeLabel = String(label || "Operational store");
+  if (!Array.isArray(rows) || rows.length > MAX_OPERATIONAL_STORE_ROWS) {
+    throw new Error(storeLabel + " must contain a bounded JSON array.");
+  }
+  let canonical;
+  try {
+    canonical = JSON.stringify(rows);
+  } catch (error) {
+    throw new Error(storeLabel + " is not JSON serializable.");
+  }
+  if (!canonical || canonical.length > MAX_OPERATIONAL_STORE_CHARS) throw new Error(storeLabel + " exceeds the safe size limit.");
+  let normalized;
+  try {
+    normalized = JSON.parse(canonical);
+  } catch (error) {
+    throw new Error(storeLabel + " normalization failed.");
+  }
+  if (!Array.isArray(normalized) || normalized.some(row => !isPlainObject(row))) {
+    throw new Error(storeLabel + " rows must be JSON objects.");
+  }
+  return {
+    rows: normalized,
+    canonical: JSON.stringify(normalized),
+    contentSha256: sha256Hex(JSON.stringify(normalized))
+  };
+}
+
+function parseOperationalBackupEnvelope(text, expectedStoreKey, expectedSourcePath) {
+  let envelope;
+  try {
+    envelope = JSON.parse(String(text || ""));
+  } catch (error) {
+    throw new Error("Operational backup is corrupt.");
+  }
+  assertExactPrivateKeys(envelope, [
+    "schemaVersion", "storeKey", "sourcePath", "reason", "createdAt", "updatedAt",
+    "rowCount", "contentSha256", "rows"
+  ], "Operational backup");
+  const descriptor = getOperationalStoreDescriptor(expectedStoreKey || envelope.storeKey);
+  const normalized = normalizeOperationalStoreRows(envelope.rows, descriptor.label + " backup");
+  if (Number(envelope.schemaVersion) !== OPERATIONAL_BACKUP_SCHEMA_VERSION ||
+      envelope.storeKey !== descriptor.storeKey ||
+      envelope.sourcePath !== normalizeDiskPath(expectedSourcePath || descriptor.path) ||
+      ["before-write", "before-restore", "manual-baseline", "deletion-redaction"].indexOf(envelope.reason) === -1 ||
+      typeof envelope.createdAt !== "string" || !Number.isFinite(Date.parse(envelope.createdAt)) ||
+      typeof envelope.updatedAt !== "string" || !Number.isFinite(Date.parse(envelope.updatedAt)) ||
+      Number(envelope.rowCount) !== normalized.rows.length ||
+      !/^[a-f0-9]{64}$/.test(String(envelope.contentSha256 || "")) ||
+      !timingSafeEqual(envelope.contentSha256, normalized.contentSha256)) {
+    throw new Error("Operational backup integrity check failed.");
+  }
+  envelope.rows = normalized.rows;
+  return envelope;
+}
+
+function buildOperationalBackupEnvelope(descriptor, rows, reason, createdAt) {
+  const normalized = normalizeOperationalStoreRows(rows, descriptor.label);
+  const timestamp = String(createdAt || new Date().toISOString());
+  return {
+    schemaVersion: OPERATIONAL_BACKUP_SCHEMA_VERSION,
+    storeKey: descriptor.storeKey,
+    sourcePath: normalizeDiskPath(descriptor.path),
+    reason: String(reason || "before-write"),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    rowCount: normalized.rows.length,
+    contentSha256: normalized.contentSha256,
+    rows: normalized.rows
+  };
+}
+
+function buildOperationalBackupFileName(prefix) {
+  const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+  const suffix = String(Utilities.getUuid()).toLowerCase().replace(/[^a-f0-9]/g, "").slice(0, 8);
+  return String(prefix || "bkp") + "_" + timestamp + "_" + suffix + ".json";
+}
+
+function listOperationalBackupFiles(storeKey) {
+  const folder = getOperationalBackupStoreFolder(storeKey);
+  const listing = listYandexFolderContents(folder);
+  if (!listing.exists) return [];
+  if (listing.type !== "dir" || listing.error) throw new Error("Operational backup folder is unavailable.");
+  if (listing.items.some(item => item && (item.publicKey || item.publicUrl || item.shared))) {
+    throw new Error("Operational backup files must remain private.");
+  }
+  return listing.items.filter(item => item && item.type === "file" && /^bkp_\d{8}T\d{9}Z_[a-f0-9]{8}\.json$/.test(item.name))
+    .sort((left, right) => right.name.localeCompare(left.name));
+}
+
+function rotateOperationalBackupFiles(storeKey) {
+  const files = listOperationalBackupFiles(storeKey);
+  files.slice(OPERATIONAL_BACKUP_LIMIT_PER_STORE).forEach(item => {
+    deleteYandexDiskFileIfExists(joinDiskPath(getOperationalBackupStoreFolder(storeKey), item.name));
+  });
+}
+
+function writeOperationalBackupSnapshot(descriptor, rows, reason) {
+  const folder = getOperationalBackupStoreFolder(descriptor.storeKey);
+  let folderMetadata = getYandexResourceMetadata(folder);
+  if (!folderMetadata.exists) {
+    ensureYandexFolderExists(folder);
+    folderMetadata = getYandexResourceMetadata(folder);
+  }
+  if (folderMetadata.type !== "dir") throw new Error("Operational backup folder is invalid.");
+  if (folderMetadata.publicKey || folderMetadata.publicUrl || folderMetadata.shared) throw new Error("Operational backup folder must remain private.");
+  const envelope = buildOperationalBackupEnvelope(descriptor, rows, reason);
+  const backupName = buildOperationalBackupFileName("bkp");
+  const backupPath = joinDiskPath(folder, backupName);
+  uploadTextToYandexDisk(backupPath, JSON.stringify(envelope));
+  const metadata = getYandexResourceMetadata(backupPath);
+  if (!metadata.exists || metadata.type !== "file" || metadata.publicKey || metadata.publicUrl || metadata.shared) {
+    throw new Error("Operational backup verification failed.");
+  }
+  parseOperationalBackupEnvelope(readTextFromYandexDisk(backupPath), descriptor.storeKey, descriptor.path);
+  rotateOperationalBackupFiles(descriptor.storeKey);
+  return { backupName: backupName, rowCount: envelope.rowCount, contentSha256: envelope.contentSha256 };
+}
+
+function listCorruptOperationalArtifacts(storeKey) {
+  const folder = getOperationalCorruptStoreFolder(storeKey);
+  const listing = listYandexFolderContents(folder);
+  if (!listing.exists) return [];
+  if (listing.type !== "dir" || listing.error) throw new Error("Corrupt artifact folder is unavailable.");
+  if (listing.items.some(item => item && (item.publicKey || item.publicUrl || item.shared))) {
+    throw new Error("Corrupt recovery artifacts must remain private.");
+  }
+  return listing.items.filter(item => item && item.type === "file" && /^corrupt_\d{8}T\d{9}Z_[a-f0-9]{8}\.json$/.test(item.name))
+    .sort((left, right) => right.name.localeCompare(left.name));
+}
+
+function captureCorruptOperationalArtifact(descriptor, rawText) {
+  const source = String(rawText || "");
+  if (source.length > MAX_OPERATIONAL_STORE_CHARS) throw new Error("Corrupt source exceeds the safe recovery limit.");
+  const folder = getOperationalCorruptStoreFolder(descriptor.storeKey);
+  let folderMetadata = getYandexResourceMetadata(folder);
+  if (!folderMetadata.exists) {
+    ensureYandexFolderExists(folder);
+    folderMetadata = getYandexResourceMetadata(folder);
+  }
+  if (!folderMetadata.exists || folderMetadata.type !== "dir" || folderMetadata.publicKey || folderMetadata.publicUrl || folderMetadata.shared) {
+    throw new Error("Corrupt artifact folder must remain private.");
+  }
+  const envelope = {
+    schemaVersion: 1,
+    storeKey: descriptor.storeKey,
+    sourcePath: normalizeDiskPath(descriptor.path),
+    capturedAt: new Date().toISOString(),
+    rawSha256: sha256Hex(source),
+    rawText: source
+  };
+  const name = buildOperationalBackupFileName("corrupt");
+  const artifactPath = joinDiskPath(folder, name);
+  uploadTextToYandexDisk(artifactPath, JSON.stringify(envelope));
+  const verificationText = readTextFromYandexDisk(artifactPath);
+  let verification;
+  try { verification = JSON.parse(String(verificationText || "")); } catch (error) { throw new Error("Corrupt artifact verification failed."); }
+  if (!verification || verification.rawSha256 !== envelope.rawSha256 || sha256Hex(String(verification.rawText || "")) !== envelope.rawSha256) {
+    throw new Error("Corrupt artifact integrity check failed.");
+  }
+  listCorruptOperationalArtifacts(descriptor.storeKey).slice(OPERATIONAL_CORRUPT_ARTIFACT_LIMIT_PER_STORE).forEach(item => {
+    deleteYandexDiskFileIfExists(joinDiskPath(folder, item.name));
+  });
+  return name;
+}
+
 function readRequiredJsonArray(path, label) {
   const text = readTextFromYandexDisk(path);
   if (text === null) throw new Error(String(label || "Private JSON") + " is missing.");
@@ -2867,12 +3205,107 @@ function readRequiredJsonArray(path, label) {
     throw new Error(String(label || "Private JSON") + " is corrupt.");
   }
   if (!Array.isArray(parsed)) throw new Error(String(label || "Private JSON") + " must contain an array.");
-  return parsed;
+  const descriptor = getOperationalStoreDescriptorByPath(path);
+  return descriptor ? normalizeOperationalStoreRows(parsed, descriptor.label).rows : parsed;
 }
 
-function writeRequiredJsonArray(path, rows) {
-  if (!Array.isArray(rows)) throw new Error("Private JSON write requires an array.");
-  writeJsonToYandexDisk(path, rows);
+function writeRequiredJsonArray(path, rows, options) {
+  const descriptor = getOperationalStoreDescriptorByPath(path);
+  const normalized = normalizeOperationalStoreRows(rows, descriptor ? descriptor.label : "Private JSON");
+  const currentText = readTextFromYandexDisk(path);
+  if (currentText !== null) {
+    let currentRows;
+    try { currentRows = JSON.parse(currentText); } catch (error) { throw new Error("Existing private state is corrupt and was not overwritten."); }
+    const current = normalizeOperationalStoreRows(currentRows, descriptor ? descriptor.label : "Private JSON");
+    if (timingSafeEqual(current.contentSha256, normalized.contentSha256)) return false;
+    if (descriptor && !(options && options.skipBackup === true)) writeOperationalBackupSnapshot(descriptor, current.rows, "before-write");
+  }
+  uploadTextToYandexDisk(path, JSON.stringify(normalized.rows, null, 2));
+  const verified = readRequiredJsonArray(path, descriptor ? descriptor.label : "Private JSON");
+  const verifiedDigest = normalizeOperationalStoreRows(verified, descriptor ? descriptor.label : "Private JSON").contentSha256;
+  if (!timingSafeEqual(verifiedDigest, normalized.contentSha256)) throw new Error("Private JSON write verification failed.");
+  return true;
+}
+
+function createOperationalBackupsForOwner() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    ensureSkillCheckFolders();
+    assertAuthoritativePrivateStorageNotShared();
+    return getOperationalStoreKeys().map(storeKey => {
+      const descriptor = getOperationalStoreDescriptor(storeKey);
+      const rows = readRequiredJsonArray(descriptor.path, descriptor.label);
+      const backup = writeOperationalBackupSnapshot(descriptor, rows, "manual-baseline");
+      return { storeKey: storeKey, backupName: backup.backupName, rowCount: backup.rowCount };
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getOperationalBackupStatusForOwner() {
+  assertAuthoritativePrivateStorageNotShared();
+  return {
+    ok: true,
+    backendVersion: BACKEND_VERSION,
+    limitPerStore: OPERATIONAL_BACKUP_LIMIT_PER_STORE,
+    stores: getOperationalStoreKeys().map(storeKey => {
+      const files = listOperationalBackupFiles(storeKey);
+      return { storeKey: storeKey, count: files.length, newestBackupName: files.length ? files[0].name : "" };
+    })
+  };
+}
+
+function restoreOperationalStoreForOwner(storeKey, backupName) {
+  const descriptor = getOperationalStoreDescriptor(storeKey);
+  const normalizedBackupName = String(backupName || "").trim();
+  if (!/^bkp_\d{8}T\d{9}Z_[a-f0-9]{8}\.json$/.test(normalizedBackupName)) throw new Error("Invalid operational backup name.");
+  if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true" || getScriptProperty(LEGAL_PILOT_APPROVAL_PROPERTY) === "true") {
+    throw new Error("Operational restore requires closed pilot gates.");
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true" || getScriptProperty(LEGAL_PILOT_APPROVAL_PROPERTY) === "true") {
+      throw new Error("Operational restore requires closed pilot gates.");
+    }
+    ensureSkillCheckFolders();
+    assertAuthoritativePrivateStorageNotShared();
+    const backupPath = joinDiskPath(getOperationalBackupStoreFolder(descriptor.storeKey), normalizedBackupName);
+    const metadata = getYandexResourceMetadata(backupPath);
+    if (!metadata.exists || metadata.type !== "file" || metadata.publicKey || metadata.publicUrl || metadata.shared) {
+      throw new Error("Operational backup is unavailable or not private.");
+    }
+    const envelope = parseOperationalBackupEnvelope(readTextFromYandexDisk(backupPath), descriptor.storeKey, descriptor.path);
+    const currentText = readTextFromYandexDisk(descriptor.path);
+    let safetyArtifact = "";
+    if (currentText !== null) {
+      let currentRows = null;
+      try {
+        currentRows = normalizeOperationalStoreRows(JSON.parse(currentText), descriptor.label).rows;
+      } catch (error) {
+        safetyArtifact = captureCorruptOperationalArtifact(descriptor, currentText);
+      }
+      if (currentRows !== null) writeOperationalBackupSnapshot(descriptor, currentRows, "before-restore");
+    }
+    uploadTextToYandexDisk(descriptor.path, JSON.stringify(envelope.rows, null, 2));
+    const restoredRows = readRequiredJsonArray(descriptor.path, descriptor.label);
+    const restored = normalizeOperationalStoreRows(restoredRows, descriptor.label);
+    if (!timingSafeEqual(restored.contentSha256, envelope.contentSha256)) throw new Error("Operational restore verification failed.");
+    return {
+      ok: true,
+      status: "restored",
+      backendVersion: BACKEND_VERSION,
+      storeKey: descriptor.storeKey,
+      backupName: normalizedBackupName,
+      rowCount: restored.rows.length,
+      contentSha256: restored.contentSha256,
+      corruptSafetyArtifact: safetyArtifact
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function assertExactPrivateKeys(value, expectedKeys, label) {

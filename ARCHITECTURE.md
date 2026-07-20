@@ -1,6 +1,6 @@
 # SkillCheck — архитектура MVP
 
-Обновлено: 20 июля 2026 года, этап 12.
+Обновлено: 20 июля 2026 года, этап 13.
 
 ## Общая схема
 
@@ -11,7 +11,7 @@ SkillCheck состоит из статического frontend на GitHub Pag
   -> admin.html
   -> POST adminCreateInvite / adminInvites / adminRevokeInvite / adminDeletionPreview / adminDeleteResult
   -> Google Apps Script
-  -> закрытые invites / deletion log / транзакционные deletion backups на Яндекс Диске
+  -> закрытые invites / deletion log / транзакционные и operational backups на Яндекс Диске
 
 Кандидат
   -> test.html?test=<testId>&invite=<one-time-code>
@@ -67,6 +67,8 @@ SkillCheck состоит из статического frontend на GitHub Pag
 - показывает plaintext invite только в ответе на создание и позволяет отозвать незавершённое приглашение.
 - предварительно показывает состав удаления по коду и требует повторный ввод точного кода для commit;
 - удаляет только результат или всю связанную попытку через подписанный snapshot, транзакционную копию, проверку отсутствия и последующий purge копии.
+
+Перед заменой admin results, attempts, sessions и invites backend сохраняет предыдущую валидную версию в `private/backups-v1`, проверяет envelope/digest и ограничивает ротацию 12 snapshots на store. Restore остаётся editor-only и разрешён только при закрытых legal/issuance gate. Удаление данных очищает связанные строки и из этих snapshots.
 
 Админ API не возвращает имя, открытый email, Telegram, fingerprint, token, ответы, hashes или внутренние пути.
 
@@ -171,6 +173,8 @@ disk:/skillcheck/private/attempts.json
 disk:/skillcheck/private/invites-v1.json
 disk:/skillcheck/private/attempt-sessions-v1.json
 disk:/skillcheck/private/banks/<testId>/<version-slug>.json
+disk:/skillcheck/private/backups-v1/<storeKey>/bkp_<timestamp>_<id>.json
+disk:/skillcheck/private/backups-v1/corrupt/<storeKey>/corrupt_<timestamp>_<id>.json
 ```
 
 - `reports` — полный TXT только для результата 80+, включая PII и детализацию ответов;
@@ -179,8 +183,9 @@ disk:/skillcheck/private/banks/<testId>/<version-slug>.json
 - `invites-v1.json` — состояния приглашений и HMAC/hash-идентификаторы без открытого кода/token;
 - `attempt-sessions-v1.json` — server-selected manifest, состояния, hashes и агрегат результата без raw PII/fingerprint/token/ответов;
 - `private/banks` — immutable закрытые ключи.
+- `private/backups-v1` — bounded snapshots operational stores; содержит те же категории закрытых данных и не является публичным.
 
-JSON write защищён `LockService`; повреждённый файл не перезаписывается автоматически. TXT и JSON загружаются через REST API Яндекс Диска, publish/share endpoints не используются.
+JSON write защищён `LockService`; повреждённый файл не перезаписывается автоматически. Перед заменой создаётся и проверяется предыдущая версия, active-файл проверяется после загрузки. TXT и JSON загружаются через REST API Яндекс Диска, publish/share endpoints не используются.
 
 ## Ограничения и pilot gate
 
@@ -192,6 +197,6 @@ JSON write защищён `LockService`; повреждённый файл не 
 - одноразовое email-bound приглашение — controlled-pilot perimeter, не OTP/account;
 - `CacheService` rate limits best-effort и не заменяют внешний атомарный gateway для открытого запуска;
 - scope текущего Яндекс OAuth-токена может быть шире `disk:/skillcheck`; нужны ротация и проверка least-privilege/app-folder модели;
-- удаление, backup и полноценная наблюдаемость закрываются следующими этапами roadmap.
+- полноценная защищённая наблюдаемость закрывается этапом 14; backup остаётся в том же failure-domain Яндекс Диска и не заменяет off-site DR.
 
 Не коммитить результаты, private banks, TXT, candidate data, токены, пароли, salt, OAuth credentials или временные bootstrap secrets.

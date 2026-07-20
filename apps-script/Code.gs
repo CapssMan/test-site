@@ -1,4 +1,6 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-12";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-13";
+const CANDIDATE_FRONTEND_BUILD = "2026.07.20.12";
+const ADMIN_FRONTEND_BUILD = "2026.07.20.12";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -29,6 +31,23 @@ const OPERATIONAL_BACKUP_LIMIT_PER_STORE = 12;
 const OPERATIONAL_CORRUPT_ARTIFACT_LIMIT_PER_STORE = 3;
 const MAX_OPERATIONAL_STORE_ROWS = 100000;
 const MAX_OPERATIONAL_STORE_CHARS = 20 * 1024 * 1024;
+const PROTECTED_DIAGNOSTIC_PROPERTY_NAMES = [
+  "YANDEX_DISK_TOKEN",
+  "YANDEX_DISK_REPORTS_FOLDER",
+  "YANDEX_DISK_ADMIN_FILE",
+  "YANDEX_DISK_ATTEMPTS_FILE",
+  "YANDEX_DISK_INVITES_FILE",
+  "YANDEX_DISK_ATTEMPT_SESSIONS_FILE",
+  "YANDEX_DISK_PRIVATE_BANKS_FOLDER",
+  "YANDEX_DISK_OPERATIONAL_BACKUPS_FOLDER",
+  "ATTEMPT_HASH_SALT",
+  "ADMIN_PASSWORD",
+  "ATTEMPT_SIGNING_SECRET_V1",
+  "INVITE_CODE_SECRET_V1",
+  "IDENTITY_HASH_SECRET_V1",
+  "LEGAL_PILOT_APPROVED",
+  "ATTEMPT_ISSUANCE_ENABLED"
+];
 const LEGACY_PUBLIC_BANK_COMMIT = "70e569cf267e043aabc780e81cc4307db7e149b1";
 const LEGACY_PUBLIC_BANK_BASE_URL = "https://raw.githubusercontent.com/CapssMan/test-site/" +
   LEGACY_PUBLIC_BANK_COMMIT + "/data/";
@@ -162,7 +181,7 @@ function doGet(e) {
     return jsonResponse(buildPublicHealthStatus());
   }
 
-  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite", "adminDeletionPreview", "adminDeleteResult"].indexOf(action) !== -1) {
+  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite", "adminDeletionPreview", "adminDeleteResult", "adminDiagnostics"].indexOf(action) !== -1) {
     return jsonResponse(methodNotAllowedResponse("Для административных операций требуется POST-запрос."));
   }
 
@@ -233,6 +252,16 @@ function doPost(e) {
       return jsonResponse(adminDeleteResult(data));
     }
 
+    if (action === "adminDiagnostics") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "diagnostics");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
+        return jsonResponse(buildClientUpgradeRequiredResponse());
+      }
+      assertAllowedObjectKeys(data, ["action", "apiVersion", "password"], "adminDiagnostics");
+      return jsonResponse(getAdminDiagnostics(String(data.password || "")));
+    }
+
     if (action === "checkAttempt") {
       return jsonResponse(buildClientUpgradeRequiredResponse());
     }
@@ -294,6 +323,216 @@ function buildPublicHealthStatus() {
     status: "alive",
     service: "skillcheck-backend",
     backendVersion: BACKEND_VERSION
+  };
+}
+
+function getAdminDiagnostics(password) {
+  if (!isAdminPasswordValid(password)) {
+    return {
+      ok: false,
+      status: "error",
+      backendVersion: BACKEND_VERSION,
+      message: "Доступ запрещён."
+    };
+  }
+  return buildProtectedDiagnostics();
+}
+
+function verifyProtectedDiagnosticsForOwner() {
+  const status = buildProtectedDiagnostics();
+  if (!status.ok || status.status !== "healthy" || status.stores.length !== getOperationalStoreKeys().length) {
+    const lastError = status.lastError || { component: "backend", code: "diagnostic_check_failed" };
+    throw new Error("Protected diagnostics failed: component=" + lastError.component + "; code=" + lastError.code);
+  }
+  console.log(
+    "Protected diagnostics healthy: backend=" + status.backendVersion +
+    "; stores=" + status.stores.length +
+    "; results=" + status.stores.filter(store => store.key === "admin-results")[0].rowCount +
+    "; attempts=" + status.stores.filter(store => store.key === "attempts")[0].rowCount
+  );
+  return status;
+}
+
+function buildProtectedDiagnostics() {
+  const startedAt = Date.now();
+  const checkedAt = new Date().toISOString();
+  const properties = PropertiesService.getScriptProperties();
+  const requiredNames = [
+    "YANDEX_DISK_TOKEN", "ATTEMPT_HASH_SALT", "ADMIN_PASSWORD",
+    "ATTEMPT_SIGNING_SECRET_V1", "INVITE_CODE_SECRET_V1", "IDENTITY_HASH_SECRET_V1"
+  ];
+  const propertyPresence = PROTECTED_DIAGNOSTIC_PROPERTY_NAMES.map(name => ({
+    name: name,
+    present: Boolean(properties.getProperty(name)),
+    required: requiredNames.indexOf(name) !== -1
+  }));
+  const missingRequired = propertyPresence
+    .filter(item => requiredNames.indexOf(item.name) !== -1 && !item.present)
+    .map(item => item.name);
+  const diskProbe = probeYandexDiskAccess();
+  const stores = [];
+  const errors = [];
+
+  if (diskProbe.ok) {
+    getOperationalStoreKeys().forEach(storeKey => {
+      const store = buildProtectedDiagnosticStoreStatus(storeKey);
+      stores.push(store);
+      if (store.error) errors.push(store.error);
+    });
+  } else {
+    errors.push(buildProtectedDiagnosticError("storage", new Error(diskProbe.errorMessage || "Storage probe failed.")));
+  }
+
+  const reports = diskProbe.ok
+    ? buildProtectedDiagnosticReportsStatus()
+    : { state: "unavailable", itemCount: null, lastModifiedAt: "", error: null };
+  if (reports.error) errors.push(reports.error);
+
+  return {
+    ok: errors.length === 0 && missingRequired.length === 0,
+    status: errors.length === 0 && missingRequired.length === 0 ? "healthy" : "degraded",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    frontendVersions: {
+      candidate: CANDIDATE_FRONTEND_BUILD,
+      admin: ADMIN_FRONTEND_BUILD
+    },
+    backendTime: checkedAt,
+    checkedAt: checkedAt,
+    durationMs: Math.max(0, Date.now() - startedAt),
+    yandexDisk: {
+      accessible: Boolean(diskProbe.ok),
+      statusCode: Number(diskProbe.statusCode || 0)
+    },
+    gates: {
+      legalPilotApproved: isLegalPilotApproved(),
+      attemptIssuanceEnabled: getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true",
+      retentionAutomationEnabled: RETENTION_AUTOMATION_ENABLED === true
+    },
+    properties: propertyPresence,
+    missingRequiredProperties: missingRequired,
+    stores: stores,
+    reports: reports,
+    lastWriteAt: newestProtectedDiagnosticTimestamp(stores.map(store => store.lastModifiedAt).concat([reports.lastModifiedAt])),
+    lastError: errors.length ? errors[0] : null
+  };
+}
+
+function buildProtectedDiagnosticStoreStatus(storeKey) {
+  const descriptor = getOperationalStoreDescriptor(storeKey);
+  const empty = {
+    key: descriptor.storeKey,
+    state: "unknown",
+    sizeBytes: null,
+    rowCount: null,
+    lastModifiedAt: "",
+    lastRecordAt: "",
+    error: null
+  };
+  try {
+    const metadata = getYandexResourceMetadata(descriptor.path);
+    if (!metadata.exists) {
+      empty.state = "missing";
+      empty.error = buildProtectedDiagnosticError(descriptor.storeKey, new Error("Required store is missing."));
+      return empty;
+    }
+    if (metadata.type !== "file" || metadata.publicKey || metadata.publicUrl || metadata.shared) {
+      empty.state = "invalid";
+      empty.error = buildProtectedDiagnosticError(descriptor.storeKey, new Error("Private store visibility or type check failed."));
+      return empty;
+    }
+    const rows = readRequiredJsonArray(descriptor.path, descriptor.label);
+    empty.state = "ok";
+    empty.sizeBytes = Math.max(0, Number(metadata.size || 0));
+    empty.rowCount = rows.length;
+    empty.lastModifiedAt = normalizeProtectedDiagnosticTimestamp(metadata.modified);
+    empty.lastRecordAt = newestProtectedDiagnosticRowTimestamp(rows);
+    return empty;
+  } catch (error) {
+    empty.state = "error";
+    empty.error = buildProtectedDiagnosticError(descriptor.storeKey, error);
+    return empty;
+  }
+}
+
+function buildProtectedDiagnosticReportsStatus() {
+  const result = { state: "unknown", itemCount: null, lastModifiedAt: "", error: null };
+  try {
+    const metadata = getYandexResourceMetadata(getReportsFolderPath());
+    if (!metadata.exists) {
+      result.state = "missing";
+      result.error = buildProtectedDiagnosticError("reports", new Error("Reports folder is missing."));
+      return result;
+    }
+    if (metadata.type !== "dir" || metadata.publicKey || metadata.publicUrl || metadata.shared) {
+      result.state = "invalid";
+      result.error = buildProtectedDiagnosticError("reports", new Error("Reports folder visibility or type check failed."));
+      return result;
+    }
+    const listing = listYandexFolderContents(getReportsFolderPath());
+    if (!listing.exists || listing.type !== "dir" || listing.error ||
+        listing.items.some(item => item && (item.publicKey || item.publicUrl || item.shared))) {
+      throw new Error("Reports folder listing failed privacy checks.");
+    }
+    result.state = "ok";
+    result.itemCount = listing.items.filter(item => item && item.type === "file").length;
+    result.lastModifiedAt = normalizeProtectedDiagnosticTimestamp(metadata.modified);
+    return result;
+  } catch (error) {
+    result.state = "error";
+    result.error = buildProtectedDiagnosticError("reports", error);
+    return result;
+  }
+}
+
+function newestProtectedDiagnosticRowTimestamp(rows) {
+  const fields = [
+    "updatedAt", "completedAt", "date", "storedAt", "reservedAt", "startedAt",
+    "issuedAt", "activatedAt", "createdAt", "privacyConsentedAt"
+  ];
+  const timestamps = [];
+  (Array.isArray(rows) ? rows : []).forEach(row => {
+    if (!row || typeof row !== "object") return;
+    fields.forEach(field => timestamps.push(row[field]));
+  });
+  return newestProtectedDiagnosticTimestamp(timestamps);
+}
+
+function newestProtectedDiagnosticTimestamp(values) {
+  let newest = 0;
+  (Array.isArray(values) ? values : []).forEach(value => {
+    const timestamp = Date.parse(String(value || ""));
+    if (Number.isFinite(timestamp) && timestamp > newest) newest = timestamp;
+  });
+  return newest ? new Date(newest).toISOString() : "";
+}
+
+function normalizeProtectedDiagnosticTimestamp(value) {
+  const timestamp = Date.parse(String(value || ""));
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : "";
+}
+
+function buildProtectedDiagnosticError(component, error) {
+  const message = String(error && error.message ? error.message : error || "").toLowerCase();
+  let code = "diagnostic_check_failed";
+  let publicMessage = "Проверка компонента завершилась ошибкой.";
+  if (message.indexOf("missing") !== -1 || message.indexOf("не настроен") !== -1) {
+    code = "required_resource_missing";
+    publicMessage = "Обязательный ресурс отсутствует.";
+  } else if (message.indexOf("public") !== -1 || message.indexOf("share") !== -1 || message.indexOf("visibility") !== -1) {
+    code = "private_storage_visibility_error";
+    publicMessage = "Закрытое хранилище не прошло проверку приватности.";
+  } else if (message.indexOf("yandex") !== -1 || message.indexOf("oauth") !== -1 || message.indexOf("storage") !== -1) {
+    code = "storage_unavailable";
+    publicMessage = "Хранилище временно недоступно.";
+  } else if (message.indexOf("corrupt") !== -1 || message.indexOf("json") !== -1 || message.indexOf("поврежд") !== -1) {
+    code = "invalid_private_json";
+    publicMessage = "Закрытое JSON-хранилище не прошло проверку.";
+  }
+  return {
+    component: String(component || "backend").replace(/[^a-z0-9-]/gi, "").slice(0, 40) || "backend",
+    code: code,
+    message: publicMessage
   };
 }
 

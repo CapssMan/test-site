@@ -136,6 +136,28 @@
       line-height: 1.55;
     }
     .score-policy strong { color: #7c2d12; }
+    .diagnostics-panel { margin-bottom: 18px; padding: 18px; }
+    .diagnostics-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .diagnostics-heading h2 { margin: 0 0 6px; font-size: 18px; }
+    .diagnostics-heading p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .diagnostics-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .diagnostic-item { padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: #f8fafc; }
+    .diagnostic-item .label { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .diagnostic-item .value { margin-top: 5px; color: #0f172a; font-size: 13px; font-weight: 800; overflow-wrap: anywhere; }
+    .diagnostic-section-title { margin: 16px 0 8px; color: #334155; font-size: 13px; }
+    .diagnostic-stores { overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+    .diagnostic-stores table { font-size: 12px; }
+    .property-presence { display: flex; flex-wrap: wrap; gap: 6px; }
+    .property-chip { padding: 5px 8px; border-radius: 999px; font: 11px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .property-chip.present { color: #166534; background: #dcfce7; }
+    .property-chip.missing { color: #991b1b; background: #fee2e2; }
+    .property-chip.defaulted { color: #475569; background: #e2e8f0; }
+    .diagnostic-error { margin-top: 12px; padding: 10px 12px; border-radius: 9px; color: #991b1b; background: #fef2f2; font-size: 13px; }
     .invite-panel { margin-bottom: 18px; padding: 18px; }
     .invite-panel h2 { margin: 0 0 8px; font-size: 18px; }
     .invite-panel > p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
@@ -249,6 +271,7 @@
       .toolbar-actions button { flex: 1; }
       .login-card { margin: 34px auto; padding: 22px; }
       .filters, .stats-grid, .dashboard { grid-template-columns: 1fr; }
+      .diagnostics-summary { grid-template-columns: 1fr 1fr; }
       .invite-grid, .invite-row, .invite-output { grid-template-columns: 1fr; }
       .deletion-grid, .deletion-confirm-grid { grid-template-columns: 1fr; }
       .invite-output p { grid-column: auto; }
@@ -266,6 +289,8 @@
       td { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; border: 0; text-align: right; }
       td::before { content: attr(data-label); color: var(--muted); font-weight: 600; text-align: left; }
       .table-heading { align-items: baseline; }
+      .diagnostics-heading { flex-direction: column; }
+      .diagnostics-heading button { width: 100%; }
     }
   </style>
 </head>
@@ -275,7 +300,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.11</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.12</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -310,6 +335,18 @@
         Старые строки остаются честно отмечены как клиентский legacy-расчёт. Уходы со вкладки и timing остаются клиентской телеметрией и не подтверждают личность.
         Текущие тексты банков ранее публиковались вместе с ключами, поэтому до ротации содержания даже серверный балл нельзя считать защищённым от знания исторических ответов.
       </div>
+
+      <section class="card diagnostics-panel" aria-labelledby="diagnosticsHeading">
+        <div class="diagnostics-heading">
+          <div>
+            <h2 id="diagnosticsHeading">Защищённая диагностика</h2>
+            <p>Только технические агрегаты: версии, доступность, размеры, количество строк и время обновления. Значения properties, пути, идентификаторы и персональные данные не возвращаются.</p>
+          </div>
+          <button id="refreshDiagnosticsButton" class="secondary-btn" type="button">Обновить диагностику</button>
+        </div>
+        <div id="diagnosticsStatus" class="status" role="status" aria-live="polite"></div>
+        <div id="diagnosticsContent" class="hidden"></div>
+      </section>
 
       <div class="card report-policy">
         <strong>Полный TXT защищён отдельно от кода результата.</strong>
@@ -456,7 +493,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.20.11";
+    const FRONTEND_BUILD = "2026.07.20.12";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const TEST_LABELS = {
@@ -486,6 +523,8 @@
     let legalPilotApproved = false;
     let pendingDeletionPreview = null;
     let pendingDeletionRequestId = "";
+    let adminDiagnostics = null;
+    let diagnosticsLoading = false;
 
     document.getElementById("frontendVersion").textContent = "Build " + FRONTEND_BUILD;
     document.getElementById("loginForm").addEventListener("submit", function(event) {
@@ -499,6 +538,7 @@
       document.getElementById(id).addEventListener(id === "codeSearch" ? "input" : "change", renderAdmin);
     });
     document.getElementById("refreshButton").addEventListener("click", function() { loadAdminResults(true); });
+    document.getElementById("refreshDiagnosticsButton").addEventListener("click", loadAdminDiagnostics);
     document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
     document.getElementById("clearFiltersButton").addEventListener("click", clearFilters);
     document.getElementById("inviteForm").addEventListener("submit", createAdminInvite);
@@ -537,6 +577,7 @@
         setLoginStatus("", "");
         renderAdmin();
         loadAdminInvites();
+        loadAdminDiagnostics();
       } catch (error) {
         const message = error && error.message ? error.message : "Не удалось загрузить данные.";
         if (isRefresh && !document.getElementById("adminBlock").classList.contains("hidden")) {
@@ -571,9 +612,14 @@
       return requestAdminAction("adminInvites", password, {});
     }
 
-    async function requestAdminAction(action, password, payload) {
+    async function requestAdminDiagnostics(password) {
+      return requestAdminAction("adminDiagnostics", password, {}, 45000);
+    }
+
+    async function requestAdminAction(action, password, payload, timeoutMs) {
       const controller = new AbortController();
-      const timeout = window.setTimeout(function() { controller.abort(); }, 20000);
+      const safeTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Math.min(60000, Math.max(5000, Number(timeoutMs))) : 20000;
+      const timeout = window.setTimeout(function() { controller.abort(); }, safeTimeoutMs);
 
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -586,7 +632,7 @@
         if (!response.ok) throw new Error("Backend ответил с ошибкой HTTP " + response.status + ".");
         return await response.json();
       } catch (error) {
-        if (error && error.name === "AbortError") throw new Error("Backend не ответил за 20 секунд.");
+        if (error && error.name === "AbortError") throw new Error("Backend не ответил за " + Math.round(safeTimeoutMs / 1000) + " секунд.");
         throw error;
       } finally {
         window.clearTimeout(timeout);
@@ -617,6 +663,104 @@
       } catch (error) {
         setInviteStatus(error && error.message ? error.message : "Не удалось загрузить приглашения.", "error");
       }
+    }
+
+    async function loadAdminDiagnostics() {
+      if (!activePassword || diagnosticsLoading) return;
+      diagnosticsLoading = true;
+      const button = document.getElementById("refreshDiagnosticsButton");
+      button.disabled = true;
+      button.textContent = "Проверяем…";
+      setDiagnosticsStatus("Проверяем backend и закрытые хранилища…", "");
+      try {
+        const data = await requestAdminDiagnostics(activePassword);
+        if (!data || (data.status !== "healthy" && data.status !== "degraded") ||
+            !Array.isArray(data.stores) || !Array.isArray(data.properties)) {
+          throw new Error(data && data.message ? data.message : "Backend вернул некорректный статус диагностики.");
+        }
+        adminDiagnostics = data;
+        renderAdminDiagnostics(data);
+        setDiagnosticsStatus(
+          data.status === "healthy" ? "Все обязательные технические проверки пройдены." : "Обнаружено отклонение — проверьте безопасную сводку ниже.",
+          data.status === "healthy" ? "success" : "error"
+        );
+      } catch (error) {
+        setDiagnosticsStatus(error && error.message ? error.message : "Диагностика временно недоступна.", "error");
+      } finally {
+        diagnosticsLoading = false;
+        button.disabled = false;
+        button.textContent = "Обновить диагностику";
+      }
+    }
+
+    function renderAdminDiagnostics(data) {
+      const storeLabels = {
+        "admin-results": "Результаты",
+        "attempts": "Попытки",
+        "attempt-sessions": "Сессии",
+        "invites": "Приглашения"
+      };
+      const stores = data.stores.map(function(store) {
+        return '<tr>' +
+          cell("Хранилище", escapeHtml(storeLabels[store.key] || store.key || "—")) +
+          cell("Состояние", '<span class="badge ' + (store.state === "ok" ? "badge-pass" : "badge-fail") + '">' + escapeHtml(diagnosticStateLabel(store.state)) + '</span>') +
+          cell("Размер", escapeHtml(formatBytes(store.sizeBytes))) +
+          cell("Строк", store.rowCount !== null && Number.isFinite(Number(store.rowCount)) ? String(Number(store.rowCount)) : "—") +
+          cell("Изменено", escapeHtml(formatOptionalDate(store.lastModifiedAt))) +
+          cell("Последняя запись", escapeHtml(formatOptionalDate(store.lastRecordAt))) +
+          "</tr>";
+      }).join("");
+      const properties = data.properties.map(function(item) {
+        const name = /^[A-Z0-9_]{1,80}$/.test(String(item.name || "")) ? String(item.name) : "INVALID_PROPERTY";
+        const stateClass = item.present ? "present" : (item.required ? "missing" : "defaulted");
+        return '<span class="property-chip ' + stateClass + '">' +
+          escapeHtml(name) + ": " + (item.present ? "есть" : (item.required ? "нет" : "default")) + "</span>";
+      }).join("");
+      const error = data.lastError && typeof data.lastError === "object"
+        ? '<div class="diagnostic-error"><strong>' + escapeHtml(String(data.lastError.component || "backend")) +
+          " · " + escapeHtml(String(data.lastError.code || "diagnostic_check_failed")) + "</strong><br>" +
+          escapeHtml(String(data.lastError.message || "Проверка завершилась ошибкой.")) + "</div>"
+        : "";
+      const reports = data.reports && typeof data.reports === "object" ? data.reports : {};
+      const gates = data.gates && typeof data.gates === "object" ? data.gates : {};
+      const versions = data.frontendVersions && typeof data.frontendVersions === "object" ? data.frontendVersions : {};
+      document.getElementById("diagnosticsContent").innerHTML =
+        '<div class="diagnostics-summary">' +
+          diagnosticItemHtml("Backend", data.backendVersion || "—") +
+          diagnosticItemHtml("Candidate / Admin", String(versions.candidate || "—") + " / " + String(versions.admin || "—")) +
+          diagnosticItemHtml("Время backend", formatOptionalDate(data.backendTime)) +
+          diagnosticItemHtml("Яндекс Диск", data.yandexDisk && data.yandexDisk.accessible ? "доступен" : "недоступен") +
+          diagnosticItemHtml("Последняя запись", formatOptionalDate(data.lastWriteAt)) +
+          diagnosticItemHtml("TXT-файлов", reports.itemCount !== null && Number.isFinite(Number(reports.itemCount)) ? String(Number(reports.itemCount)) : "—") +
+          diagnosticItemHtml("Legal / Issuance", (gates.legalPilotApproved ? "вкл" : "выкл") + " / " + (gates.attemptIssuanceEnabled ? "вкл" : "выкл")) +
+          diagnosticItemHtml("Retention", gates.retentionAutomationEnabled ? "включён" : "выключен") +
+        "</div>" +
+        '<h3 class="diagnostic-section-title">Закрытые operational stores</h3>' +
+        '<div class="diagnostic-stores"><table><thead><tr><th>Хранилище</th><th>Состояние</th><th>Размер</th><th>Строк</th><th>Изменено</th><th>Последняя запись</th></tr></thead><tbody>' + stores + "</tbody></table></div>" +
+        '<h3 class="diagnostic-section-title">Script Properties — только наличие</h3>' +
+        '<div class="property-presence">' + properties + "</div>" + error;
+      document.getElementById("diagnosticsContent").classList.remove("hidden");
+    }
+
+    function diagnosticItemHtml(label, value) {
+      return '<div class="diagnostic-item"><div class="label">' + escapeHtml(String(label || "")) +
+        '</div><div class="value">' + escapeHtml(String(value || "—")) + "</div></div>";
+    }
+
+    function diagnosticStateLabel(value) {
+      return { ok: "исправно", missing: "отсутствует", invalid: "небезопасно", error: "ошибка", unavailable: "недоступно" }[value] || "неизвестно";
+    }
+
+    function formatBytes(value) {
+      const bytes = Number(value);
+      if (!Number.isFinite(bytes) || bytes < 0) return "—";
+      if (bytes < 1024) return Math.round(bytes) + " Б";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " КБ";
+      return (bytes / (1024 * 1024)).toFixed(1) + " МБ";
+    }
+
+    function formatOptionalDate(value) {
+      return value && Number.isFinite(new Date(value).getTime()) ? formatDate(value) : "—";
     }
 
     async function createAdminInvite(event) {
@@ -1096,6 +1240,8 @@
       pendingInviteRevocations = Object.create(null);
       attemptIssuanceEnabled = false;
       legalPilotApproved = false;
+      adminDiagnostics = null;
+      diagnosticsLoading = false;
       resetDeletionPreview(true);
       setInviteFormEnabled(false);
       clearFilters();
@@ -1106,6 +1252,9 @@
       setReportStatus("", "");
       setDeletionStatus("", "");
       setInviteStatus("", "");
+      setDiagnosticsStatus("", "");
+      document.getElementById("diagnosticsContent").classList.add("hidden");
+      document.getElementById("diagnosticsContent").innerHTML = "";
       document.getElementById("inviteOutput").classList.add("hidden");
       document.getElementById("inviteLink").value = "";
       document.getElementById("inviteList").innerHTML = "";
@@ -1148,6 +1297,12 @@
 
     function setInviteStatus(message, type) {
       const node = document.getElementById("inviteStatus");
+      node.textContent = message;
+      node.className = "status" + (type ? " " + type : "");
+    }
+
+    function setDiagnosticsStatus(message, type) {
+      const node = document.getElementById("diagnosticsStatus");
       node.textContent = message;
       node.className = "status" + (type ? " " + type : "");
     }

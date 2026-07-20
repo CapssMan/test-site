@@ -2,7 +2,7 @@
 
 Дата аудита: 20 июля 2026 года.
 
-Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-12`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, backend `yandex-disk-mvp-2026-07-20-13`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
 ## Addendum 11: consent binding и legal gate
 
@@ -91,7 +91,16 @@
 - JSONP удалён. Ответы формируются как JSON, а email/fingerprint не передаются в URL.
 - Cross-origin POST с GitHub Pages остаётся необходимым транспортом к Apps Script и выполняется без cookies/credentials. `Origin` не используется как доказательство доверия: любой публичный клиент считается недоверенным и проходит одинаковую серверную валидацию.
 - Публичный `health` — только liveness: `ok`, статус сервиса и версия backend. Он не читает Script Properties, папки или JSON на Яндекс Диске и ничего не создаёт.
-- Детальную диагностику хранилища следует реализовать на этапе 14 как отдельную защищённую административную операцию.
+- Детальная диагностика хранилища реализована отдельной POST-only административной операцией; GET и неверный пароль не выполняют storage reads.
+
+### Addendum этапа 14: защищённая наблюдаемость
+
+- `adminDiagnostics` использует общий admin auth/rate-limit и точный `attempt-v2`; публичного detailed-status route нет.
+- Ответ содержит только версии, время, gate flags, presence без значений и агрегаты `state/size/rowCount/timestamps`.
+- Store path, filename, candidate code, email, Telegram, fingerprint/hash, attempt/invite ID, ответы, TXT, token/password/salt/signing secret не сериализуются.
+- Ошибка преобразуется в фиксированный `component/code/message`; исходные Yandex URL/response/error text наружу не возвращаются.
+- Probe не создаёт отсутствующий JSON, не пишет backup, не делает restore и не меняет pilot gates.
+- Автотест исполняет production-функции в VM, проверяет rejection до storage read, минимальный public health, degraded mode и отсутствие известных canary secrets/PII.
 
 `checkAttempt` остаётся email-enumeration oracle. Точный `nextDate` удалён; обычная retake-блокировка возвращает только округлённый `daysLeft`, а незавершённая reservation — технический `retryAfterSeconds`. Однако поля `allowed`/`foundPreviousAttempt` всё ещё раскрывают факт зарегистрированной попытки для пары test/email или fingerprint. Per-key/global `CacheService` limits усложняют массовый перебор, но не устраняют распределённую проверку. Полное решение требует не публичного lookup по произвольному email, а invite token, подтверждённого email (OTP/magic link), аутентифицированного потока и/или CAPTCHA + внешнего gateway rate limiting. Для контролируемого пилота минимальный вариант — single-use server-issued invite/challenge, не позволяющий проверять произвольные адреса.
 

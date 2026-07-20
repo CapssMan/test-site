@@ -1,6 +1,6 @@
 # SkillCheck — архитектура MVP
 
-Обновлено: 20 июля 2026 года, этап 13.
+Обновлено: 20 июля 2026 года, этап 14.
 
 ## Общая схема
 
@@ -9,7 +9,7 @@ SkillCheck состоит из статического frontend на GitHub Pag
 ```text
 Администратор
   -> admin.html
-  -> POST adminCreateInvite / adminInvites / adminRevokeInvite / adminDeletionPreview / adminDeleteResult
+  -> POST adminCreateInvite / adminInvites / adminRevokeInvite / adminDeletionPreview / adminDeleteResult / adminDiagnostics
   -> Google Apps Script
   -> закрытые invites / deletion log / транзакционные и operational backups на Яндекс Диске
 
@@ -67,6 +67,7 @@ SkillCheck состоит из статического frontend на GitHub Pag
 - показывает plaintext invite только в ответе на создание и позволяет отозвать незавершённое приглашение.
 - предварительно показывает состав удаления по коду и требует повторный ввод точного кода для commit;
 - удаляет только результат или всю связанную попытку через подписанный snapshot, транзакционную копию, проверку отсутствия и последующий purge копии.
+- показывает защищённую read-only диагностику версий, configuration presence и агрегированного состояния storage без значений secrets, paths и строк данных.
 
 Перед заменой admin results, attempts, sessions и invites backend сохраняет предыдущую валидную версию в `private/backups-v1`, проверяет envelope/digest и ограничивает ротацию 12 snapshots на store. Restore остаётся editor-only и разрешён только при закрытых legal/issuance gate. Удаление данных очищает связанные строки и из этих snapshots.
 
@@ -111,8 +112,10 @@ opt_ + first20hex(SHA-256(
 - `adminCreateInvite`;
 - `adminInvites`;
 - `adminRevokeInvite`.
+- `adminDeletionPreview` / `adminDeleteResult`;
+- `adminDiagnostics` — read-only техническая сводка без PII/secrets.
 
-Legacy `checkAttempt` и tokenless `saveResult` возвращают `client_upgrade_required`. Чувствительные actions через GET не выполняются. `?action=health` остаётся минимальным немутирующим liveness и не читает хранилище или Script Properties.
+Legacy `checkAttempt` и tokenless `saveResult` возвращают `client_upgrade_required`. Чувствительные actions через GET не выполняются. `?action=health` остаётся минимальным немутирующим liveness и не читает хранилище или Script Properties. Детальный `adminDiagnostics` доступен только через защищённый POST, выполняет read-only probe и санитизирует ошибку до allowlisted component/code/message.
 
 ### Приглашение и attempt token
 
@@ -197,6 +200,6 @@ JSON write защищён `LockService`; повреждённый файл не 
 - одноразовое email-bound приглашение — controlled-pilot perimeter, не OTP/account;
 - `CacheService` rate limits best-effort и не заменяют внешний атомарный gateway для открытого запуска;
 - scope текущего Яндекс OAuth-токена может быть шире `disk:/skillcheck`; нужны ротация и проверка least-privilege/app-folder модели;
-- полноценная защищённая наблюдаемость закрывается этапом 14; backup остаётся в том же failure-domain Яндекс Диска и не заменяет off-site DR.
+- наблюдаемость этапа 14 является pull-based status без внешнего alerting/paging; backup остаётся в том же failure-domain Яндекс Диска и не заменяет off-site DR.
 
 Не коммитить результаты, private banks, TXT, candidate data, токены, пароли, salt, OAuth credentials или временные bootstrap secrets.

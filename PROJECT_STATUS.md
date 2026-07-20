@@ -4,10 +4,10 @@
 
 ## Текущий этап
 
-- Технически завершён и опубликован: этап 13 — проверяемые ротационные snapshots и закрытое восстановление operational JSON.
-- Production rollout выполнен в существующий deployment `@55` без смены Web App URL; API/health, 15/15 тестовых скриптов, два валидатора и owner baseline/inventory пройдены.
-- Следующий плановый этап: 14 — защищённая наблюдаемость и диагностика, рекомендуемый режим `высокий`.
-- Реальный пилот заблокирован до реквизитов оператора, внешнего legal/retention checklist, этапов 14–17 и отдельно согласованной содержательной ротации банков; для ротации нужен режим `ультра`.
+- Технически завершён и опубликован: этап 14 — защищённая read-only наблюдаемость и диагностика без раскрытия secrets/PII.
+- Production rollout выполнен в существующий deployment `@56` без смены Web App URL; API/health, 16/16 тестовых скриптов, два валидатора и защищённый production status пройдены.
+- Следующий плановый этап: 15 — автоматические тесты и CI, рекомендуемый режим `средний`.
+- Реальный пилот заблокирован до реквизитов оператора, внешнего legal/retention checklist, этапов 15–17 и отдельно согласованной содержательной ротации банков; для ротации нужен режим `ультра`.
 - Полный план: `ROADMAP.md`.
 
 ## Репозиторий и публикация
@@ -22,6 +22,7 @@
 - Production stage 11: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.10`, backend `yandex-disk-mvp-2026-07-20-10`, deployment `@52`, API `attempt-v2`.
 - Production stage 12: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-11`, deployment `@54`, API `attempt-v2`.
 - Production stage 13: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-12`, deployment `@55`, API `attempt-v2`.
+- Production stage 14: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, backend `yandex-disk-mvp-2026-07-20-13`, deployment `@56`, API `attempt-v2`.
 - Web App URL не изменён.
 - Implementation commit 10A: `2addd59`.
 
@@ -31,7 +32,7 @@
 
 - `ok: true`;
 - ответ содержит ровно четыре ключа: `ok`, `status`, `service`, `backendVersion`;
-- `backendVersion: yandex-disk-mvp-2026-07-20-12`;
+- `backendVersion: yandex-disk-mvp-2026-07-20-13`;
 - endpoint не обращается к Яндекс Диску, не создаёт файлы и не раскрывает paths/properties/storage state.
 
 ## Завершено
@@ -166,12 +167,22 @@
 - Production baseline и inventory для четырёх stores успешно выполнены из Apps Script editor без изменения primary JSON.
 - Deployment `@55`, health `.12`, 15/15 тестовых скриптов и 2 валидатора подтверждены.
 
+## Технически завершено на этапе 14
+
+- Публичный health сохранил ровно четыре безопасных liveness-поля и не обращается к storage/configuration.
+- Добавлен отдельный rate-limited POST `adminDiagnostics`, защищённый тем же админ-паролем и API version gate.
+- В админке видны frontend/backend versions, backend time, Яндекс.Диск, gate-состояния и только признаки наличия allowlisted properties.
+- Для results/attempts/sessions/invites показываются агрегированные state, size, row count, modified time и latest record time без строк данных и storage paths.
+- Любая диагностическая ошибка преобразуется в allowlisted component/code/message; токены, пароль, salt, URL, коды результатов, IDs и персональные данные не возвращаются.
+- Проверка read-only: не создаёт отсутствующие stores, не пишет snapshots, не запускает restore и не меняет pilot gates.
+- Deployment `@56`, health `.13`, защищённый production status, 16/16 тестовых скриптов и 2 валидатора подтверждены.
+
 ## Оценка до финала roadmap
 
-- Осталось 7 плановых этапов (`14–20`): 44–81 час, 290–600 тыс. токенов и 2–4 календарные недели пилота.
+- Осталось 6 плановых этапов (`15–20`): 38–71 час, 240–500 тыс. токенов и 2–4 календарные недели пилота.
 - Отдельная содержательная ротация банков: 50–100 часов, 400–800 тыс. токенов плюс SME review.
-- До limited-pilot readiness (`14–17` + ротация): 74–141 час / 580 тыс. – 1,16 млн токенов плюс внешняя legal/SME проверка.
-- До конца roadmap вместе с ротацией: 94–181 час / 690 тыс. – 1,40 млн токенов + 2–4 недели пилота.
+- До limited-pilot readiness (`15–17` + ротация): 68–131 час / 530 тыс. – 1,06 млн токенов плюс внешняя legal/SME проверка.
+- До конца roadmap вместе с ротацией: 88–171 час / 640 тыс. – 1,30 млн токенов + 2–4 недели пилота.
 - Аккаунты/OTP/CAPTCHA, managed gateway и дополнительная server-side delivery для открытого запуска в эти диапазоны не включены.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.
 

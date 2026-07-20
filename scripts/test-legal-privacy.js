@@ -61,7 +61,7 @@ assert.match(extractTopLevelFunction(backend, "setLegalPilotApprovedForOwner"), 
 assert.match(extractTopLevelFunction(backend, "setLegalPilotApprovedForOwner"), /!enabled[\s\S]*ATTEMPT_ISSUANCE_ENABLED/);
 assert.doesNotMatch(extractTopLevelFunction(backend, "doPost"), /setLegalPilotApprovedForOwner/, "legal approval must remain editor-only");
 
-assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.20\.11"/);
+assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.20\.12"/);
 assert.match(admin, /const API_VERSION = "attempt-v2"/);
 assert.match(admin, /setInviteFormEnabled\(attemptIssuanceEnabled && legalPilotApproved\)/);
 assert.match(home, /реквизитов оператора[\s\S]*юридического checklist/);

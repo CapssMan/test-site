@@ -29,6 +29,7 @@ skillcheck/
 │   ├── LEGAL_PRIVACY_REVIEW.md
 │   ├── DATA_DELETION.md
 │   ├── BACKUP_AND_RECOVERY.md
+│   ├── OBSERVABILITY.md
 │   └── REMAINING_ESTIMATE.md
 ├── scripts/
 │   ├── validate-tests.js
@@ -39,7 +40,8 @@ skillcheck/
 │   ├── test-10a-recovery.js
 │   ├── test-legal-privacy.js
 │   ├── test-data-deletion.js
-│   └── test-backup-recovery.js
+│   ├── test-backup-recovery.js
+│   └── test-observability.js
 ├── README.md
 ├── PROJECT_CONTEXT.md
 ├── TODO.md
@@ -92,7 +94,9 @@ Backend больше не использует Google Sheets и Google Drive. В
 - `disk:/skillcheck/private/backups-v1/<store-key>/...` — до 12 проверяемых snapshots каждого operational store.
 - `disk:/skillcheck/private/backups-v1/corrupt/<store-key>/...` — до трёх forensic artifacts повреждённого active-файла.
 
-`Code.gs` отдаёт минимальный немутирующий `?action=health`. Публичный POST-контракт `attempt-v2` состоит из `beginAttempt` и token-bound `saveResult`; он требует точную versioned consent binding, а `attempt-v1` и legacy `checkAttempt` отключены. Admin POST после проверки `ADMIN_PASSWORD` загружает результаты/отчёты и управляет приглашениями.
+`Code.gs` отдаёт минимальный немутирующий `?action=health`. Публичный POST-контракт `attempt-v2` состоит из `beginAttempt` и token-bound `saveResult`; он требует точную versioned consent binding, а `attempt-v1` и legacy `checkAttempt` отключены. Admin POST после проверки `ADMIN_PASSWORD` загружает результаты/отчёты, управляет приглашениями и отдаёт read-only `adminDiagnostics` без secret/PII/path values.
+
+`docs/OBSERVABILITY.md` описывает защищённый status contract и operator runbook. `scripts/test-observability.js` проверяет auth boundary, агрегаты, санитизированные ошибки и сохранение минимального публичного health.
 
 Ссылка приглашения передаёт bearer только во fragment `#invite=...`, не в query. `test.html` сразу забирает значение в `sessionStorage` и очищает адресную строку; это уменьшает утечки через обычную query-историю/Referer, но код всё равно нужно считать секретом до использования.
 

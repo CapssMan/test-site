@@ -16,11 +16,11 @@ index.html -> test.html?test=<testId>#invite=... -> display-only data/<testId>.j
 
 Google Apps Script остаётся backend/API. Google Sheets и Google Drive больше не используются.
 
-Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Защищённая расширенная диагностика запланирована отдельно.
+Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Расширенная read-only диагностика реализована отдельным POST `adminDiagnostics` за админ-паролем и возвращает только безопасные технические агрегаты.
 
-Historical baseline этапа 10 опубликован в deployment `@49`, implementation commit `e251be3`; 10A — в `@51`, commit `2addd59`. Техническая часть этапа 13 опубликована в существующем deployment `@55` без смены URL: backend `yandex-disk-mvp-2026-07-20-12`, candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, API `attempt-v2`.
+Historical baseline этапа 10 опубликован в deployment `@49`, implementation commit `e251be3`; 10A — в `@51`, commit `2addd59`. Техническая часть этапа 14 опубликована в существующем deployment `@56` без смены URL: backend `yandex-disk-mvp-2026-07-20-13`, candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, API `attempt-v2`.
 
-Owner smoke 10A `FA-LDUB2` исторически подтвердил `server-verified` / `authoritative-v1` / `attempt-v1`. Текущий `attempt-v2` требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление и application-level backup/restore реализованы; автоматический retention выключен до утверждения сроков. Реальный пилот заблокирован до реквизитов оператора, внешнего legal checklist, этапов 14–17 и отдельно согласованной содержательной ротации банков.
+Owner smoke 10A `FA-LDUB2` исторически подтвердил `server-verified` / `authoritative-v1` / `attempt-v1`. Текущий `attempt-v2` требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, application-level backup/restore и защищённая наблюдаемость реализованы; автоматический retention выключен до утверждения сроков. Реальный пилот заблокирован до реквизитов оператора, внешнего legal checklist, этапов 15–17 и отдельно согласованной содержательной ротации банков.
 
 Рабочие тесты:
 
@@ -114,7 +114,7 @@ telemetryVerification
 - authoritative scoring, single-use session и fail-closed private storage;
 - секреты Script Properties;
 - правило: GitHub Pages не хранит результаты, персональные данные, токены или JSON-базы.
-- pilot lock: не включать legal approval/issuance до operator/legal/retention checklist, этапов 14–17 и отдельно согласованной ротации банков.
+- pilot lock: не включать legal approval/issuance до operator/legal/retention checklist, этапов 15–17 и отдельно согласованной ротации банков.
 
 ## Security-границы текущего MVP
 

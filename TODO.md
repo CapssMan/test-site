@@ -35,6 +35,7 @@
 - [x] Этап 12 технически завершён: preview, подтверждаемое result/full-attempt удаление, транзакционная копия, verification, purge, crash recovery и закрытый журнал опубликованы в `@54`.
 - [x] Этап 13 технически завершён: verified snapshots четырёх stores, rotation 12, fail-closed write, editor-only restore, corrupt artifacts и deletion redaction опубликованы в `@55`; production baseline создан.
 - [x] Этап 14 технически завершён: защищённая read-only диагностика, storage aggregates, configuration presence и allowlisted errors опубликованы в `@56`; публичный health остался минимальным.
+- [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 22/22 проверки.
 
 ## До запуска кандидатов
 
@@ -97,7 +98,7 @@
 
 ## Следующий этап
 
-Техническая часть этапа 14 опубликована в deployment `@56`; legal approval, выдача приглашений и автоматический retention выключены. Следующий плановый этап — 15, автоматические тесты и CI; рекомендуемый режим — `средний`. Отдельный pilot blocker — содержательная ротация банков с SME review; для неё нужен режим `ультра` и явное подтверждение пользователя. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
+Этап 15 опубликован в `main`; production runtime остаётся на deployment `@56`, legal approval, выдача приглашений и автоматический retention выключены. Следующий плановый этап — 16, эксплуатационная документация; рекомендуемый режим — `средний`. Отдельный pilot blocker — содержательная ротация банков с SME review; для неё нужен режим `ультра` и явное подтверждение пользователя. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
 
 ## Financial Analyst Junior
 

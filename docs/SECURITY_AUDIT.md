@@ -4,6 +4,8 @@
 
 Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, backend `yandex-disk-mvp-2026-07-20-13`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
+Этап 15 добавил read-only GitHub Actions без production secrets/deploy. Workflow использует locked dependency-free install с отключёнными lifecycle scripts и выполняет тот же `npm test`, что и локальная проверка.
+
 ## Addendum 11: consent binding и legal gate
 
 - `attempt-v2` принимает попытку только с точной версией отдельного согласия и подтверждением 18+; версия и серверное время сохраняются в сессии и связываются с signed token.
@@ -101,6 +103,16 @@
 - Ошибка преобразуется в фиксированный `component/code/message`; исходные Yandex URL/response/error text наружу не возвращаются.
 - Probe не создаёт отсутствующий JSON, не пишет backup, не делает restore и не меняет pilot gates.
 - Автотест исполняет production-функции в VM, проверяет rejection до storage read, минимальный public health, degraded mode и отсутствие известных canary secrets/PII.
+
+### Addendum этапа 15: CI trust boundary
+
+- Workflow запускается для push/PR/manual dispatch с единственным разрешением `contents: read`.
+- `${{ secrets.* }}`, environment, deploy, `clasp`, Apps Script URL и Яндекс credential в workflow отсутствуют.
+- `npm ci --ignore-scripts` использует lockfile без внешних пакетов; install не выполняет lifecycle code.
+- GitHub-owned actions закреплены полными commit SHA, а checkout выполняется с `persist-credentials:false`.
+- Repository scanner проверяет tracked и новые неигнорируемые файлы, credential filenames, private artifacts и высокодостоверные token/key patterns.
+- Отдельный regression test блокирует появление write permissions, secret context, production deploy или ослабление обязательной матрицы.
+- CI не заменяет Dependabot/code scanning и не доказывает безопасность произвольной будущей dependency; любые новые пакеты требуют отдельного review.
 
 `checkAttempt` остаётся email-enumeration oracle. Точный `nextDate` удалён; обычная retake-блокировка возвращает только округлённый `daysLeft`, а незавершённая reservation — технический `retryAfterSeconds`. Однако поля `allowed`/`foundPreviousAttempt` всё ещё раскрывают факт зарегистрированной попытки для пары test/email или fingerprint. Per-key/global `CacheService` limits усложняют массовый перебор, но не устраняют распределённую проверку. Полное решение требует не публичного lookup по произвольному email, а invite token, подтверждённого email (OTP/magic link), аутентифицированного потока и/или CAPTCHA + внешнего gateway rate limiting. Для контролируемого пилота минимальный вариант — single-use server-issued invite/challenge, не позволяющий проверять произвольные адреса.
 

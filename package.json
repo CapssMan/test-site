@@ -1,0 +1,15 @@
+{
+  "name": "skillcheck-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dependency-free validation and test runner for SkillCheck",
+  "scripts": {
+    "test": "node scripts/run-ci.js",
+    "test:secrets": "node scripts/check-repository-secrets.js",
+    "test:links": "node scripts/check-static-links.js",
+    "test:syntax": "node scripts/check-js-syntax.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

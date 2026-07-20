@@ -6,6 +6,9 @@
 
 ```text
 skillcheck/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── index.html
 ├── test.html
 ├── privacy.html
@@ -30,8 +33,13 @@ skillcheck/
 │   ├── DATA_DELETION.md
 │   ├── BACKUP_AND_RECOVERY.md
 │   ├── OBSERVABILITY.md
+│   ├── TESTING.md
 │   └── REMAINING_ESTIMATE.md
 ├── scripts/
+│   ├── run-ci.js
+│   ├── check-repository-secrets.js
+│   ├── check-static-links.js
+│   ├── check-js-syntax.js
 │   ├── validate-tests.js
 │   ├── migrate-public-banks-10a.js
 │   ├── test-public-bank-secrecy.js
@@ -41,7 +49,10 @@ skillcheck/
 │   ├── test-legal-privacy.js
 │   ├── test-data-deletion.js
 │   ├── test-backup-recovery.js
-│   └── test-observability.js
+│   ├── test-observability.js
+│   └── test-ci-config.js
+├── package.json
+├── package-lock.json
 ├── README.md
 ├── PROJECT_CONTEXT.md
 ├── TODO.md
@@ -49,6 +60,10 @@ skillcheck/
 ```
 
 ## Что где хранить
+
+### `.github/` и CI
+
+`.github/workflows/ci.yml` — read-only GitHub Actions workflow без secrets и deployment. `package.json`/`package-lock.json` задают единый dependency-free `npm test`; подробный контракт находится в `docs/TESTING.md`.
 
 ### Корень проекта
 
@@ -96,7 +111,7 @@ Backend больше не использует Google Sheets и Google Drive. В
 
 `Code.gs` отдаёт минимальный немутирующий `?action=health`. Публичный POST-контракт `attempt-v2` состоит из `beginAttempt` и token-bound `saveResult`; он требует точную versioned consent binding, а `attempt-v1` и legacy `checkAttempt` отключены. Admin POST после проверки `ADMIN_PASSWORD` загружает результаты/отчёты, управляет приглашениями и отдаёт read-only `adminDiagnostics` без secret/PII/path values.
 
-`docs/OBSERVABILITY.md` описывает защищённый status contract и operator runbook. `scripts/test-observability.js` проверяет auth boundary, агрегаты, санитизированные ошибки и сохранение минимального публичного health.
+`docs/OBSERVABILITY.md` описывает защищённый status contract и operator runbook. `scripts/test-observability.js` проверяет auth boundary, агрегаты, санитизированные ошибки и сохранение минимального публичного health. `scripts/run-ci.js` объединяет infrastructure validators и все regression tests; `scripts/test-ci-config.js` защищает read-only workflow contract.
 
 Ссылка приглашения передаёт bearer только во fragment `#invite=...`, не в query. `test.html` сразу забирает значение в `sessionStorage` и очищает адресную строку; это уменьшает утечки через обычную query-историю/Referer, но код всё равно нужно считать секретом до использования.
 

@@ -71,7 +71,7 @@
 | 12 | Удаление и срок хранения | Технически завершён и опубликован; автоматический retention выключен до решения оператора |
 | 13 | Резервные копии | Завершён и production-verified |
 | 14 | Наблюдаемость и диагностика | Завершён и production-verified |
-| 15 | Автоматические тесты и CI | Частично реализован |
+| 15 | Автоматические тесты и CI | Завершён и включён для main/PR |
 | 16 | Документация | В работе |
 | 17 | Подготовка к пилоту | Не начат |
 | 18 | Пилот | Не начат |
@@ -333,7 +333,17 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Этап 15. Автоматические тесты и CI
 
-JSON и структура банков, известные шаблоны secrets, ссылки на data, JS syntax, расчёт, Telegram normalization, retake date, escaping и report formatter. GitHub Actions добавлять только после проверки отсутствия secrets и платной инфраструктуры.
+Статус: завершён 21 июля 2026 года. CI опубликован в `main`; production Apps Script остаётся на безопасном deployment `@56`, потому что backend/frontend этапом не изменялись.
+
+- [x] Добавлен единый dependency-free entrypoint `npm test` для локального запуска и GitHub Actions.
+- [x] Проверяются структура/аудит банков, известные secret patterns, credential filenames и отсутствие private artifacts.
+- [x] Проверяются локальные HTML-ссылки, точные `data/*.json` mappings и отсутствие public dev-quick link.
+- [x] Компилируются `Code.gs`, все Node-скрипты и inline JavaScript HTML.
+- [x] Автоматически запускаются все `test-*.js`: расчёт, Telegram, retake, escaping, report, security, recovery, legal, deletion, backup и observability.
+- [x] GitHub Actions имеет только `contents: read`, не использует secrets/environments и не выполняет deploy/production smoke.
+- [x] Locked install выполняется с `--ignore-scripts`; внешних npm dependencies и платной инфраструктуры нет.
+- [x] GitHub-owned actions закреплены полными commit SHA, checkout credentials не сохраняются.
+- [x] Контракт workflow защищён отдельным `test-ci-config.js`, инструкции находятся в `docs/TESTING.md`.
 
 ## Этап 16. Документация
 
@@ -357,7 +367,7 @@ JSON и структура банков, известные шаблоны secre
 
 ## Ближайшая очередь
 
-1. Перейти к этапу 15 — автоматическим тестам и CI; рекомендуемый режим `средний`.
+1. Перейти к этапу 16 — полной эксплуатационной документации; рекомендуемый режим `средний`.
 2. Отдельно получить подтверждение на содержательную ротацию банков — обязательный pilot blocker; рекомендуемый режим `ультра`.
 3. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 

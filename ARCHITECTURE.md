@@ -1,6 +1,6 @@
 # SkillCheck — архитектура MVP
 
-Обновлено: 20 июля 2026 года, этап 14.
+Обновлено: 21 июля 2026 года, этап 15.
 
 ## Общая схема
 
@@ -25,6 +25,12 @@ SkillCheck состоит из статического frontend на GitHub Pag
 ```
 
 Главная граница доверия: браузер показывает вопросы и собирает ответы, но не знает правильные ответы и не рассчитывает итог как источник истины. Баллы, статус, блоки и рекомендацию вычисляет backend по закрытому versioned-банку.
+
+## Проверка репозитория и CI
+
+`npm test` запускает dependency-free orchestrator `scripts/run-ci.js`: secret scan, static/data links, JavaScript syntax, два валидатора банков и все `test-*.js`. Тот же entrypoint выполняется GitHub Actions на push в `main` и pull request.
+
+CI имеет только `contents: read`, не получает Script Properties/GitHub secrets, не вызывает production Apps Script/Яндекс Диск и не выполняет deployment. Это отдельная граница: regression checks разрешено выполнять для недоверенного pull request, а owner-only storage/deploy операции остаются вне workflow.
 
 ## Frontend
 

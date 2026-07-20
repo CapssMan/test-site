@@ -1,6 +1,6 @@
 # SkillCheck — архитектура MVP
 
-Обновлено: 20 июля 2026 года, этап 11.
+Обновлено: 20 июля 2026 года, этап 12.
 
 ## Общая схема
 
@@ -9,9 +9,9 @@ SkillCheck состоит из статического frontend на GitHub Pag
 ```text
 Администратор
   -> admin.html
-  -> POST adminCreateInvite / adminInvites / adminRevokeInvite
+  -> POST adminCreateInvite / adminInvites / adminRevokeInvite / adminDeletionPreview / adminDeleteResult
   -> Google Apps Script
-  -> disk:/skillcheck/private/invites-v1.json
+  -> закрытые invites / deletion log / транзакционные deletion backups на Яндекс Диске
 
 Кандидат
   -> test.html?test=<testId>&invite=<one-time-code>
@@ -65,6 +65,8 @@ SkillCheck состоит из статического frontend на GitHub Pag
 - создаёт email- и test-bound одноразовые приглашения на 1–720 часов;
 - повторяет потерянный create-ответ с тем же `sci_...` request ID, чтобы восстановить тот же код вместо выпуска дубля;
 - показывает plaintext invite только в ответе на создание и позволяет отозвать незавершённое приглашение.
+- предварительно показывает состав удаления по коду и требует повторный ввод точного кода для commit;
+- удаляет только результат или всю связанную попытку через подписанный snapshot, транзакционную копию, проверку отсутствия и последующий purge копии.
 
 Админ API не возвращает имя, открытый email, Telegram, fingerprint, token, ответы, hashes или внутренние пути.
 

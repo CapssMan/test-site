@@ -31,9 +31,10 @@ assert.match(consent, /Email для обращений по персональн
 assert.match(consent, /не разрешает[\s\S]*передавать результат работодателю/);
 assert.match(consent, /Срок серверного хранения ещё не утверждён/);
 
-assert.match(privacy, /skillcheck-privacy-2026-07-20-v1/);
+assert.match(privacy, /skillcheck-privacy-2026-07-20-v2/);
 assert.match(privacy, /псевдонимизированной, а не полностью обезличенной/);
-assert.match(privacy, /Автоматическое удаление server-side записей[\s\S]*пока отсутствуют/);
+assert.match(privacy, /автоматическое удаление по сроку выключено/i);
+assert.match(privacy, /закрытая транзакционная копия[\s\S]*безвозвратно уничтожается/);
 assert.match(privacy, /Передача работодателю или партнёру[\s\S]*выключена/);
 assert.doesNotMatch(privacy, /хран(?:ится|ение)[^<]{0,100}не более 12 месяцев/i, "privacy page must not promise an unimplemented retention period");
 
@@ -57,7 +58,7 @@ assert.match(extractTopLevelFunction(backend, "setLegalPilotApprovedForOwner"), 
 assert.match(extractTopLevelFunction(backend, "setLegalPilotApprovedForOwner"), /!enabled[\s\S]*ATTEMPT_ISSUANCE_ENABLED/);
 assert.doesNotMatch(extractTopLevelFunction(backend, "doPost"), /setLegalPilotApprovedForOwner/, "legal approval must remain editor-only");
 
-assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.20\.10"/);
+assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.20\.11"/);
 assert.match(admin, /const API_VERSION = "attempt-v2"/);
 assert.match(admin, /setInviteFormEnabled\(attemptIssuanceEnabled && legalPilotApproved\)/);
 assert.match(home, /реквизитов оператора[\s\S]*юридического checklist/);

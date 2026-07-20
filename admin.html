@@ -88,6 +88,15 @@
       font-weight: 800;
       white-space: nowrap;
     }
+    .danger-btn {
+      min-height: 42px;
+      padding: 10px 15px;
+      border: 0;
+      border-radius: 9px;
+      color: #fff;
+      background: #b91c1c;
+      font-weight: 800;
+    }
     .status { min-height: 22px; margin-top: 12px; font-size: 14px; font-weight: 600; }
     .status.error { color: var(--red); }
     .status.success { color: var(--green); }
@@ -162,6 +171,13 @@
       font-size: 12px;
     }
     .invite-row strong { color: #0f172a; }
+    .deletion-panel { margin-bottom: 18px; padding: 18px; border-color: #fecaca; }
+    .deletion-panel h2 { margin: 0 0 8px; color: #991b1b; font-size: 18px; }
+    .deletion-panel > p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .deletion-grid { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(220px, 1.4fr) auto; gap: 12px; align-items: end; }
+    .deletion-confirm { margin-top: 14px; padding: 14px; border: 1px solid #fecaca; border-radius: 10px; background: #fef2f2; }
+    .deletion-confirm p { margin: 0 0 12px; color: #991b1b; font-size: 13px; line-height: 1.5; }
+    .deletion-confirm-grid { display: grid; grid-template-columns: minmax(190px, 1fr) auto; gap: 12px; align-items: end; }
     .filters {
       display: grid;
       grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(150px, 1fr)) auto;
@@ -234,6 +250,7 @@
       .login-card { margin: 34px auto; padding: 22px; }
       .filters, .stats-grid, .dashboard { grid-template-columns: 1fr; }
       .invite-grid, .invite-row, .invite-output { grid-template-columns: 1fr; }
+      .deletion-grid, .deletion-confirm-grid { grid-template-columns: 1fr; }
       .invite-output p { grid-column: auto; }
       .invite-grid .primary-btn { width: 100%; }
       .filters .search-field { grid-column: auto; }
@@ -258,7 +275,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.10</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.11</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -299,6 +316,36 @@
         Скачать его можно только после входа в админку. Отчёт содержит персональные данные и не должен передаваться работодателю без согласия кандидата.
         <div id="reportStatus" class="status" role="status" aria-live="polite"></div>
       </div>
+
+      <section class="card deletion-panel" aria-labelledby="deletionHeading">
+        <h2 id="deletionHeading">Удаление данных по коду</h2>
+        <p>Сначала выполняется только предварительная проверка. Подтверждённая операция создаёт закрытую транзакционную копию, удаляет выбранные данные, проверяет отсутствие и затем безвозвратно удаляет копию. Автоматическое удаление по сроку пока выключено.</p>
+        <form id="deletionPreviewForm" class="deletion-grid">
+          <div class="field">
+            <label for="deletionCode">Код результата</label>
+            <input id="deletionCode" type="text" maxlength="12" autocomplete="off" placeholder="Например, FA-5DU43" required>
+          </div>
+          <div class="field">
+            <label for="deletionScope">Область удаления</label>
+            <select id="deletionScope" required>
+              <option value="full_attempt">Полная попытка: результат, TXT, hashes, session и invite</option>
+              <option value="result_only">Только результат и TXT</option>
+            </select>
+          </div>
+          <button id="previewDeletionButton" class="secondary-btn" type="submit">Проверить без удаления</button>
+        </form>
+        <div id="deletionStatus" class="status" role="status" aria-live="polite"></div>
+        <div id="deletionConfirmBlock" class="deletion-confirm hidden">
+          <p id="deletionPreviewSummary"></p>
+          <form id="deletionConfirmForm" class="deletion-confirm-grid">
+            <div class="field">
+              <label for="deletionConfirmationCode">Введите точный код ещё раз</label>
+              <input id="deletionConfirmationCode" type="text" maxlength="12" autocomplete="off" required>
+            </div>
+            <button id="confirmDeletionButton" class="danger-btn" type="submit">Удалить безвозвратно</button>
+          </form>
+        </div>
+      </section>
 
       <section class="card invite-panel" aria-labelledby="inviteHeading">
         <h2 id="inviteHeading">Одноразовые приглашения controlled pilot</h2>
@@ -409,7 +456,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.20.10";
+    const FRONTEND_BUILD = "2026.07.20.11";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const TEST_LABELS = {
@@ -437,6 +484,8 @@
     let pendingInviteRevocations = Object.create(null);
     let attemptIssuanceEnabled = false;
     let legalPilotApproved = false;
+    let pendingDeletionPreview = null;
+    let pendingDeletionRequestId = "";
 
     document.getElementById("frontendVersion").textContent = "Build " + FRONTEND_BUILD;
     document.getElementById("loginForm").addEventListener("submit", function(event) {
@@ -453,6 +502,8 @@
     document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
     document.getElementById("clearFiltersButton").addEventListener("click", clearFilters);
     document.getElementById("inviteForm").addEventListener("submit", createAdminInvite);
+    document.getElementById("deletionPreviewForm").addEventListener("submit", previewAdminDeletion);
+    document.getElementById("deletionConfirmForm").addEventListener("submit", confirmAdminDeletion);
     document.getElementById("copyInviteButton").addEventListener("click", copyInviteLink);
     document.getElementById("inviteList").addEventListener("click", function(event) {
       const button = event.target.closest("[data-revoke-invite]");
@@ -506,6 +557,14 @@
 
     async function requestAdminReport(password, code) {
       return requestAdminAction("adminReport", password, { code: code });
+    }
+
+    async function requestDeletionPreview(password, code, scope) {
+      return requestAdminAction("adminDeletionPreview", password, { code: code, scope: scope });
+    }
+
+    async function requestDeletionCommit(password, payload) {
+      return requestAdminAction("adminDeleteResult", password, payload);
     }
 
     async function requestAdminInvites(password) {
@@ -726,6 +785,112 @@
       return "badge-warn";
     }
 
+    async function previewAdminDeletion(event) {
+      event.preventDefault();
+      if (!activePassword) return;
+      const code = normalizeResultCode(document.getElementById("deletionCode").value);
+      const scope = String(document.getElementById("deletionScope").value || "");
+      resetDeletionPreview(false);
+      if (!code || (scope !== "full_attempt" && scope !== "result_only")) {
+        setDeletionStatus("Проверьте формат кода и область удаления.", "error");
+        return;
+      }
+      const button = document.getElementById("previewDeletionButton");
+      button.disabled = true;
+      button.textContent = "Проверяем…";
+      setDeletionStatus("Читаем связанные записи без изменения данных…", "");
+      try {
+        const data = await requestDeletionPreview(activePassword, code, scope);
+        if (data.ok !== true || data.status !== "preview" || data.apiVersion !== API_VERSION) {
+          throw new Error(data.message || "Предварительная проверка не выполнена.");
+        }
+        if (data.found !== true || !data.previewToken) {
+          setDeletionStatus("Данные по коду не найдены. Ничего не изменено.", "error");
+          return;
+        }
+        pendingDeletionPreview = {
+          code: code,
+          scope: scope,
+          previewToken: String(data.previewToken),
+          expiresAt: String(data.expiresAt || ""),
+          counts: data.counts || {}
+        };
+        pendingDeletionRequestId = generateApiRequestId("scd_");
+        document.getElementById("deletionPreviewSummary").textContent =
+          "Будет удалено: " + formatDeletionCounts(pendingDeletionPreview.counts) +
+          ". Перед изменением создаётся закрытая транзакционная копия; после проверки удаления она уничтожается.";
+        document.getElementById("deletionConfirmationCode").value = "";
+        document.getElementById("deletionConfirmationCode").placeholder = code;
+        document.getElementById("deletionConfirmBlock").classList.remove("hidden");
+        setDeletionStatus("Предварительная проверка готова. Ничего ещё не удалено.", "success");
+      } catch (error) {
+        setDeletionStatus(error && error.message ? error.message : "Предварительная проверка не выполнена.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Проверить без удаления";
+      }
+    }
+
+    async function confirmAdminDeletion(event) {
+      event.preventDefault();
+      if (!activePassword || !pendingDeletionPreview || !pendingDeletionRequestId) return;
+      const confirmationCode = normalizeResultCode(document.getElementById("deletionConfirmationCode").value);
+      if (confirmationCode !== pendingDeletionPreview.code) {
+        setDeletionStatus("Для подтверждения введите точный код " + pendingDeletionPreview.code + ".", "error");
+        return;
+      }
+      const button = document.getElementById("confirmDeletionButton");
+      button.disabled = true;
+      button.textContent = "Удаляем…";
+      setDeletionStatus("Выполняется резервирование, удаление и проверка…", "");
+      try {
+        const data = await requestDeletionCommit(activePassword, {
+          code: pendingDeletionPreview.code,
+          scope: pendingDeletionPreview.scope,
+          requestId: pendingDeletionRequestId,
+          confirmationCode: confirmationCode,
+          previewToken: pendingDeletionPreview.previewToken
+        });
+        if (data.failureCode === "deletion_preview_expired" || data.failureCode === "deletion_target_not_found") {
+          resetDeletionPreview(false);
+          throw new Error(data.message || "Состояние изменилось. Выполните предварительную проверку заново.");
+        }
+        if (data.ok !== true || data.status !== "deleted" || data.backupPurged !== true) {
+          throw new Error(data.message || "Удаление не завершено. Повторите запрос с тем же кодом операции.");
+        }
+        const deletedCode = pendingDeletionPreview.code;
+        adminResults = adminResults.filter(function(row) { return row.code !== deletedCode; });
+        renderAdmin();
+        resetDeletionPreview(true);
+        setDeletionStatus("Данные по коду " + deletedCode + " удалены и проверены; транзакционная копия уничтожена.", "success");
+      } catch (error) {
+        setDeletionStatus(error && error.message ? error.message : "Удаление не завершено. Повторите запрос с этого экрана.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Удалить безвозвратно";
+      }
+    }
+
+    function resetDeletionPreview(clearCode) {
+      pendingDeletionPreview = null;
+      pendingDeletionRequestId = "";
+      document.getElementById("deletionConfirmBlock").classList.add("hidden");
+      document.getElementById("deletionPreviewSummary").textContent = "";
+      document.getElementById("deletionConfirmationCode").value = "";
+      if (clearCode) document.getElementById("deletionCode").value = "";
+    }
+
+    function formatDeletionCounts(counts) {
+      counts = counts && typeof counts === "object" ? counts : {};
+      return [
+        "результаты — " + finiteNumber(counts.adminRows),
+        "TXT — " + finiteNumber(counts.report),
+        "attempt-записи — " + finiteNumber(counts.attemptRows),
+        "сессии — " + finiteNumber(counts.sessions),
+        "приглашения — " + finiteNumber(counts.invites)
+      ].join(", ");
+    }
+
     async function downloadAdminReport(code, button) {
       const normalizedCode = normalizeResultCode(code);
       if (!activePassword || !normalizedCode || button.disabled) return;
@@ -931,6 +1096,7 @@
       pendingInviteRevocations = Object.create(null);
       attemptIssuanceEnabled = false;
       legalPilotApproved = false;
+      resetDeletionPreview(true);
       setInviteFormEnabled(false);
       clearFilters();
       document.getElementById("adminBlock").classList.add("hidden");
@@ -938,6 +1104,7 @@
       document.getElementById("backendVersion").textContent = "до входа не загружен";
       document.getElementById("loadedAt").textContent = "—";
       setReportStatus("", "");
+      setDeletionStatus("", "");
       setInviteStatus("", "");
       document.getElementById("inviteOutput").classList.add("hidden");
       document.getElementById("inviteLink").value = "";
@@ -969,6 +1136,12 @@
 
     function setReportStatus(message, type) {
       const node = document.getElementById("reportStatus");
+      node.textContent = message;
+      node.className = "status" + (type ? " " + type : "");
+    }
+
+    function setDeletionStatus(message, type) {
+      const node = document.getElementById("deletionStatus");
       node.textContent = message;
       node.className = "status" + (type ? " " + type : "");
     }

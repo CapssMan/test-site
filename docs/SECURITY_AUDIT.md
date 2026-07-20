@@ -1,8 +1,8 @@
-# SkillCheck — security-аудит этапов 10, 10A и privacy addendum 11
+# SkillCheck — security-аудит этапов 10, 10A и addendum 11–12
 
 Дата аудита: 20 июля 2026 года.
 
-Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в существующем deployment `@52` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.10`, backend `yandex-disk-mvp-2026-07-20-10`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-11`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
 ## Addendum 11: consent binding и legal gate
 
@@ -12,7 +12,16 @@
 - Отключение legal approval принудительно выключает issuance; bootstrap также сбрасывает оба gate.
 - Политика больше не обещает нереализованный 12-месячный retention и корректно называет админ-сводку псевдонимизированной.
 
-Эти меры уменьшают риск преждевременного запуска, но не заменяют реквизиты оператора, юридическую проверку уведомлений/локализации/трансграничности и техническое удаление этапа 12.
+Эти меры уменьшают риск преждевременного запуска, но не заменяют реквизиты оператора и юридическую проверку уведомлений/локализации/трансграничности.
+
+## Addendum 12: безопасное удаление
+
+- Preview удаления немутирующий, подписан текущим digest состояния и действует 10 минут; commit требует пароль, новый request ID и повторный ввод кода.
+- Backend принимает только область `result_only` или `full_attempt`, сам строит report/backup paths и serializes commit под `LockService`.
+- Перед изменением создаётся закрытая транзакционная копия; отсутствие primary-данных проверяется повторным чтением, после чего копия удаляется permanently и снова проверяется.
+- Exact replay и editor-only recovery продолжают зарегистрированную незавершённую операцию без создания нового удаления.
+- Технический журнал не содержит PII, ответов, отчёта, identity hashes или bearer-токенов. Автоматический retention выключен до внешнего решения оператора.
+- Production smoke ограничен health и неверным паролем; существующие данные не удалялись.
 
 ## Резюме
 
@@ -155,7 +164,7 @@ Production evidence 10A: deployment `@51`, Web App URL не изменён; owne
 | Анонимный Apps Script endpoint и best-effort rate limits | Высокий при открытом запуске | Controlled flow сужен invite/token/state. `CacheService` не является атомарным IP-based limiter; для открытого трафика нужен внешний gateway/WAF/CAPTCHA. |
 | Широкий/неподтверждённый scope Яндекс-токена | Высокий | Code path allowlist не ограничивает украденный токен; определить scope, безопасно ротировать credential и оценить app-folder/least privilege. |
 | Shared admin password | Высокий | POST + advisory limit; до масштабирования перейти на индивидуальную аутентификацию/MFA и безопасный audit trail. |
-| Нет удаления, retention и backup private state | Высокий | Этапы 12–13; private banks/invites/sessions должны входить в проверенный backup/recovery и retention design. |
+| Нет автоматического retention и регулярного backup private state | Высокий | Ручное удаление этапа 12 реализовано; сроки должен утвердить оператор, а rotating backup/recovery выполняется на этапе 13. |
 | CSP только через meta и inline code | Средний | Вынести JS/CSS и выставлять заголовки на управляемом hosting при следующем усилении. |
 | Юридические заглушки и контакты | Высокий | Этап 11 и профильная юридическая проверка; реальные приглашения не выдавать. |
 

@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-10";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-11";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -19,6 +19,10 @@ const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_YANDEX_INVITES_FILE = "disk:/skillcheck/private/invites-v1.json";
 const DEFAULT_YANDEX_SESSIONS_FILE = "disk:/skillcheck/private/attempt-sessions-v1.json";
 const DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER = "disk:/skillcheck/private/banks";
+const DEFAULT_YANDEX_DELETION_LOG_FILE = "disk:/skillcheck/private/deletion-log-v1.json";
+const DEFAULT_YANDEX_DELETION_BACKUPS_FOLDER = "disk:/skillcheck/private/deletion-backups";
+const DELETION_PREVIEW_TTL_SECONDS = 10 * 60;
+const RETENTION_AUTOMATION_ENABLED = false;
 const LEGACY_PUBLIC_BANK_COMMIT = "70e569cf267e043aabc780e81cc4307db7e149b1";
 const LEGACY_PUBLIC_BANK_BASE_URL = "https://raw.githubusercontent.com/CapssMan/test-site/" +
   LEGACY_PUBLIC_BANK_COMMIT + "/data/";
@@ -152,7 +156,7 @@ function doGet(e) {
     return jsonResponse(buildPublicHealthStatus());
   }
 
-  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite"].indexOf(action) !== -1) {
+  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite", "adminDeletionPreview", "adminDeleteResult"].indexOf(action) !== -1) {
     return jsonResponse(methodNotAllowedResponse("Для административных операций требуется POST-запрос."));
   }
 
@@ -209,6 +213,18 @@ function doPost(e) {
       const adminGuard = guardAdminRequest(String(data.password || ""), "invite-revoke");
       if (!adminGuard.ok) return jsonResponse(adminGuard.response);
       return jsonResponse(adminRevokeInvite(data));
+    }
+
+    if (action === "adminDeletionPreview") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "deletion-preview");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      return jsonResponse(adminPreviewResultDeletion(data));
+    }
+
+    if (action === "adminDeleteResult") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "deletion-commit");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      return jsonResponse(adminDeleteResult(data));
     }
 
     if (action === "checkAttempt") {
@@ -1644,6 +1660,21 @@ function readTextFromYandexDisk(path) {
   return response.getContentText();
 }
 
+function deleteYandexDiskFileIfExists(path) {
+  const normalizedPath = validateSkillCheckDiskPath(path);
+  const metadata = getYandexResourceMetadata(normalizedPath);
+  if (!metadata.exists) return false;
+  if (metadata.type !== "file") throw new Error("Deletion target must be a file.");
+  const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
+    encodeURIComponent(normalizedPath) + "&permanently=true";
+  yandexApiRequest("delete", url, null, null);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (!getYandexResourceMetadata(normalizedPath).exists) return true;
+    Utilities.sleep(200);
+  }
+  throw new Error("Yandex deletion did not complete.");
+}
+
 function readJsonFromYandexDisk(path, defaultValue) {
   const text = readTextFromYandexDisk(path);
 
@@ -1983,6 +2014,411 @@ function getAdminReport(password, code) {
   }
 }
 
+function normalizeDeletionScope(value) {
+  const scope = String(value || "").trim();
+  return scope === "result_only" || scope === "full_attempt" ? scope : "";
+}
+
+function normalizeDeletionRequestId(value) {
+  const requestId = String(value || "").trim();
+  return /^scd_[a-f0-9]{32}$/.test(requestId) ? requestId : "";
+}
+
+function getDeletionBackupPath(requestId) {
+  const normalizedRequestId = normalizeDeletionRequestId(requestId);
+  if (!normalizedRequestId) throw new Error("Invalid deletion request ID.");
+  return joinDiskPath(getDeletionBackupsFolderPath(), normalizedRequestId + ".json");
+}
+
+function assertDeletionBackupNotShared(path) {
+  const metadata = getYandexResourceMetadata(path);
+  if (metadata.exists && (metadata.publicKey || metadata.publicUrl || metadata.shared)) {
+    throw new Error("Deletion backup must not be published or shared.");
+  }
+}
+
+function uniqueDeletionIds(values) {
+  const seen = Object.create(null);
+  return (values || []).map(value => String(value || "")).filter(value => {
+    if (!value || seen[value]) return false;
+    seen[value] = true;
+    return true;
+  }).sort();
+}
+
+function buildDeletionSnapshot(code, scope, includeReportText) {
+  const normalizedCode = normalizeResultCode(code);
+  const normalizedScope = normalizeDeletionScope(scope);
+  if (!normalizedCode || !normalizedScope) throw new Error("Invalid deletion snapshot context.");
+  const results = readRequiredJsonArray(getAdminFilePath(), "Admin result store");
+  const attempts = readRequiredJsonArray(getAttemptsFilePath(), "Attempt store");
+  const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+  const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+  const adminRows = results.filter(row => row && String(row.code || "").toUpperCase() === normalizedCode);
+  const attemptRows = attempts.filter(row => row && String(row.code || "").toUpperCase() === normalizedCode);
+  let attemptIds = uniqueDeletionIds(adminRows.concat(attemptRows).map(row => row && row.attemptId));
+  const sessionRows = sessions.filter(row => row && (
+    String(row.code || "").toUpperCase() === normalizedCode ||
+    attemptIds.indexOf(String(row.attemptId || "")) !== -1
+  ));
+  attemptIds = uniqueDeletionIds(attemptIds.concat(sessionRows.map(row => row && row.attemptId)));
+  const inviteIds = uniqueDeletionIds(sessionRows.map(row => row && row.inviteId));
+  const inviteRows = invites.filter(row => row && (
+    inviteIds.indexOf(String(row.inviteId || "")) !== -1 ||
+    attemptIds.indexOf(String(row.attemptId || "")) !== -1
+  ));
+  const reportPath = joinDiskPath(getReportsFolderPath(), normalizedCode + ".txt");
+  const reportMetadata = getYandexResourceMetadata(reportPath);
+  if (reportMetadata.exists && reportMetadata.type !== "file") throw new Error("Report deletion target is not a file.");
+  const snapshot = {
+    code: normalizedCode,
+    scope: normalizedScope,
+    adminRows: adminRows,
+    attemptRows: attemptRows,
+    sessionRows: sessionRows,
+    inviteRows: inviteRows,
+    attemptIds: attemptIds,
+    inviteIds: inviteIds,
+    reportExists: reportMetadata.exists,
+    reportSize: reportMetadata.exists ? Number(reportMetadata.size || 0) : 0,
+    reportModified: reportMetadata.exists ? String(reportMetadata.modified || "") : "",
+    reportText: includeReportText && reportMetadata.exists ? readTextFromYandexDisk(reportPath) : null
+  };
+  if (includeReportText && reportMetadata.exists && snapshot.reportText === null) {
+    throw new Error("Report disappeared before deletion backup.");
+  }
+  snapshot.stateDigest = buildDeletionStateDigest(snapshot);
+  snapshot.found = normalizedScope === "result_only"
+    ? snapshot.adminRows.length > 0 || snapshot.reportExists
+    : snapshot.adminRows.length > 0 || snapshot.attemptRows.length > 0 || snapshot.sessionRows.length > 0 || snapshot.inviteRows.length > 0 || snapshot.reportExists;
+  return snapshot;
+}
+
+function buildDeletionStateDigest(snapshot) {
+  function sortedRows(rows) {
+    return (rows || []).map(row => JSON.stringify(row || {})).sort();
+  }
+  return sha256Hex(JSON.stringify({
+    code: String(snapshot.code || ""),
+    scope: String(snapshot.scope || ""),
+    adminRows: sortedRows(snapshot.adminRows),
+    attemptRows: sortedRows(snapshot.attemptRows),
+    sessionRows: sortedRows(snapshot.sessionRows),
+    inviteRows: sortedRows(snapshot.inviteRows),
+    reportExists: Boolean(snapshot.reportExists),
+    reportSize: Number(snapshot.reportSize || 0),
+    reportModified: String(snapshot.reportModified || "")
+  }));
+}
+
+function buildDeletionCounts(snapshot) {
+  return {
+    adminRows: Number((snapshot.adminRows || []).length),
+    attemptRows: snapshot.scope === "full_attempt" ? Number((snapshot.attemptRows || []).length) : 0,
+    sessions: snapshot.scope === "full_attempt" ? Number((snapshot.sessionRows || []).length) : 0,
+    invites: snapshot.scope === "full_attempt" ? Number((snapshot.inviteRows || []).length) : 0,
+    report: snapshot.reportExists ? 1 : 0
+  };
+}
+
+function buildDeletionPreviewToken(snapshot) {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const header = { alg: "HS256", kid: "deletion-preview-v1", typ: "SC-DELETE-PREVIEW" };
+  const claims = {
+    v: 1,
+    code: snapshot.code,
+    scope: snapshot.scope,
+    digest: snapshot.stateDigest,
+    iat: nowSeconds,
+    exp: nowSeconds + DELETION_PREVIEW_TTL_SECONDS
+  };
+  const encodedHeader = base64UrlEncodeText(JSON.stringify(header));
+  const encodedClaims = base64UrlEncodeText(JSON.stringify(claims));
+  const signature = base64UrlEncodeBytes(hmacSha256Bytes(getRequiredProperty("ATTEMPT_SIGNING_SECRET_V1"), encodedHeader + "." + encodedClaims));
+  return encodedHeader + "." + encodedClaims + "." + signature;
+}
+
+function verifyDeletionPreviewToken(token, snapshot) {
+  try {
+    const segments = String(token || "").split(".");
+    if (segments.length !== 3 || segments.some(segment => !/^[A-Za-z0-9_-]+$/.test(segment))) return false;
+    const header = JSON.parse(base64UrlDecodeText(segments[0]));
+    const claims = JSON.parse(base64UrlDecodeText(segments[1]));
+    const expectedSignature = base64UrlEncodeBytes(hmacSha256Bytes(getRequiredProperty("ATTEMPT_SIGNING_SECRET_V1"), segments[0] + "." + segments[1]));
+    if (!timingSafeEqual(expectedSignature, segments[2]) || !isPlainObject(header) || !isPlainObject(claims) ||
+        Object.keys(header).sort().join(",") !== "alg,kid,typ" ||
+        Object.keys(claims).sort().join(",") !== "code,digest,exp,iat,scope,v" ||
+        header.alg !== "HS256" || header.kid !== "deletion-preview-v1" || header.typ !== "SC-DELETE-PREVIEW" || Number(claims.v) !== 1 ||
+        claims.code !== snapshot.code || claims.scope !== snapshot.scope || claims.digest !== snapshot.stateDigest ||
+        !Number.isFinite(Number(claims.iat)) || !Number.isFinite(Number(claims.exp)) || Number(claims.exp) <= Number(claims.iat) ||
+        Number(claims.iat) > Math.floor(Date.now() / 1000) + 60 || Number(claims.exp) <= Math.floor(Date.now() / 1000)) {
+      return false;
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function adminPreviewResultDeletion(data) {
+  try {
+    assertAllowedObjectKeys(data, ["action", "apiVersion", "password", "code", "scope"], "adminDeletionPreview");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    const code = normalizeResultCode(data.code);
+    const scope = normalizeDeletionScope(data.scope);
+    if (!code || !scope) return buildValidationErrorResponse("invalid_deletion_request", "Проверьте код результата и область удаления.");
+    assertAuthoritativePrivateStorageNotShared();
+    const snapshot = buildDeletionSnapshot(code, scope, false);
+    return {
+      ok: true,
+      status: "preview",
+      backendVersion: BACKEND_VERSION,
+      apiVersion: AUTHORITATIVE_API_VERSION,
+      found: snapshot.found,
+      code: code,
+      scope: scope,
+      counts: buildDeletionCounts(snapshot),
+      reportExists: snapshot.reportExists,
+      previewToken: snapshot.found ? buildDeletionPreviewToken(snapshot) : "",
+      expiresAt: snapshot.found ? new Date(Date.now() + DELETION_PREVIEW_TTL_SECONDS * 1000).toISOString() : "",
+      retentionAutomationEnabled: RETENTION_AUTOMATION_ENABLED
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) return buildValidationErrorResponse(error.failureCode, error.publicMessage);
+    console.error("Admin deletion preview failed.");
+    return buildAuthoritativeStorageErrorResponse();
+  }
+}
+
+function readDeletionLog() {
+  const text = readTextFromYandexDisk(getDeletionLogFilePath());
+  if (text === null) return [];
+  let rows;
+  try {
+    rows = JSON.parse(text);
+  } catch (error) {
+    throw new Error("Deletion log is corrupt.");
+  }
+  if (!Array.isArray(rows)) throw new Error("Deletion log must contain an array.");
+  return rows;
+}
+
+function writeDeletionLog(rows) {
+  if (!Array.isArray(rows)) throw new Error("Deletion log write requires an array.");
+  writeJsonToYandexDisk(getDeletionLogFilePath(), rows);
+}
+
+function upsertDeletionLogEntry(rows, entry) {
+  const index = rows.findIndex(row => row && row.requestId === entry.requestId);
+  if (index >= 0) rows[index] = Object.assign({}, rows[index], entry);
+  else rows.push(entry);
+}
+
+function buildDeletionResultResponse(entry, replayed) {
+  return {
+    ok: true,
+    status: "deleted",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    code: String(entry.code || ""),
+    scope: String(entry.scope || ""),
+    requestId: String(entry.requestId || ""),
+    counts: entry.counts || { adminRows: 0, attemptRows: 0, sessions: 0, invites: 0, report: 0 },
+    backupPurged: entry.backupPurged === true,
+    completedAt: String(entry.completedAt || ""),
+    replayed: Boolean(replayed),
+    retentionAutomationEnabled: RETENTION_AUTOMATION_ENABLED
+  };
+}
+
+function parseDeletionBackup(text, requestId, code, scope) {
+  let backup;
+  try {
+    backup = JSON.parse(String(text || ""));
+  } catch (error) {
+    throw new Error("Deletion backup is corrupt.");
+  }
+  if (!isPlainObject(backup) || Number(backup.schemaVersion) !== 1 || backup.requestId !== requestId || backup.code !== code || backup.scope !== scope ||
+      !Array.isArray(backup.adminRows) || !Array.isArray(backup.attemptRows) || !Array.isArray(backup.sessionRows) || !Array.isArray(backup.inviteRows)) {
+    throw new Error("Deletion backup context mismatch.");
+  }
+  return backup;
+}
+
+function removeDeletionTargetsFromStores(backup) {
+  const code = backup.code;
+  const fullAttempt = backup.scope === "full_attempt";
+  const attemptIds = uniqueDeletionIds((backup.attemptIds || []).concat((backup.sessionRows || []).map(row => row && row.attemptId)));
+  const inviteIds = uniqueDeletionIds((backup.inviteIds || []).concat((backup.sessionRows || []).map(row => row && row.inviteId)));
+  const results = readRequiredJsonArray(getAdminFilePath(), "Admin result store");
+  const nextResults = results.filter(row => !row || String(row.code || "").toUpperCase() !== code);
+  if (nextResults.length !== results.length) writeRequiredJsonArray(getAdminFilePath(), nextResults);
+  if (fullAttempt) {
+    const attempts = readRequiredJsonArray(getAttemptsFilePath(), "Attempt store");
+    const nextAttempts = attempts.filter(row => !row || (
+      String(row.code || "").toUpperCase() !== code && attemptIds.indexOf(String(row.attemptId || "")) === -1
+    ));
+    if (nextAttempts.length !== attempts.length) writeRequiredJsonArray(getAttemptsFilePath(), nextAttempts);
+    const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+    const nextSessions = sessions.filter(row => !row || (
+      String(row.code || "").toUpperCase() !== code && attemptIds.indexOf(String(row.attemptId || "")) === -1 && inviteIds.indexOf(String(row.inviteId || "")) === -1
+    ));
+    if (nextSessions.length !== sessions.length) writeRequiredJsonArray(getAttemptSessionsFilePath(), nextSessions);
+    const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+    const nextInvites = invites.filter(row => !row || (
+      attemptIds.indexOf(String(row.attemptId || "")) === -1 && inviteIds.indexOf(String(row.inviteId || "")) === -1
+    ));
+    if (nextInvites.length !== invites.length) writeRequiredJsonArray(getInvitesFilePath(), nextInvites);
+  }
+  deleteYandexDiskFileIfExists(joinDiskPath(getReportsFolderPath(), code + ".txt"));
+}
+
+function adminDeleteResult(data) {
+  let lockAcquired = false;
+  let failureStage = "validation";
+  let codeForLog = "INVALID";
+  let requestIdForLog = "invalid";
+  const lock = LockService.getScriptLock();
+  try {
+    assertAllowedObjectKeys(data, ["action", "apiVersion", "password", "code", "scope", "requestId", "confirmationCode", "previewToken"], "adminDeleteResult");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    const code = normalizeResultCode(data.code);
+    const scope = normalizeDeletionScope(data.scope);
+    const requestId = normalizeDeletionRequestId(data.requestId);
+    codeForLog = code || "INVALID";
+    requestIdForLog = requestId || "invalid";
+    if (!code || !scope || !requestId || String(data.confirmationCode || "").trim().toUpperCase() !== code) {
+      return buildValidationErrorResponse("invalid_deletion_confirmation", "Повторите предварительную проверку и введите точный код результата.");
+    }
+    lock.waitLock(30000);
+    lockAcquired = true;
+    assertAuthoritativePrivateStorageNotShared();
+    failureStage = "log-read";
+    const logs = readDeletionLog();
+    let logEntry = logs.find(row => row && row.requestId === requestId) || null;
+    if (logEntry && (logEntry.code !== code || logEntry.scope !== scope)) return buildSubmissionConflictResponse();
+    if (logEntry && logEntry.state === "completed") return buildDeletionResultResponse(logEntry, true);
+    ensureYandexFolderExists(getDeletionBackupsFolderPath());
+    const backupPath = getDeletionBackupPath(requestId);
+    assertDeletionBackupNotShared(backupPath);
+    const existingBackupText = readTextFromYandexDisk(backupPath);
+    if (logEntry && logEntry.state === "primary_deleted_backup_pending") {
+      failureStage = "backup-purge-retry";
+      if (existingBackupText !== null) deleteYandexDiskFileIfExists(backupPath);
+      logEntry = Object.assign({}, logEntry, { state: "completed", backupPurged: true, completedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      upsertDeletionLogEntry(logs, logEntry);
+      writeDeletionLog(logs);
+      return buildDeletionResultResponse(logEntry, true);
+    }
+    let backup;
+    if (logEntry) {
+      failureStage = "backup-read";
+      if (existingBackupText === null) throw new Error("Pending deletion backup is missing.");
+      backup = parseDeletionBackup(existingBackupText, requestId, code, scope);
+    } else {
+      failureStage = "preview-recheck";
+      const snapshot = buildDeletionSnapshot(code, scope, true);
+      if (!snapshot.found) return { ok: false, status: "not_found", failureCode: "deletion_target_not_found", backendVersion: BACKEND_VERSION, message: "Данные по этому коду не найдены." };
+      if (!verifyDeletionPreviewToken(data.previewToken, snapshot)) {
+        return buildValidationErrorResponse("deletion_preview_expired", "Данные изменились или предварительная проверка истекла. Выполните её снова.");
+      }
+      backup = {
+        schemaVersion: 1,
+        requestId: requestId,
+        code: code,
+        scope: scope,
+        createdAt: new Date().toISOString(),
+        stateDigest: snapshot.stateDigest,
+        adminRows: snapshot.adminRows,
+        attemptRows: snapshot.attemptRows,
+        sessionRows: snapshot.sessionRows,
+        inviteRows: snapshot.inviteRows,
+        attemptIds: snapshot.attemptIds,
+        inviteIds: snapshot.inviteIds,
+        reportExists: snapshot.reportExists,
+        reportText: snapshot.reportText
+      };
+      failureStage = "backup-write";
+      uploadTextToYandexDisk(backupPath, JSON.stringify(backup));
+      assertDeletionBackupNotShared(backupPath);
+      logEntry = {
+        schemaVersion: 1,
+        requestId: requestId,
+        code: code,
+        scope: scope,
+        state: "backup_created",
+        counts: buildDeletionCounts(snapshot),
+        backupPurged: false,
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        completedAt: ""
+      };
+      failureStage = "log-backup-created";
+      upsertDeletionLogEntry(logs, logEntry);
+      writeDeletionLog(logs);
+    }
+    failureStage = "primary-delete";
+    removeDeletionTargetsFromStores(backup);
+    failureStage = "primary-verify";
+    const afterSnapshot = buildDeletionSnapshot(code, scope, false);
+    if (afterSnapshot.found) throw new Error("Deletion verification failed.");
+    logEntry = Object.assign({}, logEntry, { state: "primary_deleted_backup_pending", updatedAt: new Date().toISOString() });
+    upsertDeletionLogEntry(logs, logEntry);
+    writeDeletionLog(logs);
+    failureStage = "backup-purge";
+    deleteYandexDiskFileIfExists(backupPath);
+    if (getYandexResourceMetadata(backupPath).exists) throw new Error("Deletion backup purge verification failed.");
+    logEntry = Object.assign({}, logEntry, { state: "completed", backupPurged: true, completedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    failureStage = "log-complete";
+    upsertDeletionLogEntry(logs, logEntry);
+    writeDeletionLog(logs);
+    console.log("Admin deletion completed: code=" + code + "; request=" + requestId.slice(-8));
+    return buildDeletionResultResponse(logEntry, false);
+  } catch (error) {
+    console.error("Admin deletion failed; stage=" + failureStage + "; code=" + codeForLog + "; request=" + String(requestIdForLog).slice(-8));
+    return {
+      ok: false,
+      status: "error",
+      retryable: true,
+      failureCode: "deletion_incomplete",
+      backendVersion: BACKEND_VERSION,
+      requestId: normalizeDeletionRequestId(requestIdForLog),
+      message: "Удаление не завершено. Не меняйте код операции и повторите запрос из этого экрана."
+    };
+  } finally {
+    if (lockAcquired) lock.releaseLock();
+  }
+}
+
+function getRetentionPolicyStatusForOwner() {
+  return {
+    ok: true,
+    automationEnabled: RETENTION_AUTOMATION_ENABLED,
+    configuredRetentionDays: null,
+    mode: "manual-deletion-only",
+    reason: "Автоматический срок не включается до утверждения оператором и юридической проверки.",
+    backendVersion: BACKEND_VERSION
+  };
+}
+
+function resumePendingDeletionForOwner(requestId) {
+  const normalizedRequestId = normalizeDeletionRequestId(requestId);
+  if (!normalizedRequestId) throw new Error("Invalid deletion request id.");
+  const entry = readDeletionLog().find(row => row && row.requestId === normalizedRequestId) || null;
+  if (!entry) throw new Error("Deletion request was not found.");
+  if (entry.state === "completed") return buildDeletionResultResponse(entry, true);
+  return adminDeleteResult({
+    action: "adminDeleteResult",
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    password: "",
+    code: entry.code,
+    scope: entry.scope,
+    requestId: normalizedRequestId,
+    confirmationCode: entry.code,
+    previewToken: ""
+  });
+}
+
 function normalizeResultCode(value) {
   const code = String(value || "").trim().toUpperCase();
   return /^(FA|CA|FPA|ACC|BI|DEV)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(code)
@@ -2069,6 +2505,7 @@ function ensureSkillCheckFolders() {
   ensureYandexFolderExists(getParentDiskPath(getInvitesFilePath()));
   ensureYandexFolderExists(getParentDiskPath(getAttemptSessionsFilePath()));
   ensureYandexFolderExists(getPrivateBanksFolderPath());
+  ensureYandexFolderExists(getDeletionBackupsFolderPath());
 }
 
 function assertAuthoritativePrivateStorageNotShared(testId) {
@@ -2082,7 +2519,9 @@ function assertAuthoritativePrivateStorageNotShared(testId) {
     getAdminFilePath(),
     getInvitesFilePath(),
     getAttemptSessionsFilePath(),
-    getAttemptsFilePath()
+    getAttemptsFilePath(),
+    getDeletionLogFilePath(),
+    getDeletionBackupsFolderPath()
   ];
   const testIds = testId ? [validateTestId(testId)] : Object.keys(BANK_VERSIONS_BY_ID);
   testIds.forEach(id => {
@@ -2168,6 +2607,14 @@ function getAttemptSessionsFilePath() {
 
 function getPrivateBanksFolderPath() {
   return getConfiguredDiskPath("YANDEX_DISK_PRIVATE_BANKS_FOLDER", DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER);
+}
+
+function getDeletionLogFilePath() {
+  return getConfiguredDiskPath("YANDEX_DISK_DELETION_LOG_FILE", DEFAULT_YANDEX_DELETION_LOG_FILE);
+}
+
+function getDeletionBackupsFolderPath() {
+  return getConfiguredDiskPath("YANDEX_DISK_DELETION_BACKUPS_FOLDER", DEFAULT_YANDEX_DELETION_BACKUPS_FOLDER);
 }
 
 function normalizeDiskPath(path) {
@@ -2711,6 +3158,7 @@ function bootstrapAuthoritativeBanksFromLegacyPages() {
   assertAuthoritativePrivateStorageNotShared();
   initializePrivateArrayFileIfMissing(getInvitesFilePath());
   initializePrivateArrayFileIfMissing(getAttemptSessionsFilePath());
+  initializePrivateArrayFileIfMissing(getDeletionLogFilePath());
   const existingAnchors = parsePrivateBankTrustAnchors(false);
   const generatedAnchors = Object.create(null);
 

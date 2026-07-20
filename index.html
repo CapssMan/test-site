@@ -49,11 +49,12 @@
       border-radius: 16px;
       padding: 32px;
       transition: all 0.3s ease;
-      cursor: pointer;
+      cursor: default;
       position: relative;
       overflow: hidden;
     }
-    .test-card:hover {
+    .test-card:hover,
+    .test-card:focus-within {
       transform: translateY(-4px);
       border-color: rgba(96, 165, 250, 0.3);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -67,7 +68,7 @@
       opacity: 0;
       transition: opacity 0.3s;
     }
-    .test-card:hover::before { opacity: 1; }
+    .test-card:hover::before, .test-card:focus-within::before { opacity: 1; }
     .test-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -215,8 +216,16 @@
     .skill-fill.green { background: linear-gradient(90deg, #22c55e, #10b981); }
     .skill-fill.yellow { background: linear-gradient(90deg, #eab308, #f59e0b); }
     .skill-fill.red { background: linear-gradient(90deg, #ef4444, #f97316); }
+    @media (max-width: 600px) {
+      body { padding: 24px 12px; }
+      .tests-grid { grid-template-columns: 1fr; gap: 16px; }
+      .test-card { padding: 22px; }
+      .test-meta { flex-direction: column; gap: 8px; }
+      .skill-preview, .how-it-works { padding: 26px 18px; }
+      .skill-preview h2 { font-size: 26px; }
+      footer { padding: 28px 12px; }
+    }
   </style>
-<base target="_blank">
 </head>
 <body>
   <div class="container">
@@ -231,79 +240,79 @@
         <div class="stat-label">Тестовых ролей</div>
       </div>
       <div class="stat-item">
-        <div class="stat-number">200+</div>
+        <div class="stat-number">240</div>
         <div class="stat-label">Вопросов</div>
       </div>
       <div class="stat-item">
-        <div class="stat-number">6</div>
+        <div class="stat-number">до 8</div>
         <div class="stat-label">Блоков навыков</div>
       </div>
       <div class="stat-item">
-        <div class="stat-number">100%</div>
-        <div class="stat-label">Анти-чит</div>
+        <div class="stat-number">21 день</div>
+        <div class="stat-label">До повторной попытки</div>
       </div>
     </div>
 
     <div class="tests-grid">
-      <div class="test-card" onclick="goToTest('fa-junior')">
+      <article class="test-card">
         <span class="test-badge badge-ready">Готов</span>
         <h3>Financial Analyst Junior</h3>
         <p>Excel, финансовый анализ, отчётность, бюджеты, SQL, бухучёт. Базовый тест для всех junior-финансистов.</p>
         <div class="test-meta">
           <span>📊 40 вопросов</span>
-          <span>⏱ ~30 мин</span>
+          <span>⏱ ~40 мин</span>
           <span>🎯 6 блоков</span>
         </div>
-        <button class="btn-primary">Пройти тест →</button>
-      </div>
+        <a class="btn-primary" href="test.html?test=fa-junior">Пройти тест →</a>
+      </article>
 
-      <div class="test-card" onclick="goToTest('ca-junior')">
+      <article class="test-card">
         <span class="test-badge badge-ready">Готов</span>
         <h3>Credit Analyst Junior</h3>
         <p>Ликвидность, долговая нагрузка, cash flow, кредитный риск. Для банков, МФО и лизинговых компаний.</p>
         <div class="test-meta">
           <span>📊 40 вопросов</span>
-          <span>⏱ ~30 мин</span>
-          <span>🎯 5 блоков</span>
+          <span>⏱ ~35 мин</span>
+          <span>🎯 8 блоков</span>
         </div>
-        <button class="btn-primary">Пройти тест →</button>
-      </div>
+        <a class="btn-primary" href="test.html?test=ca-junior">Пройти тест →</a>
+      </article>
 
-      <div class="test-card" onclick="goToTest('fpa-junior')">
+      <article class="test-card">
         <span class="test-badge badge-ready">Готов</span>
         <h3>FP&A / Budget Analyst Junior</h3>
         <p>БДР, БДДС, план-факт анализ, прогнозирование, сценарный анализ. Для планирования и бюджетирования.</p>
         <div class="test-meta">
           <span>📊 40 вопросов</span>
           <span>⏱ ~40 мин</span>
-          <span>🎯 5 блоков</span>
+          <span>🎯 8 блоков</span>
         </div>
-        <button class="btn-primary">Пройти тест →</button>
-      </div>
+        <a class="btn-primary" href="test.html?test=fpa-junior">Пройти тест →</a>
+      </article>
 
-      <div class="test-card" onclick="goToTest('acc-junior')">
+      <article class="test-card">
         <span class="test-badge badge-ready">Готов</span>
         <h3>Accounting Junior</h3>
         <p>Проводки, активы/пассивы, НДС, амортизация, первичная документация. Фундамент бухгалтерского учёта.</p>
         <div class="test-meta">
           <span>📊 40 вопросов</span>
-          <span>⏱ ~30 мин</span>
-          <span>🎯 5 блоков</span>
+          <span>⏱ ~35 мин</span>
+          <span>🎯 8 блоков</span>
         </div>
-        <button class="btn-primary">Пройти тест →</button>
-      </div>
+        <a class="btn-primary" href="test.html?test=acc-junior">Пройти тест →</a>
+      </article>
 
-      <div class="test-card" onclick="goToTest('bi-junior')">
+      <article class="test-card">
         <span class="test-badge badge-ready">Готов</span>
         <h3>Finance BI / Data Analyst Junior</h3>
         <p>SQL, Power BI, визуализация, финансовые метрики, работа с данными. Для аналитиков данных в финансах.</p>
         <div class="test-meta">
           <span>📊 40 вопросов</span>
           <span>⏱ ~40 мин</span>
-          <span>🎯 5 блоков</span>
+          <span>🎯 8 блоков</span>
         </div>
-        <button class="btn-primary">Пройти тест →</button>
-      </div>
+        <a class="btn-primary" href="test.html?test=bi-junior">Пройти тест →</a>
+      </article>
     </div>
 
     <div class="skill-preview">
@@ -353,7 +362,7 @@
         <div class="step">
           <div class="step-number">3</div>
           <h4>Получаешь Skill Card</h4>
-          <p>Детальный разбор по 6 блокам навыков, итоговая плашка и доверительный рейтинг.</p>
+          <p>Детальный разбор по 6–8 блокам навыков, итоговая плашка и доверительный рейтинг.</p>
         </div>
         <div class="step">
           <div class="step-number">4</div>
@@ -369,10 +378,5 @@
     </footer>
   </div>
 
-   <script>
-    function goToTest(testId) {
-      window.location.href = 'test.html?test=' + testId;
-    }
-  </script>
 </body>
 </html>

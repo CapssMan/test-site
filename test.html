@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkillCheck — Прохождение теста</title>
   <style>
-    * { box-sizing: border-box; -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: #f8fafc;
@@ -33,6 +33,8 @@
       transition: border-color 0.2s;
     }
     input:focus, select:focus { outline: none; border-color: #3b82f6; }
+    body.test-active .question,
+    body.test-active .question * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
     button {
       width: 100%;
       padding: 16px;
@@ -55,6 +57,17 @@
       font-size: 13px;
       line-height: 1.45;
     }
+    .field-group { margin-top: 16px; }
+    .field-group label {
+      display: block;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .field-group input,
+    .field-group select { margin-top: 7px; }
+    .required-mark { color: #dc2626; }
+    .build-number { margin-top: 6px; color: #94a3b8; font-size: 12px; }
     .warning {
       background: #fffbeb;
       border: 1px solid #fcd34d;
@@ -130,6 +143,31 @@
       border-radius: 10px;
       margin-top: 14px;
     }
+    .form-status:empty { display: none; }
+    .send-panel {
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      line-height: 1.55;
+    }
+    .send-panel:empty { display: none; }
+    .retry-button {
+      width: auto;
+      margin-top: 12px;
+      padding: 11px 16px;
+      background: #1d4ed8;
+    }
+    .result-disclaimer {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 13px;
+      line-height: 1.5;
+    }
     .progress-bar {
       height: 4px;
       background: #e2e8f0;
@@ -181,8 +219,18 @@
       accent-color: #3b82f6;
     }
     .consent-row a { color: #2563eb; }
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .card { padding: 18px; border-radius: 12px; }
+      .question { padding: 16px; overflow-x: auto; }
+      .question h2 { font-size: 17px; }
+      .option { padding: 12px; }
+      .test-top { display: grid; grid-template-columns: 1fr; gap: 8px; }
+      .pill { text-align: center; }
+      button { padding: 14px; }
+      .context-table { min-width: 520px; }
+    }
   </style>
-<base target="_blank">
 </head>
 <body>
   <div class="container">
@@ -191,6 +239,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
+      <div class="build-number">Build 2026.07.20.6</div>
 
       <p class="small">
         Вопросы и варианты ответа показываются в случайном порядке.
@@ -198,39 +247,57 @@
         Тест не гарантирует трудоустройство и не является итоговым решением о профессиональной пригодности.
       </p>
 
-      <input id="name" type="text" placeholder="Ваше имя" />
-      <input id="email" type="email" placeholder="Email" />
-      <input id="telegram" type="text" placeholder="Telegram для быстрой обратной связи, необязательно" autocomplete="username" />
-      <p class="field-help">Telegram используется только для быстрой обратной связи, если кандидат его укажет.</p>
+      <div class="field-group">
+        <label for="name">Имя <span class="required-mark">*</span></label>
+        <input id="name" type="text" placeholder="Как к вам обращаться" autocomplete="name" maxlength="120" required>
+      </div>
+      <div class="field-group">
+        <label for="email">Email <span class="required-mark">*</span></label>
+        <input id="email" type="email" placeholder="name@example.com" autocomplete="email" maxlength="254" required>
+      </div>
+      <div class="field-group">
+        <label for="telegram">Telegram <span class="small">(необязательно)</span></label>
+        <input id="telegram" type="text" placeholder="@username или t.me/username" autocomplete="username" maxlength="64">
+        <p class="field-help">Используется только для быстрой обратной связи, если вы его укажете.</p>
+      </div>
 
-      <select id="englishLevel">
-        <option value="">Уровень английского языка</option>
-        <option value="A1">A1 - Beginner</option>
-        <option value="A2">A2 - Elementary</option>
-        <option value="B1">B1 - Intermediate</option>
-        <option value="B2">B2 - Upper-Intermediate</option>
-        <option value="C1">C1 - Advanced</option>
-        <option value="C2">C2 - Proficiency</option>
-      </select>
+      <div class="field-group">
+        <label for="englishLevel">Уровень английского <span class="required-mark">*</span></label>
+        <select id="englishLevel" required>
+          <option value="">Выберите уровень</option>
+          <option value="A1">A1 — Beginner</option>
+          <option value="A2">A2 — Elementary</option>
+          <option value="B1">B1 — Intermediate</option>
+          <option value="B2">B2 — Upper-Intermediate</option>
+          <option value="C1">C1 — Advanced</option>
+          <option value="C2">C2 — Proficiency</option>
+        </select>
+      </div>
 
-      <select id="candidateSource">
-        <option value="">Источник кандидата</option>
-        <option value="HH.ru">HH.ru</option>
-        <option value="Telegram">Telegram</option>
-        <option value="LinkedIn">LinkedIn</option>
-        <option value="Знакомый / рекомендация">Знакомый / рекомендация</option>
-        <option value="Работодатель">Работодатель</option>
-        <option value="Другое">Другое</option>
-      </select>
+      <div class="field-group">
+        <label for="candidateSource">Откуда вы узнали о тесте <span class="required-mark">*</span></label>
+        <select id="candidateSource" required>
+          <option value="">Выберите источник</option>
+          <option value="HH.ru">HH.ru</option>
+          <option value="Telegram">Telegram</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="Знакомый / рекомендация">Знакомый / рекомендация</option>
+          <option value="Работодатель">Работодатель</option>
+          <option value="Другое">Другое</option>
+        </select>
+      </div>
 
-      <select id="candidateExperience">
-        <option value="">Опыт</option>
-        <option value="Нет опыта">Нет опыта</option>
-        <option value="Стажировка">Стажировка</option>
-        <option value="До 6 месяцев">До 6 месяцев</option>
-        <option value="6-12 месяцев">6-12 месяцев</option>
-        <option value="1+ год">1+ год</option>
-      </select>
+      <div class="field-group">
+        <label for="candidateExperience">Опыт <span class="required-mark">*</span></label>
+        <select id="candidateExperience" required>
+          <option value="">Выберите опыт</option>
+          <option value="Нет опыта">Нет опыта</option>
+          <option value="Стажировка">Стажировка</option>
+          <option value="До 6 месяцев">До 6 месяцев</option>
+          <option value="6-12 месяцев">6–12 месяцев</option>
+          <option value="1+ год">1+ год</option>
+        </select>
+      </div>
 
       <div class="warning">
         &#9888; Во время теста фиксируется количество уходов со страницы.
@@ -240,39 +307,40 @@
       </div>
 
       <label class="consent-row">
-        <input id="privacyConsent" type="checkbox" />
+        <input id="privacyConsent" type="checkbox" required />
         <span>Я согласен на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
       </label>
 
       <label class="consent-row">
-        <input id="ageConsent" type="checkbox" />
+        <input id="ageConsent" type="checkbox" required />
         <span>Я подтверждаю, что мне исполнилось 18 лет.</span>
       </label>
 
       <label class="consent-row">
         <input id="employerShareConsent" type="checkbox" />
-        <span>Я согласен, что мой результат тестирования может быть передан потенциальному работодателю или партнёру проекта.</span>
+        <span><b>Необязательно:</b> я согласен, что мой результат тестирования может быть передан потенциальному работодателю или партнёру проекта.</span>
       </label>
 
-      <button id="startButton" onclick="startAttempt()">Загрузка вопросов...</button>
-      <div id="attemptStatus"></div>
+      <button id="startButton" type="button">Загрузка вопросов...</button>
+      <div id="attemptStatus" class="form-status" role="status" aria-live="polite"></div>
     </div>
 
     <div class="card" id="testBlock" style="display:none;">
-      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-bar" role="progressbar" aria-label="Прогресс теста" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="test-top">
         <div class="pill">Вопрос <span id="questionNumber">1</span> из <span id="questionTotal">40</span></div>
         <div class="pill timer" id="timerPill">Осталось: <span id="questionTimer">00:00</span></div>
         <div class="pill">Баллы: <span id="questionPoints">0</span></div>
       </div>
       <div id="questionContainer"></div>
-      <button id="nextButton" onclick="nextQuestion()">Ответить и перейти дальше</button>
+      <button id="nextButton" type="button">Ответить и перейти дальше</button>
     </div>
 
     <div class="card" id="resultBlock" style="display:none;">
       <h2>&#127881; Тест завершён</h2>
       <div id="resultContent"></div>
-      <p id="sendStatus" style="margin-top:16px;"></p>
+      <div id="sendStatus" class="send-panel" role="status" aria-live="polite"></div>
+      <button id="retrySendButton" class="retry-button" type="button" hidden>Повторить отправку</button>
     </div>
   </div>
 
@@ -288,6 +356,8 @@
     const RETAKE_MS = RETAKE_DAYS * 24 * 60 * 60 * 1000;
     const SUCCESS_THRESHOLD = 80;
     const QUESTIONS_PER_ATTEMPT = 40;
+    const FRONTEND_BUILD = "2026.07.20.6";
+    const NETWORK_TIMEOUT_MS = 20000;
 
     const TEST_CONFIG = {
       "fa-junior": {
@@ -403,9 +473,21 @@
     let currentBrowserFingerprint = "";
     const answers = [];
     let blockScores = {};
+    let questionLoadState = "idle";
+    let attemptCheckInProgress = false;
+    let questionTransitionInProgress = false;
+    let currentQuestionSaved = false;
+    let resultSubmissionInFlight = false;
+    let resultSaved = false;
+    let pendingResultData = null;
 
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     document.addEventListener("DOMContentLoaded", function() {
+      document.querySelector(".build-number").textContent = "Build " + FRONTEND_BUILD;
+      document.getElementById("startButton").addEventListener("click", handleStartButtonClick);
+      document.getElementById("nextButton").addEventListener("click", nextQuestion);
+      document.getElementById("retrySendButton").addEventListener("click", retryResultSubmission);
+
       const params = new URLSearchParams(window.location.search);
       currentTestId = params.get("test") || "fa-junior";
       currentTestConfig = TEST_CONFIG[currentTestId];
@@ -413,7 +495,9 @@
 
       if (!currentTestConfig) {
         document.getElementById("testTitle").textContent = "Тест не найден";
+        document.getElementById("testInfo").textContent = "Проверьте ссылку или вернитесь на главную страницу и выберите доступный тест.";
         document.getElementById("startButton").disabled = true;
+        document.getElementById("startButton").textContent = "Тест недоступен";
         return;
       }
 
@@ -423,21 +507,44 @@
       loadQuestions();
     });
 
+    window.addEventListener("beforeunload", function(event) {
+      if ((testStarted && !testFinished) || resultSubmissionInFlight || pendingResultData) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
+
     function updateTestInfo() {
       var bankVersion = getBankVersion();
       var versionText = "Версия теста: " + currentTestConfig.version;
       if (bankVersion) versionText += " · Версия банка: " + bankVersion;
+      var attemptText = "Загружаем параметры попытки…";
+
+      if (rawQuestions.length) {
+        var totalInPool = rawQuestions.length;
+        var perTest = getQuestionsPerAttempt(totalInPool);
+        var estimatedMinutes = estimateAttemptMinutes(rawQuestions, perTest);
+        var blockCount = Object.keys(currentTestConfig.blocks || {}).length;
+        attemptText = perTest + (totalInPool > perTest ? " из " + totalInPool : "") +
+          " " + pluralizeRu(perTest, "вопрос", "вопроса", "вопросов") +
+          " · около " + estimatedMinutes + " " + pluralizeRu(estimatedMinutes, "минуты", "минут", "минут") +
+          " · " + blockCount + " " + pluralizeRu(blockCount, "блок", "блока", "блоков");
+      }
+
       document.getElementById("testInfo").innerHTML =
-        currentTestConfig.description + '<br><span style="color:#94a3b8;font-size:12px;">' + versionText + '</span>';
+        escapeHtml(currentTestConfig.description) + '<br><b>' + escapeHtml(attemptText) + '</b><br>' +
+        '<span style="color:#94a3b8;font-size:12px;">' + escapeHtml(versionText) + '</span>';
     }
 
     function loadQuestions() {
       var file = currentTestConfig.questionsFile;
       var startBtn = document.getElementById("startButton");
+      questionLoadState = "loading";
       startBtn.textContent = "Загрузка вопросов...";
       startBtn.disabled = true;
+      setAttemptStatus("Загружаем банк вопросов…", "");
 
-      fetch(file)
+      fetch(file, { cache: "no-store" })
         .then(function(r) {
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
@@ -452,16 +559,49 @@
           }
           var totalInPool = rawQuestions.length;
           var perTest = getQuestionsPerAttempt(totalInPool);
-          startBtn.textContent = "Начать тест (" + perTest + " из " + totalInPool + " вопросов)";
+          var poolText = totalInPool > perTest ? perTest + " из " + totalInPool : String(perTest);
+          startBtn.textContent = "Начать тест (" + poolText + " " + pluralizeRu(perTest, "вопрос", "вопроса", "вопросов") + ")";
           startBtn.disabled = false;
+          questionLoadState = "ready";
+          setAttemptStatus("Вопросы загружены. Заполните обязательные поля и подтвердите согласия.", "success");
         })
         .catch(function(err) {
           console.error("Ошибка загрузки вопросов:", err);
-          startBtn.textContent = "Ошибка загрузки";
+          questionLoadState = "error";
+          startBtn.textContent = "Повторить загрузку вопросов";
           startBtn.disabled = false;
-          document.getElementById("attemptStatus").innerHTML =
-            '<div class="blocked">&#10060; Не удалось загрузить вопросы.<br>Причина: ' + err.message + '<br>Файл: ' + file + '<br><br>Проверьте:<br>1. Что файл существует в папке data/<br>2. Что GitHub Pages включён<br>3. Попробуйте обновить страницу (F5)</div>';
+          setAttemptStatus("Не удалось загрузить вопросы. Проверьте подключение и повторите загрузку.", "error");
         });
+    }
+
+    function handleStartButtonClick() {
+      if (questionLoadState === "error") {
+        loadQuestions();
+        return;
+      }
+      if (questionLoadState !== "ready") {
+        setAttemptStatus("Подождите, вопросы ещё загружаются.", "error");
+        return;
+      }
+      startAttempt();
+    }
+
+    function estimateAttemptMinutes(questionList, count) {
+      if (!questionList.length || !count) return 1;
+      var totalSeconds = questionList.reduce(function(sum, question) {
+        return sum + Number(question.timeLimit || question.timer || question.seconds || 60);
+      }, 0);
+      var estimated = (totalSeconds / questionList.length) * count / 60;
+      if (estimated < 5) return Math.max(1, Math.ceil(estimated));
+      return Math.ceil(estimated / 5) * 5;
+    }
+
+    function pluralizeRu(value, one, few, many) {
+      var mod10 = value % 10;
+      var mod100 = value % 100;
+      if (mod10 === 1 && mod100 !== 11) return one;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+      return many;
     }
 
     // ===== АНТИ-ЧИТ =====
@@ -498,6 +638,7 @@
 
     // ===== РЕГИСТРАЦИЯ =====
     function startAttempt() {
+      if (attemptCheckInProgress) return;
       var name = document.getElementById("name").value.trim();
       var email = document.getElementById("email").value.trim().toLowerCase();
       var telegram = "";
@@ -514,31 +655,43 @@
         telegram = normalizeTelegramContact(document.getElementById("telegram").value);
         document.getElementById("telegram").value = telegram;
       } catch (error) {
-        alert(error.message);
+        setAttemptStatus(error.message, "error");
+        document.getElementById("telegram").focus();
         return;
       }
 
-      if (startButton.disabled && startButton.textContent.indexOf("Загрузка") !== -1) {
-        alert("Подождите, вопросы ещё загружаются...");
+      if (questionLoadState !== "ready") {
+        setAttemptStatus("Подождите, вопросы ещё загружаются.", "error");
         return;
       }
 
       if (!name || !email || !englishLevel || !candidateSource || !candidateExperience) {
-        alert("Заполните имя, email, английский, источник кандидата и опыт.");
+        setAttemptStatus("Заполните имя, email, уровень английского, источник и опыт.", "error");
+        focusFirstIncompleteCandidateField();
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        setAttemptStatus("Проверьте формат email.", "error");
+        document.getElementById("email").focus();
         return;
       }
 
       if (!privacyConsent) {
-        document.getElementById("attemptStatus").innerHTML =
-          '<div class="blocked">Для прохождения теста необходимо согласие на обработку персональных данных.</div>';
+        setAttemptStatus("Для прохождения теста необходимо согласие на обработку персональных данных.", "error");
+        document.getElementById("privacyConsent").focus();
         return;
       }
 
       if (!ageConsent) {
-        document.getElementById("attemptStatus").innerHTML =
-          '<div class="blocked">Для прохождения теста необходимо подтвердить, что вам исполнилось 18 лет.</div>';
+        setAttemptStatus("Для прохождения теста необходимо подтвердить, что вам исполнилось 18 лет.", "error");
+        document.getElementById("ageConsent").focus();
         return;
       }
+
+      setAttemptStatus("", "");
+      attemptCheckInProgress = true;
+      startButton.disabled = true;
 
       if (!isRetakeCheckEnabledForCurrentTest()) {
         startTest();
@@ -547,59 +700,57 @@
 
       var localLock = getLocalRetakeLock(currentTestId);
       if (localLock && localLock.blocked) {
-        document.getElementById("attemptStatus").innerHTML =
-          '<div class="blocked">' + escapeHtml(localLock.message) + '</div>';
+        setAttemptStatus(localLock.message, "error");
+        attemptCheckInProgress = false;
+        startButton.disabled = false;
         return;
       }
 
-      startButton.disabled = true;
       startButton.textContent = "Проверяем повторную попытку...";
 
       checkAttempt(email, currentTestId, browserFingerprint)
         .then(function(result) {
           if (!result.allowed) {
-            document.getElementById("attemptStatus").innerHTML =
-              '<div class="blocked">' + formatBlockedAttemptMessage(result) + '</div>';
+            setAttemptStatus(formatBlockedAttemptMessage(result, true), "error");
+            attemptCheckInProgress = false;
             startButton.disabled = false;
             startButton.textContent = "Начать тест";
             return;
           }
           startTest();
         })
-        .catch(function() {
-          document.getElementById("attemptStatus").innerHTML =
-            '<div class="blocked">Не удалось проверить повторную попытку.</div>';
+        .catch(function(error) {
+          console.error("Ошибка проверки повторной попытки:", error);
+          setAttemptStatus("Не удалось проверить повторную попытку. Проверьте подключение и попробуйте снова.", "error");
+          attemptCheckInProgress = false;
           startButton.disabled = false;
           startButton.textContent = "Начать тест";
         });
     }
 
     function checkAttempt(email, testId, browserFingerprint) {
-      return new Promise(function(resolve, reject) {
-        var callbackName = "checkAttemptCallback_" + Date.now();
-        var script = document.createElement("script");
-
-        window[callbackName] = function(data) {
-          resolve(data);
-          delete window[callbackName];
-          script.remove();
-        };
-
-        var url = GOOGLE_SCRIPT_URL +
-          "?action=checkAttempt" +
-          "&email=" + encodeURIComponent(email) +
-          "&testId=" + encodeURIComponent(testId) +
-          "&browserFingerprint=" + encodeURIComponent(browserFingerprint || "") +
-          "&testTitle=" + encodeURIComponent(currentTestConfig.title) +
-          "&callback=" + callbackName;
-
-        script.src = url;
-        script.onerror = reject;
-        document.body.appendChild(script);
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function() { controller.abort(); }, NETWORK_TIMEOUT_MS);
+      return fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "checkAttempt",
+          email: email,
+          testId: testId,
+          browserFingerprint: browserFingerprint || ""
+        }),
+        cache: "no-store",
+        credentials: "omit",
+        signal: controller.signal
+      }).then(function(response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      }).finally(function() {
+        window.clearTimeout(timeout);
       });
     }
 
-    function formatBlockedAttemptMessage(result) {
+    function formatBlockedAttemptMessage(result, plainText) {
       var message = result.message || "Этот тест уже был пройден.";
       var nextDate = result.nextDate ? new Date(result.nextDate) : null;
       var daysLeft = typeof result.daysLeft === "number" ? result.daysLeft : "";
@@ -611,7 +762,28 @@
         message += " Осталось " + daysLeft + " дн.";
       }
 
-      return escapeHtml(message);
+      return plainText ? message : escapeHtml(message);
+    }
+
+    function setAttemptStatus(message, type) {
+      var node = document.getElementById("attemptStatus");
+      node.textContent = message || "";
+      node.className = "form-status" + (type ? " " + type : "");
+    }
+
+    function focusFirstIncompleteCandidateField() {
+      var ids = ["name", "email", "englishLevel", "candidateSource", "candidateExperience"];
+      for (var i = 0; i < ids.length; i++) {
+        var field = document.getElementById(ids[i]);
+        if (!String(field.value || "").trim()) {
+          field.focus();
+          return;
+        }
+      }
+    }
+
+    function isValidEmail(value) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
     }
 
     function generateBrowserFingerprint() {
@@ -701,40 +873,39 @@
     // ===== ЛОГИКА ТЕСТА =====
     function startTest() {
       if (!rawQuestions || !rawQuestions.length) {
-        var startBtn = document.getElementById("startButton");
-        startBtn.disabled = true;
-        startBtn.textContent = "Загрузка вопросов...";
-
-        fetch(currentTestConfig.questionsFile)
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            loadedQuestionBank = normalizeQuestionBank(data);
-            rawQuestions = loadedQuestionBank.questions;
-            currentTestConfig.blocks = getBlockDefinitions(currentTestConfig.blocks, loadedQuestionBank.meta.blocks);
-            updateTestInfo();
-            startBtn.disabled = false;
-            startBtn.textContent = "Начать тест";
-            startTest();
-          })
-          .catch(function(err) {
-            startBtn.disabled = false;
-            startBtn.textContent = "Начать тест";
-            alert("Не удалось загрузить вопросы. Проверьте подключение.");
-            console.error(err);
-          });
+        questionLoadState = "error";
+        attemptCheckInProgress = false;
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("startButton").textContent = "Повторить загрузку вопросов";
+        setAttemptStatus("Вопросы не загружены. Повторите загрузку.", "error");
         return;
       }
 
       questions = prepareQuestions(rawQuestions);
+      if (!questions.length) {
+        attemptCheckInProgress = false;
+        document.getElementById("startButton").disabled = false;
+        setAttemptStatus("В выбранном тесте нет доступных вопросов.", "error");
+        return;
+      }
+
       document.getElementById("startBlock").style.display = "none";
       document.getElementById("testBlock").style.display = "block";
       document.getElementById("questionTotal").textContent = questions.length;
+      document.body.classList.add("test-active");
+      window.scrollTo(0, 0);
 
       currentQuestionIndex = 0;
       tabSwitches = 0;
       lastTabExitAt = 0;
       testStarted = true;
       testFinished = false;
+      attemptCheckInProgress = false;
+      questionTransitionInProgress = false;
+      currentQuestionSaved = false;
+      resultSubmissionInFlight = false;
+      resultSaved = false;
+      pendingResultData = null;
       answers.length = 0;
       blockScores = {};
 
@@ -873,11 +1044,20 @@
       var q = questions[currentQuestionIndex];
       questionTimeLeft = q.timeLimit;
       currentQuestionStartTime = new Date();
+      currentQuestionSaved = false;
+      questionTransitionInProgress = false;
+      var nextButton = document.getElementById("nextButton");
+      nextButton.disabled = false;
+      nextButton.textContent = currentQuestionIndex === questions.length - 1
+        ? "Завершить тест"
+        : "Ответить и перейти дальше";
 
       document.getElementById("questionNumber").textContent = currentQuestionIndex + 1;
       document.getElementById("questionPoints").textContent = q.points;
-      document.getElementById("progressFill").style.width =
-        ((currentQuestionIndex / questions.length) * 100) + "%";
+      var progressPercent = Math.round((currentQuestionIndex / questions.length) * 100);
+      document.getElementById("progressFill").style.width = progressPercent + "%";
+      document.querySelector("[role=progressbar]").setAttribute("aria-valuenow", progressPercent);
+      document.title = "Вопрос " + (currentQuestionIndex + 1) + " из " + questions.length + " — SkillCheck";
 
       var container = document.getElementById("questionContainer");
       var html = '<div class="question">';
@@ -900,8 +1080,7 @@
         questionTimeLeft--;
         updateQuestionTimer();
         if (questionTimeLeft <= 0) {
-          saveCurrentAnswer(true);
-          moveToNextOrFinish();
+          if (saveCurrentAnswer(true)) moveToNextOrFinish();
         }
       }, 1000);
     }
@@ -922,17 +1101,21 @@
       var s = questionTimeLeft % 60;
       var el = document.getElementById("questionTimer");
       var pill = document.getElementById("timerPill");
-      el.textContent = m + ":" + String(s).padStart(2, "0");
+      el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
       if (questionTimeLeft <= 10) pill.classList.add("warning");
       else pill.classList.remove("warning");
     }
 
     function nextQuestion() {
-      saveCurrentAnswer(false);
-      moveToNextOrFinish();
+      if (questionTransitionInProgress || currentQuestionSaved || testFinished) return;
+      questionTransitionInProgress = true;
+      document.getElementById("nextButton").disabled = true;
+      if (saveCurrentAnswer(false)) moveToNextOrFinish();
     }
 
     function saveCurrentAnswer(isTimeout) {
+      if (currentQuestionSaved) return false;
+      currentQuestionSaved = true;
       clearInterval(questionTimerInterval);
       var q = questions[currentQuestionIndex];
       var selected = document.querySelector('input[name="answer"]:checked');
@@ -962,11 +1145,14 @@
       if (!blockScores[q.block]) blockScores[q.block] = { earned: 0, total: 0 };
       blockScores[q.block].total += q.points;
       if (isCorrect) blockScores[q.block].earned += q.points;
+      return true;
     }
 
     function moveToNextOrFinish() {
       currentQuestionIndex++;
       if (currentQuestionIndex >= questions.length) {
+        document.getElementById("progressFill").style.width = "100%";
+        document.querySelector("[role=progressbar]").setAttribute("aria-valuenow", "100");
         finishTest();
       } else {
         renderCurrentQuestion();
@@ -1029,6 +1215,8 @@
       clearInterval(questionTimerInterval);
       testFinished = true;
       testStarted = false;
+      document.body.classList.remove("test-active");
+      document.title = "Результат теста — SkillCheck";
 
       var calculation = calculateTestResult(answers, tabSwitches, currentTestConfig.blocks, blockScores);
       var rawTotal = calculation.rawTotal;
@@ -1069,6 +1257,7 @@
       });
 
       var resultData = {
+        requestId: generateSubmissionRequestId(),
         testId: currentTestId,
         testVersion: currentTestConfig.version,
         bankVersion: bankVersion,
@@ -1098,6 +1287,7 @@
         answers: answers
       };
 
+      pendingResultData = resultData;
       sendResult(resultData);
     }
 
@@ -1187,6 +1377,8 @@
       html += '<div style="color:#475569;line-height:1.5;">' + data.recommendation + '</div>';
       html += '</div>';
 
+      html += '<div class="result-disclaimer">Результат является предварительной оценкой отдельных навыков. Он не заменяет собеседование и не должен использоваться как единственное основание для решения о найме.</div>';
+
       html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
       html += '<button onclick="window.location.href=\'index.html\'" style="width:auto;flex:1;min-width:200px;">&larr; На главную</button>';
       html += '<button onclick="window.print()" style="width:auto;flex:1;min-width:200px;background:linear-gradient(90deg,#10b981,#059669);">&#128424; Распечатать результат</button>';
@@ -1196,48 +1388,90 @@
     }
 
     function sendResult(data) {
+      if (!data || resultSubmissionInFlight || resultSaved) return Promise.resolve(null);
+
       var status = document.getElementById("sendStatus");
-      status.textContent = "Отправка результата...";
-      fetch(GOOGLE_SCRIPT_URL, {
+      var retryButton = document.getElementById("retrySendButton");
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function() { controller.abort(); }, NETWORK_TIMEOUT_MS);
+      resultSubmissionInFlight = true;
+      pendingResultData = data;
+      retryButton.hidden = true;
+      retryButton.disabled = true;
+      status.textContent = "Сохраняем результат… Не закрывайте страницу.";
+
+      return fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        cache: "no-store",
+        credentials: "omit",
+        signal: controller.signal
       })
       .then(function(response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
         return response.json();
       })
       .then(function(result) {
         if (result.status === "blocked" || result.blocked) {
-          status.innerHTML = '<span class="error">&#9888; ' + escapeHtml(result.errorMessage || result.message || "Повторное прохождение заблокировано.") + '</span>';
-          return;
+          status.textContent = result.message || "Повторное прохождение заблокировано.";
+          status.className = "send-panel error";
+          pendingResultData = null;
+          return result;
         }
 
         if (result.ok !== true && result.status !== "ok") {
-          throw new Error(result.errorMessage || result.message || "Backend вернул ошибку.");
+          throw new Error(result.message || "Backend вернул ошибку.");
         }
 
+        resultSaved = true;
+        pendingResultData = null;
         if (!currentTestConfig.skipRetakeCheck) {
           saveLocalAttemptLock(data.testId, data.email, data.browserFingerprint);
         }
 
         var resultCode = result.resultCode || result.code || "";
         var reportLine = result.reportCreated
-          ? '<br>TXT-отчёт: создан' + (result.reportPath ? ' (' + escapeHtml(result.reportPath) + ')' : '')
-          : '<br>TXT-отчёт: не создан для результата ниже проходного порога';
+          ? "<br>Подробный TXT-отчёт создан и доступен администратору."
+          : "<br>TXT-отчёт не создаётся для результата ниже проходного порога.";
+        var replayLine = result.replayed ? "<br>Повторный запрос подтверждён без создания дубля." : "";
 
+        status.className = "send-panel";
         status.innerHTML =
           '<span class="success">&#9989; Результат сохранён.</span><br>' +
           '<b>Код результата: ' + escapeHtml(resultCode) + '</b><br>' +
           'Процент: ' + escapeHtml(result.percent) + '%<br>' +
           'Итоговый балл: ' + escapeHtml(result.finalScore) + '%<br>' +
-          'Статус: ' + (result.passStatus === "passed" ? "успешно" : "неуспешно") + '<br>' +
-          'Сохранение попытки: ' + (result.savedAttempt ? "да" : "нет") + '<br>' +
-          'Сохранение админ-записи: ' + (result.savedAdmin ? "да" : "нет") +
-          reportLine + '<br>' +
+          'Статус: ' + (result.passStatus === "passed" ? "успешно" : "неуспешно") +
+          reportLine + replayLine + '<br>' +
           '<b>Сохраните код результата.</b>';
+        return result;
       })
       .catch(function(error) {
-        status.innerHTML = '<span class="error">&#9888; Результат посчитан, но отправка не удалась: ' + escapeHtml(error.message || "ошибка backend") + '.</span>';
+        console.error("Ошибка сохранения результата:", error);
+        status.className = "send-panel error";
+        status.textContent = error && error.name === "AbortError"
+          ? "Результат рассчитан, но backend не ответил вовремя. Нажмите «Повторить отправку» — тот же запрос не создаст дубль."
+          : "Результат рассчитан, но сохранение не подтверждено. Проверьте подключение и повторите отправку; дубль создан не будет.";
+        retryButton.hidden = false;
+        return null;
+      })
+      .finally(function() {
+        window.clearTimeout(timeout);
+        resultSubmissionInFlight = false;
+        retryButton.disabled = resultSaved || !pendingResultData;
       });
+    }
+
+    function retryResultSubmission() {
+      if (!pendingResultData || resultSaved || resultSubmissionInFlight) return;
+      sendResult(pendingResultData);
+    }
+
+    function generateSubmissionRequestId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return "sc_" + window.crypto.randomUUID();
+      }
+      return "sc_" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 15);
     }
 
     function escapeHtml(text) {

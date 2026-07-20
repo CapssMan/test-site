@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-4";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-5";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -96,6 +96,14 @@ function doPost(e) {
       return jsonResponse(getAdminReport(String(data.password || ""), String(data.code || "")));
     }
 
+    if (data.action === "checkAttempt") {
+      return jsonResponse(checkAttemptHash(
+        String(data.testId || "").trim(),
+        String(data.email || "").trim().toLowerCase(),
+        String(data.browserFingerprint || "").trim()
+      ));
+    }
+
     return jsonResponse(saveTestResult(data));
   } catch (error) {
     console.error(error && error.stack ? error.stack : error);
@@ -111,8 +119,6 @@ function doPost(e) {
 function saveTestResult(resultData) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
-  let savedAttempt = false;
-  let savedAdmin = false;
   let reportCreated = false;
   let reportPath = "";
 
@@ -122,6 +128,32 @@ function saveTestResult(resultData) {
     const testId = String(resultData.testId || "").trim();
     const email = String(resultData.email || "").trim().toLowerCase();
     const fingerprint = String(resultData.browserFingerprint || "").trim();
+    const suppliedRequestId = String(resultData.requestId || "").trim();
+    const requestId = normalizeSubmissionRequestId(suppliedRequestId);
+
+    if (suppliedRequestId && !requestId) {
+      return {
+        ok: false,
+        status: "error",
+        message: "Некорректный идентификатор отправки."
+      };
+    }
+
+    if (requestId) {
+      const existingResult = findAdminResultByRequestId(requestId);
+      if (existingResult) {
+        if (String(existingResult.testId || "") !== testId) {
+          return {
+            ok: false,
+            status: "error",
+            message: "Некорректный идентификатор отправки."
+          };
+        }
+        console.log("Idempotent result replay: " + requestId);
+        return buildSavedResultResponse(existingResult, true);
+      }
+    }
+
     const attemptCheck = checkAttemptHash(testId, email, fingerprint);
 
     if (!attemptCheck.allowed) {
@@ -129,11 +161,8 @@ function saveTestResult(resultData) {
         ok: false,
         status: "blocked",
         blocked: true,
-        savedAttempt: false,
-        savedAdmin: false,
         reportCreated: false,
-        reportPath: "",
-        errorMessage: attemptCheck.message || "Повторная попытка заблокирована."
+        message: attemptCheck.message || "Повторная попытка заблокирована."
       });
     }
 
@@ -168,10 +197,9 @@ function saveTestResult(resultData) {
       badge: String(resultData.badge || ""),
       reportCreated: reportCreated,
       reportPath: reportPath,
-      reportCode: code
+      reportCode: code,
+      requestId: requestId
     });
-    savedAdmin = true;
-
     const attemptHashes = hashAttemptIdentifiers(testId, email, fingerprint);
     saveAttemptHash({
       emailHash: attemptHashes.emailHash,
@@ -181,35 +209,20 @@ function saveTestResult(resultData) {
       date: now.toISOString(),
       status: status
     });
-    savedAttempt = true;
-
-    return {
-      ok: true,
-      status: "ok",
-      resultCode: code,
+    return buildSavedResultResponse({
       code: code,
       testId: testId,
       finalScore: finalScore,
       percent: percent,
-      passStatus: status,
-      savedAttempt: savedAttempt,
-      savedAdmin: savedAdmin,
-      reportCreated: reportCreated,
-      reportPath: reportPath,
-      errorMessage: "",
-      message: "Сохраните код результата: " + code
-    };
+      status: status,
+      reportCreated: reportCreated
+    }, false);
   } catch (error) {
     console.error(error && error.stack ? error.stack : error);
     return {
       ok: false,
       status: "error",
-      savedAttempt: savedAttempt,
-      savedAdmin: savedAdmin,
-      reportCreated: reportCreated,
-      reportPath: reportPath,
-      errorMessage: sanitizeDiagnosticMessage(error),
-      message: sanitizeErrorMessage(error)
+      message: "Не удалось сохранить результат. Повторите отправку с экрана результата."
     };
   } finally {
     lock.releaseLock();
@@ -749,9 +762,38 @@ function appendAdminResult(summaryData) {
     badge: getAdminBadge(Number(summaryData.finalScore || 0), Number(summaryData.tabSwitches || 0)),
     reportCreated: Boolean(summaryData.reportCreated),
     reportPath: String(summaryData.reportPath || ""),
-    reportCode: String(summaryData.reportCode || summaryData.code || "")
+    reportCode: String(summaryData.reportCode || summaryData.code || ""),
+    requestId: normalizeSubmissionRequestId(summaryData.requestId)
   });
   writeJsonToYandexDisk(path, results);
+}
+
+function normalizeSubmissionRequestId(value) {
+  const requestId = String(value || "").trim();
+  return /^sc_[A-Za-z0-9-]{16,80}$/.test(requestId) ? requestId : "";
+}
+
+function findAdminResultByRequestId(requestId) {
+  const normalizedRequestId = normalizeSubmissionRequestId(requestId);
+  if (!normalizedRequestId) return null;
+  const results = readJsonFromYandexDisk(getAdminFilePath(), []);
+  return results.find(row => row && row.requestId === normalizedRequestId) || null;
+}
+
+function buildSavedResultResponse(row, replayed) {
+  return {
+    ok: true,
+    status: "ok",
+    resultCode: String(row.code || ""),
+    code: String(row.code || ""),
+    testId: String(row.testId || ""),
+    finalScore: Number(row.finalScore || 0),
+    percent: Number(row.percent || 0),
+    passStatus: row.status === "passed" ? "passed" : "failed",
+    reportCreated: Boolean(row.reportCreated),
+    replayed: Boolean(replayed),
+    message: "Сохраните код результата: " + String(row.code || "")
+  };
 }
 
 function saveAttemptHash(attemptData) {

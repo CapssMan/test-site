@@ -37,6 +37,7 @@
 - [x] Этап 14 технически завершён: защищённая read-only диагностика, storage aggregates, configuration presence и allowlisted errors опубликованы в `@56`; публичный health остался минимальным.
 - [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 22/22 проверки.
 - [x] Этап 16 завершён: operator guide, deployment/rollback runbook, privacy checklist и regression-проверка эксплуатационной документации.
+- [x] Этап 17 технически завершён: live desktop/mobile, public smoke, owner diagnostics, свежий snapshot и NO-GO readiness report с точными блокерами.
 
 ## До запуска кандидатов
 
@@ -99,7 +100,7 @@
 
 ## Следующий этап
 
-Этап 16 подготовлен без изменения production runtime; legal approval, выдача приглашений и автоматический retention выключены. Следующий плановый этап — 17, полный pilot readiness checklist; рекомендуемый режим — `очень высокий`. Отдельный pilot blocker — содержательная ротация банков с SME review; для неё нужен режим `ультра` и явное подтверждение пользователя. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
+Этап 17 технически завершён без изменения production runtime; решение для реальных кандидатов — `NO-GO`. Следующее действие — отдельно подтверждённая содержательная ротация пяти банков с SME review, рекомендуемый режим `ультра`. До неё и закрытия operator/legal/credential/data-cleanup блокеров переход к этапу 18 запрещён. Полная матрица находится в `docs/PILOT_READINESS.md`, спорные вопросы — в `docs/QUESTION_BANK_AUDIT.md`.
 
 ## Financial Analyst Junior
 

@@ -4,11 +4,11 @@
 
 ## Текущий этап
 
-- Завершён этап 16 — эксплуатационная документация, безопасный deployment/rollback и privacy checklist оператора.
-- Локально воспроизведены locked install и 23 проверки: 18 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
+- Технически завершён этап 17 — live pilot-readiness audit; решение для реальных кандидатов: **NO-GO**.
+- Локально воспроизведены locked install и 24 проверки: 19 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Production Apps Script не изменялся и остаётся на проверенном deployment `@56`; workflow не имеет secrets и не выполняет deploy/storage calls.
-- Следующий плановый этап: 17 — полный pilot readiness checklist, рекомендуемый режим `очень высокий`.
-- Реальный пилот заблокирован до реквизитов оператора, внешнего legal/retention checklist, этапа 17 и отдельно согласованной содержательной ротации банков; для ротации нужен режим `ультра`.
+- Следующее обязательное действие: отдельно подтверждённая содержательная ротация пяти банков с SME review, рекомендуемый режим `ультра`.
+- Этап 18 заблокирован до реквизитов оператора, внешнего legal/retention checklist, ротации/least-privilege review Яндекс credential, очистки smoke-данных и содержательной ротации банков.
 - Полный план: `ROADMAP.md`.
 
 ## Репозиторий и публикация
@@ -187,7 +187,7 @@
 - Workflow имеет только `contents: read`, Node 24, timeout 10 минут, locked `npm ci --ignore-scripts` и не использует production secrets/environments/deploy.
 - Checkout/setup actions закреплены полными commit SHA; `persist-credentials:false` не оставляет workflow token в локальном Git config.
 - Full history checkout нужен только для проверки legacy commit anchors; первый shallow run выявил эту зависимость и был исправлен без ослабления теста.
-- CI configuration и обязательные operator docs защищены regression-тестами; полная локальная матрица — 23/23 проверки.
+- CI configuration, operator docs и NO-GO readiness boundary защищены regression-тестами; полная локальная матрица — 24/24 проверки.
 
 ## Этап 16 — эксплуатационная документация
 
@@ -197,12 +197,21 @@
 - Runbooks связаны с backup, deletion, observability, testing и legal review; значения credentials/deployment ID в документацию не внесены.
 - `test-operations-docs.js` блокирует исчезновение обязательных процедур и случайное появление live Web App ID в deployment runbook.
 
+## Этап 17 — pilot readiness
+
+- Live browser QA: главная, пять тестов, privacy, consent и admin проверены на desktop и mobile 390×844; horizontal overflow и console errors не обнаружены.
+- Public negative smoke: health `.13`, GET begin `method_not_allowed`, legacy `client_upgrade_required`, unknown action `unknown_action`, `dev-quick` `test_not_public`.
+- Apps Script owner diagnostics: `healthy`, четыре operational store, 9 result rows и 9 anti-retake rows.
+- После диагностики создан свежий проверяемый snapshot четырёх operational store; production JSON вручную не менялся.
+- В `docs/PILOT_READINESS.md` технические controls отделены от внешних блокеров; решение остаётся NO-GO.
+- `test-pilot-readiness.js` фиксирует закрытые gates, незаполненные operator details и запрет документального открытия пилота.
+
 ## Оценка до финала roadmap
 
-- Осталось 4 плановых этапа (`17–20`): 28–54 часа, 170–360 тыс. токенов и 2–4 календарные недели пилота.
+- Осталось 3 плановых этапа (`18–20`): 20–40 часов, 110–240 тыс. токенов и 2–4 календарные недели пилота; этап 18 пока заблокирован.
 - Отдельная содержательная ротация банков: 50–100 часов, 400–800 тыс. токенов плюс SME review.
-- До limited-pilot readiness (`16–17` + ротация): 62–121 час / 490–980 тыс. токенов плюс внешняя legal/SME проверка.
-- До конца roadmap вместе с ротацией: 78–154 часа / 570 тыс. – 1,16 млн токенов + 2–4 недели пилота.
+- До limited-pilot readiness: содержательная ротация 50–100 часов / 400–800 тыс. токенов плюс внешняя legal/SME проверка и owner actions.
+- До конца roadmap вместе с ротацией: 70–140 часов / 510 тыс. – 1,04 млн токенов + 2–4 недели пилота.
 - Аккаунты/OTP/CAPTCHA, managed gateway и дополнительная server-side delivery для открытого запуска в эти диапазоны не включены.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.
 

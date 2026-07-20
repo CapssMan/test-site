@@ -359,7 +359,18 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Этап 17. Подготовка к пилоту
 
-Проверить пять тестов и банки, мобильный вид, сохранение, TXT, админку, retake, authoritative backend-scoring, signed invitation/attempt, отсутствие email-enumeration lookup, gateway abuse control, обязательный `questionId`, ротацию/least-privilege Яндекс-токена, удаление, backup, policy, контакты, инструкции, отсутствие production-тестовых данных, скрытый smoke, monitoring и rollback. Подготовить pilot checklist. Не приглашать реальных кандидатов до содержательной ротации банков и осознанного включения `ATTEMPT_ISSUANCE_ENABLED`.
+Статус: технически завершён 21 июля 2026 года с решением **NO-GO для реальных кандидатов**. Полный evidence и blockers: `docs/PILOT_READINESS.md`.
+
+- [x] Пять test routes и 240 вопросов прошли полную автоматическую матрицу; обязательный `questionId`, server manifest и private scoring подтверждены.
+- [x] Live desktop/mobile QA подтвердил главную, пять тестов, privacy, consent и admin без horizontal overflow и console errors.
+- [x] Public negative smoke подтвердил минимальный health, POST-only begin, отклонение legacy, unknown action и закрытый `dev-quick`.
+- [x] Owner diagnostics: `healthy`, четыре operational store, backend `.13`; создан свежий проверяемый snapshot четырёх store.
+- [x] Retake, signed invitation/attempt, replay/recovery, TXT, admin, deletion, backup, monitoring и rollback покрыты тестами/runbooks.
+- [x] Abuse boundary классифицирован: best-effort rate limits допустимы только для малого controlled pilot; внешний gateway обязателен для открытого запуска.
+- [x] Зафиксированы реальные блокеры: operator contacts, legal/retention, ротация банков/SME, least-privilege credential, очистка 9/9 smoke rows и owner sign-off.
+- [x] Добавлен `test-pilot-readiness.js`, не позволяющий документально открыть пилот при известных блокерах.
+
+Не приглашать реальных кандидатов и не переходить к этапу 18 до содержательной ротации банков, внешнего legal/retention решения, ротации Яндекс credential, точечной очистки smoke-данных и осознанного включения gates по последовательности из readiness report.
 
 ## Этап 18. Пилот
 
@@ -375,9 +386,10 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Ближайшая очередь
 
-1. Перейти к этапу 17 — подготовке и полному checklist пилота; рекомендуемый режим `очень высокий`.
-2. Отдельно получить подтверждение на содержательную ротацию банков — обязательный pilot blocker; рекомендуемый режим `ультра`.
-3. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
+1. Получить явное подтверждение на содержательную ротацию пяти банков — следующий обязательный pilot blocker; рекомендуемый режим `ультра`.
+2. Параллельно владелец предоставляет реквизиты/контакт оператора и получает внешнее legal/retention решение; эти данные нельзя выдумывать.
+3. После ротации выполнить точечную очистку известных smoke-данных, ротацию/least-privilege review Яндекс credential и финальный owner sign-off.
+4. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 
 ## Ограничения работы
 

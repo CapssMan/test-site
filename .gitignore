@@ -10,4 +10,8 @@ token*.json
 *.txt
 results.json
 attempts.json
+invites-v1.json
+attempt-sessions-v1.json
+*.private.json
+private-banks/
 secrets.*

@@ -23,7 +23,7 @@ function extractFunction(source, name) {
 }
 
 const doGetFunction = extractFunction(backend, "doGet");
-assert.match(doGetFunction, /action === "adminReport"/, "admin report GET route must be handled");
+assert.match(doGetFunction, /\["adminResults", "adminReport"[\s\S]*\.indexOf\(action\) !== -1/, "admin report GET route must be rejected by the admin POST-only gate");
 assert.match(doGetFunction, /требуется POST-запрос/, "admin report GET route must be rejected");
 assert.doesNotMatch(doGetFunction, /getAdminReport\(/, "GET must never call report retrieval");
 

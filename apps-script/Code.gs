@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-7";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-9";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -8,6 +8,32 @@ const MAX_POST_BODY_CHARS = 250000;
 const MAX_GENERATED_REPORT_CHARS = 200000;
 const MAX_ANSWERS_PER_RESULT = 40;
 const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
+const SCORE_VERIFICATION_SERVER = "server-verified";
+const AUTHORITATIVE_API_VERSION = "attempt-v1";
+const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
+const TELEMETRY_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
+const ATTEMPT_ACTIVE_TTL_MS = 6 * 60 * 60 * 1000;
+const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_YANDEX_INVITES_FILE = "disk:/skillcheck/private/invites-v1.json";
+const DEFAULT_YANDEX_SESSIONS_FILE = "disk:/skillcheck/private/attempt-sessions-v1.json";
+const DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER = "disk:/skillcheck/private/banks";
+const LEGACY_PUBLIC_BANK_COMMIT = "70e569cf267e043aabc780e81cc4307db7e149b1";
+const LEGACY_PUBLIC_BANK_BASE_URL = "https://raw.githubusercontent.com/CapssMan/test-site/" +
+  LEGACY_PUBLIC_BANK_COMMIT + "/data/";
+const LEGACY_PUBLIC_BANK_SHA256_BY_TEST_ID = {
+  "fa-junior": "41470aeada4be474815b0e74dbae8d254a5ace5bb3ad83f935fff841d110e67d",
+  "ca-junior": "5e9e29d3ca3c656737ccf89751767012105910d1fea9f99342688a1c67699aa1",
+  "fpa-junior": "1e36bf09de876abefce0776e0ac16bb654c53263ca7ecb0d751176f5769395b4",
+  "acc-junior": "53aaa90ae97d60bd01cbe24678da2b576fdaca7aed76591ed97b9b3fb1498efd",
+  "bi-junior": "5555af493869d59a2410eb04b4a39a188876866be201697526130516b2950956",
+  "dev-quick": "5b8c5dbfb3dd3ced6fabe76cc2e2c67a7df669b36c0c1061020bfa322152f682"
+};
+const OPTION_ID_NAMESPACE = "skillcheck-option-v1";
+const REQUIRED_AUTHORITATIVE_PROPERTIES = [
+  "ATTEMPT_SIGNING_SECRET_V1",
+  "INVITE_CODE_SECRET_V1",
+  "IDENTITY_HASH_SECRET_V1"
+];
 const PUBLIC_DEV_TEST_ENABLED = false;
 const DEFAULT_YANDEX_REPORTS_FOLDER = "disk:/skillcheck/reports";
 const DEFAULT_YANDEX_ADMIN_FILE = "disk:/skillcheck/admin/results.json";
@@ -44,6 +70,24 @@ const EXPECTED_ANSWERS_BY_TEST_ID = {
   "dev-quick": 1
 };
 
+const EXPECTED_BANK_QUESTIONS_BY_TEST_ID = {
+  "fa-junior": 40,
+  "ca-junior": 80,
+  "fpa-junior": 40,
+  "acc-junior": 40,
+  "bi-junior": 40,
+  "dev-quick": 1
+};
+
+const LEGACY_BANK_VERSIONS_BY_TEST_ID = {
+  "fa-junior": "FA Junior v2.3",
+  "ca-junior": "CA Junior v2.0",
+  "fpa-junior": "FP&A Junior v2.0",
+  "acc-junior": "ACC Junior v2.0",
+  "bi-junior": "BI Junior v2.0",
+  "dev-quick": "Dev Quick Smoke Test v1.0"
+};
+
 const ALLOWED_ENGLISH_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const ALLOWED_CANDIDATE_SOURCES = [
   "HH.ru",
@@ -62,22 +106,24 @@ const ALLOWED_CANDIDATE_EXPERIENCE = [
 ];
 
 const TEST_VERSIONS_BY_ID = {
-  "fa-junior": "FA Junior v2.3",
-  "ca-junior": "CA Junior v1.0",
-  "fpa-junior": "FP&A Junior v1.0",
-  "acc-junior": "ACC Junior v1.0",
-  "bi-junior": "BI Junior v1.0",
-  "dev-quick": "DEV Quick v1.0"
+  "fa-junior": "FA Junior v3.0",
+  "ca-junior": "CA Junior v3.0",
+  "fpa-junior": "FP&A Junior v3.0",
+  "acc-junior": "ACC Junior v3.0",
+  "bi-junior": "BI Junior v3.0",
+  "dev-quick": "DEV Quick v2.0"
 };
 
 const BANK_VERSIONS_BY_ID = {
-  "fa-junior": "FA Junior v2.3",
-  "ca-junior": "CA Junior v2.0",
-  "fpa-junior": "FP&A Junior v2.0",
-  "acc-junior": "ACC Junior v2.0",
-  "bi-junior": "BI Junior v2.0",
-  "dev-quick": "Dev Quick Smoke Test v1.0"
+  "fa-junior": "FA Junior v3.0",
+  "ca-junior": "CA Junior v3.0",
+  "fpa-junior": "FP&A Junior v3.0",
+  "acc-junior": "ACC Junior v3.0",
+  "bi-junior": "BI Junior v3.0",
+  "dev-quick": "DEV Quick v2.0"
 };
+
+const TEST_VERSIONS_BY_ID_AUTHORITATIVE = TEST_VERSIONS_BY_ID;
 
 const ALLOWED_BLOCKS_BY_TEST_ID = {
   "fa-junior": ["excel", "finance", "reporting", "budget", "sql", "accounting"],
@@ -93,15 +139,23 @@ function doGet(e) {
   const action = String(params.action || "").trim();
 
   if (action === "checkAttempt") {
-    return jsonResponse(methodNotAllowedResponse("Проверка попытки доступна только через POST."));
+    return jsonResponse(buildClientUpgradeRequiredResponse());
+  }
+
+  if (action === "beginAttempt" || action === "saveResult") {
+    return jsonResponse(methodNotAllowedResponse("Операция доступна только через POST."));
   }
 
   if (action === "health") {
     return jsonResponse(buildPublicHealthStatus());
   }
 
-  if (action === "adminResults" || action === "adminReport") {
+  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite"].indexOf(action) !== -1) {
     return jsonResponse(methodNotAllowedResponse("Для административных операций требуется POST-запрос."));
+  }
+
+  if (action) {
+    return jsonResponse(buildValidationErrorResponse("unknown_action", "Неизвестное действие запроса."));
   }
 
   return jsonResponse({
@@ -120,44 +174,78 @@ function doPost(e) {
     if (action === "getAdminResults" || action === "adminResults") {
       const adminGuard = guardAdminRequest(String(data.password || ""), "results");
       if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
+        return jsonResponse(buildClientUpgradeRequiredResponse());
+      }
+      assertAllowedObjectKeys(data, ["action", "apiVersion", "password"], "adminResults");
       return jsonResponse(getAdminResults(String(data.password || "")));
     }
 
     if (action === "getAdminReport" || action === "adminReport") {
       const adminGuard = guardAdminRequest(String(data.password || ""), "report");
       if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
+        return jsonResponse(buildClientUpgradeRequiredResponse());
+      }
+      assertAllowedObjectKeys(data, ["action", "apiVersion", "password", "code"], "adminReport");
       return jsonResponse(getAdminReport(String(data.password || ""), String(data.code || "")));
     }
 
+    if (action === "adminCreateInvite") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "invite-create");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      return jsonResponse(adminCreateInvite(data));
+    }
+
+    if (action === "adminInvites") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "invite-list");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      return jsonResponse(adminListInvites(data));
+    }
+
+    if (action === "adminRevokeInvite") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "invite-revoke");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      return jsonResponse(adminRevokeInvite(data));
+    }
+
     if (action === "checkAttempt") {
-      const validatedAttempt = validateCheckAttemptRequest(data);
-      if (!validatedAttempt.ok) return jsonResponse(validatedAttempt.response);
-      const attemptLimit = consumeRateLimit(
-        "check-attempt",
-        validatedAttempt.data.testId + "|" + validatedAttempt.data.email + "|" + validatedAttempt.data.browserFingerprint,
-        8,
-        60
-      );
-      const globalAttemptLimit = consumeRateLimit("check-attempt-global", "shared", 120, 60);
-      if (!attemptLimit.allowed || !globalAttemptLimit.allowed) {
-        return jsonResponse(buildRateLimitedResponse(Math.max(attemptLimit.retryAfterSeconds, globalAttemptLimit.retryAfterSeconds)));
+      return jsonResponse(buildClientUpgradeRequiredResponse());
+    }
+
+    if (action === "beginAttempt") {
+      if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
+        return jsonResponse(buildClientUpgradeRequiredResponse());
       }
-      return jsonResponse(checkAttemptHash(
-        validatedAttempt.data.testId,
-        validatedAttempt.data.email,
-        validatedAttempt.data.browserFingerprint
-      ));
+      const validatedBegin = validateBeginAttemptRequest(data);
+      if (!validatedBegin.ok) return jsonResponse(validatedBegin.response);
+      const beginLimit = consumeRateLimit("begin-attempt", sha256Hex(validatedBegin.data.inviteCode), 6, 300);
+      const globalBeginLimit = consumeRateLimit("begin-attempt-global", "shared", 90, 60);
+      if (!beginLimit.allowed || !globalBeginLimit.allowed) {
+        return jsonResponse(buildRateLimitedResponse(Math.max(beginLimit.retryAfterSeconds, globalBeginLimit.retryAfterSeconds)));
+      }
+      return jsonResponse(beginAuthoritativeAttempt(validatedBegin.data));
     }
 
     if (action === "saveResult") {
-      const validatedResult = validateSubmissionRequest(data);
+      if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION || !data.attemptToken) {
+        return jsonResponse(buildClientUpgradeRequiredResponse());
+      }
+      const validatedResult = validateAuthoritativeSubmissionRequest(data);
       if (!validatedResult.ok) return jsonResponse(validatedResult.response);
-      const submissionLimit = consumeRateLimit("save-result", validatedResult.data.requestId, 6, 60);
+      const preverifiedToken = verifyAttemptToken(validatedResult.data.attemptToken, true);
+      if (!preverifiedToken.valid ||
+          preverifiedToken.claims.attemptId !== validatedResult.data.attemptId ||
+          preverifiedToken.claims.tid !== validatedResult.data.testId ||
+          preverifiedToken.claims.bv !== validatedResult.data.bankVersion) {
+        return jsonResponse(buildAttemptUnavailableResponse());
+      }
+      const submissionLimit = consumeRateLimit("save-result", preverifiedToken.claims.jti, 6, 60);
       const globalSubmissionLimit = consumeRateLimit("save-result-global", "shared", 60, 60);
       if (!submissionLimit.allowed || !globalSubmissionLimit.allowed) {
         return jsonResponse(buildRateLimitedResponse(Math.max(submissionLimit.retryAfterSeconds, globalSubmissionLimit.retryAfterSeconds)));
       }
-      return jsonResponse(saveTestResult(validatedResult.data));
+      return jsonResponse(saveAuthoritativeTestResult(validatedResult.data));
     }
 
     return jsonResponse(buildValidationErrorResponse("unknown_action", "Неизвестное действие запроса."));
@@ -207,6 +295,40 @@ function buildValidationErrorResponse(failureCode, message) {
   };
 }
 
+function buildClientUpgradeRequiredResponse() {
+  return {
+    ok: false,
+    status: "client_upgrade_required",
+    retryable: false,
+    failureCode: "client_upgrade_required",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    message: "Версия страницы устарела. Обновите страницу и начните новую попытку."
+  };
+}
+
+function buildAttemptUnavailableResponse() {
+  return {
+    ok: false,
+    status: "unavailable",
+    retryable: false,
+    failureCode: "attempt_unavailable",
+    backendVersion: BACKEND_VERSION,
+    message: "Не удалось начать попытку. Проверьте приглашение или обратитесь к организатору."
+  };
+}
+
+function buildAuthoritativeStorageErrorResponse() {
+  return {
+    ok: false,
+    status: "error",
+    retryable: true,
+    failureCode: "temporary_storage_error",
+    backendVersion: BACKEND_VERSION,
+    message: "Сервис временно недоступен. Повторите действие позже."
+  };
+}
+
 function buildRateLimitedResponse(retryAfterSeconds) {
   return {
     ok: false,
@@ -249,6 +371,127 @@ function validateCheckAttemptRequest(data) {
     }
     throw error;
   }
+}
+
+function validateBeginAttemptRequest(data) {
+  try {
+    assertAllowedObjectKeys(data, [
+      "action", "apiVersion", "beginRequestId", "testId", "inviteCode", "email",
+      "browserFingerprint", "clientBuild"
+    ], "beginAttempt");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
+      throw publicRequestError("client_upgrade_required", "Версия страницы устарела. Обновите страницу.");
+    }
+    const beginRequestId = String(data.beginRequestId || "").trim();
+    if (!/^scb_[a-z0-9]{24,40}$/.test(beginRequestId)) {
+      throw publicRequestError("invalid_begin_request_id", "Некорректный идентификатор начала попытки.");
+    }
+    const testId = validateTestId(data.testId);
+    assertPublicTestEnabled(testId);
+    const inviteCode = normalizeInviteCode(data.inviteCode);
+    if (!inviteCode) return { ok: false, response: buildAttemptUnavailableResponse() };
+    return {
+      ok: true,
+      data: {
+        action: "beginAttempt",
+        apiVersion: AUTHORITATIVE_API_VERSION,
+        beginRequestId: beginRequestId,
+        testId: testId,
+        inviteCode: inviteCode,
+        email: validateEmail(data.email),
+        browserFingerprint: validateBrowserFingerprint(data.browserFingerprint),
+        clientBuild: validateBoundedText(data.clientBuild, 100, true, "Версия страницы")
+      }
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) {
+      return { ok: false, response: buildValidationErrorResponse(error.failureCode, error.publicMessage) };
+    }
+    throw error;
+  }
+}
+
+function validateAuthoritativeSubmissionRequest(data) {
+  try {
+    assertAllowedObjectKeys(data, [
+      "action", "apiVersion", "requestId", "attemptId", "attemptToken", "testId", "bankVersion",
+      "name", "email", "telegram", "englishLevel", "candidateSource", "candidateExperience",
+      "employerShareConsent", "browserFingerprint", "tabSwitches", "clientBuild", "answers"
+    ], "saveResult");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
+      throw publicRequestError("client_upgrade_required", "Версия страницы устарела. Обновите страницу.");
+    }
+    const requestId = String(data.requestId || "").trim();
+    if (!/^scs_[a-z0-9]{24,40}$/.test(requestId)) {
+      throw publicRequestError("invalid_request_id", "Некорректный идентификатор отправки.");
+    }
+    const attemptId = String(data.attemptId || "").trim();
+    if (!/^att_[a-f0-9]{32,64}$/.test(attemptId)) {
+      throw publicRequestError("invalid_attempt", "Некорректная попытка.");
+    }
+    const attemptToken = String(data.attemptToken || "").trim();
+    if (attemptToken.length < 80 || attemptToken.length > 3000 || attemptToken.split(".").length !== 3) {
+      throw publicRequestError("invalid_attempt", "Некорректная попытка.");
+    }
+    const testId = validateTestId(data.testId);
+    assertPublicTestEnabled(testId);
+    const bankVersion = validateBoundedText(data.bankVersion, 100, true, "Версия банка");
+    if (bankVersion !== BANK_VERSIONS_BY_ID[testId]) {
+      throw publicRequestError("unsupported_test_version", "Версия теста устарела. Обновите страницу.");
+    }
+    return {
+      ok: true,
+      data: {
+        action: "saveResult",
+        apiVersion: AUTHORITATIVE_API_VERSION,
+        requestId: requestId,
+        attemptId: attemptId,
+        attemptToken: attemptToken,
+        testId: testId,
+        bankVersion: bankVersion,
+        name: validateBoundedText(data.name, 120, true, "Имя"),
+        email: validateEmail(data.email),
+        telegram: validateTelegramForRequest(data.telegram),
+        englishLevel: validateEnum(data.englishLevel, ALLOWED_ENGLISH_LEVELS, "Уровень английского"),
+        candidateSource: validateEnum(data.candidateSource, ALLOWED_CANDIDATE_SOURCES, "Источник кандидата"),
+        candidateExperience: validateEnum(data.candidateExperience, ALLOWED_CANDIDATE_EXPERIENCE, "Опыт кандидата"),
+        employerShareConsent: validateBoolean(data.employerShareConsent, "Согласие на передачу работодателю"),
+        browserFingerprint: validateBrowserFingerprint(data.browserFingerprint),
+        tabSwitches: validateInteger(data.tabSwitches, 0, 1000, "Количество уходов со вкладки"),
+        clientBuild: validateBoundedText(data.clientBuild, 100, true, "Версия страницы"),
+        answers: validateAuthoritativeAnswers(data.answers)
+      }
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) {
+      return { ok: false, response: buildValidationErrorResponse(error.failureCode, error.publicMessage) };
+    }
+    throw error;
+  }
+}
+
+function validateAuthoritativeAnswers(value) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > MAX_ANSWERS_PER_RESULT) {
+    throw publicRequestError("invalid_answers", "Ответы имеют неверный формат.");
+  }
+  const seen = Object.create(null);
+  return value.map(source => {
+    if (!isPlainObject(source)) throw publicRequestError("invalid_answer", "Один из ответов имеет неверный формат.");
+    assertAllowedObjectKeys(source, ["questionId", "optionId", "timedOut", "timeSpent"], "answer");
+    const questionId = validateIdentifier(source.questionId, 64, "ID вопроса");
+    if (seen[questionId]) throw publicRequestError("duplicate_question", "В ответах найден повтор ID вопроса.");
+    seen[questionId] = true;
+    let optionId = null;
+    if (source.optionId !== null) {
+      optionId = validateIdentifier(source.optionId, 64, "ID варианта ответа");
+    }
+    return {
+      questionId: questionId,
+      optionId: optionId,
+      timedOut: validateBoolean(source.timedOut, "Признак таймаута"),
+      timeSpent: validateNumber(source.timeSpent, 0, 3600, "Время ответа")
+    };
+  });
 }
 
 function validateSubmissionRequest(data) {
@@ -543,9 +786,9 @@ function assertAllowedObjectKeys(value, allowedKeys, objectName) {
   if (!isPlainObject(value)) {
     throw publicRequestError("invalid_object", String(objectName || "Объект") + " имеет неверный формат.");
   }
-  const allowed = {};
+  const allowed = Object.create(null);
   allowedKeys.forEach(key => { allowed[key] = true; });
-  const unknown = Object.keys(value).find(key => !allowed[key]);
+  const unknown = Object.keys(value).find(key => !Object.prototype.hasOwnProperty.call(allowed, key));
   if (unknown) throw publicRequestError("unknown_field", "Запрос содержит неизвестное поле.");
 }
 
@@ -861,7 +1104,7 @@ function generateResultCode(testId) {
   return prefix + "-" + suffix;
 }
 
-function generateUniqueResultCode(testId) {
+function generateUniqueResultCode(testId, reservedSessions) {
   const adminResults = readJsonFromYandexDisk(getAdminFilePath(), []);
   const attempts = readJsonFromYandexDisk(getAttemptsFilePath(), []);
   const existingCodes = {};
@@ -870,6 +1113,9 @@ function generateUniqueResultCode(testId) {
   });
   attempts.forEach(attempt => {
     if (attempt && attempt.code) existingCodes[String(attempt.code)] = true;
+  });
+  (Array.isArray(reservedSessions) ? reservedSessions : []).forEach(session => {
+    if (session && session.code) existingCodes[String(session.code)] = true;
   });
 
   for (let i = 0; i < 20; i++) {
@@ -894,7 +1140,13 @@ function buildTxtReport(resultData) {
   report += "Test ID: " + safeText(resultData.testId) + "\n";
   report += "Тест: " + safeText(testTitle) + "\n";
   report += "Дата и время прохождения: " + safeText(resultData.completedAt) + "\n";
-  report += "Проверка балла: клиентский расчёт, структурно проверен backend, но не подтверждён закрытым ключом ответов\n\n";
+  report += resultData.scoreVerification === SCORE_VERIFICATION_SERVER
+    ? "Проверка балла: серверный расчёт по закрытому ключу ответов (" + safeText(resultData.scoringAlgorithmVersion || AUTHORITATIVE_SCORING_VERSION) + ")\n"
+    : "Проверка балла: клиентский расчёт, структурно проверен backend, но не подтверждён закрытым ключом ответов\n";
+  if (resultData.scoreVerification === SCORE_VERIFICATION_SERVER) {
+    report += "Проверка телеметрии: клиентские технические признаки не верифицированы\n";
+  }
+  report += "\n";
 
   report += "КАНДИДАТ\n";
   report += "--------\n";
@@ -912,6 +1164,9 @@ function buildTxtReport(resultData) {
   report += "Итоговый балл: " + Number(resultData.finalScore || 0) + "\n";
   report += "Процент: " + Number(resultData.percent || resultData.score || 0) + "\n";
   report += "Штрафы: " + Number(resultData.penalty || 0) + "\n";
+  if (resultData.scoreVerification === SCORE_VERIFICATION_SERVER) {
+    report += "Рекомендательный штраф по клиентской телеметрии (не влияет на итог): " + Number(resultData.advisoryPenalty || 0) + "\n";
+  }
   report += "Уходы со вкладки: " + Number(resultData.tabSwitches || 0) + "\n";
   report += "Trust Score: " + Number(resultData.trustScore || 0) + "\n";
   report += "Плашка: " + safeText(resultData.badge || "") + "\n";
@@ -1142,7 +1397,7 @@ function getYandexResourceMetadata(path) {
   const normalizedPath = normalizeDiskPath(path);
   const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
     encodeURIComponent(normalizedPath) +
-    "&fields=name,type,path,size,created,modified";
+    "&fields=name,type,path,size,created,modified,public_key,public_url,share";
 
   try {
     const resource = yandexApiRequest("get", url, null, null);
@@ -1153,7 +1408,10 @@ function getYandexResourceMetadata(path) {
       path: String(resource.path || normalizedPath),
       size: resource.type === "file" ? Number(resource.size || 0) : null,
       created: String(resource.created || ""),
-      modified: String(resource.modified || "")
+      modified: String(resource.modified || ""),
+      publicKey: String(resource.public_key || ""),
+      publicUrl: String(resource.public_url || ""),
+      shared: Boolean(resource.share)
     };
   } catch (error) {
     if (String(error.message || "").indexOf("Yandex API error 404") !== -1) {
@@ -1164,7 +1422,10 @@ function getYandexResourceMetadata(path) {
         path: normalizedPath,
         size: null,
         created: "",
-        modified: ""
+        modified: "",
+        publicKey: "",
+        publicUrl: "",
+        shared: false
       };
     }
     throw error;
@@ -1389,28 +1650,46 @@ function appendAdminResult(summaryData) {
     tabSwitches: Number(summaryData.tabSwitches || 0),
     date: String(summaryData.date || ""),
     status: summaryData.status === "passed" ? "passed" : "failed",
-    badge: getAdminBadge(Number(summaryData.finalScore || 0), Number(summaryData.tabSwitches || 0)),
+    badge: summaryData.scoreVerification === SCORE_VERIFICATION_SERVER
+      ? String(summaryData.badge || getAdminBadge(Number(summaryData.finalScore || 0), 0))
+      : getAdminBadge(Number(summaryData.finalScore || 0), Number(summaryData.tabSwitches || 0)),
     reportCreated: Boolean(summaryData.reportCreated),
     reportPath: String(summaryData.reportPath || ""),
     reportCode: String(summaryData.reportCode || summaryData.code || ""),
     requestId: normalizedRequestId,
     payloadHash: String(summaryData.payloadHash || ""),
-    payloadHashVersion: Number(summaryData.payloadHashVersion || 0) === 2 ? 2 : 1,
-    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
+    payloadHashVersion: Number(summaryData.payloadHashVersion || 0) === 3 ? 3 : (Number(summaryData.payloadHashVersion || 0) === 2 ? 2 : 1),
+    attemptId: String(summaryData.attemptId || ""),
+    bankVersion: String(summaryData.bankVersion || ""),
+    rawScore: Number(summaryData.rawScore || 0),
+    rawTotal: Number(summaryData.rawTotal || 0),
+    scoringAlgorithmVersion: String(summaryData.scoringAlgorithmVersion || ""),
+    telemetryVerification: String(summaryData.telemetryVerification || ""),
+    advisoryPenalty: Number(summaryData.advisoryPenalty || 0),
+    scoreVerification: summaryData.scoreVerification === SCORE_VERIFICATION_SERVER
+      ? SCORE_VERIFICATION_SERVER
+      : SCORE_VERIFICATION_CLIENT_REPORTED
   };
   const existingIndex = results.findIndex(result => result && (
     (normalizedRequestId && result.requestId === normalizedRequestId) ||
     (row.code && result.code === row.code)
   ));
 
-  if (existingIndex >= 0) results[existingIndex] = Object.assign({}, results[existingIndex], row);
-  else results.push(row);
+  if (existingIndex >= 0) {
+    const existing = results[existingIndex];
+    if (!normalizedRequestId || existing.requestId !== normalizedRequestId || !row.code || existing.code !== row.code) {
+      throw new Error("Admin result identity conflict.");
+    }
+    results[existingIndex] = Object.assign({}, existing, row);
+  } else {
+    results.push(row);
+  }
   writeJsonToYandexDisk(path, results);
 }
 
 function normalizeSubmissionRequestId(value) {
   const requestId = String(value || "").trim();
-  return /^sc_[A-Za-z0-9-]{16,80}$/.test(requestId) ? requestId : "";
+  return /^(?:sc_[A-Za-z0-9-]{16,80}|scs_[a-z0-9]{24,40})$/.test(requestId) ? requestId : "";
 }
 
 function maskRequestIdForLog(value) {
@@ -1550,7 +1829,9 @@ function buildSavedResultResponse(row, replayed) {
     passStatus: row.status === "passed" ? "passed" : "failed",
     reportCreated: Boolean(row.reportCreated),
     replayed: Boolean(replayed),
-    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED,
+    scoreVerification: row.scoreVerification === SCORE_VERIFICATION_SERVER
+      ? SCORE_VERIFICATION_SERVER
+      : SCORE_VERIFICATION_CLIENT_REPORTED,
     message: "Сохраните код результата: " + String(row.code || "")
   };
 }
@@ -1582,12 +1863,17 @@ function upsertAttemptRecord(attemptData) {
     status: attemptData.status === "passed" ? "passed" : "failed",
     requestId: requestId,
     payloadHash: String(attemptData.payloadHash || ""),
-    payloadHashVersion: Number(attemptData.payloadHashVersion || 0) === 2 ? 2 : 1,
+    payloadHashVersion: Number(attemptData.payloadHashVersion || 0) === 3 ? 3 : (Number(attemptData.payloadHashVersion || 0) === 2 ? 2 : 1),
     submissionState: attemptData.submissionState === "completed" ? "completed" : "reserved",
     finalScore: Number(attemptData.finalScore || 0),
     percent: Number(attemptData.percent || 0),
     reportCreated: Boolean(attemptData.reportCreated),
-    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
+    attemptId: String(attemptData.attemptId || ""),
+    bankVersion: String(attemptData.bankVersion || ""),
+    scoringAlgorithmVersion: String(attemptData.scoringAlgorithmVersion || ""),
+    scoreVerification: attemptData.scoreVerification === SCORE_VERIFICATION_SERVER
+      ? SCORE_VERIFICATION_SERVER
+      : SCORE_VERIFICATION_CLIENT_REPORTED
   };
   const existingIndex = attempts.findIndex(attempt => attempt && (
     (requestId && attempt.requestId === requestId) ||
@@ -1692,22 +1978,53 @@ function sanitizeAdminResult(row) {
   const testId = Object.prototype.hasOwnProperty.call(TEST_TITLES_BY_ID, row.testId)
     ? String(row.testId)
     : "unknown";
-  const finalScore = Number(row.finalScore || 0);
-  const tabSwitches = Number(row.tabSwitches || 0);
+  const rawScoreCandidate = Number(row.rawScore);
+  const rawTotalCandidate = Number(row.rawTotal);
+  const percentCandidate = Number(row.percent);
+  const finalScoreCandidate = Number(row.finalScore);
+  const tabSwitchesCandidate = Number(row.tabSwitches);
+  const rawScore = Number.isFinite(rawScoreCandidate) ? rawScoreCandidate : 0;
+  const rawTotal = Number.isFinite(rawTotalCandidate) ? rawTotalCandidate : 0;
+  const percent = Number.isFinite(percentCandidate) ? percentCandidate : 0;
+  const finalScore = Number.isFinite(finalScoreCandidate) ? finalScoreCandidate : 0;
+  const tabSwitches = Number.isInteger(tabSwitchesCandidate) && tabSwitchesCandidate >= 0
+    ? tabSwitchesCandidate
+    : 0;
   const code = normalizeResultCode(row.code);
+  const expectedStatus = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
+  const expectedPercent = rawTotal > 0 ? Math.round(rawScore * 100 / rawTotal) : -1;
+  const isServerVerified = testId !== "unknown" &&
+    row.scoreVerification === SCORE_VERIFICATION_SERVER &&
+    row.scoringAlgorithmVersion === AUTHORITATIVE_SCORING_VERSION &&
+    row.bankVersion === BANK_VERSIONS_BY_ID[testId] &&
+    Number.isFinite(rawScoreCandidate) && rawScore >= 0 &&
+    Number.isFinite(rawTotalCandidate) && rawTotal > 0 && rawScore <= rawTotal &&
+    Number.isFinite(percentCandidate) && percent >= 0 && percent <= 100 &&
+    Number.isFinite(finalScoreCandidate) && finalScore >= 0 && finalScore <= 100 &&
+    percent === expectedPercent && finalScore === percent &&
+    (row.status === "passed" || row.status === "failed") && row.status === expectedStatus &&
+    Number.isInteger(tabSwitchesCandidate) && tabSwitchesCandidate >= 0;
 
   return {
     code: code || "INVALID",
     testId: testId,
     testTitle: TEST_TITLES_BY_ID[testId] || "Неизвестный тест",
     finalScore: finalScore,
-    percent: Number(row.percent || 0),
+    percent: percent,
     tabSwitches: tabSwitches,
     date: String(row.date || ""),
     status: row.status === "passed" ? "passed" : "failed",
-    badge: getAdminBadge(finalScore, tabSwitches),
+    badge: isServerVerified
+      ? String(row.badge || getAdminBadge(finalScore, 0))
+      : getAdminBadge(finalScore, tabSwitches),
     reportCreated: Boolean(row.reportCreated),
-    scoreVerification: SCORE_VERIFICATION_CLIENT_REPORTED
+    bankVersion: String(row.bankVersion || ""),
+    scoringAlgorithmVersion: String(row.scoringAlgorithmVersion || ""),
+    telemetryVerification: String(row.telemetryVerification || ""),
+    advisoryPenalty: Number(row.advisoryPenalty || 0),
+    scoreVerification: isServerVerified
+      ? SCORE_VERIFICATION_SERVER
+      : SCORE_VERIFICATION_CLIENT_REPORTED
   };
 }
 
@@ -1723,6 +2040,39 @@ function ensureSkillCheckFolders() {
   ensureYandexFolderExists(getReportsFolderPath());
   ensureYandexFolderExists(getParentDiskPath(getAdminFilePath()));
   ensureYandexFolderExists(getParentDiskPath(getAttemptsFilePath()));
+  ensureYandexFolderExists(getParentDiskPath(getInvitesFilePath()));
+  ensureYandexFolderExists(getParentDiskPath(getAttemptSessionsFilePath()));
+  ensureYandexFolderExists(getPrivateBanksFolderPath());
+}
+
+function assertAuthoritativePrivateStorageNotShared(testId) {
+  const privateFolder = getParentDiskPath(getPrivateBanksFolderPath());
+  const targets = [
+    "disk:/skillcheck",
+    privateFolder,
+    getPrivateBanksFolderPath(),
+    getReportsFolderPath(),
+    getParentDiskPath(getAdminFilePath()),
+    getAdminFilePath(),
+    getInvitesFilePath(),
+    getAttemptSessionsFilePath(),
+    getAttemptsFilePath()
+  ];
+  const testIds = testId ? [validateTestId(testId)] : Object.keys(BANK_VERSIONS_BY_ID);
+  testIds.forEach(id => {
+    targets.push(getAuthoritativePrivateBankPath(id, BANK_VERSIONS_BY_ID[id]));
+  });
+  const seen = Object.create(null);
+  targets.forEach(path => {
+    const normalizedPath = normalizeDiskPath(path);
+    if (seen[normalizedPath]) return;
+    seen[normalizedPath] = true;
+    const metadata = getYandexResourceMetadata(normalizedPath);
+    if (!metadata.exists) return;
+    if (metadata.publicKey || metadata.publicUrl || metadata.shared) {
+      throw new Error("Authoritative private storage must not be published or shared.");
+    }
+  });
 }
 
 function parseRequestBody(e) {
@@ -1780,6 +2130,18 @@ function getAdminFilePath() {
 
 function getAttemptsFilePath() {
   return getConfiguredDiskPath("YANDEX_DISK_ATTEMPTS_FILE", DEFAULT_YANDEX_ATTEMPTS_FILE);
+}
+
+function getInvitesFilePath() {
+  return getConfiguredDiskPath("YANDEX_DISK_INVITES_FILE", DEFAULT_YANDEX_INVITES_FILE);
+}
+
+function getAttemptSessionsFilePath() {
+  return getConfiguredDiskPath("YANDEX_DISK_ATTEMPT_SESSIONS_FILE", DEFAULT_YANDEX_SESSIONS_FILE);
+}
+
+function getPrivateBanksFolderPath() {
+  return getConfiguredDiskPath("YANDEX_DISK_PRIVATE_BANKS_FOLDER", DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER);
 }
 
 function normalizeDiskPath(path) {
@@ -1892,6 +2254,1395 @@ function sanitizeYandexResponseHeaders(headers) {
   });
 
   return sanitizeYandexResponseText(JSON.stringify(safeHeaders));
+}
+
+function hmacSha256Bytes(secret, value) {
+  return Utilities.computeHmacSha256Signature(
+    String(value || ""),
+    String(secret || ""),
+    Utilities.Charset.UTF_8
+  );
+}
+
+function bytesToHex(bytes) {
+  return bytes.map(byte => {
+    const value = byte < 0 ? byte + 256 : byte;
+    return ("0" + value.toString(16)).slice(-2);
+  }).join("");
+}
+
+function hmacSha256Hex(secret, value) {
+  return bytesToHex(hmacSha256Bytes(secret, value));
+}
+
+function timingSafeEqual(left, right) {
+  const a = String(left || "");
+  const b = String(right || "");
+  let difference = a.length ^ b.length;
+  const length = Math.max(a.length, b.length, 1);
+  for (let i = 0; i < length; i++) {
+    difference |= a.charCodeAt(i % Math.max(a.length, 1)) ^ b.charCodeAt(i % Math.max(b.length, 1));
+  }
+  return difference === 0;
+}
+
+function randomHex(length) {
+  let source = "";
+  while (source.length < Number(length || 32)) {
+    source += sha256Hex([
+      Utilities.getUuid(),
+      Utilities.getUuid(),
+      String(Date.now()),
+      String(Math.random())
+    ].join("|"));
+  }
+  return source.slice(0, Number(length || 32));
+}
+
+function ensureAuthoritativeSecret(propertyName) {
+  const properties = PropertiesService.getScriptProperties();
+  let value = properties.getProperty(propertyName);
+  if (!value) {
+    value = randomHex(64);
+    properties.setProperty(propertyName, value);
+  }
+  return value;
+}
+
+function assertAuthoritativeConfigurationReady() {
+  REQUIRED_AUTHORITATIVE_PROPERTIES.forEach(name => getRequiredProperty(name));
+}
+
+function base64UrlEncodeText(value) {
+  return Utilities.base64EncodeWebSafe(String(value || ""), Utilities.Charset.UTF_8).replace(/=+$/g, "");
+}
+
+function base64UrlEncodeBytes(value) {
+  return Utilities.base64EncodeWebSafe(value).replace(/=+$/g, "");
+}
+
+function base64UrlDecodeText(value) {
+  return Utilities.newBlob(Utilities.base64DecodeWebSafe(String(value || ""))).getDataAsString("UTF-8");
+}
+
+function normalizeAuthoritativeQuestionId(testId, value, index) {
+  if (testId === "ca-junior") {
+    const numeric = Number(value);
+    if (!Number.isInteger(numeric) || numeric < 1 || numeric > 9999) {
+      throw new Error("CA bank contains an invalid question ID.");
+    }
+    return "ca_" + String(numeric).padStart(3, "0");
+  }
+  const questionId = String(value || "").trim() || String(testId || "q").replace(/-junior$/, "") + "_" + String(index + 1).padStart(3, "0");
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(questionId)) throw new Error("Bank contains an invalid question ID.");
+  return questionId;
+}
+
+function buildAuthoritativeOptionId(testId, questionId, exactOptionText) {
+  return "opt_" + sha256Hex(
+    OPTION_ID_NAMESPACE + "|" + testId + "|" + questionId + "|" + String(exactOptionText)
+  ).slice(0, 20);
+}
+
+function getBankVersionSlug(bankVersion) {
+  const slug = String(bankVersion || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (!slug) throw new Error("Private bank version slug is empty.");
+  return slug.slice(0, 80);
+}
+
+function getAuthoritativePrivateBankPath(testId, bankVersion) {
+  const testFolder = joinDiskPath(getPrivateBanksFolderPath(), validateTestId(testId));
+  return joinDiskPath(testFolder, getBankVersionSlug(bankVersion) + ".json");
+}
+
+function buildAuthoritativePublicBank(privateBank) {
+  return {
+    schemaVersion: 2,
+    testId: String(privateBank.testId || ""),
+    testVersion: String(privateBank.testVersion || ""),
+    bankVersion: String(privateBank.bankVersion || ""),
+    questionsPerAttempt: Number(privateBank.questionsPerAttempt || 0),
+    blocks: JSON.parse(JSON.stringify(privateBank.blocks || {})),
+    questions: (privateBank.questions || []).map(question => ({
+      id: String(question.id || ""),
+      topic: String(question.topic || ""),
+      block: String(question.block || ""),
+      difficulty: String(question.difficulty || "medium"),
+      timeLimit: Number(question.timeLimit || 0),
+      points: Number(question.points || 0),
+      text: String(question.text || ""),
+      context: String(question.context || ""),
+      options: (question.options || []).map(option => ({
+        id: String(option.id || ""),
+        text: String(option.text || "")
+      }))
+    }))
+  };
+}
+
+function calculateAuthoritativePublicDigest(privateBank) {
+  return sha256Hex(JSON.stringify(buildAuthoritativePublicBank(privateBank)));
+}
+
+function readRequiredJsonArray(path, label) {
+  const text = readTextFromYandexDisk(path);
+  if (text === null) throw new Error(String(label || "Private JSON") + " is missing.");
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new Error(String(label || "Private JSON") + " is corrupt.");
+  }
+  if (!Array.isArray(parsed)) throw new Error(String(label || "Private JSON") + " must contain an array.");
+  return parsed;
+}
+
+function writeRequiredJsonArray(path, rows) {
+  if (!Array.isArray(rows)) throw new Error("Private JSON write requires an array.");
+  writeJsonToYandexDisk(path, rows);
+}
+
+function assertExactPrivateKeys(value, expectedKeys, label) {
+  const actualKeys = isPlainObject(value) ? Object.keys(value) : [];
+  if (!isPlainObject(value) || actualKeys.length !== expectedKeys.length ||
+      expectedKeys.some(key => !Object.prototype.hasOwnProperty.call(value, key))) {
+    throw new Error(String(label || "Private object") + " has an invalid field set.");
+  }
+}
+
+function assertAllowedLegacyKeys(value, allowedKeys, label) {
+  if (!isPlainObject(value) || Object.keys(value).some(key => allowedKeys.indexOf(key) === -1)) {
+    throw new Error(String(label || "Legacy object") + " contains an unknown field.");
+  }
+}
+
+function getExpectedAuthoritativeQuestionId(testId, index) {
+  const prefixes = {
+    "fa-junior": "fa",
+    "ca-junior": "ca",
+    "fpa-junior": "fpa",
+    "acc-junior": "acc",
+    "bi-junior": "bi",
+    "dev-quick": "dev_quick"
+  };
+  return String(prefixes[testId] || "q") + "_" + String(index + 1).padStart(3, "0");
+}
+
+function validateAuthoritativePrivateBankObject(bank, testId, bankVersion) {
+  assertExactPrivateKeys(bank, [
+    "schemaVersion", "testId", "testVersion", "bankVersion", "questionsPerAttempt",
+    "blocks", "questions", "publicDigest"
+  ], "Authoritative private bank");
+  if (Number(bank.schemaVersion) !== 2 || bank.testId !== testId ||
+      bank.testVersion !== TEST_VERSIONS_BY_ID_AUTHORITATIVE[testId] || bank.bankVersion !== bankVersion ||
+      Number(bank.questionsPerAttempt) !== EXPECTED_ANSWERS_BY_TEST_ID[testId] || !Array.isArray(bank.questions) ||
+      bank.questions.length !== EXPECTED_BANK_QUESTIONS_BY_TEST_ID[testId] || !isPlainObject(bank.blocks)) {
+    throw new Error("Authoritative private bank metadata is invalid.");
+  }
+  const allowedBlocks = ALLOWED_BLOCKS_BY_TEST_ID[testId] || [];
+  const bankBlockKeys = Object.keys(bank.blocks);
+  if (bankBlockKeys.length !== allowedBlocks.length ||
+      allowedBlocks.some(key => !Object.prototype.hasOwnProperty.call(bank.blocks, key)) ||
+      Object.keys(bank.blocks).some(key => typeof bank.blocks[key] !== "string" ||
+        !String(bank.blocks[key]).trim() || String(bank.blocks[key]).length > 160)) {
+    throw new Error("Authoritative private bank blocks are invalid.");
+  }
+
+  const seenQuestions = Object.create(null);
+  const seenOptionsGlobally = Object.create(null);
+  bank.questions.forEach((question, index) => {
+    assertExactPrivateKeys(question, [
+      "id", "topic", "block", "difficulty", "timeLimit", "points", "text", "context",
+      "options", "correctOptionId", "comment"
+    ], "Authoritative private question");
+    const questionId = String(question.id || "");
+    if (questionId !== getExpectedAuthoritativeQuestionId(testId, index) || seenQuestions[questionId]) {
+      throw new Error("Authoritative private bank question IDs/order are invalid.");
+    }
+    seenQuestions[questionId] = true;
+    const difficulty = String(question.difficulty || "");
+    const timeLimit = Number(question.timeLimit);
+    const points = Number(question.points);
+    if (allowedBlocks.indexOf(String(question.block || "")) === -1 ||
+        ["easy", "medium", "hard", "calc", "case"].indexOf(difficulty) === -1 ||
+        !Number.isInteger(timeLimit) || timeLimit < 10 || timeLimit > 600 ||
+        !Number.isFinite(points) || points <= 0 || points > 100 ||
+        typeof question.text !== "string" || !question.text.trim() || question.text.length > 5000 ||
+        typeof question.topic !== "string" || question.topic.length > 160 ||
+        typeof question.context !== "string" || question.context.length > 5000 ||
+        typeof question.comment !== "string" || question.comment.length > 5000 ||
+        !Array.isArray(question.options) || question.options.length !== 4) {
+      throw new Error("Authoritative private bank question metadata is invalid.");
+    }
+    const optionIds = Object.create(null);
+    let previousOptionId = "";
+    question.options.forEach(option => {
+      assertExactPrivateKeys(option, ["id", "text"], "Authoritative private option");
+      const optionId = String(option.id || "");
+      const optionText = option.text;
+      if (typeof optionText !== "string" || !optionText.trim() || optionText.length > 1200 ||
+          !/^opt_[a-f0-9]{20}$/.test(optionId) || optionIds[optionId] || seenOptionsGlobally[optionId] ||
+          optionId !== buildAuthoritativeOptionId(testId, questionId, optionText) ||
+          (previousOptionId && optionId <= previousOptionId)) {
+        throw new Error("Authoritative private bank option IDs/order are invalid.");
+      }
+      optionIds[optionId] = true;
+      seenOptionsGlobally[optionId] = true;
+      previousOptionId = optionId;
+    });
+    if (!/^opt_[a-f0-9]{20}$/.test(String(question.correctOptionId || "")) ||
+        !optionIds[String(question.correctOptionId || "")]) {
+      throw new Error("Authoritative private bank answer key is invalid.");
+    }
+  });
+  const publicDigest = String(bank.publicDigest || "");
+  if (!/^[a-f0-9]{64}$/.test(publicDigest) ||
+      !timingSafeEqual(publicDigest, calculateAuthoritativePublicDigest(bank))) {
+    throw new Error("Authoritative private bank public digest is invalid.");
+  }
+  return bank;
+}
+
+function getPrivateBankAnchorKey(testId, bankVersion) {
+  return String(testId || "") + "|" + String(bankVersion || "");
+}
+
+function getPrivateBankArtifactDigest(bank) {
+  return sha256Hex(JSON.stringify(bank));
+}
+
+function parsePrivateBankTrustAnchors(required) {
+  const source = getScriptProperty("PRIVATE_BANK_DIGESTS_V1");
+  if (!source) {
+    if (required) throw new Error("Private bank trust anchors are missing.");
+    return null;
+  }
+  let anchors;
+  try {
+    anchors = JSON.parse(source);
+  } catch (error) {
+    throw new Error("Private bank trust anchors are corrupt.");
+  }
+  if (!isPlainObject(anchors) || Object.keys(anchors).some(key =>
+    !/^[a-z0-9-]+\|[^\u0000-\u001f]{1,100}$/.test(key) || !/^[a-f0-9]{64}$/.test(String(anchors[key] || "")))) {
+    throw new Error("Private bank trust anchors are invalid.");
+  }
+  return anchors;
+}
+
+function assertPrivateBankTrustAnchor(bank) {
+  const anchors = parsePrivateBankTrustAnchors(true);
+  const key = getPrivateBankAnchorKey(bank.testId, bank.bankVersion);
+  const expected = String(anchors[key] || "");
+  const actual = getPrivateBankArtifactDigest(bank);
+  if (!expected || !timingSafeEqual(expected, actual)) {
+    throw new Error("Authoritative private bank trust anchor mismatch.");
+  }
+}
+
+function loadAuthoritativePrivateBank(testId, bankVersion, skipPrivateAnchor) {
+  const expectedVersion = BANK_VERSIONS_BY_ID[testId];
+  if (!expectedVersion || bankVersion !== expectedVersion) throw new Error("Unsupported authoritative bank version.");
+  const path = getAuthoritativePrivateBankPath(testId, bankVersion);
+  const text = readTextFromYandexDisk(path);
+  if (text === null) throw new Error("Authoritative private bank is missing.");
+  let bank;
+  try {
+    bank = JSON.parse(text);
+  } catch (error) {
+    throw new Error("Authoritative private bank is corrupt.");
+  }
+  validateAuthoritativePrivateBankObject(bank, testId, bankVersion);
+  if (!skipPrivateAnchor) assertPrivateBankTrustAnchor(bank);
+  return bank;
+}
+
+function buildPrivateBankFromLegacySource(testId, source) {
+  const expectedQuestionCount = EXPECTED_BANK_QUESTIONS_BY_TEST_ID[testId];
+  const expectedQuestionsPerAttempt = EXPECTED_ANSWERS_BY_TEST_ID[testId];
+  const expectedLegacyVersion = LEGACY_BANK_VERSIONS_BY_TEST_ID[testId];
+  const allowedBlocks = ALLOWED_BLOCKS_BY_TEST_ID[testId] || [];
+  if (!expectedQuestionCount || !expectedQuestionsPerAttempt || !expectedLegacyVersion || !allowedBlocks.length) {
+    throw new Error("Legacy public bank target is unsupported.");
+  }
+  assertAllowedLegacyKeys(source, [
+    "testId", "version", "totalQuestions", "questionsPerTest", "questionsPerAttempt", "blocks", "questions"
+  ], "Legacy public bank");
+  if (source.testId !== testId || source.version !== expectedLegacyVersion ||
+      !Number.isInteger(source.totalQuestions) || source.totalQuestions !== expectedQuestionCount ||
+      !Array.isArray(source.questions) || source.questions.length !== expectedQuestionCount ||
+      (Object.prototype.hasOwnProperty.call(source, "questionsPerTest") &&
+        (!Number.isInteger(source.questionsPerTest) || source.questionsPerTest !== expectedQuestionsPerAttempt)) ||
+      (Object.prototype.hasOwnProperty.call(source, "questionsPerAttempt") &&
+        (!Number.isInteger(source.questionsPerAttempt) || source.questionsPerAttempt !== expectedQuestionsPerAttempt)) ||
+      !isPlainObject(source.blocks) ||
+      Object.keys(source.blocks).length !== allowedBlocks.length ||
+      allowedBlocks.some(key => !Object.prototype.hasOwnProperty.call(source.blocks, key)) ||
+      Object.keys(source.blocks).some(key => typeof source.blocks[key] !== "string" ||
+        !source.blocks[key].trim() || source.blocks[key].length > 160)) {
+    throw new Error("Legacy public bank metadata is invalid.");
+  }
+
+  const targetVersion = BANK_VERSIONS_BY_ID[testId];
+  const seenOptionIds = Object.create(null);
+  const questions = source.questions.map((question, index) => {
+    assertAllowedLegacyKeys(question, [
+      "id", "topic", "block", "difficulty", "timeLimit", "points", "text", "context",
+      "options", "correct", "correctAnswer", "comment", "explanation", "active"
+    ], "Legacy public question");
+    const questionId = normalizeAuthoritativeQuestionId(testId, question.id, index);
+    const expectedQuestionId = getExpectedAuthoritativeQuestionId(testId, index);
+    const originalOptions = question.options;
+    const correctIndex = question.correct;
+    if (questionId !== expectedQuestionId ||
+        (testId === "ca-junior" && (!Number.isInteger(question.id) || question.id !== index + 1)) ||
+        (testId !== "ca-junior" && question.id !== expectedQuestionId) ||
+        allowedBlocks.indexOf(question.block) === -1 ||
+        ["easy", "medium", "hard", "calc", "case"].indexOf(question.difficulty) === -1 ||
+        !Number.isInteger(question.timeLimit) || question.timeLimit < 10 || question.timeLimit > 600 ||
+        typeof question.points !== "number" || !Number.isFinite(question.points) || question.points <= 0 || question.points > 100 ||
+        typeof question.text !== "string" || !question.text.trim() || question.text.length > 5000 ||
+        !Array.isArray(originalOptions) || originalOptions.length !== 4 ||
+        originalOptions.some(option => typeof option !== "string" || !option.trim() || option.length > 1200) ||
+        !Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= originalOptions.length ||
+        (Object.prototype.hasOwnProperty.call(question, "active") && question.active !== true) ||
+        (Object.prototype.hasOwnProperty.call(question, "topic") &&
+          (typeof question.topic !== "string" || question.topic.length > 160)) ||
+        (Object.prototype.hasOwnProperty.call(question, "context") &&
+          (typeof question.context !== "string" || question.context.length > 5000)) ||
+        (Object.prototype.hasOwnProperty.call(question, "comment") &&
+          (typeof question.comment !== "string" || question.comment.length > 5000)) ||
+        (Object.prototype.hasOwnProperty.call(question, "explanation") &&
+          (typeof question.explanation !== "string" || question.explanation.length > 5000)) ||
+        (Object.prototype.hasOwnProperty.call(question, "correctAnswer") &&
+          (typeof question.correctAnswer !== "string" || question.correctAnswer !== originalOptions[correctIndex]))) {
+      throw new Error("Legacy public bank question is invalid.");
+    }
+    const options = originalOptions.map(text => {
+      const optionId = buildAuthoritativeOptionId(testId, questionId, text);
+      if (seenOptionIds[optionId]) throw new Error("Legacy public bank option IDs collide.");
+      seenOptionIds[optionId] = true;
+      return { id: optionId, text: text };
+    }).sort((left, right) => left.id.localeCompare(right.id));
+    const correctOptionId = buildAuthoritativeOptionId(testId, questionId, originalOptions[correctIndex]);
+    return {
+      id: questionId,
+      topic: String(question.topic || ""),
+      block: question.block,
+      difficulty: question.difficulty,
+      timeLimit: question.timeLimit,
+      points: question.points,
+      text: question.text,
+      context: String(question.context || ""),
+      options: options,
+      correctOptionId: correctOptionId,
+      comment: String(question.comment || question.explanation || "")
+    };
+  });
+  const privateBank = {
+    schemaVersion: 2,
+    testId: testId,
+    testVersion: TEST_VERSIONS_BY_ID_AUTHORITATIVE[testId],
+    bankVersion: targetVersion,
+    questionsPerAttempt: EXPECTED_ANSWERS_BY_TEST_ID[testId],
+    blocks: JSON.parse(JSON.stringify(source.blocks || {})),
+    questions: questions,
+    publicDigest: ""
+  };
+  privateBank.publicDigest = calculateAuthoritativePublicDigest(privateBank);
+  validateAuthoritativePrivateBankObject(privateBank, testId, targetVersion);
+  return privateBank;
+}
+
+function loadAuthoritativePrivateBankShapeOnly(bank) {
+  if (!isPlainObject(bank)) throw new Error("Generated authoritative private bank is invalid.");
+  return validateAuthoritativePrivateBankObject(bank, bank.testId, bank.bankVersion);
+}
+
+function initializePrivateArrayFileIfMissing(path) {
+  const text = readTextFromYandexDisk(path);
+  if (text === null) {
+    writeRequiredJsonArray(path, []);
+    return true;
+  }
+  try {
+    if (!Array.isArray(JSON.parse(text))) throw new Error("not-array");
+  } catch (error) {
+    throw new Error("Existing private state file is corrupt and was not overwritten.");
+  }
+  return false;
+}
+
+function bootstrapAuthoritativeBanksFromLegacyPages() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+  const properties = PropertiesService.getScriptProperties();
+  REQUIRED_AUTHORITATIVE_PROPERTIES.forEach(ensureAuthoritativeSecret);
+  properties.setProperty("ATTEMPT_ISSUANCE_ENABLED", "false");
+  ensureSkillCheckFolders();
+  assertAuthoritativePrivateStorageNotShared();
+  initializePrivateArrayFileIfMissing(getInvitesFilePath());
+  initializePrivateArrayFileIfMissing(getAttemptSessionsFilePath());
+  const existingAnchors = parsePrivateBankTrustAnchors(false);
+  const generatedAnchors = Object.create(null);
+
+  const legacyFiles = {
+    "fa-junior": "fa-junior.json",
+    "ca-junior": "ca-junior.json",
+    "fpa-junior": "fpa-junior.json",
+    "acc-junior": "acc-junior.json",
+    "bi-junior": "bi-junior.json",
+    "dev-quick": "dev-quick.json"
+  };
+  const report = [];
+  Object.keys(legacyFiles).forEach(testId => {
+    const response = UrlFetchApp.fetch(LEGACY_PUBLIC_BANK_BASE_URL + legacyFiles[testId], {
+      method: "get",
+      muteHttpExceptions: true,
+      followRedirects: true
+    });
+    if (response.getResponseCode() !== 200) throw new Error("Legacy bank bootstrap fetch failed for " + testId + ".");
+    const sourceText = response.getContentText("UTF-8");
+    const expectedSourceDigest = LEGACY_PUBLIC_BANK_SHA256_BY_TEST_ID[testId];
+    if (!expectedSourceDigest || !timingSafeEqual(sha256Hex(sourceText), expectedSourceDigest)) {
+      throw new Error("Immutable legacy bank digest mismatch for " + testId + ".");
+    }
+    let source;
+    try {
+      source = JSON.parse(sourceText);
+    } catch (error) {
+      throw new Error("Legacy bank bootstrap JSON is invalid for " + testId + ".");
+    }
+    const bank = buildPrivateBankFromLegacySource(testId, source);
+    const path = getAuthoritativePrivateBankPath(testId, bank.bankVersion);
+    ensureYandexFolderExists(getParentDiskPath(path));
+    const metadata = getYandexResourceMetadata(path);
+    if (metadata.exists) {
+      if (metadata.type !== "file") throw new Error("Private bank path conflicts with a directory.");
+      const existing = loadAuthoritativePrivateBank(testId, bank.bankVersion, true);
+      if (!timingSafeEqual(sha256Hex(JSON.stringify(existing)), sha256Hex(JSON.stringify(bank)))) {
+        throw new Error("Existing authoritative private bank differs from the freshly generated legacy source for " + testId + ".");
+      }
+      const privateDigest = getPrivateBankArtifactDigest(existing);
+      generatedAnchors[getPrivateBankAnchorKey(testId, bank.bankVersion)] = privateDigest;
+      report.push({ testId: testId, status: "existing", questionCount: existing.questions.length, publicDigest: existing.publicDigest, privateDigest: privateDigest });
+    } else {
+      writeJsonToYandexDisk(path, bank);
+      const verified = loadAuthoritativePrivateBank(testId, bank.bankVersion, true);
+      const privateDigest = getPrivateBankArtifactDigest(verified);
+      generatedAnchors[getPrivateBankAnchorKey(testId, bank.bankVersion)] = privateDigest;
+      report.push({ testId: testId, status: "created", questionCount: verified.questions.length, publicDigest: verified.publicDigest, privateDigest: privateDigest });
+    }
+  });
+  if (existingAnchors) {
+    Object.keys(generatedAnchors).forEach(key => {
+      if (!existingAnchors[key] || !timingSafeEqual(String(existingAnchors[key]), generatedAnchors[key])) {
+        throw new Error("Existing private bank trust anchor conflicts with the freshly generated authoritative bank.");
+      }
+    });
+  } else {
+    properties.setProperty("PRIVATE_BANK_DIGESTS_V1", JSON.stringify(generatedAnchors));
+  }
+  return {
+    ok: true,
+    backendVersion: BACKEND_VERSION,
+    issuanceEnabled: false,
+    banks: report
+  };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function setAuthoritativeAttemptIssuanceEnabled(enabled) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+  if (typeof enabled !== "boolean") throw new Error("Issuance flag must be boolean.");
+  if (enabled) {
+    assertAuthoritativeConfigurationReady();
+    assertAuthoritativePrivateStorageNotShared();
+    readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+    readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+    Object.keys(BANK_VERSIONS_BY_ID).filter(testId => testId !== "dev-quick").forEach(testId => {
+      loadAuthoritativePrivateBank(testId, BANK_VERSIONS_BY_ID[testId]);
+    });
+  }
+  PropertiesService.getScriptProperties().setProperty("ATTEMPT_ISSUANCE_ENABLED", enabled ? "true" : "false");
+  return { ok: true, issuanceEnabled: enabled, backendVersion: BACKEND_VERSION };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function setAttemptIssuanceEnabledForOwner(enabled) {
+  return setAuthoritativeAttemptIssuanceEnabled(enabled);
+}
+
+function normalizeInviteCode(value) {
+  const normalized = String(value || "").trim().toUpperCase().replace(/[\s-]+/g, "");
+  return /^SC1[A-F0-9]{32}$/.test(normalized) ? normalized : "";
+}
+
+function hashInviteCode(inviteCode) {
+  return hmacSha256Hex(getRequiredProperty("INVITE_CODE_SECRET_V1"), "invite-code-v1|" + normalizeInviteCode(inviteCode));
+}
+
+function hashAuthoritativeIdentity(testId, email) {
+  return hmacSha256Hex(
+    getRequiredProperty("IDENTITY_HASH_SECRET_V1"),
+    "identity-v1|" + String(testId || "") + "|" + String(email || "").trim().toLowerCase()
+  );
+}
+
+function hashAuthoritativeFingerprint(testId, fingerprint) {
+  return hmacSha256Hex(
+    getRequiredProperty("IDENTITY_HASH_SECRET_V1"),
+    "fingerprint-v1|" + String(testId || "") + "|" + String(fingerprint || "").trim().toLowerCase()
+  );
+}
+
+function maskCandidateEmail(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  const parts = normalized.split("@");
+  if (parts.length !== 2) return "***";
+  const local = parts[0];
+  return (local ? local.charAt(0) : "*") + "***@" + parts[1];
+}
+
+function buildDeterministicInviteCode(inviteId, testId, emailHash) {
+  const raw = hmacSha256Hex(
+    getRequiredProperty("INVITE_CODE_SECRET_V1"),
+    "invite-value-v1|" + inviteId + "|" + testId + "|" + emailHash
+  ).slice(0, 32).toUpperCase();
+  return "SC1-" + raw.match(/.{1,4}/g).join("-");
+}
+
+function normalizeAdminInviteRequestId(value) {
+  const requestId = String(value || "").trim();
+  return /^sci_[a-z0-9]{24,40}$/.test(requestId) ? requestId : "";
+}
+
+function buildAdminInviteResponse(invite, replayed) {
+  return {
+    ok: true,
+    status: "issued",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    inviteId: String(invite.inviteId || ""),
+    inviteCode: buildDeterministicInviteCode(invite.inviteId, invite.testId, invite.emailHash),
+    testId: String(invite.testId || ""),
+    emailMasked: String(invite.emailMasked || "***"),
+    purpose: String(invite.purpose || ""),
+    expiresAt: String(invite.expiresAt || ""),
+    replayed: Boolean(replayed)
+  };
+}
+
+function issuePilotInviteInternal(parameters) {
+  if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") !== "true") {
+    return {
+      ok: false,
+      status: "pilot_locked",
+      retryable: false,
+      failureCode: "pilot_locked",
+      backendVersion: BACKEND_VERSION,
+      message: "Выпуск приглашений заблокирован до готовности пилотного банка."
+    };
+  }
+  assertAuthoritativeConfigurationReady();
+  assertAuthoritativePrivateStorageNotShared(parameters.testId);
+  loadAuthoritativePrivateBank(parameters.testId, BANK_VERSIONS_BY_ID[parameters.testId]);
+  const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+  const emailHash = hashAuthoritativeIdentity(parameters.testId, parameters.email);
+  const existing = invites.find(invite => invite && invite.adminRequestId === parameters.requestId);
+  if (existing) {
+    if (existing.testId !== parameters.testId || !timingSafeEqual(existing.emailHash, emailHash) ||
+        Number(existing.validForHours || 0) !== Number(parameters.validForHours) ||
+        String(existing.purpose || "") !== String(parameters.purpose || "") ||
+        Boolean(existing.allowRetake) !== Boolean(parameters.allowRetake)) {
+      return buildSubmissionConflictResponse();
+    }
+    return buildAdminInviteResponse(existing, true);
+  }
+
+  const now = new Date();
+  const inviteId = "inv_" + randomHex(32);
+  const inviteCode = buildDeterministicInviteCode(inviteId, parameters.testId, emailHash);
+  const invite = {
+    schemaVersion: 1,
+    inviteId: inviteId,
+    adminRequestId: parameters.requestId,
+    codeHash: hashInviteCode(inviteCode),
+    emailHash: emailHash,
+    emailMasked: maskCandidateEmail(parameters.email),
+    testId: parameters.testId,
+    state: "issued",
+    purpose: String(parameters.purpose || ""),
+    allowRetake: Boolean(parameters.allowRetake),
+    validForHours: Number(parameters.validForHours),
+    issuedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + Number(parameters.validForHours) * 60 * 60 * 1000).toISOString(),
+    attemptId: "",
+    activatedAt: "",
+    completedAt: "",
+    revokedAt: ""
+  };
+  invites.push(invite);
+  writeRequiredJsonArray(getInvitesFilePath(), invites);
+  return buildAdminInviteResponse(invite, false);
+}
+
+function adminCreateInvite(data) {
+  try {
+    assertAllowedObjectKeys(data, [
+      "action", "apiVersion", "password", "requestId", "testId", "email", "validForHours", "purpose"
+    ], "adminCreateInvite");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") !== "true") {
+      return {
+        ok: false,
+        status: "pilot_locked",
+        retryable: false,
+        failureCode: "pilot_locked",
+        backendVersion: BACKEND_VERSION,
+        message: "Выпуск приглашений заблокирован до готовности пилотного банка."
+      };
+    }
+    const requestId = normalizeAdminInviteRequestId(data.requestId);
+    if (!requestId) return buildValidationErrorResponse("invalid_request_id", "Некорректный идентификатор операции.");
+    const testId = validateTestId(data.testId);
+    assertPublicTestEnabled(testId);
+    const parameters = {
+      requestId: requestId,
+      testId: testId,
+      email: validateEmail(data.email),
+      validForHours: validateInteger(data.validForHours, 1, 720, "Срок приглашения"),
+      purpose: validateBoundedText(data.purpose, 120, false, "Назначение приглашения"),
+      allowRetake: false
+    };
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      return issuePilotInviteInternal(parameters);
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (error) {
+    if (error && error.publicRequestError) return buildValidationErrorResponse(error.failureCode, error.publicMessage);
+    console.error("Admin invite creation failed.");
+    return buildAuthoritativeStorageErrorResponse();
+  }
+}
+
+function adminListInvites(data) {
+  try {
+    assertAllowedObjectKeys(data, ["action", "apiVersion", "password"], "adminInvites");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+    return {
+      ok: true,
+      status: "ok",
+      backendVersion: BACKEND_VERSION,
+      apiVersion: AUTHORITATIVE_API_VERSION,
+      issuanceEnabled: getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true",
+      invites: invites.map(invite => ({
+        inviteId: String(invite && invite.inviteId || ""),
+        testId: String(invite && invite.testId || ""),
+        emailMasked: String(invite && invite.emailMasked || "***"),
+        purpose: String(invite && invite.purpose || ""),
+        state: String(invite && invite.state || "unknown"),
+        issuedAt: String(invite && invite.issuedAt || ""),
+        expiresAt: String(invite && invite.expiresAt || ""),
+        activatedAt: String(invite && invite.activatedAt || ""),
+        completedAt: String(invite && invite.completedAt || "")
+      }))
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) return buildValidationErrorResponse(error.failureCode, error.publicMessage);
+    console.error("Admin invite listing failed.");
+    return buildAuthoritativeStorageErrorResponse();
+  }
+}
+
+function adminRevokeInvite(data) {
+  try {
+    assertAllowedObjectKeys(data, ["action", "apiVersion", "password", "requestId", "inviteId"], "adminRevokeInvite");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    const requestId = String(data.requestId || "").trim();
+    if (!/^scr_[a-z0-9]{24,40}$/.test(requestId)) {
+      return buildValidationErrorResponse("invalid_request_id", "Некорректный идентификатор операции.");
+    }
+    const inviteId = String(data.inviteId || "").trim();
+    if (!/^inv_[a-f0-9]{32}$/.test(inviteId)) return buildValidationErrorResponse("invalid_invite", "Некорректное приглашение.");
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+      const invite = invites.find(row => row && row.inviteId === inviteId);
+      if (!invite) return { ok: false, status: "not_found", failureCode: "invite_not_found", message: "Приглашение не найдено." };
+      if (invite.state === "completed") {
+        return { ok: true, status: "completed", inviteId: inviteId, requestId: requestId, replayed: false, backendVersion: BACKEND_VERSION };
+      }
+      if (invite.state === "revoked") {
+        if (invite.revokeRequestId === requestId) {
+          return { ok: true, status: "revoked", inviteId: inviteId, requestId: requestId, replayed: true, backendVersion: BACKEND_VERSION };
+        }
+        return buildSubmissionConflictResponse();
+      }
+      if (invite.state !== "completed") {
+        invite.state = "revoked";
+        invite.revokedAt = new Date().toISOString();
+        invite.revokeRequestId = requestId;
+        writeRequiredJsonArray(getInvitesFilePath(), invites);
+      }
+      return { ok: true, status: "revoked", inviteId: inviteId, requestId: requestId, replayed: false, backendVersion: BACKEND_VERSION };
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (error) {
+    if (error && error.publicRequestError) return buildValidationErrorResponse(error.failureCode, error.publicMessage);
+    console.error("Admin invite revocation failed.");
+    return buildAuthoritativeStorageErrorResponse();
+  }
+}
+
+function createOwnerSmokeInvite(email, testId, purpose) {
+  assertAuthoritativeConfigurationReady();
+  const normalizedTestId = validateTestId(testId);
+  assertPublicTestEnabled(normalizedTestId);
+  const parameters = {
+    requestId: "sci_" + randomHex(24),
+    testId: normalizedTestId,
+    email: validateEmail(email),
+    validForHours: 24,
+    purpose: validateBoundedText(purpose || "Owner production smoke", 120, true, "Назначение приглашения"),
+    allowRetake: true
+  };
+  readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return issuePilotInviteInternal(parameters);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function buildQuestionSetHash(testId, bankVersion, questionIds) {
+  return sha256Hex("question-set-v1|" + testId + "|" + bankVersion + "|" + questionIds.join("|"));
+}
+
+function buildAttemptToken(session) {
+  const header = { alg: "HS256", kid: "attempt-v1", typ: "SC-ATTEMPT" };
+  const claims = {
+    v: 1,
+    attemptId: String(session.attemptId || ""),
+    jti: String(session.tokenJti || ""),
+    tid: String(session.testId || ""),
+    bv: String(session.bankVersion || ""),
+    qsh: String(session.questionSetHash || ""),
+    iat: Math.floor(new Date(session.tokenIssuedAt).getTime() / 1000),
+    exp: Math.floor(new Date(session.tokenExpiresAt).getTime() / 1000)
+  };
+  const encodedHeader = base64UrlEncodeText(JSON.stringify(header));
+  const encodedClaims = base64UrlEncodeText(JSON.stringify(claims));
+  const signingInput = encodedHeader + "." + encodedClaims;
+  const signature = base64UrlEncodeBytes(hmacSha256Bytes(getRequiredProperty("ATTEMPT_SIGNING_SECRET_V1"), signingInput));
+  return signingInput + "." + signature;
+}
+
+function verifyAttemptToken(token, allowExpired) {
+  try {
+    const segments = String(token || "").split(".");
+    if (segments.length !== 3 || segments.some(segment => !/^[A-Za-z0-9_-]+$/.test(segment))) return { valid: false };
+    const signingInput = segments[0] + "." + segments[1];
+    const expected = base64UrlEncodeBytes(hmacSha256Bytes(getRequiredProperty("ATTEMPT_SIGNING_SECRET_V1"), signingInput));
+    if (!timingSafeEqual(expected, segments[2])) return { valid: false };
+    const header = JSON.parse(base64UrlDecodeText(segments[0]));
+    const claims = JSON.parse(base64UrlDecodeText(segments[1]));
+    if (!isPlainObject(header) || !isPlainObject(claims) || header.alg !== "HS256" ||
+        Object.keys(header).sort().join(",") !== "alg,kid,typ" ||
+        Object.keys(claims).sort().join(",") !== "attemptId,bv,exp,iat,jti,qsh,tid,v" ||
+        header.kid !== "attempt-v1" || header.typ !== "SC-ATTEMPT" || Number(claims.v) !== 1 ||
+        !/^att_[a-f0-9]{32,64}$/.test(String(claims.attemptId || "")) ||
+        !/^[a-f0-9]{64}$/.test(String(claims.qsh || "")) ||
+        !/^[a-f0-9]{32,64}$/.test(String(claims.jti || "")) ||
+        !Number.isFinite(Number(claims.iat)) || !Number.isFinite(Number(claims.exp)) || Number(claims.exp) <= Number(claims.iat) ||
+        Number(claims.iat) > Math.floor(Date.now() / 1000) + 60 ||
+        (!allowExpired && Number(claims.exp) <= Math.floor(Date.now() / 1000))) {
+      return { valid: false };
+    }
+    return { valid: true, header: header, claims: claims };
+  } catch (error) {
+    return { valid: false };
+  }
+}
+
+function selectAuthoritativeQuestionIds(bank, attemptId, selectionNonce) {
+  const ordered = bank.questions.map(question => String(question.id)).sort((left, right) => {
+    const leftHash = sha256Hex("selection-v1|" + attemptId + "|" + selectionNonce + "|" + left);
+    const rightHash = sha256Hex("selection-v1|" + attemptId + "|" + selectionNonce + "|" + right);
+    return leftHash < rightHash ? -1 : (leftHash > rightHash ? 1 : left.localeCompare(right));
+  });
+  return ordered.slice(0, Number(bank.questionsPerAttempt));
+}
+
+function hasRecentAuthoritativeRetake(testId, identityHash, legacyEmailHash, sessions) {
+  const now = Date.now();
+  if (sessions.some(session => {
+    if (!session || session.testId !== testId || !timingSafeEqual(String(session.identityHash || ""), identityHash)) return false;
+    if (session.state === "active") {
+      const expiresAt = new Date(session.tokenExpiresAt || "").getTime();
+      return Number.isFinite(expiresAt) && now < expiresAt;
+    }
+    if (session.state === "reserved") {
+      const reservedAt = new Date(session.reservedAt || "").getTime();
+      return Number.isFinite(reservedAt) && now - reservedAt >= 0 && now - reservedAt < AUTHORITATIVE_RECOVERY_TTL_MS;
+    }
+    if (session.state !== "completed") return false;
+    const completedAt = new Date(session.completedAt || session.startedAt || "").getTime();
+    return Number.isFinite(completedAt) && now - completedAt >= 0 && now - completedAt < RETAKE_WINDOW_MS;
+  })) return true;
+
+  const legacyText = readTextFromYandexDisk(getAttemptsFilePath());
+  if (legacyText === null) return false;
+  let legacyAttempts;
+  try {
+    legacyAttempts = JSON.parse(legacyText);
+  } catch (error) {
+    throw new Error("Legacy attempt store is corrupt.");
+  }
+  if (!Array.isArray(legacyAttempts)) throw new Error("Legacy attempt store is invalid.");
+  return legacyAttempts.some(attempt => {
+    if (!attempt || attempt.testId !== testId || !timingSafeEqual(String(attempt.emailHash || ""), legacyEmailHash)) return false;
+    const date = new Date(attempt.date || "").getTime();
+    return Number.isFinite(date) && now - date >= 0 && now - date < RETAKE_WINDOW_MS &&
+      !(attempt.submissionState === "reserved" && now - date >= RESERVATION_TTL_MS);
+  });
+}
+
+function buildBeginAttemptReadyResponse(session, bank, resumed) {
+  return {
+    ok: true,
+    status: "ready",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    attemptId: String(session.attemptId || ""),
+    attemptToken: buildAttemptToken(session),
+    expiresAt: String(session.tokenExpiresAt || ""),
+    testId: String(session.testId || ""),
+    testVersion: String(session.testVersion || ""),
+    bankVersion: String(session.bankVersion || ""),
+    publicDigest: String(bank.publicDigest || ""),
+    questionIds: session.questionIds.slice(),
+    resumed: Boolean(resumed)
+  };
+}
+
+function beginAuthoritativeAttempt(data) {
+  const lock = LockService.getScriptLock();
+  let lockAcquired = false;
+  try {
+    lock.waitLock(30000);
+    lockAcquired = true;
+    if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") !== "true") return buildAttemptUnavailableResponse();
+    assertAuthoritativeConfigurationReady();
+    assertAuthoritativePrivateStorageNotShared(data.testId);
+    const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+    const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+    const suppliedCodeHash = hashInviteCode(data.inviteCode);
+    const identityHash = hashAuthoritativeIdentity(data.testId, data.email);
+    const fingerprintHash = hashAuthoritativeFingerprint(data.testId, data.browserFingerprint);
+    const legacyEmailHash = hashAttemptValue(data.testId, "email", data.email);
+    const invite = invites.find(row => row && timingSafeEqual(String(row.codeHash || ""), suppliedCodeHash));
+    if (!invite || invite.testId !== data.testId || !timingSafeEqual(String(invite.emailHash || ""), identityHash) ||
+        ["issued", "active"].indexOf(String(invite.state || "")) === -1) {
+      return buildAttemptUnavailableResponse();
+    }
+    const inviteExpiry = new Date(invite.expiresAt || "").getTime();
+    if (!Number.isFinite(inviteExpiry) || Date.now() >= inviteExpiry) return buildAttemptUnavailableResponse();
+
+    const existingSession = sessions.find(session => session && session.inviteId === invite.inviteId);
+    if (existingSession) {
+      if (existingSession.state !== "active" || existingSession.beginRequestId !== data.beginRequestId || existingSession.testId !== data.testId ||
+          !timingSafeEqual(String(existingSession.identityHash || ""), identityHash) ||
+          !timingSafeEqual(String(existingSession.fingerprintHash || ""), fingerprintHash)) {
+        return buildAttemptUnavailableResponse();
+      }
+      const activeExpiry = new Date(existingSession.tokenExpiresAt || "").getTime();
+      if (!Number.isFinite(activeExpiry) || Date.now() >= activeExpiry) {
+        existingSession.state = "expired";
+        invite.state = "expired";
+        writeRequiredJsonArray(getAttemptSessionsFilePath(), sessions);
+        writeRequiredJsonArray(getInvitesFilePath(), invites);
+        return buildAttemptUnavailableResponse();
+      }
+      const existingBank = loadAuthoritativePrivateBank(existingSession.testId, existingSession.bankVersion);
+      if (invite.state !== "active" || invite.attemptId !== existingSession.attemptId) {
+        invite.state = "active";
+        invite.attemptId = existingSession.attemptId;
+        invite.activatedAt = existingSession.startedAt;
+        writeRequiredJsonArray(getInvitesFilePath(), invites);
+      }
+      return buildBeginAttemptReadyResponse(existingSession, existingBank, true);
+    }
+
+    if (!invite.allowRetake && hasRecentAuthoritativeRetake(data.testId, identityHash, legacyEmailHash, sessions)) {
+      return buildAttemptUnavailableResponse();
+    }
+    const bank = loadAuthoritativePrivateBank(data.testId, BANK_VERSIONS_BY_ID[data.testId]);
+    const now = new Date();
+    const attemptId = "att_" + randomHex(32);
+    const selectionNonce = randomHex(32);
+    const questionIds = selectAuthoritativeQuestionIds(bank, attemptId, selectionNonce);
+    if (questionIds.length !== EXPECTED_ANSWERS_BY_TEST_ID[data.testId]) throw new Error("Authoritative question selection failed.");
+    const expiresAt = new Date(now.getTime() + ATTEMPT_ACTIVE_TTL_MS);
+    const session = {
+      schemaVersion: 1,
+      attemptId: attemptId,
+      inviteId: String(invite.inviteId),
+      beginRequestId: String(data.beginRequestId),
+      state: "active",
+      testId: data.testId,
+      testVersion: TEST_VERSIONS_BY_ID_AUTHORITATIVE[data.testId],
+      bankVersion: bank.bankVersion,
+      publicDigest: bank.publicDigest,
+      questionIds: questionIds,
+      questionSetHash: buildQuestionSetHash(data.testId, bank.bankVersion, questionIds),
+      identityHash: identityHash,
+      fingerprintHash: fingerprintHash,
+      legacyEmailHash: legacyEmailHash,
+      tokenKid: "attempt-v1",
+      tokenJti: randomHex(32),
+      tokenIssuedAt: now.toISOString(),
+      tokenExpiresAt: expiresAt.toISOString(),
+      startedAt: now.toISOString(),
+      saveRequestId: "",
+      submissionHash: "",
+      reservedAt: "",
+      code: "",
+      result: null,
+      completedAt: ""
+    };
+    sessions.push(session);
+    writeRequiredJsonArray(getAttemptSessionsFilePath(), sessions);
+    invite.state = "active";
+    invite.attemptId = attemptId;
+    invite.activatedAt = now.toISOString();
+    writeRequiredJsonArray(getInvitesFilePath(), invites);
+    return buildBeginAttemptReadyResponse(session, bank, false);
+  } catch (error) {
+    console.error("Authoritative attempt start failed.");
+    return buildAuthoritativeStorageErrorResponse();
+  } finally {
+    if (lockAcquired) lock.releaseLock();
+  }
+}
+
+function buildAuthoritativeSubmissionHash(data) {
+  const canonical = {
+    schemaVersion: 1,
+    attemptId: String(data.attemptId || ""),
+    testId: String(data.testId || ""),
+    bankVersion: String(data.bankVersion || ""),
+    name: String(data.name || "").trim(),
+    email: String(data.email || "").trim().toLowerCase(),
+    telegram: String(data.telegram || ""),
+    englishLevel: String(data.englishLevel || ""),
+    candidateSource: String(data.candidateSource || ""),
+    candidateExperience: String(data.candidateExperience || ""),
+    employerShareConsent: Boolean(data.employerShareConsent),
+    browserFingerprint: String(data.browserFingerprint || ""),
+    tabSwitches: Number(data.tabSwitches || 0),
+    clientBuild: String(data.clientBuild || ""),
+    answers: (data.answers || []).slice().sort((left, right) => left.questionId.localeCompare(right.questionId)).map(answer => ({
+      questionId: String(answer.questionId || ""),
+      optionId: answer.optionId === null ? null : String(answer.optionId || ""),
+      timedOut: Boolean(answer.timedOut),
+      timeSpent: Number(answer.timeSpent || 0)
+    }))
+  };
+  return hmacSha256Hex(
+    getRequiredProperty("ATTEMPT_SIGNING_SECRET_V1"),
+    "submission-v1|" + JSON.stringify(canonical)
+  );
+}
+
+function getAuthoritativeBlockName(blocks, blockKey) {
+  const source = blocks && blocks[blockKey];
+  if (typeof source === "string") return source;
+  if (source && typeof source === "object" && source.name) return String(source.name);
+  return String(blockKey || "");
+}
+
+function getAuthoritativeRecommendation(finalScore) {
+  if (finalScore >= SUCCESS_THRESHOLD) return "Рекомендуется к интервью";
+  if (finalScore >= 60) return "Можно рассмотреть при наличии стажировки / junior-позиции";
+  return "Не рекомендуется без дополнительной проверки";
+}
+
+function calculateAuthoritativeScore(data, session, bank) {
+  const expectedIds = Array.isArray(session.questionIds) ? session.questionIds.map(String) : [];
+  if (data.answers.length !== expectedIds.length || expectedIds.length !== EXPECTED_ANSWERS_BY_TEST_ID[data.testId]) {
+    throw publicRequestError("invalid_answers_count", "Количество ответов не соответствует попытке.");
+  }
+  const answersById = Object.create(null);
+  data.answers.forEach(answer => { answersById[answer.questionId] = answer; });
+  if (expectedIds.some(questionId => !Object.prototype.hasOwnProperty.call(answersById, questionId)) ||
+      Object.keys(answersById).some(questionId => expectedIds.indexOf(questionId) === -1)) {
+    throw publicRequestError("question_set_mismatch", "Набор вопросов не соответствует попытке.");
+  }
+  const questionsById = Object.create(null);
+  bank.questions.forEach(question => { questionsById[String(question.id)] = question; });
+  const blockTotals = Object.create(null);
+  const answerDetails = [];
+  let rawScore = 0;
+  let rawTotal = 0;
+  let unansweredCount = 0;
+
+  expectedIds.forEach((questionId, index) => {
+    const question = questionsById[questionId];
+    const answer = answersById[questionId];
+    if (!question) throw publicRequestError("question_set_mismatch", "Версия банка вопросов не соответствует попытке.");
+    const optionMap = Object.create(null);
+    question.options.forEach(option => { optionMap[String(option.id)] = option; });
+    if (answer.optionId !== null && !optionMap[answer.optionId]) {
+      throw publicRequestError("invalid_option", "Один из выбранных вариантов не относится к вопросу.");
+    }
+    const points = Number(question.points || 0);
+    if (!Number.isFinite(points) || points <= 0) throw new Error("Authoritative bank contains invalid points.");
+    const isCorrect = answer.optionId !== null && answer.optionId === question.correctOptionId;
+    const earnedPoints = isCorrect ? points : 0;
+    rawTotal += points;
+    rawScore += earnedPoints;
+    if (answer.optionId === null) unansweredCount++;
+    if (!blockTotals[question.block]) blockTotals[question.block] = { earned: 0, total: 0 };
+    blockTotals[question.block].earned += earnedPoints;
+    blockTotals[question.block].total += points;
+    const selectedOption = answer.optionId === null ? null : optionMap[answer.optionId];
+    const correctOption = optionMap[question.correctOptionId];
+    answerDetails.push({
+      number: index + 1,
+      questionId: questionId,
+      topic: String(question.topic || ""),
+      block: String(question.block || ""),
+      difficulty: String(question.difficulty || "medium"),
+      question: String(question.text || ""),
+      selectedAnswer: selectedOption ? String(selectedOption.text || "") : "Нет ответа",
+      correctAnswer: correctOption ? String(correctOption.text || "") : "",
+      isCorrect: isCorrect,
+      timedOut: Boolean(answer.timedOut),
+      status: answer.optionId === null ? (answer.timedOut ? "Время вышло" : "Нет ответа") : (isCorrect ? "Верно" : "Неверно"),
+      points: points,
+      earnedPoints: earnedPoints,
+      timeLimit: Number(question.timeLimit || 0),
+      timeSpent: Number(answer.timeSpent || 0),
+      comment: String(question.comment || "")
+    });
+  });
+
+  const percent = rawTotal > 0 ? Math.round(rawScore * 100 / rawTotal) : 0;
+  const finalScore = Math.max(0, Math.min(100, percent));
+  const advisoryPenalty = calculateServerPenalty(data.tabSwitches);
+  const trustScore = calculateServerTrustScore(finalScore, data.tabSwitches, unansweredCount);
+  const passStatus = finalScore >= SUCCESS_THRESHOLD ? "passed" : "failed";
+  const blockResults = Object.create(null);
+  Object.keys(blockTotals).forEach(blockKey => {
+    const total = blockTotals[blockKey].total;
+    const earned = blockTotals[blockKey].earned;
+    blockResults[blockKey] = {
+      name: getAuthoritativeBlockName(bank.blocks, blockKey),
+      weight: rawTotal > 0 ? total / rawTotal : 0,
+      earned: earned,
+      total: total,
+      percent: total > 0 ? Math.round(earned * 100 / total) : 0
+    };
+  });
+  return {
+    result: {
+      rawScore: rawScore,
+      rawTotal: rawTotal,
+      unansweredCount: unansweredCount,
+      percent: percent,
+      finalScore: finalScore,
+      penalty: 0,
+      advisoryPenalty: advisoryPenalty,
+      tabSwitches: Number(data.tabSwitches || 0),
+      trustScore: trustScore,
+      badge: getAdminBadge(finalScore, 0),
+      passStatus: passStatus,
+      status: passStatus,
+      decision: passStatus === "passed" ? "Успешно" : "Неуспешно",
+      finalDecision: passStatus === "passed" ? "Успешно" : "Неуспешно",
+      recommendation: getAuthoritativeRecommendation(finalScore),
+      blockResults: blockResults,
+      scoreVerification: SCORE_VERIFICATION_SERVER,
+      scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION,
+      telemetryVerification: TELEMETRY_VERIFICATION_CLIENT_REPORTED,
+      reportCreated: false
+    },
+    answerDetails: answerDetails
+  };
+}
+
+function validateTokenAgainstSession(tokenResult, session) {
+  if (!tokenResult || !tokenResult.valid || !session) return false;
+  const claims = tokenResult.claims;
+  return claims.attemptId === session.attemptId &&
+    claims.tid === session.testId && claims.bv === session.bankVersion &&
+    timingSafeEqual(String(claims.qsh || ""), String(session.questionSetHash || "")) &&
+    timingSafeEqual(String(claims.jti || ""), String(session.tokenJti || "")) &&
+    Number(claims.iat) === Math.floor(new Date(session.tokenIssuedAt).getTime() / 1000) &&
+    Number(claims.exp) === Math.floor(new Date(session.tokenExpiresAt).getTime() / 1000);
+}
+
+function buildAuthoritativeSavedResultResponse(session, result, replayed) {
+  result = result || {};
+  return {
+    ok: true,
+    status: "ok",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: AUTHORITATIVE_API_VERSION,
+    attemptId: String(session.attemptId || ""),
+    resultCode: String(session.code || ""),
+    code: String(session.code || ""),
+    testId: String(session.testId || ""),
+    bankVersion: String(session.bankVersion || ""),
+    rawScore: Number(result.rawScore || 0),
+    rawTotal: Number(result.rawTotal || 0),
+    unansweredCount: Number(result.unansweredCount || 0),
+    percent: Number(result.percent || 0),
+    finalScore: Number(result.finalScore || 0),
+    penalty: 0,
+    advisoryPenalty: Number(result.advisoryPenalty || 0),
+    tabSwitches: Number(result.tabSwitches || 0),
+    trustScore: Number(result.trustScore || 0),
+    badge: String(result.badge || ""),
+    passStatus: result.passStatus === "passed" ? "passed" : "failed",
+    decision: String(result.decision || result.finalDecision || ""),
+    finalDecision: String(result.finalDecision || result.decision || ""),
+    recommendation: String(result.recommendation || ""),
+    blockResults: result.blockResults || {},
+    scoreVerification: SCORE_VERIFICATION_SERVER,
+    scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION,
+    telemetryVerification: TELEMETRY_VERIFICATION_CLIENT_REPORTED,
+    reportCreated: Boolean(result.reportCreated),
+    replayed: Boolean(replayed),
+    message: "Сохраните код результата: " + String(session.code || "")
+  };
+}
+
+function consumeInviteForSession(invites, session, completedAt) {
+  const invite = invites.find(row => row && row.inviteId === session.inviteId);
+  if (invite && invite.state !== "completed") {
+    invite.state = "completed";
+    invite.completedAt = String(completedAt || new Date().toISOString());
+    invite.attemptId = session.attemptId;
+    return true;
+  }
+  return false;
+}
+
+function saveAuthoritativeTestResult(data) {
+  const lock = LockService.getScriptLock();
+  let lockAcquired = false;
+  let requestIdForLog = data && data.requestId || "";
+  try {
+    assertAuthoritativeConfigurationReady();
+    const tokenResult = verifyAttemptToken(data.attemptToken, true);
+    if (!tokenResult.valid) return buildAttemptUnavailableResponse();
+    const normalizedTelegram = normalizeTelegramContact(data.telegram);
+    const normalizedData = Object.assign({}, data, { telegram: normalizedTelegram });
+    const submissionHash = buildAuthoritativeSubmissionHash(normalizedData);
+
+    lock.waitLock(30000);
+    lockAcquired = true;
+    ensureSkillCheckFolders();
+    assertAuthoritativePrivateStorageNotShared(data.testId);
+    const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+    const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+    const session = sessions.find(row => row && row.attemptId === data.attemptId);
+    if (!session || session.testId !== data.testId || session.bankVersion !== data.bankVersion ||
+        !validateTokenAgainstSession(tokenResult, session) ||
+        !timingSafeEqual(String(session.identityHash || ""), hashAuthoritativeIdentity(data.testId, data.email)) ||
+        !timingSafeEqual(String(session.fingerprintHash || ""), hashAuthoritativeFingerprint(data.testId, data.browserFingerprint))) {
+      return buildAttemptUnavailableResponse();
+    }
+    const sessionInvite = invites.find(row => row && row.inviteId === session.inviteId);
+    if (!sessionInvite) return buildAttemptUnavailableResponse();
+
+    if (session.state === "completed") {
+      if (session.saveRequestId !== data.requestId || !timingSafeEqual(session.submissionHash, submissionHash)) {
+        return buildSubmissionConflictResponse();
+      }
+      const replayBase = new Date(session.completedAt || session.reservedAt || "").getTime();
+      if (!Number.isFinite(replayBase) || Date.now() - replayBase > AUTHORITATIVE_RECOVERY_TTL_MS) {
+        return buildAttemptUnavailableResponse();
+      }
+      if (consumeInviteForSession(invites, session, session.completedAt)) {
+        writeRequiredJsonArray(getInvitesFilePath(), invites);
+      }
+      return buildAuthoritativeSavedResultResponse(session, session.result, true);
+    }
+
+    if (["active", "reserved"].indexOf(String(session.state || "")) === -1) return buildAttemptUnavailableResponse();
+    if (session.state === "active" && Date.now() >= Number(tokenResult.claims.exp) * 1000) {
+      return buildAttemptUnavailableResponse();
+    }
+    if (session.state === "reserved") {
+      if (session.saveRequestId !== data.requestId || !timingSafeEqual(session.submissionHash, submissionHash)) {
+        return buildSubmissionConflictResponse();
+      }
+      const reservedAt = new Date(session.reservedAt || "").getTime();
+      if (!Number.isFinite(reservedAt) || Date.now() - reservedAt > AUTHORITATIVE_RECOVERY_TTL_MS) {
+        return buildAttemptUnavailableResponse();
+      }
+      const existingAdmin = findAdminResultByRequestId(data.requestId);
+      if (existingAdmin && existingAdmin.attemptId === session.attemptId &&
+          existingAdmin.bankVersion === session.bankVersion &&
+          existingAdmin.scoreVerification === SCORE_VERIFICATION_SERVER &&
+          existingAdmin.scoringAlgorithmVersion === AUTHORITATIVE_SCORING_VERSION &&
+          timingSafeEqual(String(existingAdmin.payloadHash || ""), submissionHash)) {
+        const recoveryResult = Object.assign({}, session.result || {}, { reportCreated: Boolean(existingAdmin.reportCreated) });
+        const recoveryHashes = hashAttemptIdentifiers(session.testId, data.email, data.browserFingerprint);
+        upsertAttemptRecord({
+          emailHash: recoveryHashes.emailHash,
+          fingerprintHash: recoveryHashes.fingerprintHash,
+          testId: session.testId,
+          code: session.code,
+          date: String(existingAdmin.date || new Date().toISOString()),
+          status: recoveryResult.passStatus,
+          requestId: data.requestId,
+          payloadHash: submissionHash,
+          payloadHashVersion: 3,
+          submissionState: "completed",
+          finalScore: recoveryResult.finalScore,
+          percent: recoveryResult.percent,
+          reportCreated: Boolean(existingAdmin.reportCreated),
+          attemptId: session.attemptId,
+          bankVersion: session.bankVersion,
+          scoreVerification: SCORE_VERIFICATION_SERVER,
+          scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION
+        });
+        session.state = "completed";
+        session.completedAt = String(existingAdmin.date || new Date().toISOString());
+        session.result = recoveryResult;
+        writeRequiredJsonArray(getAttemptSessionsFilePath(), sessions);
+        if (consumeInviteForSession(invites, session, session.completedAt)) writeRequiredJsonArray(getInvitesFilePath(), invites);
+        return buildAuthoritativeSavedResultResponse(session, session.result, true);
+      }
+    }
+
+    if (sessionInvite.state !== "active") return buildAttemptUnavailableResponse();
+
+    const bank = loadAuthoritativePrivateBank(session.testId, session.bankVersion);
+    if (!timingSafeEqual(String(session.publicDigest || ""), String(bank.publicDigest || ""))) {
+      throw new Error("Attempt bank digest no longer matches private bank.");
+    }
+    const calculated = calculateAuthoritativeScore(normalizedData, session, bank);
+    let result = calculated.result;
+    if (session.state === "active") {
+      session.state = "reserved";
+      session.saveRequestId = data.requestId;
+      session.submissionHash = submissionHash;
+      session.reservedAt = new Date().toISOString();
+      session.code = generateUniqueResultCode(session.testId, sessions);
+      session.result = JSON.parse(JSON.stringify(result));
+      writeRequiredJsonArray(getAttemptSessionsFilePath(), sessions);
+    } else {
+      result = session.result || result;
+      if (!session.code || Number(result.finalScore) !== Number(calculated.result.finalScore) ||
+          Number(result.rawScore) !== Number(calculated.result.rawScore) || Number(result.rawTotal) !== Number(calculated.result.rawTotal)) {
+        return buildSubmissionConflictResponse();
+      }
+      result = calculated.result;
+    }
+
+    const completedAt = new Date().toISOString();
+    let reportCreated = false;
+    let reportPath = "";
+    if (result.passStatus === "passed") {
+      reportPath = joinDiskPath(getReportsFolderPath(), session.code + ".txt");
+      const reportText = buildTxtReport(Object.assign({}, normalizedData, result, {
+        code: session.code,
+        testId: session.testId,
+        testTitle: TEST_TITLES_BY_ID[session.testId],
+        bankVersion: session.bankVersion,
+        completedAt: completedAt,
+        answers: calculated.answerDetails,
+        scoreVerification: SCORE_VERIFICATION_SERVER,
+        scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION
+      }));
+      if (reportText.length > MAX_GENERATED_REPORT_CHARS) {
+        return buildValidationErrorResponse("report_too_large", "Отчёт превышает допустимый размер.");
+      }
+      uploadTextToYandexDisk(reportPath, reportText);
+      reportCreated = true;
+    }
+    result.reportCreated = reportCreated;
+
+    appendAdminResult({
+      code: session.code,
+      attemptId: session.attemptId,
+      testId: session.testId,
+      testTitle: TEST_TITLES_BY_ID[session.testId],
+      bankVersion: session.bankVersion,
+      rawScore: result.rawScore,
+      rawTotal: result.rawTotal,
+      finalScore: result.finalScore,
+      percent: result.percent,
+      tabSwitches: result.tabSwitches,
+      advisoryPenalty: result.advisoryPenalty,
+      date: completedAt,
+      status: result.passStatus,
+      badge: result.badge,
+      reportCreated: reportCreated,
+      reportPath: reportPath,
+      reportCode: session.code,
+      requestId: data.requestId,
+      payloadHash: submissionHash,
+      payloadHashVersion: 3,
+      scoreVerification: SCORE_VERIFICATION_SERVER,
+      scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION,
+      telemetryVerification: TELEMETRY_VERIFICATION_CLIENT_REPORTED
+    });
+
+    const legacyHashes = hashAttemptIdentifiers(session.testId, data.email, data.browserFingerprint);
+    upsertAttemptRecord({
+      emailHash: legacyHashes.emailHash,
+      fingerprintHash: legacyHashes.fingerprintHash,
+      testId: session.testId,
+      code: session.code,
+      date: completedAt,
+      status: result.passStatus,
+      requestId: data.requestId,
+      payloadHash: submissionHash,
+      payloadHashVersion: 3,
+      submissionState: "completed",
+      finalScore: result.finalScore,
+      percent: result.percent,
+      reportCreated: reportCreated,
+      attemptId: session.attemptId,
+      bankVersion: session.bankVersion,
+      scoreVerification: SCORE_VERIFICATION_SERVER,
+      scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION
+    });
+
+    session.state = "completed";
+    session.completedAt = completedAt;
+    session.result = JSON.parse(JSON.stringify(result));
+    writeRequiredJsonArray(getAttemptSessionsFilePath(), sessions);
+    if (consumeInviteForSession(invites, session, completedAt)) writeRequiredJsonArray(getInvitesFilePath(), invites);
+    return buildAuthoritativeSavedResultResponse(session, result, false);
+  } catch (error) {
+    if (error && error.publicRequestError) return buildValidationErrorResponse(error.failureCode, error.publicMessage);
+    console.error("Authoritative result submission failed; request=" + maskRequestIdForLog(requestIdForLog));
+    return buildAuthoritativeStorageErrorResponse();
+  } finally {
+    if (lockAcquired) lock.releaseLock();
+  }
 }
 
 function authorizeYandexDisk() {

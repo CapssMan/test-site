@@ -28,7 +28,9 @@
 - [x] Первичный QA-аудит банков в `docs/QA_REVIEW.md`.
 - [x] Security-аудит этапа 10 и решение по backend-scoring задокументированы.
 - [x] Подготовлены POST-only API, строгая backend-валидация, минимальный health, advisory rate limits, XSS/TXT-санитизация и CSP meta.
-- [x] Новая pending-копия с ПДн перенесена в `sessionStorage`; valid legacy envelope мигрирует, invalid/oversized/expired удаляется; scoring явно помечается `client-reported-unverified`.
+- [x] Pending submission хранится только в `sessionStorage`, не дольше attempt token и максимум 6 часов; legacy full-payload копии удаляются из `localStorage`, scoring выполняется backend и помечается `server-verified` / `authoritative-v1`.
+- [x] Технически реализован этап 10A: display-only public banks, закрытые versioned private banks, email/test-bound invitations, signed single-use attempt и authoritative backend-scoring.
+- [x] `checkAttempt` и tokenless legacy-save удалены из кандидатского потока; результат считается только сервером и маркируется `server-verified` / `authoritative-v1`.
 
 ## До запуска кандидатов
 
@@ -38,8 +40,12 @@
 - [x] Проверить, что `health` не выводит token/password/salt, пути, properties, folder listings и состояние JSON, не обращается к storage и ничего не создаёт.
 - [x] Сверить список Apps Script deployments: кроме HEAD и текущего стабильного deployment устаревших активных deployments не обнаружено.
 - [x] Hard-disable публичный `dev-quick` по умолчанию (`PUBLIC_DEV_TEST_ENABLED=false`, `test_not_public`).
-- [ ] Согласовать и реализовать authoritative backend-scoring, mandatory `questionId`, single-use signed attempt/invite и gateway abuse control до приглашения реальных кандидатов.
-- [ ] Убрать публичный email-enumeration lookup: controlled pilot через invite token; публичный поток через OTP/auth и при необходимости CAPTCHA.
+- [x] Реализовать authoritative backend-scoring, обязательные `questionId`/`optionId`, single-use signed attempt/invite и best-effort abuse limits.
+- [x] Убрать публичный email-enumeration lookup из controlled-pilot потока: попытка начинается только по email/test-bound invite.
+- [ ] Завершить production rollout 10A в существующий deployment без смены URL; зафиксировать deployment/commit и production smoke только по факту.
+- [ ] Выполнить отдельно согласованную содержательную ротацию банков и SME review: старые answer keys остаются в Git history, клонах и кэшах.
+- [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
+- [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
 - [ ] Зафиксировать, что retake — deterrence, и выбрать уровень identity verification для пилота.
 - [ ] Проверить scope/возраст Яндекс OAuth-токена, выполнить безопасную ротацию по регламенту и оценить app-folder/least-privilege credential.
 - [ ] Для открытого/adversarial пилота решить, требуется ли backend question delivery.
@@ -85,7 +91,7 @@
 
 ## Следующий этап
 
-Этап 10 закрыт. Перейти к этапу 11 — юридической и privacy-подготовке. Authoritative backend-scoring остаётся отдельным обязательным pilot gate 10A и начинается только после согласования scope. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
+Этап 10A технически завершён; его production rollout ещё `pending`, а выдача приглашений выключена. Следующий плановый этап — 11, юридическая и privacy-подготовка; рекомендуемый режим — `высокий`. Отдельный pilot blocker — содержательная ротация банков с SME review; для неё нужен режим `ультра` и явное подтверждение пользователя. Спорные вопросы и методические риски зафиксированы в `docs/QUESTION_BANK_AUDIT.md`.
 
 ## Financial Analyst Junior
 

@@ -47,6 +47,7 @@ const frontendFunctions = [
   "calculateAdminMetrics",
   "buildTestDistribution",
   "getAdminBadge",
+  "boundedText",
   "finiteNumber",
   "dateValue",
   "escapeHtml"
@@ -55,6 +56,7 @@ const frontendFunctions = [
 vm.runInNewContext(
   'const TECHNICAL_TEST_ID = "dev-quick";\n' +
     'const TEST_LABELS = {"fa-junior":"Financial Analyst","ca-junior":"Credit Analyst","fpa-junior":"FP&A / Budget","acc-junior":"Accounting","bi-junior":"Finance BI","dev-quick":"Dev Quick"};\n' +
+    'const BANK_VERSIONS = {"fa-junior":"FA Junior v3.0","ca-junior":"CA Junior v3.0","fpa-junior":"FP&A Junior v3.0","acc-junior":"ACC Junior v3.0","bi-junior":"BI Junior v3.0","dev-quick":"DEV Quick v2.0"};\n' +
     frontendFunctions,
   frontendContext
 );
@@ -108,7 +110,7 @@ const fixture = [
 const normalized = frontendContext.normalizeAdminRows(fixture);
 assert.deepEqual(
   Object.keys(normalized[0]).sort(),
-  ["badge", "code", "date", "finalScore", "percent", "reportCreated", "scoreVerification", "status", "tabSwitches", "testId", "testTitle"].sort(),
+  ["badge", "bankVersion", "code", "date", "finalScore", "percent", "reportCreated", "scoreVerification", "scoringAlgorithmVersion", "status", "tabSwitches", "telemetryVerification", "testId", "testTitle"].sort(),
   "frontend must keep only the anonymous contract"
 );
 assert.equal(normalized[0].email, undefined, "email must be stripped");
@@ -117,6 +119,33 @@ assert.equal(normalized[0].reportPath, undefined, "report path must be stripped"
 assert.equal(normalized[0].testTitle, "Financial Analyst", "test title must be derived from known test id");
 assert.equal(normalized[0].badge, "Junior Strong", "badge must be derived from score and tab switches");
 assert.equal(normalized[0].scoreVerification, "client-reported-unverified", "admin must label client-reported scores as unverified");
+
+const verifiedFrontendRow = frontendContext.normalizeAdminRows([{
+  code: "FA-EEE25",
+  testId: "fa-junior",
+  finalScore: 90,
+  percent: 90,
+  tabSwitches: 99,
+  date: "2026-07-20T10:00:00.000Z",
+  status: "passed",
+  reportCreated: true,
+  scoreVerification: "server-verified",
+  scoringAlgorithmVersion: "authoritative-v1",
+  bankVersion: "FA Junior v3.0",
+  telemetryVerification: "client-reported-unverified"
+}])[0];
+assert.equal(verifiedFrontendRow.scoreVerification, "server-verified");
+assert.equal(verifiedFrontendRow.badge, "Junior Strong", "verified badge must ignore unverified tab telemetry");
+assert.equal(frontendContext.normalizeAdminRows([{ ...verifiedFrontendRow, scoringAlgorithmVersion: "other" }])[0].scoreVerification, "client-reported-unverified");
+assert.equal(frontendContext.normalizeAdminRows([{ ...verifiedFrontendRow, bankVersion: "FA Junior v2.3" }])[0].scoreVerification, "client-reported-unverified");
+
+const revokeFrontend = extractFunction(frontend, "revokeAdminInvite");
+assert.match(revokeFrontend, /if \(!pendingInviteRevocations\[inviteId\]\)/, "lost revoke responses must reuse one scr_ request id");
+assert.match(revokeFrontend, /requestId:\s*pendingInviteRevocations\[inviteId\]/);
+assert(
+  revokeFrontend.indexOf("delete pendingInviteRevocations[inviteId]") > revokeFrontend.indexOf("if (data.ok !== true)"),
+  "revoke id may be cleared only after server success"
+);
 
 const defaultRows = frontendContext.filterAndSortResults(normalized, { sortOrder: "date-desc" });
 assert.deepEqual(Array.from(defaultRows, row => row.code), ["FA-AAAA2", "CA-BBBB2", "FA-DDDD4"], "technical rows hidden by default and dates sorted newest first");
@@ -158,7 +187,11 @@ const backendContext = {
 
 vm.runInNewContext(
   'const BACKEND_VERSION = "' + backendVersion[1] + '";\n' +
+    'const SUCCESS_THRESHOLD = 80;\n' +
     'const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";\n' +
+    'const SCORE_VERIFICATION_SERVER = "server-verified";\n' +
+    'const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";\n' +
+    'const BANK_VERSIONS_BY_ID = {"fa-junior":"FA Junior v3.0","ca-junior":"CA Junior v3.0","fpa-junior":"FP&A Junior v3.0","acc-junior":"ACC Junior v3.0","bi-junior":"BI Junior v3.0","dev-quick":"DEV Quick v2.0"};\n' +
     'const TEST_TITLES_BY_ID = {"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budgeting Junior","acc-junior":"Accounting Junior","bi-junior":"Finance BI Junior","dev-quick":"Dev Quick Test"};\n' +
     extractFunction(backend, "normalizeResultCode") + "\n" +
     extractFunction(backend, "getAdminBadge") + "\n" +
@@ -182,9 +215,31 @@ assert.equal(allowed.results[0].testTitle, "Financial Analyst Junior", "backend 
 assert.equal(allowed.results[0].badge, "Junior Strong", "backend must derive the badge");
 assert.deepEqual(
   Object.keys(allowed.results[0]).sort(),
-  ["badge", "code", "date", "finalScore", "percent", "reportCreated", "scoreVerification", "status", "tabSwitches", "testId", "testTitle"].sort(),
+  ["advisoryPenalty", "badge", "bankVersion", "code", "date", "finalScore", "percent", "reportCreated", "scoreVerification", "scoringAlgorithmVersion", "status", "tabSwitches", "telemetryVerification", "testId", "testTitle"].sort(),
   "backend anonymous contract"
 );
 assert.equal(allowed.results[0].scoreVerification, "client-reported-unverified", "backend must label client-reported scores as unverified");
+
+const verifiedBackendRow = backendContext.sanitizeAdminResult({
+  code: "FA-EEE25",
+  testId: "fa-junior",
+  rawScore: 80,
+  rawTotal: 100,
+  percent: 80,
+  finalScore: 80,
+  tabSwitches: 99,
+  date: "2026-07-20T10:00:00.000Z",
+  status: "passed",
+  badge: "Junior Strong",
+  reportCreated: true,
+  scoreVerification: "server-verified",
+  scoringAlgorithmVersion: "authoritative-v1",
+  bankVersion: "FA Junior v3.0",
+  telemetryVerification: "client-reported-unverified"
+});
+assert.equal(verifiedBackendRow.scoreVerification, "server-verified");
+assert.equal(verifiedBackendRow.badge, "Junior Strong");
+assert.equal(backendContext.sanitizeAdminResult({ ...verifiedBackendRow, scoringAlgorithmVersion: "other" }).scoreVerification, "client-reported-unverified");
+assert.equal(backendContext.sanitizeAdminResult({ ...verifiedBackendRow, bankVersion: "FA Junior v2.3" }).scoreVerification, "client-reported-unverified");
 
 console.log("Admin panel tests passed: transport, access rejection, privacy contract, filters, sorting, metrics, distributions and escaping.");

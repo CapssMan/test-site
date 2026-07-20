@@ -25,6 +25,17 @@
       margin-bottom: 16px;
     }
     header p { font-size: 20px; color: #94a3b8; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+    .pilot-note {
+      max-width: 760px;
+      margin: 22px auto 0;
+      padding: 12px 16px;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      background: rgba(245, 158, 11, 0.1);
+      color: #fde68a;
+      font-size: 14px;
+      line-height: 1.5;
+    }
     .stats-bar {
       display: flex;
       justify-content: center;
@@ -233,7 +244,8 @@
   <div class="container">
     <header>
       <h1>SkillCheck</h1>
-      <p>Практическая проверка junior-финансовых специалистов. Измеримые навыки вместо пустых резюме.</p>
+      <p>Практическая проверка junior-финансовых специалистов по одноразовому приглашению. Результат рассчитывает сервер по закрытому ключу.</p>
+      <div class="pilot-note">Controlled pilot готовится: выпуск реальных приглашений временно приостановлен до обновления содержания банка вопросов.</div>
     </header>
 
     <div class="stats-bar">
@@ -257,7 +269,7 @@
 
     <div class="tests-grid">
       <article class="test-card">
-        <span class="test-badge badge-ready">Готов</span>
+        <span class="test-badge badge-ready">Пилот готовится</span>
         <h3>Financial Analyst Junior</h3>
         <p>Excel, финансовый анализ, отчётность, бюджеты, SQL, бухучёт. Базовый тест для всех junior-финансистов.</p>
         <div class="test-meta">
@@ -265,11 +277,11 @@
           <span>⏱ ~40 мин</span>
           <span>🎯 6 блоков</span>
         </div>
-        <a class="btn-primary" href="test.html?test=fa-junior">Пройти тест →</a>
+        <a class="btn-primary" href="test.html?test=fa-junior">Открыть тест →</a>
       </article>
 
       <article class="test-card">
-        <span class="test-badge badge-ready">Готов</span>
+        <span class="test-badge badge-ready">Пилот готовится</span>
         <h3>Credit Analyst Junior</h3>
         <p>Ликвидность, долговая нагрузка, cash flow, кредитный риск. Для банков, МФО и лизинговых компаний.</p>
         <div class="test-meta">
@@ -277,11 +289,11 @@
           <span>⏱ ~35 мин</span>
           <span>🎯 8 блоков</span>
         </div>
-        <a class="btn-primary" href="test.html?test=ca-junior">Пройти тест →</a>
+        <a class="btn-primary" href="test.html?test=ca-junior">Открыть тест →</a>
       </article>
 
       <article class="test-card">
-        <span class="test-badge badge-ready">Готов</span>
+        <span class="test-badge badge-ready">Пилот готовится</span>
         <h3>FP&A / Budget Analyst Junior</h3>
         <p>БДР, БДДС, план-факт анализ, прогнозирование, сценарный анализ. Для планирования и бюджетирования.</p>
         <div class="test-meta">
@@ -289,11 +301,11 @@
           <span>⏱ ~40 мин</span>
           <span>🎯 8 блоков</span>
         </div>
-        <a class="btn-primary" href="test.html?test=fpa-junior">Пройти тест →</a>
+        <a class="btn-primary" href="test.html?test=fpa-junior">Открыть тест →</a>
       </article>
 
       <article class="test-card">
-        <span class="test-badge badge-ready">Готов</span>
+        <span class="test-badge badge-ready">Пилот готовится</span>
         <h3>Accounting Junior</h3>
         <p>Проводки, активы/пассивы, НДС, амортизация, первичная документация. Фундамент бухгалтерского учёта.</p>
         <div class="test-meta">
@@ -301,11 +313,11 @@
           <span>⏱ ~35 мин</span>
           <span>🎯 8 блоков</span>
         </div>
-        <a class="btn-primary" href="test.html?test=acc-junior">Пройти тест →</a>
+        <a class="btn-primary" href="test.html?test=acc-junior">Открыть тест →</a>
       </article>
 
       <article class="test-card">
-        <span class="test-badge badge-ready">Готов</span>
+        <span class="test-badge badge-ready">Пилот готовится</span>
         <h3>Finance BI / Data Analyst Junior</h3>
         <p>SQL, Power BI, визуализация, финансовые метрики, работа с данными. Для аналитиков данных в финансах.</p>
         <div class="test-meta">
@@ -313,13 +325,13 @@
           <span>⏱ ~40 мин</span>
           <span>🎯 8 блоков</span>
         </div>
-        <a class="btn-primary" href="test.html?test=bi-junior">Пройти тест →</a>
+        <a class="btn-primary" href="test.html?test=bi-junior">Открыть тест →</a>
       </article>
     </div>
 
     <div class="skill-preview">
       <h2>Skill Card — твоя карточка компетенций</h2>
-      <p>После прохождения теста ты получаешь измеримый профиль навыков, который можешь приложить к резюме</p>
+      <p>После прохождения сервер формирует предварительный профиль навыков для обсуждения с человеком, принимающим решение.</p>
       <div class="skill-bars">
         <div class="skill-row">
           <div class="skill-label"><span>Excel / Google Sheets</span><span>85%</span></div>
@@ -353,23 +365,23 @@
       <div class="steps">
         <div class="step">
           <div class="step-number">1</div>
-          <h4>Выбираешь роль</h4>
-          <p>5 специализаций junior-финансистов. Проходи тот тест, который соответствует твоей целевой позиции.</p>
+          <h4>Получаешь приглашение</h4>
+          <p>Администратор выбирает одну из 5 специализаций и отправляет персональную одноразовую ссылку.</p>
         </div>
         <div class="step">
           <div class="step-number">2</div>
           <h4>Проходишь тест</h4>
-          <p>40 практических вопросов с таймером. Анти-чит система обеспечивает честность результата.</p>
+          <p>Сервер фиксирует набор из 40 вопросов. Таймер и технические сигналы помогают интерпретировать прохождение.</p>
         </div>
         <div class="step">
           <div class="step-number">3</div>
           <h4>Получаешь Skill Card</h4>
-          <p>Детальный разбор по 6–8 блокам навыков, итоговая плашка и доверительный рейтинг.</p>
+          <p>Сервер проверяет ответы по закрытому ключу и возвращает итог с разбором по 6–8 блокам навыков.</p>
         </div>
         <div class="step">
           <div class="step-number">4</div>
-          <h4>Применяешь в карьере</h4>
-          <p>Прикрепляй Skill Card к резюме на hh.ru. Работодатели видят реальные навыки, а не слова.</p>
+          <h4>Обсуждаешь результат</h4>
+          <p>Skill Card дополняет собеседование и опыт, но не заменяет решение человека о найме.</p>
         </div>
       </div>
     </div>

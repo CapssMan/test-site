@@ -4,9 +4,10 @@
 
 ## Текущий этап
 
-- Завершён: этап 10 — security-аудит и решение по backend-scoring.
-- Следующий: этап 11 — юридическая и privacy-подготовка.
-- Authoritative backend-scoring + signed attempt/invite остаётся отдельным обязательным pilot gate 10A и требует согласования крупного переноса.
+- Технически завершён: этап 10A — authoritative backend-scoring, private banks и signed single-use invitation/attempt.
+- Production rollout 10A в существующий Web App ещё выполняется; deployment, smoke и implementation commit: `pending`.
+- Следующий плановый этап: 11 — юридическая и privacy-подготовка, рекомендуемый режим `высокий`.
+- Реальный пилот заблокирован до отдельно согласованной содержательной ротации банков и SME review; для этой работы нужен режим `ультра`.
 - Полный план: `ROADMAP.md`.
 
 ## Репозиторий и публикация
@@ -16,11 +17,10 @@
 - Этап 3 опубликован в commit `12868e6`.
 - Этап 4 опубликован в commit `1cd8498`.
 - Этап 5 опубликован в commit `44e0de1`.
-- Candidate frontend: `Build 2026.07.20.8`.
-- Admin frontend: `Build 2026.07.20.6`.
-- Backend: `yandex-disk-mvp-2026-07-20-7`.
-- Существующий Web App deployment: `@49`; URL не изменён.
-- Implementation commit: `e251be3`.
+- Текущий live baseline этапа 10: candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, implementation commit `e251be3`.
+- Подготовленные версии 10A: candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`.
+- Production deployment 10A: `pending`; Web App URL должен остаться прежним.
+- Implementation commit 10A: `pending`.
 
 ## Live health
 
@@ -73,16 +73,16 @@
 - Backend сохраняет `requestId` и при повторе возвращает тот же код без повторного результата; публичный ответ не содержит путей или внутренних флагов хранилища.
 - Экран результата содержит код, статус сохранения и дисклеймер о том, что тест не заменяет собеседование.
 - `scripts/test-candidate-ux.js`, вся прежняя тестовая матрица и browser-проверка пути кандидата на 1280/390 px проходят.
-- Новые неподтверждённые результаты сохраняются в `sessionStorage` текущей вкладки. Валидная неистёкшая legacy-копия переносится из `localStorage`; невалидная, слишком большая или истёкшая удаляется. Если session storage недоступен, валидная legacy-копия временно сохраняется от потери.
+- Новые неподтверждённые результаты сохраняются только в `sessionStorage` текущей вкладки, не дольше attempt token и максимум 6 часов. Старые полные pending-копии удаляются из `localStorage`, а в нём остаётся только информационная дата завершения без ответов, контактов, fingerprint, invite и token.
 - Временные сетевые/HTTP/backend-ошибки получают две ограниченные автоматические попытки с backoff; ручной retry и событие восстановления сети используют тот же payload и `requestId`.
 - Backend сначала резервирует один код в private attempts, затем создаёт TXT, upsert-запись админки и завершает резервацию; частичный отказ продолжает ту же попытку.
 - Резервация связана с hash payload и не содержит имени, email, Telegram или сырого fingerprint; изменённый payload с тем же `requestId` отклоняется.
 - Коды проверяются одновременно по `results.json` и незавершённым резервациям; неоднозначные повторы не создают второй код или вторую строку.
 - Frontend/backend логи содержат только этап, тип ошибки, номер попытки и последние 8 символов `requestId`, без payload и персональных данных.
-- Privacy-страница и форма кандидата сообщают о локальной 24-часовой резервной копии.
+- Privacy-страница и форма кандидата сообщают о резервной копии текущей вкладки максимум на 6 часов и о 30-минутном TTL незавершённого begin-запроса.
 - `scripts/test-submission-reliability.js` покрывает TTL, восстановление, backoff, частичный сбой, resume, replay, конфликт payload и освобождение lock.
 
-## Завершено на этапе 10
+## Завершено на этапе 10 — historical baseline до 10A
 
 - История Git проверена на высокодостоверные secrets: совпадений не найдено; `.clasp.json` игнорируется и содержит только `scriptId`, OAuth credentials в репозиторий не входят.
 - Apps Script manifest оставляет минимальные scopes текущей архитектуры: external request и Script Properties.
@@ -110,14 +110,32 @@
 - Повторная попытка заблокирована с coarse `daysLeft`; точный `nextDate` отсутствует.
 - Implementation commit: `e251be3`.
 
+## Технически завершено на этапе 10A
+
+- Public banks переведены на schema v2 и содержат только display-поля, opaque option IDs и `publicDigest`; `correct` и комментарии к ответу из текущей публикации удалены.
+- Закрытые versioned private banks содержат authoritative answer key на Яндекс.Диске и проверяются по SHA-256 anchors из Script Properties.
+- Администратор может создавать, безопасно повторять, просматривать и отзывать email/test-bound одноразовые приглашения.
+- Invite bearer находится только во fragment `#invite=...`, никогда в query; candidate сразу переносит его в `sessionStorage` и очищает URL.
+- `beginAttempt` проверяет приглашение и выдаёт точный ordered manifest, 6-часовой HMAC-signed token и server-side session.
+- Публичный `checkAttempt` удалён; legacy/tokenless `saveResult` получает `client_upgrade_required`.
+- Candidate отправляет только `questionId`, `optionId`, timeout и advisory telemetry; backend сверяет точный manifest и сам рассчитывает баллы/статус.
+- Подтверждённый результат имеет связку `server-verified`, `authoritative-v1`, `attempt-v1`, ожидаемый test/bank/attempt; время и tab switches не влияют на балл.
+- State machine `active → reserved → completed` обеспечивает single-use, exact replay, конфликт изменённого payload и repair после частичного commit.
+- Сырые email, fingerprint, invite code и attempt token не сохраняются в invite/session JSON и технических логах.
+- `ATTEMPT_ISSUANCE_ENABLED=false`; admin и candidate UI показывают pilot lock.
+- Bootstrap читает legacy source только из полного commit `70e569cf267e043aabc780e81cc4307db7e149b1` и проверяет точные SHA-256 файлов; mismatch обрабатывается fail closed.
+- Любой признак публикации private storage (`public_key`, `public_url`, `share`) блокирует bootstrap, issuance, invite, begin/save; publish/share endpoints не вызываются.
+- Добавлены проверки public-bank secrecy, токенов, server scoring и recovery. Production rollout и smoke 10A ещё `pending`.
+
+Техническая миграция не отзывает старые answer keys из Git history, клонов и кэшей. Поэтому включение приглашений для реальных кандидатов запрещено до отдельно подтверждённой содержательной ротации банков и SME review.
+
 ## Оценка до финала roadmap
 
-- Осталось 10 плановых этапов (`11–20`) и обязательный pilot gate 10A.
-- До технически готового ограниченного pilot MVP: 91–162 часа и примерно 700 тыс. – 1,38 млн токенов.
-- До конца roadmap: 111–202 часа, 810 тыс. – 1,62 млн токенов и 2–4 календарные недели пилота.
-- Из них базовые этапы 11–17: 43–74 часа / 340–680 тыс. токенов; 10A: 48–88 часов / 360–700 тыс. токенов.
-- Backend question delivery 10B оценивается отдельно в 80–160 часов / 600 тыс. – 1,2 млн токенов и частично пересекается с 10A.
-- Диапазон 10A предполагает mandatory `questionId`, базовый single-use signed attempt/invite и gateway abuse control; полноценные аккаунты/OTP/CAPTCHA зависят от выбранного провайдера и требуют уточнения.
+- Осталось 10 плановых этапов (`11–20`): 63–114 часов, 450–920 тыс. токенов и 2–4 календарные недели пилота.
+- Отдельная содержательная ротация банков: 50–100 часов, 400–800 тыс. токенов плюс SME review.
+- До limited-pilot readiness (`11–17` + ротация): 93–174 часа / 740 тыс. – 1,48 млн токенов.
+- До конца roadmap вместе с ротацией: 113–214 часов / 850 тыс. – 1,72 млн токенов + 2–4 недели пилота.
+- Аккаунты/OTP/CAPTCHA, managed gateway и дополнительная server-side delivery для открытого запуска в эти диапазоны не включены.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.
 
 ## Известные production smoke-данные
@@ -128,17 +146,17 @@
 - Исторический scoring smoke report: `DEV-B4ABJ.txt`.
 - Историческая проверка надёжности отправки: failed `DEV-7S2N2`; повтор вернул тот же код с `replayed:true`, TXT не создавался.
 - Security production smoke: failed `FA-X5P66`, `reportCreated:false`; идентичный replay вернул тот же код с `replayed:true`; retake заблокирован без точного `nextDate`.
+- Production smoke этапа 10A: `pending`; код или результат заранее не заявляются.
 - В служебных JSON есть dev-quick smoke-записи; админка их фильтрует.
 - Очистку выполнять только в рамках этапа 12/17 с резервной копией либо после явного подтверждения.
 
 ## Ограничения и риски MVP
 
-- Правильные ответы доступны frontend, а backend получает клиентский расчёт. Строгая валидация не превращает его в подтверждённый результат; authoritative backend-scoring — обязательный pilot gate.
-- Backend question delivery рекомендуется для открытого или adversarial пилота; большой перенос не начат без согласования пользователя.
-- Текущие результаты должны интерпретироваться только как `client-reported-unverified`, а не как независимое доказательство знаний.
-- `saveResult` не требует server-issued challenge: обычные публичные банки позволяют создавать согласованные spam writes и расходовать Apps Script/Яндекс.Диск quota. Отключение `dev-quick` закрывает только самый дешёвый bypass.
-- `checkAttempt` остаётся email-enumeration oracle: точная дата скрыта, но `allowed`/`foundPreviousAttempt` раскрывают факт попытки. Полное исправление — invite/OTP/auth и внешний CAPTCHA/gateway perimeter.
-- Retake — deterrence, не identity control: email не верифицирован, 32-bit fingerprint задаёт клиент.
+- Текущие public banks больше не раскрывают `correct`, frontend не считает итог, а token-bound backend возвращает только server-verified authoritative result.
+- Старые answer keys уже присутствуют в Git history/клонах/кэшах. Это критический pilot blocker, который устраняется только содержательной ротацией и SME review, а не переписыванием текущей ветки.
+- `ATTEMPT_ISSUANCE_ENABLED` остаётся `false`; реальных кандидатов приглашать нельзя до ротации и checklist этапа 17.
+- Controlled-pilot email enumeration закрыт удалением `checkAttempt` и email/test-bound invite flow. Для открытого потока всё ещё нужны OTP/auth, CAPTCHA и/или внешний gateway.
+- Invite и fingerprint ограничивают повтор/доступ, но не подтверждают личность кандидата. Более сильная identity model требует OTP/magic link или аккаунт.
 - Scope Яндекс OAuth-токена неизвестен и, вероятно, шире `disk:/skillcheck`; code path allowlist не ограничивает blast radius токена. До пилота нужны регламент ротации и оценка app-folder/least-privilege доступа.
 - До пилота желательно переписать 4 высокоприоритетных спорных вопроса из `docs/QUESTION_BANK_AUDIT.md`; текущие тексты оставлены без изменений до подтверждения.
 - Четыре банка содержат ровно 40 вопросов; полноценная ротация 40 из 80 есть только у Credit Analyst.
@@ -148,4 +166,4 @@
 
 ## Ручной шаг пользователя
 
-Сейчас не требуется. Список Apps Script deployments сверён: кроме HEAD и текущего стабильного deployment устаревших активных deployments текущего проекта нет.
+Сейчас не требуется. Production rollout 10A выполняется без смены Web App URL; выдача приглашений останется выключенной. Содержательная ротация банков начнётся только после отдельного явного подтверждения пользователя.

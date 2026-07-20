@@ -66,6 +66,7 @@
 | 8 | UX кандидата | Завершён |
 | 9 | Надёжность отправки результата | Завершён |
 | 10 | Безопасность | Завершён |
+| 10A | Authoritative scoring и controlled invitations | Технически завершён; production rollout pending; pilot locked до ротации банков |
 | 11 | Юридическая и privacy-подготовка | Частично реализован |
 | 12 | Удаление и срок хранения | Не начат |
 | 13 | Резервные копии | Не начат |
@@ -239,13 +240,34 @@ Live smoke `DEV-EZ3BY`: Telegram нормализован в TXT, UTF-8 подт
 - [x] Существующий Apps Script deployment обновлён до `@49` без смены URL; production smoke завершён.
 - [x] Список deployments сверён: кроме HEAD и текущего стабильного deployment устаревших активных deployments текущего проекта не обнаружено; URL/ID не публикуются.
 
-Критический остаточный риск: frontend всё ещё знает правильные ответы и считает результат. Authoritative backend-scoring обязателен до ограниченного пилота; backend question delivery рекомендуется для открытого/adversarial пилота. Оценка первого варианта — 48–88 часов / 360–700 тыс. токенов, полной серверной выдачи — 80–160 часов / 600 тыс. – 1,2 млн токенов. Большой перенос не выполняется без отдельного согласования пользователя.
+Это состояние baseline на момент закрытия этапа 10: frontend знал правильные ответы и считал результат. Технический перенос authoritative scoring выполнен в этапе 10A ниже. Для открытого/adversarial запуска всё ещё могут потребоваться OTP/auth, внешний gateway и дополнительное усиление server-side delivery.
 
-Дополнительные high residual до pilot gate: `saveResult` не требует server-issued challenge и допускает согласованный quota-spam; `checkAttempt` раскрывает факт существования попытки; email/fingerprint не подтверждают identity; legacy `questionId` необязателен и проверяется на уникальность только при наличии. 10A должен включать mandatory `questionId`, одноразовый signed attempt/invite и gateway abuse control. Scope Яндекс OAuth-токена не подтверждён и, вероятно, шире папки проекта: code path allowlist не ограничивает blast radius украденного токена, поэтому нужны ротация и оценка app-folder/least-privilege модели.
+Остаточные риски baseline были перенесены в 10A: публичный `checkAttempt` удалён, tokenless `saveResult` запрещён, `questionId` обязателен и сверяется с выданным manifest. Email/fingerprint всё равно не являются доказательством личности. Scope Яндекс OAuth-токена не подтверждён и, вероятно, шире папки проекта: code path allowlist не ограничивает blast radius украденного токена, поэтому нужны ротация и оценка app-folder/least-privilege модели.
 
 Production smoke: minimal health содержит ровно `ok/status/service/backendVersion`; GET `checkAttempt` возвращает `method_not_allowed`; неизвестный action — `unknown_action`; `dev-quick` — `test_not_public`; шестая попытка с неверным админ-паролем — `rate_limited`. Реальный failed Financial Analyst сохранён как `FA-X5P66`, `reportCreated:false`; идентичный replay вернул тот же код и `replayed:true`; retake заблокирован с coarse `daysLeft` без `nextDate`.
 
 Публикация этапа 10: backend `yandex-disk-mvp-2026-07-20-7`, deployment `@49`, candidate `Build 2026.07.20.8`, admin `Build 2026.07.20.6`, Web App URL не изменён; implementation commit: `e251be3`.
+
+## Этап 10A. Authoritative scoring и controlled invitations
+
+Статус: техническая реализация завершена 20 июля 2026 года. Подготовлены candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9` и backend `yandex-disk-mvp-2026-07-20-9`. Production rollout в существующий deployment, production smoke и implementation commit пока `pending`; Web App URL менять нельзя.
+
+- [x] Public banks переведены на schema v2: display-only вопросы, opaque option IDs и проверяемый `publicDigest`, без `correct` и комментариев к ответу.
+- [x] Закрытые versioned private banks хранят answer key на Яндекс.Диске; их SHA-256 anchors находятся в Script Properties и дают fail-closed проверку целостности.
+- [x] Реализованы email/test-bound одноразовые приглашения, административное создание/просмотр/отзыв и безопасные retry request IDs.
+- [x] Invite bearer передаётся только во fragment `#invite=...`, не в query; candidate немедленно очищает адресную строку и временно держит код только в `sessionStorage`.
+- [x] `beginAttempt` выдаёт точный серверный manifest и 6-часовой HMAC-signed token; публичный `checkAttempt` удалён.
+- [x] Attempt state хранится как `active → reserved → completed`; точный replay возвращает тот же код, изменённый payload конфликтует, а commit recovery восстанавливает согласованное состояние.
+- [x] `saveResult` принимает только `questionId`, `optionId`, timeout/time telemetry и binding-поля; tokenless legacy payload отклоняется как `client_upgrade_required`.
+- [x] Backend сам сверяет ответы с закрытым банком и возвращает только `server-verified` / `authoritative-v1`; уходы со вкладки и время остаются `client-reported-unverified` telemetry и не уменьшают балл.
+- [x] `dev-quick` остаётся выключенным для публичного потока; обычная выдача attempt дополнительно закрыта флагом `ATTEMPT_ISSUANCE_ENABLED=false`.
+- [x] Добавлены специализированные проверки secrecy, токенов, authoritative scoring и recovery; содержательные тексты и правильные ответы при структурной миграции не менялись.
+- [x] Bootstrap привязан к полному immutable Git commit `70e569cf267e043aabc780e81cc4307db7e149b1` и точным SHA-256 legacy-файлов; любое расхождение отклоняется до миграции.
+- [x] Bootstrap/issuance/invite/begin/save fail closed, если private storage Яндекс.Диска имеет `public_key`, `public_url` или `share`; publish/share endpoints не используются.
+- [ ] Завершить production rollout, зафиксировать реальный deployment/commit и production smoke — не подставлять значения заранее.
+- [ ] До первого реального приглашения отдельно согласовать и выполнить содержательную ротацию банков с SME review. Старые answer keys сохраняются в Git history, клонах и кэшах; rewrite истории сам по себе не отзывает их.
+
+После технического 10A осталось 10 плановых этапов (`11–20`): 63–114 часов, 450–920 тыс. токенов и 2–4 недели пилота. Ротация банков оценивается отдельно в 50–100 часов и 400–800 тыс. токенов плюс SME review. До limited-pilot readiness (`11–17` + ротация) — 93–174 часа / 740 тыс. – 1,48 млн токенов; до полного roadmap вместе с ротацией — 113–214 часов / 850 тыс. – 1,72 млн токенов + 2–4 недели.
 
 ## Этап 11. Юридическая и privacy-подготовка MVP
 
@@ -273,7 +295,7 @@ JSON и структура банков, известные шаблоны secre
 
 ## Этап 17. Подготовка к пилоту
 
-Проверить пять тестов и банки, мобильный вид, сохранение, TXT, админку, retake, authoritative backend-scoring, signed invitation/attempt, отсутствие email-enumeration lookup, gateway abuse control, обязательный `questionId`, ротацию/least-privilege Яндекс-токена, удаление, backup, policy, контакты, инструкции, отсутствие production-тестовых данных, скрытый smoke, monitoring и rollback. Подготовить pilot checklist. Не приглашать реальных кандидатов, пока результаты помечены `client-reported-unverified`.
+Проверить пять тестов и банки, мобильный вид, сохранение, TXT, админку, retake, authoritative backend-scoring, signed invitation/attempt, отсутствие email-enumeration lookup, gateway abuse control, обязательный `questionId`, ротацию/least-privilege Яндекс-токена, удаление, backup, policy, контакты, инструкции, отсутствие production-тестовых данных, скрытый smoke, monitoring и rollback. Подготовить pilot checklist. Не приглашать реальных кандидатов до содержательной ротации банков и осознанного включения `ATTEMPT_ISSUANCE_ENABLED`.
 
 ## Этап 18. Пилот
 
@@ -289,9 +311,10 @@ JSON и структура банков, известные шаблоны secre
 
 ## Ближайшая очередь
 
-1. Перейти к этапу 11 — юридической и privacy-подготовке.
-2. Получить решение пользователя о добавлении authoritative backend-scoring + signed attempt/invite + gateway abuse control как обязательного pilot gate; большой перенос без согласования не начинать.
-3. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
+1. Завершить production rollout/проверку 10A и зафиксировать только фактические deployment, smoke и commit.
+2. Перейти к этапу 11 — юридической и privacy-подготовке; рекомендуемый режим `высокий`.
+3. Отдельно получить подтверждение на содержательную ротацию банков — обязательный pilot blocker; рекомендуемый режим `ультра`.
+4. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 
 ## Ограничения работы
 

@@ -1,14 +1,14 @@
-# SkillCheck — security-аудит этапа 10
+# SkillCheck — security-аудит этапов 10 и 10A
 
 Дата аудита: 20 июля 2026 года.
 
-Статус: этап завершён 20 июля 2026 года. Защитные изменения прошли полную матрицу, опубликованы в существующем Apps Script deployment `@49` без смены URL и подтверждены production smoke. Implementation commit: `e251be3`.
+Статус baseline этапа 10: опубликован в Apps Script deployment `@49` без смены URL и подтверждён production smoke; implementation commit `e251be3`. Статус 10A: техническая реализация authoritative scoring/private banks/invitations завершена; production deployment, smoke и implementation commit пока `pending`. Подготовлены candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`; `ATTEMPT_ISSUANCE_ENABLED=false`.
 
 ## Резюме
 
 В проверенной истории Git не найдено высокодостоверных токенов, паролей, salt или OAuth credentials. `.clasp.json` игнорируется Git и содержит только `scriptId`; локальные OAuth credentials в репозиторий не входят. Manifest Apps Script запрашивает только необходимые текущей архитектуре scopes: внешние HTTP-запросы и Script Properties.
 
-Подготовлено усиление публичного контура:
+На этапе 10 было подготовлено baseline-усиление публичного контура:
 
 - GET больше не выполняет проверку попытки и административные действия; JSONP удалён;
 - публичный `health` стал минимальным, не обращается к Яндекс Диску, не создаёт файлы и не раскрывает конфигурацию;
@@ -21,7 +21,7 @@
 - HTML-страницы получили CSP meta и политику `no-referrer`;
 - кандидатский экран, backend-контракт и админка явно помечают балл как `client-reported-unverified`.
 
-Эти меры существенно сокращают поверхность атаки и случайные утечки, но не устраняют главные риски публичного API: правильные ответы остаются в публичных JSON, расчёт выполняется в браузере, `saveResult` не требует server-issued challenge, а `checkAttempt` остаётся oracle существования попытки по email. Подробное scoring-решение зафиксировано в [`BACKEND_SCORING_DECISION.md`](BACKEND_SCORING_DECISION.md).
+Эти baseline-меры сокращали поверхность атаки, но не устраняли доверие к браузеру. Этап 10A технически перенёс answer key и scoring на backend, добавил single-use invite/attempt и удалил публичный email lookup. Главный текущий blocker — историческая компрометация контента: прежние answer keys остаются в Git history, клонах и кэшах. Подробный контракт зафиксирован в [`BACKEND_SCORING_DECISION.md`](BACKEND_SCORING_DECISION.md).
 
 ## Проверенный контур
 
@@ -40,7 +40,9 @@
 
 Аудит не является независимым penetration test и не доказывает отсутствие неизвестных уязвимостей.
 
-## Результаты по областям
+## Результаты baseline этапа 10
+
+Раздел ниже фиксирует состояние, проверенное и опубликованное в `@49` **до** миграции 10A. Упоминания `checkAttempt`, client scoring и tokenless `saveResult` являются историческими findings, а не описанием подготовленного 10A-контракта.
 
 ### Secrets, Git и Apps Script
 
@@ -114,24 +116,38 @@
 - Админская выборка остаётся обезличенной; полный TXT выдаётся только после POST-проверки пароля и не вставляется в DOM.
 - Логи содержат только технический этап и безопасный хвост `requestId`, без полного payload и персональных данных.
 
-## Остаточные риски и pilot gate
+## Addendum 10A: реализованный trust boundary
+
+- Public banks имеют schema v2, display-only поля, opaque option IDs и `publicDigest`; `correct`/объяснения правильного ответа отсутствуют в текущей ветке и публикации.
+- Authoritative answer key находится только в private versioned banks на Яндекс.Диске. SHA-256 anchors в Script Properties защищают от незаметной подмены только на стороне storage; missing/corrupt/mismatched private state обрабатывается fail closed.
+- `beginAttempt` требует email/test-bound одноразовое приглашение. Plaintext invite code не хранится; публичные ошибки не раскрывают, существует ли email/приглашение/предыдущая попытка.
+- Invite URL хранит bearer только во fragment `#invite=...`, не в query. Candidate захватывает fragment, сразу очищает адресную строку через `history.replaceState` и временно сохраняет код в `sessionStorage`.
+- Signed attempt token имеет отдельный HMAC secret, фиксированные claims и срок 6 часов. Server-side session, а не подпись сама по себе, является источником single-use и exact-manifest binding.
+- `saveResult` принимает только versioned contract `attempt-v1`, обязательные `questionId`/`optionId` и advisory telemetry. Tokenless legacy flow отклоняется как `client_upgrade_required`; `checkAttempt` удалён.
+- Backend проверяет точный ordered manifest и private bank, сам рассчитывает score/pass и возвращает связку `server-verified` / `authoritative-v1`. Клиентская арифметика, tab switches и timing не влияют на итог.
+- Состояние `active → reserved → completed` и binding `requestId + submissionHash` дают exact replay, конфликт изменённого payload и repair после частичного admin commit в пределах recovery window.
+- Admin UI принимает только результат с ожидаемыми API/test/bank/attempt bindings и серверными markers. Создание/отзыв invite использует идемпотентные request IDs.
+- Сырые email, fingerprint, invite code и attempt token не пишутся в invite/session JSON и технические логи.
+- `ATTEMPT_ISSUANCE_ENABLED=false` блокирует обычную выдачу attempts; `dev-quick` остаётся public-disabled. Включение для реальных кандидатов запрещено до отдельного content-rotation gate.
+- Bootstrap загружает legacy sources только из полного immutable commit `70e569cf267e043aabc780e81cc4307db7e149b1` и до JSON parse сверяет точный SHA-256 каждого файла. Commit или content mismatch останавливает миграцию.
+- Metadata-проверка охватывает private root/banks/invites/sessions/attempts и связанные файлы. Любой `public_key`, `public_url` или `share` блокирует bootstrap, включение issuance, выпуск invite, begin и save; publish/share endpoints код не вызывает.
+
+Production rollout и production smoke этой реализации пока `pending`. До их фактического завершения нельзя приписывать 10A номер deployment, SHA commit или smoke-код.
+
+## Остаточные риски и pilot gate после 10A
 
 | Риск | Уровень | Состояние / действие |
 |---|---|---|
-| Публичные правильные ответы и frontend-scoring | Критический | Не устранён без архитектурного переноса. До пилота нужен авторитетный backend-scoring; для открытого/adversarial запуска — выдача вопросов backend. |
-| `saveResult` без server-issued challenge | Высокий | Валидный spam может расходовать Apps Script/Яндекс.Диск quota; 10A должен добавить одноразовый signed attempt token и gateway/abuse control. |
-| Публичный `dev-quick` bypass | Закрыт в baseline | `PUBLIC_DEV_TEST_ENABLED=false`; обе публичные операции возвращают `test_not_public`. Не включать в production без отдельной закрытой защиты. |
-| `checkAttempt` email-enumeration oracle | Высокий | Точный `nextDate` удалён, но факт попытки остаётся; для пилота перейти на invite/challenge, для публичного потока — OTP/auth/CAPTCHA/gateway. |
-| Retake без подтверждения identity | Высокий | Email не верифицирован, 32-bit fingerprint контролирует клиент; считать только deterrence до server-issued invitation/OTP/account. |
-| Анонимный Apps Script endpoint | Высокий | Нужен кандидату; сужен строгим API и лимитами. При росте трафика вынести за gateway/WAF. |
-| Широкий/неподтверждённый scope Яндекс-токена | Высокий | Code path allowlist не ограничивает украденный токен; определить scope, ротировать по регламенту и мигрировать к app-folder/least privilege. |
-| Shared admin password | Высокий | POST + best-effort limit; до масштабирования перейти на индивидуальную аутентификацию/MFA. |
-| Legacy-optional `questionId` | Средний | Уникальность проверяется только при наличии ID; в 10A сделать ID обязательным и сверять с закрытым versioned bank, в 10B — с конкретным выданным набором. |
-| CacheService rate limits | Средний | Advisory, не атомарны и не IP-based. Наблюдать квоты и abuse. |
+| Исторически опубликованные answer keys | Критический | Удалены из текущего HEAD, но остаются в Git history, клонах и кэшах. До реального пилота нужна отдельно согласованная содержательная ротация вопросов/вариантов/ключей и SME review; rewrite истории недостаточен. |
+| Production rollout 10A не завершён | Высокий до проверки | Deployment/commit/smoke остаются `pending`; обновлять только существующий Web App URL, затем выполнить закрытый owner smoke и снова оставить issuance выключенным. |
+| Ошибочное включение выдачи | Закрыт gate по умолчанию | `ATTEMPT_ISSUANCE_ENABLED=false`; admin/candidate показывают pilot lock. Не включать до content rotation и checklist этапа 17. |
+| Identity без OTP/account | Высокий | Email-bound invite и fingerprint ограничивают поток, но не доказывают личность. Для более сильной идентификации нужны OTP/magic link или аккаунт. |
+| Анонимный Apps Script endpoint и best-effort rate limits | Высокий при открытом запуске | Controlled flow сужен invite/token/state. `CacheService` не является атомарным IP-based limiter; для открытого трафика нужен внешний gateway/WAF/CAPTCHA. |
+| Широкий/неподтверждённый scope Яндекс-токена | Высокий | Code path allowlist не ограничивает украденный токен; определить scope, безопасно ротировать credential и оценить app-folder/least privilege. |
+| Shared admin password | Высокий | POST + advisory limit; до масштабирования перейти на индивидуальную аутентификацию/MFA и безопасный audit trail. |
+| Нет удаления, retention и backup private state | Высокий | Этапы 12–13; private banks/invites/sessions должны входить в проверенный backup/recovery и retention design. |
 | CSP только через meta и inline code | Средний | Вынести JS/CSS и выставлять заголовки на управляемом hosting при следующем усилении. |
-| Старые Apps Script deployments | Низкий сейчас | Список сверён: stale active deployments не обнаружены; повторять проверку после будущих изменений deployment. |
-| Нет удаления, retention и backup | Высокий | Этапы 12–13; не запускать реальных кандидатов до выполнения pilot checklist. |
-| Юридические заглушки и контакты | Высокий | Этап 11 и профильная юридическая проверка. |
+| Юридические заглушки и контакты | Высокий | Этап 11 и профильная юридическая проверка; реальные приглашения не выдавать. |
 
 ## Критерии завершения этапа 10
 

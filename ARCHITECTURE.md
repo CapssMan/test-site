@@ -1,90 +1,148 @@
-# ARCHITECTURE.md
+# SkillCheck — архитектура MVP
+
+Обновлено: 20 июля 2026 года, этап 10A.
 
 ## Общая схема
 
-SkillCheck работает как статический сайт на GitHub Pages. GitHub Pages хранит только HTML/CSS/JS и банки вопросов, но не хранит результаты, персональные данные, токены, отчёты или JSON-базы. В текущем MVP банки всё ещё содержат правильные ответы, поэтому scoring считается клиентским и неподтверждённым.
+SkillCheck состоит из статического frontend на GitHub Pages, Google Apps Script Web App и приватного хранилища Яндекс Диска. Google Sheets и Google Drive не используются.
 
 ```text
-Пользователь
-  -> index.html
-  -> privacy.html
-  -> test.html?test=<testId>
-  -> data/<testId>.json
-  -> Google Apps Script API
-  -> Яндекс Диск REST API
+Администратор
+  -> admin.html
+  -> POST adminCreateInvite / adminInvites / adminRevokeInvite
+  -> Google Apps Script
+  -> disk:/skillcheck/private/invites-v1.json
+
+Кандидат
+  -> test.html?test=<testId>&invite=<one-time-code>
+  -> display-only data/<testId>.json
+  -> POST beginAttempt
+  <- signed attempt token + server-selected questionIds
+  -> POST saveResult (только questionId/optionId/timing)
+  -> Google Apps Script + закрытый answer key
+  <- server-verified результат
+  -> Яндекс Диск: обезличенная строка, attempt projection и при 80+ полный TXT
 ```
 
-Google Sheets и Google Drive не используются.
+Главная граница доверия: браузер показывает вопросы и собирает ответы, но не знает правильные ответы и не рассчитывает итог как источник истины. Баллы, статус, блоки и рекомендацию вычисляет backend по закрытому versioned-банку.
 
-## Роли файлов
+## Frontend
 
 ### `index.html`
 
-Главная страница и карточки тестов.
+Главная страница показывает пять профессиональных тестов и объясняет controlled-pilot режим: пройти тест можно только по персональному одноразовому приглашению.
 
 ### `test.html`
 
-Основной движок тестирования:
+Кандидатский frontend:
 
-- читает параметр `?test=`;
-- выбирает тест из `TEST_CONFIG`;
-- загружает JSON-банк вопросов;
-- выбирает случайный набор вопросов;
-- перемешивает вопросы и варианты ответа;
-- пересчитывает индекс правильного ответа;
-- показывает вопросы по одному;
-- считает предварительный результат, штраф, плашку и Trust Score;
-- требует согласие на обработку персональных данных;
-- требует подтверждение 18+;
-- фиксирует необязательное согласие на передачу результата работодателю;
-- проверяет анти-повтор через Google Apps Script;
-- отправляет результат в Google Apps Script;
-- показывает пользователю случайный код результата, процент, итоговый балл, статус и предупреждение, что балл не подтверждён независимым серверным расчётом.
+- удаляет `invite` из URL через `history.replaceState` сразу после открытия;
+- загружает публичный банк schema v2 без `correct`, комментариев и иных ключей;
+- сам пересчитывает canonical SHA-256 публичного банка и fail-closed сравнивает его с `publicDigest`;
+- отправляет `beginAttempt` с API `attempt-v1`, одноразовым приглашением, email и техническим fingerprint;
+- принимает только подписанную сервером попытку с точной версией банка и точным порядком `questionIds`;
+- сохраняет серверный порядок вопросов, а варианты `{id,text}` перемешивает криптографическим Fisher–Yates без изменения стабильных `optionId`;
+- отправляет для каждого вопроса только `questionId`, `optionId|null`, `timedOut`, `timeSpent`;
+- не отправляет `score`, `isCorrect`, правильные ответы, блоковые итоги или клиентское решение;
+- показывает нейтральный экран расчёта и рендерит результат только при `scoreVerification: server-verified`, `scoringAlgorithmVersion: authoritative-v1`, `telemetryVerification: client-reported-unverified` и `penalty: 0`;
+- повторяет временно неудавшуюся отправку с тем же token, payload и `requestId`.
+
+В `sessionStorage` текущей вкладки временно находятся:
+
+- begin-запрос с приглашением и email — максимум 30 минут;
+- активный attempt token — до его срока, максимум 6 часов;
+- неподтверждённая отправка с ответами и контактами — до срока token, максимум 6 часов.
+
+После успешного сохранения эти записи удаляются. В `localStorage` остаётся только информационная дата завершения без PII, fingerprint, ответов, invite и token. Legacy pending payload из постоянного storage удаляется.
 
 ### `admin.html`
 
-Обезличенная админ-панель. Она не хранит данные внутри файла и не содержит персональные данные. После ввода пароля админка запрашивает у Google Apps Script только массив из `results.json`:
+Админ-панель отправляет пароль только POST-запросом и хранит его только в памяти страницы. Она:
+
+- показывает обезличенные результаты;
+- явно различает `server-verified` и исторические `client-reported-unverified` строки;
+- скачивает полный персональный TXT только отдельным защищённым POST после повторной backend-авторизации;
+- создаёт email- и test-bound одноразовые приглашения на 1–720 часов;
+- повторяет потерянный create-ответ с тем же `sci_...` request ID, чтобы восстановить тот же код вместо выпуска дубля;
+- показывает plaintext invite только в ответе на создание и позволяет отозвать незавершённое приглашение.
+
+Админ API не возвращает имя, открытый email, Telegram, fingerprint, token, ответы, hashes или внутренние пути.
+
+## Публичные и приватные банки
+
+Публичный schema v2:
 
 ```text
-code
-date
-testId
-testTitle
-finalScore
-percent
-status
-badge
-tabSwitches
-reportCreated
-scoreVerification
+schemaVersion, testId, testVersion, bankVersion,
+questionsPerAttempt, blocks, questions, publicDigest
 ```
 
-Админка не показывает имя, email, telegram, fingerprint, внутренний путь или сырые ответы кандидата. Полный TXT можно скачать только отдельным защищённым POST-запросом после проверки админ-пароля. Таблица явно помечает текущий scoring как клиентский.
+Вопрос содержит только display-поля и `options: [{id,text}]`. `optionId` детерминирован:
 
-### `privacy.html`
+```text
+opt_ + first20hex(SHA-256(
+  "skillcheck-option-v1|<testId>|<normalizedQuestionId>|<exactOptionText>"
+))
+```
 
-Политика обработки персональных данных и legal-дисклеймеры MVP.
+`publicDigest` — SHA-256 от `JSON.stringify` canonical-объекта с первыми семью полями, без самого digest. Публичные варианты сортируются по opaque ID; браузер перемешивает их при попытке.
 
-### `apps-script/Code.gs`
+Приватный банк хранит те же display-данные плюс `correctOptionId` и служебный комментарий. Он не коммитится и читается fail-closed: отсутствующий, повреждённый, неверной версии или digest банк не создаётся автоматически во время обычного запроса.
 
-Google Apps Script остаётся backend/API. Он:
+Сервер выбирает и фиксирует точный набор вопросов. Для Credit Analyst это 40 из 80; для остальных production-банков — имеющиеся 40. `dev-quick` публично отключён.
 
-- читает секреты только из Script Properties;
-- проверяет анти-повтор через `attempts.json`;
-- проверяет строгий JSON-контракт, размеры, `testId`, версии, типы, длины и диапазоны;
-- генерирует случайный код результата;
-- создаёт TXT-отчёт только для успешных результатов;
-- пишет полный TXT-отчёт на Яндекс Диск;
-- пишет обезличенную запись в `results.json`;
-- отдаёт admin.html только обезличенные данные после проверки `ADMIN_PASSWORD`;
-- применяет best-effort rate limits через `CacheService`;
-- отдаёт `?action=health` только как минимальный немутирующий liveness.
+## Backend и API
 
-Backend пока не имеет закрытого answer key и не пересчитывает знания независимо: он проверяет формат и внутреннюю согласованность клиентского результата и сохраняет `scoreVerification: client-reported-unverified`. Целевая модель до пилота описана в `docs/BACKEND_SCORING_DECISION.md`.
+`apps-script/Code.gs` принимает versioned JSON API `attempt-v1`.
+
+Публичные POST actions:
+
+- `beginAttempt` — валидирует приглашение и создаёт попытку;
+- `saveResult` — проверяет signed token, persistent session, выданный набор вопросов и считает результат.
+
+Административные POST actions после проверки `ADMIN_PASSWORD`:
+
+- `adminResults`;
+- `adminReport`;
+- `adminCreateInvite`;
+- `adminInvites`;
+- `adminRevokeInvite`.
+
+Legacy `checkAttempt` и tokenless `saveResult` возвращают `client_upgrade_required`. Чувствительные actions через GET не выполняются. `?action=health` остаётся минимальным немутирующим liveness и не читает хранилище или Script Properties.
+
+### Приглашение и attempt token
+
+Invite code имеет высокую энтропию, детерминированно восстанавливается backend для идемпотентного admin retry и в открытом виде в JSON-хранилище не записывается. Запись привязана к HMAC email, одному testId, сроку и состоянию.
+
+Attempt token — трёхсегментная HMAC-SHA-256 подпись с фиксированными `alg`, `kid`, `typ`, `attemptId`, `jti`, версией банка, hash набора, `iat` и `exp`. Подпись сравнивается constant-time. Token сам по себе не обеспечивает single-use: источник истины — persistent session на Яндекс Диске.
+
+Состояния:
+
+```text
+invite:  issued -> active -> completed
+                       \-> revoked / expired
+
+session: active -> reserved(requestId, submissionHash, code, aggregate result)
+               -> completed
+```
+
+Под ScriptLock backend атомарно сверяет состояние и резервирует один код. Точная повторная отправка возвращает тот же код. Другой `requestId` или изменённый payload конфликтует. Active token действует 6 часов; уже зарезервированную идентичную отправку можно безопасно восстановить до 24 часов. Если admin row успела записаться до final session write, retry чинит session, legacy attempts projection и invite до ответа об успехе.
+
+### Authoritative scoring
+
+Backend принимает только выданные `questionId` и допустимые для них `optionId`, затем по private bank рассчитывает:
+
+- `rawScore`, `rawTotal`, `percent`;
+- `finalScore` и порог 80%;
+- `unansweredCount`, `blockResults`, badge, статус и рекомендацию;
+- `scoreVerification: server-verified`;
+- `scoringAlgorithmVersion: authoritative-v1`.
+
+`finalScore` равен серверному проценту знаний и не уменьшается по клиентской телеметрии. Уходы со вкладки дают только `advisoryPenalty`/Trust Score и маркируются `client-reported-unverified`; обязательное поле `penalty` authoritative-результата равно нулю.
 
 ## Script Properties
 
-В код не вставляются реальные токены, пароли или salt. Нужны только эти Script Properties:
+Значения никогда не коммитятся и не выводятся публично:
 
 ```text
 YANDEX_DISK_TOKEN
@@ -93,125 +151,44 @@ YANDEX_DISK_ADMIN_FILE
 YANDEX_DISK_ATTEMPTS_FILE
 ATTEMPT_HASH_SALT
 ADMIN_PASSWORD
+ATTEMPT_SIGNING_SECRET_V1
+INVITE_CODE_SECRET_V1
+IDENTITY_HASH_SECRET_V1
+ATTEMPT_ISSUANCE_ENABLED
 ```
 
-Ожидаемые пути:
+Опционально пути новых файлов можно переопределить `YANDEX_DISK_INVITES_FILE`, `YANDEX_DISK_ATTEMPT_SESSIONS_FILE`, `YANDEX_DISK_PRIVATE_BANKS_FOLDER`. Все пути проходят allowlist `disk:/skillcheck/...`.
+
+## Яндекс Диск
 
 ```text
-YANDEX_DISK_REPORTS_FOLDER = disk:/skillcheck/reports
-YANDEX_DISK_ADMIN_FILE = disk:/skillcheck/admin/results.json
-YANDEX_DISK_ATTEMPTS_FILE = disk:/skillcheck/private/attempts.json
-```
-
-## Хранилище Яндекс Диска
-
-```text
-disk:/skillcheck/reports/<code>.txt
+disk:/skillcheck/reports/<CODE>.txt
 disk:/skillcheck/admin/results.json
 disk:/skillcheck/private/attempts.json
+disk:/skillcheck/private/invites-v1.json
+disk:/skillcheck/private/attempt-sessions-v1.json
+disk:/skillcheck/private/banks/<testId>/<version-slug>.json
 ```
 
-`reports/<code>.txt` содержит полный отчёт успешного кандидата и персональные данные. Файл не публикуется и не получает публичную ссылку.
+- `reports` — полный TXT только для результата 80+, включая PII и детализацию ответов;
+- `admin/results.json` — обезличенные агрегаты и служебные idempotency hashes;
+- `attempts.json` — совместимая completed-проекция retake/recovery;
+- `invites-v1.json` — состояния приглашений и HMAC/hash-идентификаторы без открытого кода/token;
+- `attempt-sessions-v1.json` — server-selected manifest, состояния, hashes и агрегат результата без raw PII/fingerprint/token/ответов;
+- `private/banks` — immutable закрытые ключи.
 
-`admin/results.json` содержит только обезличенные данные для админки.
+JSON write защищён `LockService`; повреждённый файл не перезаписывается автоматически. TXT и JSON загружаются через REST API Яндекс Диска, publish/share endpoints не используются.
 
-`private/attempts.json` содержит только отдельные salted hash для email и browser fingerprint, а также техническую reservation повторной отправки:
+## Ограничения и pilot gate
 
-```text
-SHA-256(testId + emailLower + ATTEMPT_HASH_SALT)
-SHA-256(testId + browserFingerprint + ATTEMPT_HASH_SALT)
-```
+Новая архитектура закрывает подделку итоговых клиентских полей и убирает ключи из текущего публичного HEAD. Однако ответы старых версий уже были опубликованы в Git history и могли попасть в клоны/кэши. Удаление полей из текущего файла или переписывание истории не отзывает уже полученные копии. Для реального пилота с теми же темами нужна отдельно согласованная ротация содержания/ключей банков; до неё `ATTEMPT_ISSUANCE_ENABLED` должен оставаться выключенным, кроме изолированного owner smoke.
 
-В `attempts.json` нельзя хранить email, имя, telegram или fingerprint в открытом виде.
+Остаточные риски:
 
-## Random Engine
+- browser timing/tab signals не подтверждены и не являются identity proof;
+- одноразовое email-bound приглашение — controlled-pilot perimeter, не OTP/account;
+- `CacheService` rate limits best-effort и не заменяют внешний атомарный gateway для открытого запуска;
+- scope текущего Яндекс OAuth-токена может быть шире `disk:/skillcheck`; нужны ротация и проверка least-privilege/app-folder модели;
+- удаление, backup и полноценная наблюдаемость закрываются следующими этапами roadmap.
 
-В `test.html` задан лимит:
-
-```javascript
-const QUESTIONS_PER_ATTEMPT = 40;
-```
-
-Правила:
-
-1. Если в банке меньше 40 активных вопросов, берутся все.
-2. Если в банке больше 40 активных вопросов, выбираются случайные 40.
-3. Выбранные вопросы дополнительно перемешиваются.
-4. Варианты ответа в каждом вопросе перемешиваются.
-5. Правильный ответ пересчитывается по исходному индексу.
-6. Вопросы с `active: false` не попадают в попытку.
-
-## Анти-повтор
-
-Фронт отправляет в `checkAttempt`:
-
-```text
-testId
-email
-browserFingerprint
-```
-
-Backend считает hash с salt из Script Properties и ищет его в `attempts.json`. Если hash уже существует для теста, повторное прохождение запрещается.
-
-Фронт также использует `localStorage`-ключ `skillcheck_attempt_<testId>` как быстрый локальный стоппер без сохранения fingerprint, но настоящая проверка выполняется на backend. Новая полная неподтверждённая отправка хранится в `sessionStorage` текущей вкладки и удаляется после подтверждения, закрытия вкладки или TTL. При обновлении валидный неистёкший legacy envelope мигрирует из `localStorage`; invalid/oversized/expired удаляется, а при недоступном `sessionStorage` валидная копия временно остаётся в прежнем storage.
-
-Эта схема ограничивает повтор, но не подтверждает identity: email не верифицируется, browser fingerprint — клиентское 32-bit значение. `checkAttempt` больше не выдаёт точный `nextDate`, но `allowed`/`foundPreviousAttempt` остаются email-enumeration oracle. Для controlled pilot нужны одноразовые server-issued invitations/attempts; для публичного потока — OTP/auth и anti-automation perimeter.
-
-## Успешность
-
-Порог успешного прохождения:
-
-```text
-SUCCESS_THRESHOLD = 80
-```
-
-Если клиентский `finalScore >= 80`, текущий backend создаёт TXT-отчёт; при результате ниже порога TXT не создаётся, но обезличенная попытка пишется в `results.json`. Это поведение является техническим MVP-контрактом, а не авторитетной проверкой результата. До пилота порог и статус должен рассчитывать backend по закрытому ключу ответов.
-
-## Яндекс Диск API
-
-`Code.gs` использует REST API Яндекс Диска:
-
-- создаёт папки при необходимости;
-- читает и пишет JSON-файлы;
-- загружает TXT-отчёты;
-- не вызывает publish/share endpoints;
-- использует `LockService` при записи `results.json` и `attempts.json`.
-
-Если `results.json` или `attempts.json` отсутствует, backend создаёт пустой массив `[]`. Если JSON повреждён, backend возвращает ошибку и не перезаписывает файл молча.
-
-## Health Endpoint
-
-После обновления Apps Script можно открыть:
-
-```text
-<WEB_APP_URL>?action=health
-```
-
-Ответ содержит только минимальные поля liveness: `ok`, `status`, `service`, `backendVersion`.
-
-Endpoint не читает Script Properties или Яндекс Диск, ничего не создаёт и не раскрывает пути/состояние хранилища. Расширенная диагностика должна быть отдельной защищённой административной операцией этапа 14.
-
-## Безопасность
-
-Публичный API принимает только известные POST actions и ограниченный JSON-объект. Backend проверяет allowlist тестов и версий, длины/типы/диапазоны полей, максимум 40 ответов, размер body и размер TXT. GET не выполняет чувствительные операции, JSONP удалён.
-
-У ответов обязательны уникальные порядковые номера. `questionId` пока legacy-optional: если он передан, backend проверяет формат и уникальность, но отсутствие ID не связывает ответ с вопросом банка. `saveResult` пока не требует server-issued attempt/challenge, поэтому согласованный spam может расходовать квоты. Самый дешёвый dev path закрыт: `PUBLIC_DEV_TEST_ENABLED=false`, а `checkAttempt`/`saveResult` отклоняют `dev-quick` с `test_not_public`.
-
-`CacheService` ограничивает частоту проверки попытки, сохранения и административных операций. Эти лимиты advisory и не заменяют атомарный IP-based gateway. Candidate/admin страницы используют escaping, allowlist-санитизацию question context, CSP meta и `referrer=no-referrer`. Управляющие символы в TXT нормализуются.
-
-Критический остаточный риск: публичные answer keys и frontend-scoring. Результаты помечаются `client-reported-unverified`; authoritative backend-scoring обязателен до пилота, а backend question delivery рекомендуется для открытого запуска.
-
-10A должен включать закрытый answer key, mandatory `questionId`, одноразовый signed attempt/invite и gateway abuse control. Фактический scope Яндекс OAuth-токена не подтверждён и может быть шире настроенных путей: code path allowlist защищает штатные вызовы, но не blast radius украденного токена. Нужны ротация и оценка app-folder/least-privilege credential.
-
-Не коммитить:
-
-- `results.json`;
-- `attempts.json`;
-- TXT-отчёты;
-- токены;
-- пароли;
-- salt;
-- client secret;
-- любые данные кандидатов.
-
-Результаты аудита и ограничения: `docs/SECURITY_AUDIT.md`.
+Не коммитить результаты, private banks, TXT, candidate data, токены, пароли, salt, OAuth credentials или временные bootstrap secrets.

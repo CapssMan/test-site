@@ -70,6 +70,7 @@ const tokenContext = {
   JSON,
   Math,
   isFinite,
+  PRIVACY_CONSENT_VERSION: "skillcheck-pd-consent-2026-07-20-v1",
   getRequiredProperty(name) {
     assert.equal(name, "ATTEMPT_SIGNING_SECRET_V1");
     return secret;
@@ -95,6 +96,7 @@ const session = {
   testId: "fa-junior",
   bankVersion: "FA Junior v3.0",
   questionSetHash: "c".repeat(64),
+  privacyConsentVersion: "skillcheck-pd-consent-2026-07-20-v1",
   tokenJti: "d".repeat(32),
   tokenNonce: "d".repeat(32),
   tokenIssuedAt: new Date((nowSeconds - 30) * 1000).toISOString(),
@@ -107,12 +109,12 @@ const verified = api.verifyAttemptToken(token);
 assert.equal(verified.valid, true, "fresh token must verify");
 assert.deepEqual(
   JSON.parse(JSON.stringify(verified.header)),
-  { alg: "HS256", kid: "attempt-v1", typ: "SC-ATTEMPT" },
+  { alg: "HS256", kid: "attempt-v2", typ: "SC-ATTEMPT" },
   "header must be fixed"
 );
 assert.deepEqual(
   Object.keys(verified.claims),
-  ["v", "attemptId", "jti", "tid", "bv", "qsh", "iat", "exp"],
+  ["v", "attemptId", "jti", "tid", "bv", "qsh", "pcv", "iat", "exp"],
   "token claims must use the fixed minimal allowlist"
 );
 assert.equal(verified.claims.attemptId, session.attemptId, "token must bind the full attemptId claim");
@@ -120,6 +122,7 @@ assert.equal(verified.claims.jti, session.tokenJti, "token must contain a persis
 assert.equal(verified.claims.tid, session.testId, "token must bind the test");
 assert.equal(verified.claims.bv, session.bankVersion, "token must bind the bank version");
 assert.equal(verified.claims.qsh, session.questionSetHash, "token must bind the exact question manifest");
+assert.equal(verified.claims.pcv, session.privacyConsentVersion, "token must bind the exact privacy consent version");
 
 ["", "one", "one.two", "one.two.three.four", "***.two.three", "one..three"].forEach(malformed => {
   assert.equal(api.verifyAttemptToken(malformed).valid, false, `malformed token must fail: ${JSON.stringify(malformed)}`);
@@ -143,7 +146,7 @@ assert.equal(
   "alg substitution must fail even with a correctly recomputed HMAC"
 );
 assert.equal(
-  api.verifyAttemptToken(signSegments({ ...header, kid: "attempt-v2" }, claims)).valid,
+  api.verifyAttemptToken(signSegments({ ...header, kid: "attempt-v1" }, claims)).valid,
   false,
   "unknown signing key id must fail"
 );

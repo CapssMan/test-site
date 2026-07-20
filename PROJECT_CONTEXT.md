@@ -11,16 +11,16 @@ SkillCheck — MVP assessment-platform для первичного screening jun
 Frontend остаётся статическим GitHub Pages сайтом:
 
 ```text
-index.html -> test.html?test=<testId>#invite=... -> display-only data/<testId>.json -> Google Apps Script attempt-v1 -> Яндекс Диск
+index.html -> test.html?test=<testId>#invite=... -> display-only data/<testId>.json -> Google Apps Script attempt-v2 -> Яндекс Диск
 ```
 
 Google Apps Script остаётся backend/API. Google Sheets и Google Drive больше не используются.
 
 Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Защищённая расширенная диагностика запланирована отдельно.
 
-Historical baseline этапа 10 опубликован в deployment `@49`, implementation commit `e251be3`. Этап 10A завершён и production-verified в существующем deployment `@51` без смены URL: backend `yandex-disk-mvp-2026-07-20-9`, candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, implementation commit `2addd59`. Полная матрица 14/14 скриптов и live browser QA на desktop/mobile прошли.
+Historical baseline этапа 10 опубликован в deployment `@49`, implementation commit `e251be3`; 10A — в `@51`, commit `2addd59`. Техническая часть этапа 11 опубликована в существующем deployment `@52` без смены URL: backend `yandex-disk-mvp-2026-07-20-10`, candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.10`, API `attempt-v2`.
 
-Owner smoke `FA-LDUB2` подтвердил `server-verified` / `authoritative-v1` / `attempt-v1`, exact replay того же кода и отсутствие TXT для failed-результата; после проверки issuance выключен, временный bridge удалён. Реальный пилот остаётся заблокирован до отдельно согласованной содержательной ротации банков: старые answer keys доступны в Git history, клонах и кэшах.
+Owner smoke 10A `FA-LDUB2` исторически подтвердил `server-verified` / `authoritative-v1` / `attempt-v1`. Текущий `attempt-v2` требует versioned-согласие и остаётся закрыт двумя gate. Реальный пилот заблокирован до реквизитов оператора, внешнего legal checklist, удаления/retention и отдельно согласованной содержательной ротации банков.
 
 Рабочие тесты:
 
@@ -40,7 +40,7 @@ disk:/skillcheck/reports/<code>.txt
 
 TXT-отчёт создаётся только при успешном результате `finalScore >= 80`.
 
-Админка использует только обезличенный JSON:
+Админка использует псевдонимизированный JSON без открытых контактов:
 
 ```text
 disk:/skillcheck/admin/results.json
@@ -90,7 +90,7 @@ telemetryVerification
 1. Администратор выпускает email/test-bound одноразовое приглашение; при выключенном issuance операция заблокирована.
 2. Candidate URL передаёт bearer-код только во fragment `#invite=...`; страница сразу переносит его в `sessionStorage` и очищает адресную строку.
 3. `test.html` загружает display-only public bank без `correct` и проверяет `publicDigest`.
-4. После согласий frontend отправляет `beginAttempt` с `attempt-v1`, invite, email и browser fingerprint.
+4. После отдельного versioned-согласия и 18+ frontend отправляет `beginAttempt` с `attempt-v2`, invite, email и browser fingerprint.
 5. Backend проверяет invite/retake/private storage и выдаёт 6-часовой HMAC-signed token с точным ordered manifest вопросов.
 6. Frontend сохраняет серверный порядок вопросов и криптографически перемешивает целые option-объекты.
 7. Кандидат отвечает по одному вопросу с таймером; время и tab switches остаются advisory telemetry без штрафа к баллу.
@@ -100,7 +100,7 @@ telemetryVerification
 11. Backend сам рассчитывает raw/final/percent/pass и маркирует результат `server-verified` / `authoritative-v1`.
 12. State machine `active → reserved → completed` резервирует код, создаёт TXT только для passed, обновляет admin/attempt stores и поддерживает recovery.
 13. Exact replay того же request/payload возвращает тот же код; изменённый payload конфликтует.
-14. Frontend показывает результат только при совпадении `attempt-v1`, attempt/test/bank bindings и серверных verification markers.
+14. Frontend показывает результат только при совпадении `attempt-v2`, consent/attempt/test/bank bindings и серверных verification markers.
 
 Техническая trust boundary реализована, но текущие тексты/ключи исторически скомпрометированы прежней публикацией. `ATTEMPT_ISSUANCE_ENABLED=false` сохраняется до содержательной ротации банков и pilot checklist.
 
@@ -114,7 +114,7 @@ telemetryVerification
 - authoritative scoring, single-use session и fail-closed private storage;
 - секреты Script Properties;
 - правило: GitHub Pages не хранит результаты, персональные данные, токены или JSON-базы.
-- pilot lock: не включать issuance до отдельно согласованной ротации банков.
+- pilot lock: не включать legal approval/issuance до operator/legal checklist, удаления и отдельно согласованной ротации банков.
 
 ## Security-границы текущего MVP
 

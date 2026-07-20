@@ -31,7 +31,7 @@ function makeHarness(failureStage = "") {
   const state = {
     stores: {
       sessions: [{
-        schemaVersion: 1,
+        schemaVersion: 2,
         attemptId,
         inviteId: "inv_" + "c".repeat(32),
         beginRequestId: "scb_" + "d".repeat(24),
@@ -46,6 +46,9 @@ function makeHarness(failureStage = "") {
         tokenNonce: "1".repeat(32),
         tokenIssuedAt: new Date(now - 60000).toISOString(),
         tokenExpiresAt: new Date(now + 3600000).toISOString(),
+        privacyConsentVersion: "skillcheck-pd-consent-2026-07-20-v1",
+        privacyConsentedAt: new Date(now - 60000).toISOString(),
+        ageConfirmed: true,
         saveRequestId: "",
         submissionHash: "",
         reservedAt: "",
@@ -78,6 +81,8 @@ function makeHarness(failureStage = "") {
     candidateSource: "career",
     candidateExperience: "junior",
     employerShareConsent: false,
+    privacyConsentVersion: "skillcheck-pd-consent-2026-07-20-v1",
+    ageConfirmed: true,
     browserFingerprint: "deadbeef",
     tabSwitches: 9,
     clientBuild: "fixture",
@@ -217,7 +222,7 @@ function makeHarness(failureStage = "") {
   vm.createContext(context);
   const constants = `
     const BACKEND_VERSION = "test";
-    const AUTHORITATIVE_API_VERSION = "attempt-v1";
+    const AUTHORITATIVE_API_VERSION = "attempt-v2";
     const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
     const MAX_GENERATED_REPORT_CHARS = 200000;
     const TEST_TITLES_BY_ID = { "fa-junior": "FA" };

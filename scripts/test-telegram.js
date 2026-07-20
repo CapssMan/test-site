@@ -63,6 +63,6 @@ assert(!/telegram/i.test(adminWriter), "Telegram must not be written to admin re
 assert(!/telegram/i.test(attemptWriter), "Telegram must not be written to attempts");
 assert(/Telegram:/.test(reportFormatter), "Successful TXT formatter must support Telegram");
 assert(!/telegram/i.test(adminHtml), "Admin UI must not expose Telegram");
-assert(/Telegram[^<]*сохраняется только в полном TXT-отчёте/.test(privacyHtml), "Privacy storage rule is missing");
+assert(/Полный TXT[^<]*предоставленные кандидатом контакты/.test(privacyHtml), "Privacy storage rule is missing");
 
 console.log("Telegram stage checks: OK");

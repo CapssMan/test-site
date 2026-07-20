@@ -1,8 +1,18 @@
-# SkillCheck — security-аудит этапов 10 и 10A
+# SkillCheck — security-аудит этапов 10, 10A и privacy addendum 11
 
 Дата аудита: 20 июля 2026 года.
 
-Статус baseline этапа 10: опубликован в Apps Script deployment `@49` без смены URL и подтверждён production smoke; implementation commit `e251be3`. Этап 10A опубликован в существующем deployment `@51` без смены URL и подтверждён owner smoke; implementation commit `2addd59`. Production-версии: candidate `Build 2026.07.20.11`, admin `Build 2026.07.20.9`, backend `yandex-disk-mvp-2026-07-20-9`; `ATTEMPT_ISSUANCE_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в существующем deployment `@52` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.10`, backend `yandex-disk-mvp-2026-07-20-10`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`.
+
+## Addendum 11: consent binding и legal gate
+
+- `attempt-v2` принимает попытку только с точной версией отдельного согласия и подтверждением 18+; версия и серверное время сохраняются в сессии и связываются с signed token.
+- Общая передача работодателю выключена в UI и hard-rejected backend до отдельного согласия для конкретного получателя.
+- Независимый `LEGAL_PILOT_APPROVED` fail closed блокирует включение issuance, создание приглашения и `beginAttempt`; editor-only setter не включён в публичный API.
+- Отключение legal approval принудительно выключает issuance; bootstrap также сбрасывает оба gate.
+- Политика больше не обещает нереализованный 12-месячный retention и корректно называет админ-сводку псевдонимизированной.
+
+Эти меры уменьшают риск преждевременного запуска, но не заменяют реквизиты оператора, юридическую проверку уведомлений/локализации/трансграничности и техническое удаление этапа 12.
 
 ## Резюме
 
@@ -113,7 +123,7 @@
 - Новые полные резервные копии неподтверждённого результата хранятся только в `sessionStorage` текущей вкладки, очищаются после подтверждения/невалидной ошибки/TTL и исчезают при закрытии вкладки.
 - При первом запуске валидный и неистёкший legacy pending envelope переносится из `localStorage` в `sessionStorage`, после чего постоянная копия удаляется. Невалидная, слишком большая или истёкшая legacy-копия удаляется без миграции. Если `sessionStorage` недоступен, валидная legacy-копия временно сохраняется, чтобы не потерять неподтверждённый результат.
 - Локальный 21-дневный retake marker остаётся в `localStorage`, но больше не содержит browser fingerprint.
-- Админская выборка остаётся обезличенной; полный TXT выдаётся только после POST-проверки пароля и не вставляется в DOM.
+- Админская выборка остаётся псевдонимизированной без открытых контактов; полный TXT выдаётся только после POST-проверки пароля и не вставляется в DOM.
 - Логи содержат только технический этап и безопасный хвост `requestId`, без полного payload и персональных данных.
 
 ## Addendum 10A: реализованный trust boundary

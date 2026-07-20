@@ -1,6 +1,6 @@
 # SkillCheck — архитектура MVP
 
-Обновлено: 20 июля 2026 года, этап 10A.
+Обновлено: 20 июля 2026 года, этап 11.
 
 ## Общая схема
 
@@ -21,7 +21,7 @@ SkillCheck состоит из статического frontend на GitHub Pag
   -> POST saveResult (только questionId/optionId/timing)
   -> Google Apps Script + закрытый answer key
   <- server-verified результат
-  -> Яндекс Диск: обезличенная строка, attempt projection и при 80+ полный TXT
+  -> Яндекс Диск: псевдонимизированная строка без открытых контактов, attempt projection и при 80+ полный TXT
 ```
 
 Главная граница доверия: браузер показывает вопросы и собирает ответы, но не знает правильные ответы и не рассчитывает итог как источник истины. Баллы, статус, блоки и рекомендацию вычисляет backend по закрытому versioned-банку.
@@ -39,7 +39,7 @@ SkillCheck состоит из статического frontend на GitHub Pag
 - удаляет `invite` из URL через `history.replaceState` сразу после открытия;
 - загружает публичный банк schema v2 без `correct`, комментариев и иных ключей;
 - сам пересчитывает canonical SHA-256 публичного банка и fail-closed сравнивает его с `publicDigest`;
-- отправляет `beginAttempt` с API `attempt-v1`, одноразовым приглашением, email и техническим fingerprint;
+- отправляет `beginAttempt` с API `attempt-v2`, одноразовым приглашением, email, техническим fingerprint, точной версией отдельного согласия и подтверждением 18+;
 - принимает только подписанную сервером попытку с точной версией банка и точным порядком `questionIds`;
 - сохраняет серверный порядок вопросов, а варианты `{id,text}` перемешивает криптографическим Fisher–Yates без изменения стабильных `optionId`;
 - отправляет для каждого вопроса только `questionId`, `optionId|null`, `timedOut`, `timeSpent`;
@@ -59,7 +59,7 @@ SkillCheck состоит из статического frontend на GitHub Pag
 
 Админ-панель отправляет пароль только POST-запросом и хранит его только в памяти страницы. Она:
 
-- показывает обезличенные результаты;
+- показывает псевдонимизированные результаты без открытых контактов;
 - явно различает `server-verified` и исторические `client-reported-unverified` строки;
 - скачивает полный персональный TXT только отдельным защищённым POST после повторной backend-авторизации;
 - создаёт email- и test-bound одноразовые приглашения на 1–720 часов;
@@ -93,7 +93,7 @@ opt_ + first20hex(SHA-256(
 
 ## Backend и API
 
-`apps-script/Code.gs` принимает versioned JSON API `attempt-v1`.
+`apps-script/Code.gs` принимает versioned JSON API `attempt-v2`. `attempt-v1` получает `client_upgrade_required`.
 
 Публичные POST actions:
 
@@ -155,6 +155,7 @@ ATTEMPT_SIGNING_SECRET_V1
 INVITE_CODE_SECRET_V1
 IDENTITY_HASH_SECRET_V1
 ATTEMPT_ISSUANCE_ENABLED
+LEGAL_PILOT_APPROVED
 ```
 
 Опционально пути новых файлов можно переопределить `YANDEX_DISK_INVITES_FILE`, `YANDEX_DISK_ATTEMPT_SESSIONS_FILE`, `YANDEX_DISK_PRIVATE_BANKS_FOLDER`. Все пути проходят allowlist `disk:/skillcheck/...`.
@@ -171,7 +172,7 @@ disk:/skillcheck/private/banks/<testId>/<version-slug>.json
 ```
 
 - `reports` — полный TXT только для результата 80+, включая PII и детализацию ответов;
-- `admin/results.json` — обезличенные агрегаты и служебные idempotency hashes;
+- `admin/results.json` — псевдонимизированные агрегаты без открытых контактов и служебные idempotency hashes;
 - `attempts.json` — совместимая completed-проекция retake/recovery;
 - `invites-v1.json` — состояния приглашений и HMAC/hash-идентификаторы без открытого кода/token;
 - `attempt-sessions-v1.json` — server-selected manifest, состояния, hashes и агрегат результата без raw PII/fingerprint/token/ответов;
@@ -181,7 +182,7 @@ JSON write защищён `LockService`; повреждённый файл не 
 
 ## Ограничения и pilot gate
 
-Новая архитектура закрывает подделку итоговых клиентских полей и убирает ключи из текущего публичного HEAD. Однако ответы старых версий уже были опубликованы в Git history и могли попасть в клоны/кэши. Удаление полей из текущего файла или переписывание истории не отзывает уже полученные копии. Для реального пилота с теми же темами нужна отдельно согласованная ротация содержания/ключей банков; до неё `ATTEMPT_ISSUANCE_ENABLED` должен оставаться выключенным, кроме изолированного owner smoke.
+Новая архитектура закрывает подделку итоговых клиентских полей и убирает ключи из текущего публичного HEAD. `LEGAL_PILOT_APPROVED` независимо блокирует включение issuance, выпуск приглашения и начало попытки до реквизитов оператора и внешнего legal checklist. Однако ответы старых версий уже были опубликованы в Git history и могли попасть в клоны/кэши. Удаление полей из текущего файла или переписывание истории не отзывает уже полученные копии. Для реального пилота нужны оба осознанно открытых gate: завершённые legal/retention требования и отдельно согласованная ротация содержания/ключей банков.
 
 Остаточные риски:
 

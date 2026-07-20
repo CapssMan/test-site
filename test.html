@@ -265,13 +265,18 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.20.11</div>
+      <div class="build-number">Build 2026.07.20.12</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
         На каждый вопрос отводится отдельное время. Вернуться к предыдущему вопросу нельзя.
         Тест не гарантирует трудоустройство и не является итоговым решением о профессиональной пригодности.
       </p>
+
+      <div class="warning">
+        <b>Controlled pilot пока закрыт для реальных кандидатов.</b>
+        До запуска должны быть опубликованы реквизиты оператора и контакт для обращений, завершены юридический checklist и ротация исторически раскрытого банка ответов.
+      </div>
 
       <div class="field-group">
         <label for="inviteCode">Код приглашения <span class="required-mark">*</span></label>
@@ -341,7 +346,7 @@
 
       <label class="consent-row">
         <input id="privacyConsent" type="checkbox" required />
-        <span>Я согласен на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
+        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>20.07.2026-v1</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
       </label>
 
       <label class="consent-row">
@@ -350,8 +355,8 @@
       </label>
 
       <label class="consent-row">
-        <input id="employerShareConsent" type="checkbox" />
-        <span><b>Необязательно:</b> я согласен, что мой результат тестирования может быть передан потенциальному работодателю или партнёру проекта.</span>
+        <input id="employerShareConsent" type="checkbox" disabled />
+        <span><b>Передача выключена:</b> результат не передаётся работодателям или партнёрам. Если это потребуется, будет запрошено отдельное согласие для конкретного получателя и состава данных.</span>
       </label>
 
       <button id="startButton" type="button">Загрузка вопросов...</button>
@@ -381,13 +386,14 @@
   <script>
     // ===== КОНФИГУРАЦИЯ AUTHORITATIVE BACKEND SCORING =====
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const API_VERSION = "attempt-v1";
-    const FRONTEND_BUILD = "2026.07.20.11";
+    const API_VERSION = "attempt-v2";
+    const FRONTEND_BUILD = "2026.07.20.12";
+    const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1";
     const NETWORK_TIMEOUT_MS = 20000;
     const MAX_AUTOMATIC_RETRIES = 2;
     const AUTOMATIC_RETRY_DELAYS_MS = [1500, 4000];
     const MAX_PENDING_RESULT_TTL_MS = 6 * 60 * 60 * 1000;
-    const PENDING_RESULT_SCHEMA_VERSION = 2;
+    const PENDING_RESULT_SCHEMA_VERSION = 3;
     const BEGIN_STATE_TTL_MS = 30 * 60 * 1000;
     const MAX_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
     const RESPONSE_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -515,6 +521,7 @@
       currentTestId = params.get("test") || "fa-junior";
       currentTestConfig = TEST_CONFIG[currentTestId];
       currentBrowserFingerprint = generateBrowserFingerprint();
+      clearLegacySessionArtifacts(currentTestId);
 
       if (!currentTestConfig || currentTestConfig.publicDisabled) {
         document.getElementById("testTitle").textContent = "Тест недоступен";
@@ -837,7 +844,10 @@
         testId: currentTestId,
         inviteCode: inviteCode,
         email: candidate.email,
-        browserFingerprint: currentBrowserFingerprint
+        browserFingerprint: currentBrowserFingerprint,
+        privacyConsent: true,
+        privacyConsentVersion: PRIVACY_CONSENT_VERSION,
+        ageConfirmed: true
       };
 
       beginInProgress = true;
@@ -903,6 +913,8 @@
           String(result.testVersion || "") !== currentTestConfig.version ||
           String(result.bankVersion || "") !== loadedQuestionBank.bankVersion ||
           String(result.publicDigest || "") !== loadedQuestionBank.publicDigest ||
+          String(result.privacyConsentVersion || "") !== PRIVACY_CONSENT_VERSION ||
+          !Number.isFinite(Date.parse(String(result.privacyConsentedAt || ""))) ||
           questionIds.length !== loadedQuestionBank.questionsPerAttempt) {
         throw new Error("Invalid begin response");
       }
@@ -924,6 +936,8 @@
         testVersion: currentTestConfig.version,
         bankVersion: loadedQuestionBank.bankVersion,
         publicDigest: loadedQuestionBank.publicDigest,
+        privacyConsentVersion: PRIVACY_CONSENT_VERSION,
+        privacyConsentedAt: String(result.privacyConsentedAt),
         questionIds: questionIds
       };
     }
@@ -1141,6 +1155,8 @@
         candidateSource: candidate.candidateSource,
         candidateExperience: candidate.candidateExperience,
         employerShareConsent: candidate.employerShareConsent,
+        privacyConsentVersion: PRIVACY_CONSENT_VERSION,
+        ageConfirmed: true,
         browserFingerprint: currentBrowserFingerprint,
         tabSwitches: tabSwitches,
         answers: answers.map(function(answer) {
@@ -1254,7 +1270,9 @@
           String(result.apiVersion || "") !== API_VERSION ||
           String(result.attemptId || "") !== String(submittedData.attemptId || "") ||
           String(result.testId || "") !== String(submittedData.testId || "") ||
-          String(result.bankVersion || "") !== String(submittedData.bankVersion || "")) {
+          String(result.bankVersion || "") !== String(submittedData.bankVersion || "") ||
+          String(result.privacyConsentVersion || "") !== PRIVACY_CONSENT_VERSION ||
+          !Number.isFinite(Date.parse(String(result.privacyConsentedAt || "")))) {
         throw createSubmissionError(
           "Серверный результат не соответствует выданной попытке или версии банка.",
           true,
@@ -1597,7 +1615,7 @@
         var raw = sessionStorage.getItem(storageKey);
         if (raw && raw.length <= 1000) {
           var existing = JSON.parse(raw);
-          if (existing && existing.schemaVersion === 1 &&
+          if (existing && existing.schemaVersion === 2 &&
               String(existing.testId || "") === currentTestId &&
               String(existing.inviteCode || "") === inviteCode &&
               String(existing.email || "") === email &&
@@ -1611,7 +1629,7 @@
       } catch (ignored) {}
 
       var state = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         testId: currentTestId,
         beginRequestId: generateOpaqueRequestId("scb_"),
         inviteCode: inviteCode,
@@ -1675,18 +1693,29 @@
     }
 
     function getBeginStateStorageKey(testId) {
-      return "skillcheck_begin_" + safeTestId(testId);
+      return "skillcheck_begin_v2_" + safeTestId(testId);
+    }
+
+    function clearLegacySessionArtifacts(testId) {
+      var suffix = safeTestId(testId);
+      try {
+        sessionStorage.removeItem("skillcheck_begin_" + suffix);
+        sessionStorage.removeItem("skillcheck_active_attempt_" + suffix);
+        sessionStorage.removeItem("skillcheck_pending_result_v2_" + suffix);
+      } catch (ignored) {}
     }
 
     function persistAttemptSession(attempt) {
       try {
         sessionStorage.setItem(getAttemptSessionStorageKey(attempt.testId), JSON.stringify({
-          schemaVersion: 1,
+          schemaVersion: 2,
           attemptId: attempt.attemptId,
           attemptToken: attempt.attemptToken,
           expiresAt: attempt.expiresAt,
           testId: attempt.testId,
-          bankVersion: attempt.bankVersion
+          bankVersion: attempt.bankVersion,
+          privacyConsentVersion: attempt.privacyConsentVersion,
+          privacyConsentedAt: attempt.privacyConsentedAt
         }));
       } catch (ignored) {}
     }
@@ -1718,11 +1747,11 @@
     }
 
     function getAttemptSessionStorageKey(testId) {
-      return "skillcheck_active_attempt_" + safeTestId(testId);
+      return "skillcheck_active_attempt_v2_" + safeTestId(testId);
     }
 
     function getPendingResultStorageKey(testId) {
-      return "skillcheck_pending_result_v2_" + safeTestId(testId);
+      return "skillcheck_pending_result_v3_" + safeTestId(testId);
     }
 
     function buildPendingResultEnvelope(data) {
@@ -1769,7 +1798,9 @@
         expiresAt: new Date(restored.expiresAt).toISOString(),
         expiresAtMs: restored.expiresAt,
         testId: restored.data.testId,
-        bankVersion: restored.data.bankVersion
+        bankVersion: restored.data.bankVersion,
+        privacyConsentVersion: restored.data.privacyConsentVersion,
+        privacyConsentedAt: "restored-from-pending"
       };
 
       document.getElementById("startBlock").style.display = "none";
@@ -1840,10 +1871,12 @@
       var data = envelope.data;
       if (!isPlainObject(data) ||
           Object.keys(data).sort().join(",") !==
-            "action,answers,apiVersion,attemptId,attemptToken,bankVersion,browserFingerprint,candidateExperience,candidateSource,clientBuild,email,employerShareConsent,englishLevel,name,requestId,tabSwitches,telegram,testId" ||
+            "action,ageConfirmed,answers,apiVersion,attemptId,attemptToken,bankVersion,browserFingerprint,candidateExperience,candidateSource,clientBuild,email,employerShareConsent,englishLevel,name,privacyConsentVersion,requestId,tabSwitches,telegram,testId" ||
           data.action !== "saveResult" ||
           data.apiVersion !== API_VERSION ||
           data.clientBuild !== FRONTEND_BUILD ||
+          data.privacyConsentVersion !== PRIVACY_CONSENT_VERSION ||
+          data.ageConfirmed !== true ||
           data.testId !== expectedTestId ||
           data.bankVersion !== currentTestConfig.bankVersion ||
           data.requestId !== envelope.requestId ||
@@ -1860,7 +1893,7 @@
           String(data.telegram || "").length > 65 ||
           String(data.browserFingerprint || "").length < 8 ||
           String(data.browserFingerprint || "").length > 128 ||
-          typeof data.employerShareConsent !== "boolean" ||
+          data.employerShareConsent !== false ||
           !Number.isInteger(Number(data.tabSwitches)) ||
           Number(data.tabSwitches) < 0 || Number(data.tabSwitches) > 10000) {
         return false;

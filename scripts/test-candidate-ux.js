@@ -27,13 +27,16 @@ assert.equal(scripts.length, 1, "candidate page must contain one application scr
 new vm.Script(scripts[0], { filename: "test.html" });
 new vm.Script(backend, { filename: "Code.gs" });
 
-assert.match(testPage, /const API_VERSION = "attempt-v1"/);
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.11"/, "candidate build must be current");
+assert.match(testPage, /const API_VERSION = "attempt-v2"/);
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.12"/, "candidate build must be current");
+assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1"/);
 assert.match(testPage, /<label for="inviteCode">[\s\S]*?<input[^>]+id="inviteCode"[^>]+required/i, "invite code must be required");
 assert.match(testPage, /<label for="name">[\s\S]*?<input[^>]+id="name"[^>]+required/i);
 assert.match(testPage, /<label for="email">[\s\S]*?<input[^>]+id="email"[^>]+required/i);
 assert.match(testPage, /id="privacyConsent"[^>]+required/i);
 assert.match(testPage, /id="ageConsent"[^>]+required/i);
+assert.match(testPage, /id="employerShareConsent"[^>]+disabled/i, "employer sharing must stay disabled until a recipient-specific consent exists");
+assert.match(testPage, /href="consent\.html"[^>]+target="_blank"/i, "candidate must be able to inspect the separate consent before opting in");
 assert.doesNotMatch(testPage, /id="startButton"[^>]+onclick=/i);
 assert.doesNotMatch(testPage, /id="nextButton"[^>]+onclick=/i);
 assert.match(testPage, /role="progressbar"[^>]+aria-valuemin="0"[^>]+aria-valuemax="100"/i);
@@ -59,7 +62,7 @@ assert.match(normalizeBank, /verifyPublicQuestionBankDigest\(source\)/);
 assert.match(extractTopLevelFunction(testPage, "verifyPublicQuestionBankDigest"), /crypto\.subtle\.digest\("SHA-256"/);
 
 const begin = extractTopLevelFunction(testPage, "beginAttempt");
-["action", "apiVersion", "beginRequestId", "testId", "inviteCode", "email", "browserFingerprint", "clientBuild"]
+["action", "apiVersion", "beginRequestId", "testId", "inviteCode", "email", "browserFingerprint", "clientBuild", "privacyConsent", "privacyConsentVersion", "ageConfirmed"]
   .forEach(field => assert.match(begin, new RegExp(field + "\\s*:"), "begin payload missing " + field));
 assert.match(begin, /action:\s*"beginAttempt"/);
 assert.match(begin, /postJsonOnce\(payload\)/);
@@ -73,6 +76,8 @@ assert.match(validateBegin, /result\.apiVersion !== API_VERSION/);
 assert.match(validateBegin, /\^att_\[a-f0-9\]\{32\}\$/);
 assert.match(validateBegin, /MAX_ATTEMPT_TTL_MS \+ RESPONSE_CLOCK_SKEW_MS/);
 assert.match(validateBegin, /publicDigest/);
+assert.match(validateBegin, /result\.privacyConsentVersion[\s\S]*PRIVACY_CONSENT_VERSION/);
+assert.match(validateBegin, /result\.privacyConsentedAt/);
 assert.match(validateBegin, /questionIds\.length !== loadedQuestionBank\.questionsPerAttempt/);
 assert.match(validateBegin, /seenIds\[questionId\]/);
 
@@ -88,6 +93,8 @@ assert.match(savePayload, /action:\s*"saveResult"/);
 assert.match(savePayload, /apiVersion:\s*API_VERSION/);
 assert.match(savePayload, /requestId:\s*generateOpaqueRequestId\("scs_"\)/);
 assert.match(savePayload, /attemptToken:\s*currentAttempt\.attemptToken/);
+assert.match(savePayload, /privacyConsentVersion:\s*PRIVACY_CONSENT_VERSION/);
+assert.match(savePayload, /ageConfirmed:\s*true/);
 ["score", "rawScore", "rawTotal", "percent", "finalScore", "penalty", "badge", "passStatus", "trustScore", "blockResults", "isCorrect", "correctAnswer"]
   .forEach(field => assert.doesNotMatch(savePayload, new RegExp("\\b" + field + "\\s*:"), "client payload must not contain " + field));
 
@@ -103,6 +110,8 @@ assert.match(normalizeVerified, /result\.apiVersion[^\n]+API_VERSION/);
 assert.match(normalizeVerified, /result\.attemptId[^\n]+submittedData\.attemptId/);
 assert.match(normalizeVerified, /result\.testId[^\n]+submittedData\.testId/);
 assert.match(normalizeVerified, /result\.bankVersion[^\n]+submittedData\.bankVersion/);
+assert.match(normalizeVerified, /result\.privacyConsentVersion[^\n]+PRIVACY_CONSENT_VERSION/);
+assert.match(normalizeVerified, /result\.privacyConsentedAt/);
 assert.match(normalizeVerified, /penalty[^\n]+!== 0/);
 assert.match(normalizeVerified, /expectedPercent/);
 assert.match(normalizeVerified, /expectedPassStatus/);

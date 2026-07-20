@@ -31,7 +31,8 @@ const validationContext = {
 vm.createContext(validationContext);
 const validationConstants = `
   const BACKEND_VERSION = "test";
-  const AUTHORITATIVE_API_VERSION = "attempt-v1";
+  const AUTHORITATIVE_API_VERSION = "attempt-v2";
+  const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1";
   const MAX_ANSWERS_PER_RESULT = 40;
   const PUBLIC_DEV_TEST_ENABLED = false;
   const TEST_TITLES_BY_ID = { "fa-junior": "FA", "ca-junior": "CA", "dev-quick": "DEV" };
@@ -56,7 +57,7 @@ vm.runInContext(
 
 const validRequest = {
   action: "saveResult",
-  apiVersion: "attempt-v1",
+  apiVersion: "attempt-v2",
   requestId: "scs_" + "a".repeat(24),
   attemptId: "att_" + "b".repeat(32),
   attemptToken: "a".repeat(90) + "." + "b".repeat(90) + "." + "c".repeat(90),
@@ -69,9 +70,11 @@ const validRequest = {
   candidateSource: "career",
   candidateExperience: "junior",
   employerShareConsent: false,
+  privacyConsentVersion: "skillcheck-pd-consent-2026-07-20-v1",
+  ageConfirmed: true,
   browserFingerprint: "deadbeef",
   tabSwitches: 0,
-  clientBuild: "2026.07.20.10",
+  clientBuild: "2026.07.20.12",
   answers: [{ questionId: "q_001", optionId: null, timedOut: false, timeSpent: 10 }]
 };
 
@@ -81,6 +84,26 @@ assert.deepEqual(
   Object.keys(accepted.data.answers[0]),
   ["questionId", "optionId", "timedOut", "timeSpent"],
   "validated answers must contain only the opaque answer contract"
+);
+
+const missingConsent = { ...validRequest };
+delete missingConsent.privacyConsentVersion;
+assert.equal(
+  validationContext.__validation.validateAuthoritativeSubmissionRequest(realmJson(validationContext, missingConsent)).response.failureCode,
+  "invalid_field",
+  "save must require an explicit consent version"
+);
+const staleConsent = { ...validRequest, privacyConsentVersion: "old-consent" };
+assert.equal(
+  validationContext.__validation.validateAuthoritativeSubmissionRequest(realmJson(validationContext, staleConsent)).response.failureCode,
+  "privacy_consent_required",
+  "stale consent versions must fail closed"
+);
+const employerSharing = { ...validRequest, employerShareConsent: true };
+assert.equal(
+  validationContext.__validation.validateAuthoritativeSubmissionRequest(realmJson(validationContext, employerSharing)).response.failureCode,
+  "employer_sharing_unavailable",
+  "generic employer sharing must stay disabled"
 );
 
 const forbiddenTopLevel = [

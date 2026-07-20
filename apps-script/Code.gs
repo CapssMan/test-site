@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-9";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-10";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -9,9 +9,11 @@ const MAX_GENERATED_REPORT_CHARS = 200000;
 const MAX_ANSWERS_PER_RESULT = 40;
 const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
 const SCORE_VERIFICATION_SERVER = "server-verified";
-const AUTHORITATIVE_API_VERSION = "attempt-v1";
+const AUTHORITATIVE_API_VERSION = "attempt-v2";
 const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const TELEMETRY_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
+const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1";
+const LEGAL_PILOT_APPROVAL_PROPERTY = "LEGAL_PILOT_APPROVED";
 const ATTEMPT_ACTIVE_TTL_MS = 6 * 60 * 60 * 1000;
 const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_YANDEX_INVITES_FILE = "disk:/skillcheck/private/invites-v1.json";
@@ -377,7 +379,7 @@ function validateBeginAttemptRequest(data) {
   try {
     assertAllowedObjectKeys(data, [
       "action", "apiVersion", "beginRequestId", "testId", "inviteCode", "email",
-      "browserFingerprint", "clientBuild"
+      "browserFingerprint", "clientBuild", "privacyConsent", "privacyConsentVersion", "ageConfirmed"
     ], "beginAttempt");
     if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
       throw publicRequestError("client_upgrade_required", "Версия страницы устарела. Обновите страницу.");
@@ -390,6 +392,12 @@ function validateBeginAttemptRequest(data) {
     assertPublicTestEnabled(testId);
     const inviteCode = normalizeInviteCode(data.inviteCode);
     if (!inviteCode) return { ok: false, response: buildAttemptUnavailableResponse() };
+    const privacyConsent = validateBoolean(data.privacyConsent, "Согласие на обработку персональных данных");
+    const privacyConsentVersion = validateBoundedText(data.privacyConsentVersion, 100, true, "Версия согласия");
+    const ageConfirmed = validateBoolean(data.ageConfirmed, "Подтверждение возраста");
+    if (!privacyConsent || !ageConfirmed || privacyConsentVersion !== PRIVACY_CONSENT_VERSION) {
+      throw publicRequestError("privacy_consent_required", "Обновите страницу и подтвердите актуальное отдельное согласие на обработку персональных данных.");
+    }
     return {
       ok: true,
       data: {
@@ -400,7 +408,10 @@ function validateBeginAttemptRequest(data) {
         inviteCode: inviteCode,
         email: validateEmail(data.email),
         browserFingerprint: validateBrowserFingerprint(data.browserFingerprint),
-        clientBuild: validateBoundedText(data.clientBuild, 100, true, "Версия страницы")
+        clientBuild: validateBoundedText(data.clientBuild, 100, true, "Версия страницы"),
+        privacyConsent: true,
+        privacyConsentVersion: privacyConsentVersion,
+        ageConfirmed: true
       }
     };
   } catch (error) {
@@ -416,7 +427,8 @@ function validateAuthoritativeSubmissionRequest(data) {
     assertAllowedObjectKeys(data, [
       "action", "apiVersion", "requestId", "attemptId", "attemptToken", "testId", "bankVersion",
       "name", "email", "telegram", "englishLevel", "candidateSource", "candidateExperience",
-      "employerShareConsent", "browserFingerprint", "tabSwitches", "clientBuild", "answers"
+      "employerShareConsent", "browserFingerprint", "tabSwitches", "clientBuild", "answers",
+      "privacyConsentVersion", "ageConfirmed"
     ], "saveResult");
     if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) {
       throw publicRequestError("client_upgrade_required", "Версия страницы устарела. Обновите страницу.");
@@ -439,6 +451,15 @@ function validateAuthoritativeSubmissionRequest(data) {
     if (bankVersion !== BANK_VERSIONS_BY_ID[testId]) {
       throw publicRequestError("unsupported_test_version", "Версия теста устарела. Обновите страницу.");
     }
+    const employerShareConsent = validateBoolean(data.employerShareConsent, "Согласие на передачу работодателю");
+    if (employerShareConsent) {
+      throw publicRequestError("employer_sharing_unavailable", "Передача результата работодателю в текущем MVP выключена.");
+    }
+    const privacyConsentVersion = validateBoundedText(data.privacyConsentVersion, 100, true, "Версия согласия");
+    const ageConfirmed = validateBoolean(data.ageConfirmed, "Подтверждение возраста");
+    if (privacyConsentVersion !== PRIVACY_CONSENT_VERSION || !ageConfirmed) {
+      throw publicRequestError("privacy_consent_required", "Обновите страницу и подтвердите актуальное отдельное согласие на обработку персональных данных.");
+    }
     return {
       ok: true,
       data: {
@@ -455,10 +476,12 @@ function validateAuthoritativeSubmissionRequest(data) {
         englishLevel: validateEnum(data.englishLevel, ALLOWED_ENGLISH_LEVELS, "Уровень английского"),
         candidateSource: validateEnum(data.candidateSource, ALLOWED_CANDIDATE_SOURCES, "Источник кандидата"),
         candidateExperience: validateEnum(data.candidateExperience, ALLOWED_CANDIDATE_EXPERIENCE, "Опыт кандидата"),
-        employerShareConsent: validateBoolean(data.employerShareConsent, "Согласие на передачу работодателю"),
+        employerShareConsent: false,
         browserFingerprint: validateBrowserFingerprint(data.browserFingerprint),
         tabSwitches: validateInteger(data.tabSwitches, 0, 1000, "Количество уходов со вкладки"),
         clientBuild: validateBoundedText(data.clientBuild, 100, true, "Версия страницы"),
+        privacyConsentVersion: privacyConsentVersion,
+        ageConfirmed: true,
         answers: validateAuthoritativeAnswers(data.answers)
       }
     };
@@ -1156,7 +1179,10 @@ function buildTxtReport(resultData) {
   report += "Английский: " + safeText(resultData.englishLevel) + "\n";
   report += "Опыт: " + safeText(resultData.candidateExperience || resultData.experience) + "\n";
   report += "Источник: " + safeText(resultData.candidateSource || resultData.source) + "\n";
-  report += "Согласие на передачу работодателю: " + (resultData.employerShareConsent ? "дано" : "не дано") + "\n\n";
+  report += "Версия отдельного согласия на обработку ПДн: " + safeText(resultData.privacyConsentVersion || "не зафиксирована") + "\n";
+  report += "Согласие зафиксировано backend: " + safeText(resultData.privacyConsentedAt || "не зафиксировано") + "\n";
+  report += "Подтверждение 18+: " + (resultData.ageConfirmed ? "да" : "нет") + "\n";
+  report += "Передача работодателю: выключена в текущем MVP; отдельное согласие для конкретного получателя не оформлялось\n\n";
 
   report += "РЕЗУЛЬТАТ\n";
   report += "---------\n";
@@ -2680,6 +2706,7 @@ function bootstrapAuthoritativeBanksFromLegacyPages() {
   const properties = PropertiesService.getScriptProperties();
   REQUIRED_AUTHORITATIVE_PROPERTIES.forEach(ensureAuthoritativeSecret);
   properties.setProperty("ATTEMPT_ISSUANCE_ENABLED", "false");
+  properties.setProperty(LEGAL_PILOT_APPROVAL_PROPERTY, "false");
   ensureSkillCheckFolders();
   assertAuthoritativePrivateStorageNotShared();
   initializePrivateArrayFileIfMissing(getInvitesFilePath());
@@ -2761,6 +2788,7 @@ function setAuthoritativeAttemptIssuanceEnabled(enabled) {
   try {
   if (typeof enabled !== "boolean") throw new Error("Issuance flag must be boolean.");
   if (enabled) {
+    if (!isLegalPilotApproved()) throw new Error("Legal pilot approval is not enabled.");
     assertAuthoritativeConfigurationReady();
     assertAuthoritativePrivateStorageNotShared();
     readRequiredJsonArray(getInvitesFilePath(), "Invite store");
@@ -2778,6 +2806,45 @@ function setAuthoritativeAttemptIssuanceEnabled(enabled) {
 
 function setAttemptIssuanceEnabledForOwner(enabled) {
   return setAuthoritativeAttemptIssuanceEnabled(enabled);
+}
+
+function isLegalPilotApproved() {
+  return getScriptProperty(LEGAL_PILOT_APPROVAL_PROPERTY) === "true";
+}
+
+function buildLegalPilotLockedResponse() {
+  return {
+    ok: false,
+    status: "legal_pilot_locked",
+    retryable: false,
+    failureCode: "legal_pilot_locked",
+    backendVersion: BACKEND_VERSION,
+    privacyConsentVersion: PRIVACY_CONSENT_VERSION,
+    message: "Пилот заблокирован до заполнения реквизитов оператора и завершения юридического checklist."
+  };
+}
+
+function setLegalPilotApprovedForOwner(enabled, consentVersion) {
+  if (typeof enabled !== "boolean") throw new Error("Legal pilot flag must be boolean.");
+  if (enabled && String(consentVersion || "") !== PRIVACY_CONSENT_VERSION) {
+    throw new Error("Current privacy consent version must be confirmed explicitly.");
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperty(LEGAL_PILOT_APPROVAL_PROPERTY, enabled ? "true" : "false");
+    if (!enabled) properties.setProperty("ATTEMPT_ISSUANCE_ENABLED", "false");
+    return {
+      ok: true,
+      legalPilotApproved: enabled,
+      issuanceEnabled: enabled && properties.getProperty("ATTEMPT_ISSUANCE_ENABLED") === "true",
+      privacyConsentVersion: PRIVACY_CONSENT_VERSION,
+      backendVersion: BACKEND_VERSION
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function normalizeInviteCode(value) {
@@ -2841,6 +2908,7 @@ function buildAdminInviteResponse(invite, replayed) {
 }
 
 function issuePilotInviteInternal(parameters) {
+  if (!isLegalPilotApproved()) return buildLegalPilotLockedResponse();
   if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") !== "true") {
     return {
       ok: false,
@@ -2900,6 +2968,7 @@ function adminCreateInvite(data) {
       "action", "apiVersion", "password", "requestId", "testId", "email", "validForHours", "purpose"
     ], "adminCreateInvite");
     if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    if (!isLegalPilotApproved()) return buildLegalPilotLockedResponse();
     if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") !== "true") {
       return {
         ok: false,
@@ -2947,6 +3016,8 @@ function adminListInvites(data) {
       backendVersion: BACKEND_VERSION,
       apiVersion: AUTHORITATIVE_API_VERSION,
       issuanceEnabled: getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true",
+      legalPilotApproved: isLegalPilotApproved(),
+      privacyConsentVersion: PRIVACY_CONSENT_VERSION,
       invites: invites.map(invite => ({
         inviteId: String(invite && invite.inviteId || ""),
         testId: String(invite && invite.testId || ""),
@@ -3035,14 +3106,15 @@ function buildQuestionSetHash(testId, bankVersion, questionIds) {
 }
 
 function buildAttemptToken(session) {
-  const header = { alg: "HS256", kid: "attempt-v1", typ: "SC-ATTEMPT" };
+  const header = { alg: "HS256", kid: "attempt-v2", typ: "SC-ATTEMPT" };
   const claims = {
-    v: 1,
+    v: 2,
     attemptId: String(session.attemptId || ""),
     jti: String(session.tokenJti || ""),
     tid: String(session.testId || ""),
     bv: String(session.bankVersion || ""),
     qsh: String(session.questionSetHash || ""),
+    pcv: String(session.privacyConsentVersion || ""),
     iat: Math.floor(new Date(session.tokenIssuedAt).getTime() / 1000),
     exp: Math.floor(new Date(session.tokenExpiresAt).getTime() / 1000)
   };
@@ -3064,11 +3136,12 @@ function verifyAttemptToken(token, allowExpired) {
     const claims = JSON.parse(base64UrlDecodeText(segments[1]));
     if (!isPlainObject(header) || !isPlainObject(claims) || header.alg !== "HS256" ||
         Object.keys(header).sort().join(",") !== "alg,kid,typ" ||
-        Object.keys(claims).sort().join(",") !== "attemptId,bv,exp,iat,jti,qsh,tid,v" ||
-        header.kid !== "attempt-v1" || header.typ !== "SC-ATTEMPT" || Number(claims.v) !== 1 ||
+        Object.keys(claims).sort().join(",") !== "attemptId,bv,exp,iat,jti,pcv,qsh,tid,v" ||
+        header.kid !== "attempt-v2" || header.typ !== "SC-ATTEMPT" || Number(claims.v) !== 2 ||
         !/^att_[a-f0-9]{32,64}$/.test(String(claims.attemptId || "")) ||
         !/^[a-f0-9]{64}$/.test(String(claims.qsh || "")) ||
         !/^[a-f0-9]{32,64}$/.test(String(claims.jti || "")) ||
+        String(claims.pcv || "") !== PRIVACY_CONSENT_VERSION ||
         !Number.isFinite(Number(claims.iat)) || !Number.isFinite(Number(claims.exp)) || Number(claims.exp) <= Number(claims.iat) ||
         Number(claims.iat) > Math.floor(Date.now() / 1000) + 60 ||
         (!allowExpired && Number(claims.exp) <= Math.floor(Date.now() / 1000))) {
@@ -3137,6 +3210,8 @@ function buildBeginAttemptReadyResponse(session, bank, resumed) {
     bankVersion: String(session.bankVersion || ""),
     publicDigest: String(bank.publicDigest || ""),
     questionIds: session.questionIds.slice(),
+    privacyConsentVersion: String(session.privacyConsentVersion || ""),
+    privacyConsentedAt: String(session.privacyConsentedAt || ""),
     resumed: Boolean(resumed)
   };
 }
@@ -3147,6 +3222,7 @@ function beginAuthoritativeAttempt(data) {
   try {
     lock.waitLock(30000);
     lockAcquired = true;
+    if (!isLegalPilotApproved()) return buildAttemptUnavailableResponse();
     if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") !== "true") return buildAttemptUnavailableResponse();
     assertAuthoritativeConfigurationReady();
     assertAuthoritativePrivateStorageNotShared(data.testId);
@@ -3167,6 +3243,7 @@ function beginAuthoritativeAttempt(data) {
     const existingSession = sessions.find(session => session && session.inviteId === invite.inviteId);
     if (existingSession) {
       if (existingSession.state !== "active" || existingSession.beginRequestId !== data.beginRequestId || existingSession.testId !== data.testId ||
+          existingSession.privacyConsentVersion !== data.privacyConsentVersion || existingSession.ageConfirmed !== true ||
           !timingSafeEqual(String(existingSession.identityHash || ""), identityHash) ||
           !timingSafeEqual(String(existingSession.fingerprintHash || ""), fingerprintHash)) {
         return buildAttemptUnavailableResponse();
@@ -3200,7 +3277,7 @@ function beginAuthoritativeAttempt(data) {
     if (questionIds.length !== EXPECTED_ANSWERS_BY_TEST_ID[data.testId]) throw new Error("Authoritative question selection failed.");
     const expiresAt = new Date(now.getTime() + ATTEMPT_ACTIVE_TTL_MS);
     const session = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       attemptId: attemptId,
       inviteId: String(invite.inviteId),
       beginRequestId: String(data.beginRequestId),
@@ -3214,11 +3291,14 @@ function beginAuthoritativeAttempt(data) {
       identityHash: identityHash,
       fingerprintHash: fingerprintHash,
       legacyEmailHash: legacyEmailHash,
-      tokenKid: "attempt-v1",
+      tokenKid: "attempt-v2",
       tokenJti: randomHex(32),
       tokenIssuedAt: now.toISOString(),
       tokenExpiresAt: expiresAt.toISOString(),
       startedAt: now.toISOString(),
+      privacyConsentVersion: data.privacyConsentVersion,
+      privacyConsentedAt: now.toISOString(),
+      ageConfirmed: true,
       saveRequestId: "",
       submissionHash: "",
       reservedAt: "",
@@ -3254,6 +3334,8 @@ function buildAuthoritativeSubmissionHash(data) {
     candidateSource: String(data.candidateSource || ""),
     candidateExperience: String(data.candidateExperience || ""),
     employerShareConsent: Boolean(data.employerShareConsent),
+    privacyConsentVersion: String(data.privacyConsentVersion || ""),
+    ageConfirmed: Boolean(data.ageConfirmed),
     browserFingerprint: String(data.browserFingerprint || ""),
     tabSwitches: Number(data.tabSwitches || 0),
     clientBuild: String(data.clientBuild || ""),
@@ -3392,6 +3474,7 @@ function validateTokenAgainstSession(tokenResult, session) {
   const claims = tokenResult.claims;
   return claims.attemptId === session.attemptId &&
     claims.tid === session.testId && claims.bv === session.bankVersion &&
+    claims.pcv === session.privacyConsentVersion &&
     timingSafeEqual(String(claims.qsh || ""), String(session.questionSetHash || "")) &&
     timingSafeEqual(String(claims.jti || ""), String(session.tokenJti || "")) &&
     Number(claims.iat) === Math.floor(new Date(session.tokenIssuedAt).getTime() / 1000) &&
@@ -3428,6 +3511,8 @@ function buildAuthoritativeSavedResultResponse(session, result, replayed) {
     scoreVerification: SCORE_VERIFICATION_SERVER,
     scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION,
     telemetryVerification: TELEMETRY_VERIFICATION_CLIENT_REPORTED,
+    privacyConsentVersion: String(session.privacyConsentVersion || ""),
+    privacyConsentedAt: String(session.privacyConsentedAt || ""),
     reportCreated: Boolean(result.reportCreated),
     replayed: Boolean(replayed),
     message: "Сохраните код результата: " + String(session.code || "")
@@ -3465,6 +3550,7 @@ function saveAuthoritativeTestResult(data) {
     const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
     const session = sessions.find(row => row && row.attemptId === data.attemptId);
     if (!session || session.testId !== data.testId || session.bankVersion !== data.bankVersion ||
+        session.privacyConsentVersion !== data.privacyConsentVersion || session.ageConfirmed !== true || data.ageConfirmed !== true ||
         !validateTokenAgainstSession(tokenResult, session) ||
         !timingSafeEqual(String(session.identityHash || ""), hashAuthoritativeIdentity(data.testId, data.email)) ||
         !timingSafeEqual(String(session.fingerprintHash || ""), hashAuthoritativeFingerprint(data.testId, data.browserFingerprint))) {
@@ -3571,6 +3657,9 @@ function saveAuthoritativeTestResult(data) {
         testTitle: TEST_TITLES_BY_ID[session.testId],
         bankVersion: session.bankVersion,
         completedAt: completedAt,
+        privacyConsentVersion: session.privacyConsentVersion,
+        privacyConsentedAt: session.privacyConsentedAt,
+        ageConfirmed: session.ageConfirmed === true,
         answers: calculated.answerDetails,
         scoreVerification: SCORE_VERIFICATION_SERVER,
         scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION

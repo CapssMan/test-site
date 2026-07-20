@@ -257,8 +257,8 @@
     <header>
       <div>
         <h1>SkillCheck — Админ-панель</h1>
-        <p>Только обезличенные результаты, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.9</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.20.10</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -302,7 +302,7 @@
 
       <section class="card invite-panel" aria-labelledby="inviteHeading">
         <h2 id="inviteHeading">Одноразовые приглашения controlled pilot</h2>
-        <p>Приглашение привязывается к email и одному тесту. Код показывается только сразу после выпуска: backend хранит его проверочный hash, а не открытое значение.</p>
+        <p>Приглашение привязывается к email и одному тесту. Код показывается только сразу после выпуска: backend хранит его проверочный hash, а не открытое значение. Выпуск требует двух независимых gate: готовности банка и завершённого юридического checklist.</p>
         <form id="inviteForm" class="invite-grid">
           <div class="field">
             <label for="inviteEmail">Email кандидата</label>
@@ -409,8 +409,8 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.20.9";
-    const API_VERSION = "attempt-v1";
+    const FRONTEND_BUILD = "2026.07.20.10";
+    const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const TEST_LABELS = {
       "fa-junior": "Financial Analyst",
@@ -436,6 +436,7 @@
     let pendingInviteCreation = null;
     let pendingInviteRevocations = Object.create(null);
     let attemptIssuanceEnabled = false;
+    let legalPilotApproved = false;
 
     document.getElementById("frontendVersion").textContent = "Build " + FRONTEND_BUILD;
     document.getElementById("loginForm").addEventListener("submit", function(event) {
@@ -543,13 +544,16 @@
         }
         adminInvites = data.invites.map(normalizeAdminInvite);
         attemptIssuanceEnabled = data.issuanceEnabled === true;
-        setInviteFormEnabled(attemptIssuanceEnabled);
+        legalPilotApproved = data.legalPilotApproved === true;
+        setInviteFormEnabled(attemptIssuanceEnabled && legalPilotApproved);
         renderAdminInvites();
         setInviteStatus(
-          attemptIssuanceEnabled
-            ? "Приглашения обновлены. Выпуск новых ссылок разрешён."
-            : "Выпуск приглашений заблокирован до ротации исторически раскрытого банка ответов.",
-          attemptIssuanceEnabled ? "success" : "error"
+          !legalPilotApproved
+            ? "Юридический gate закрыт: укажите реквизиты оператора и контакт, завершите обязательные уведомления/проверки и отдельно подтвердите актуальную версию согласия."
+            : (attemptIssuanceEnabled
+              ? "Приглашения обновлены. Оба pilot gate открыты; выпуск новых ссылок разрешён."
+              : "Юридический gate подтверждён, но выпуск приглашений заблокирован до ротации исторически раскрытого банка ответов."),
+          attemptIssuanceEnabled && legalPilotApproved ? "success" : "error"
         );
       } catch (error) {
         setInviteStatus(error && error.message ? error.message : "Не удалось загрузить приглашения.", "error");
@@ -558,7 +562,7 @@
 
     async function createAdminInvite(event) {
       event.preventDefault();
-      if (!activePassword || !attemptIssuanceEnabled) {
+      if (!activePassword || !attemptIssuanceEnabled || !legalPilotApproved) {
         setInviteStatus("Выпуск приглашений сейчас заблокирован pilot gate.", "error");
         return;
       }
@@ -884,7 +888,7 @@
         const hasFilters = Boolean(filters.search || filters.test || filters.status || filters.showTechnical);
         document.getElementById("resultsTable").innerHTML = '<div class="empty-state"><strong>' +
           (hasFilters ? "По выбранным условиям ничего не найдено" : "Результатов пока нет") +
-          '</strong>' + (hasFilters ? "Измените или сбросьте фильтры." : "Новые обезличенные попытки появятся здесь после прохождения тестов.") + '</div>';
+          '</strong>' + (hasFilters ? "Измените или сбросьте фильтры." : "Новые псевдонимизированные попытки появятся здесь после прохождения тестов.") + '</div>';
         return;
       }
 
@@ -926,6 +930,7 @@
       pendingInviteCreation = null;
       pendingInviteRevocations = Object.create(null);
       attemptIssuanceEnabled = false;
+      legalPilotApproved = false;
       setInviteFormEnabled(false);
       clearFilters();
       document.getElementById("adminBlock").classList.add("hidden");

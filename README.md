@@ -94,6 +94,8 @@ http://localhost:8000/test.html?test=dev-quick
 
 ```bash
 node scripts/validate-tests.js
+node scripts/test-telegram.js
+node scripts/test-retake.js
 ```
 
 ## Правила разработки
@@ -105,7 +107,7 @@ node scripts/validate-tests.js
 5. Если в банке больше 40 вопросов, тест случайно выбирает 40.
 6. Варианты ответа перемешиваются, правильный индекс пересчитывается.
 7. Не хранить результаты, персональные данные, токены или JSON-базы на GitHub Pages.
-8. Перед обновлением Google Apps Script вручную создать новый deployment.
+8. Google Apps Script обновлять в существующем deployment, не меняя Web App URL без отдельного согласования.
 9. Все секреты хранить только в Apps Script Properties.
 10. Перед публичным запуском указать контактный email оператора в `privacy.html`.
 

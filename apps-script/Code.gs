@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-19-3";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-1";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -352,7 +352,7 @@ function checkAttemptHash(testId, email, fingerprint) {
     const nextAttemptTime = previousAttemptTime + RETAKE_WINDOW_MS;
     return {
       allowed: false,
-      message: "Этот тест уже был пройден. Повторное прохождение доступно через 21 день.",
+      message: "Этот тест уже был пройден. Повторное прохождение пока недоступно.",
       testId: testId,
       foundPreviousAttempt: true,
       code: found.code || "",

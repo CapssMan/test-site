@@ -588,15 +588,18 @@
     }
 
     function formatBlockedAttemptMessage(result) {
-      if (result.message) {
-        return escapeHtml(result.message);
-      }
-      var previousDate = result.previousAttemptDate || "ранее";
-      var nextDate = result.nextDate || "позже";
+      var message = result.message || "Этот тест уже был пройден.";
+      var nextDate = result.nextDate ? new Date(result.nextDate) : null;
       var daysLeft = typeof result.daysLeft === "number" ? result.daysLeft : "";
-      var daysText = daysLeft !== "" ? " Осталось " + daysLeft + " дн." : "";
-      return "Вы уже проходили этот тест " + escapeHtml(previousDate) +
-        ". Повторная попытка доступна " + escapeHtml(nextDate) + "." + daysText;
+
+      if (nextDate && !isNaN(nextDate.getTime())) {
+        message += " Точная дата следующей попытки: " + formatDateForUser(nextDate) + ".";
+      }
+      if (daysLeft !== "") {
+        message += " Осталось " + daysLeft + " дн.";
+      }
+
+      return escapeHtml(message);
     }
 
     function generateBrowserFingerprint() {

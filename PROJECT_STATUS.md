@@ -1,14 +1,14 @@
 # SkillCheck — текущее состояние
 
-Обновлено: 20 июля 2026 года.
+Обновлено: 21 июля 2026 года.
 
 ## Текущий этап
 
-- Завершён этап 15 — единая dependency-free тестовая матрица и read-only GitHub Actions CI для main/pull requests.
-- Локально воспроизведены locked install и 22 проверки: 17 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
+- Завершён этап 16 — эксплуатационная документация, безопасный deployment/rollback и privacy checklist оператора.
+- Локально воспроизведены locked install и 23 проверки: 18 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Production Apps Script не изменялся и остаётся на проверенном deployment `@56`; workflow не имеет secrets и не выполняет deploy/storage calls.
-- Следующий плановый этап: 16 — полная эксплуатационная документация, рекомендуемый режим `средний`.
-- Реальный пилот заблокирован до реквизитов оператора, внешнего legal/retention checklist, этапов 16–17 и отдельно согласованной содержательной ротации банков; для ротации нужен режим `ультра`.
+- Следующий плановый этап: 17 — полный pilot readiness checklist, рекомендуемый режим `очень высокий`.
+- Реальный пилот заблокирован до реквизитов оператора, внешнего legal/retention checklist, этапа 17 и отдельно согласованной содержательной ротации банков; для ротации нужен режим `ультра`.
 - Полный план: `ROADMAP.md`.
 
 ## Репозиторий и публикация
@@ -187,14 +187,22 @@
 - Workflow имеет только `contents: read`, Node 24, timeout 10 минут, locked `npm ci --ignore-scripts` и не использует production secrets/environments/deploy.
 - Checkout/setup actions закреплены полными commit SHA; `persist-credentials:false` не оставляет workflow token в локальном Git config.
 - Full history checkout нужен только для проверки legacy commit anchors; первый shallow run выявил эту зависимость и был исправлен без ослабления теста.
-- CI configuration защищена regression-тестом; полная локальная матрица — 22/22 проверки.
+- CI configuration и обязательные operator docs защищены regression-тестами; полная локальная матрица — 23/23 проверки.
+
+## Этап 16 — эксплуатационная документация
+
+- `docs/OPERATIONS.md` задаёт normal checks, уровни реакции S1–S3, stop conditions и безопасную передачу смены.
+- `docs/DEPLOYMENT.md` описывает preflight, Pages, обновление существующего versioned Apps Script deployment без смены URL, post-deploy verification и rollback.
+- `docs/PRIVACY_CHECKLIST.md` объединяет pilot blockers, правила приглашения/обработки, запрос субъекта, incident response и регулярный owner review.
+- Runbooks связаны с backup, deletion, observability, testing и legal review; значения credentials/deployment ID в документацию не внесены.
+- `test-operations-docs.js` блокирует исчезновение обязательных процедур и случайное появление live Web App ID в deployment runbook.
 
 ## Оценка до финала roadmap
 
-- Осталось 5 плановых этапов (`16–20`): 32–61 час, 200–420 тыс. токенов и 2–4 календарные недели пилота.
+- Осталось 4 плановых этапа (`17–20`): 28–54 часа, 170–360 тыс. токенов и 2–4 календарные недели пилота.
 - Отдельная содержательная ротация банков: 50–100 часов, 400–800 тыс. токенов плюс SME review.
 - До limited-pilot readiness (`16–17` + ротация): 62–121 час / 490–980 тыс. токенов плюс внешняя legal/SME проверка.
-- До конца roadmap вместе с ротацией: 82–161 час / 600 тыс. – 1,22 млн токенов + 2–4 недели пилота.
+- До конца roadmap вместе с ротацией: 78–154 часа / 570 тыс. – 1,16 млн токенов + 2–4 недели пилота.
 - Аккаунты/OTP/CAPTCHA, managed gateway и дополнительная server-side delivery для открытого запуска в эти диапазоны не включены.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.
 

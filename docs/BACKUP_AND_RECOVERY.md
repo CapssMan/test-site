@@ -1,5 +1,7 @@
 # SkillCheck — резервные копии и восстановление
 
+Общий порядок эксплуатации и stop conditions: [`OPERATIONS.md`](OPERATIONS.md). Rollback runtime описан в [`DEPLOYMENT.md`](DEPLOYMENT.md); этот документ относится к operational stores.
+
 Обновлено: 20 июля 2026 года. Технический этап 13.
 
 ## Область защиты

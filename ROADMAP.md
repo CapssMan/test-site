@@ -348,7 +348,14 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Этап 16. Документация
 
-Поддерживать `README.md`, `PROJECT_STATUS.md`, `ROADMAP.md`, `DEPLOYMENT.md`, `BACKUP_AND_RECOVERY.md`, `PRIVACY_CHECKLIST.md`, `TESTING.md`. README: назначение, архитектура, локальный запуск, файлы, безопасный deployment, названия properties, smoke и ограничения MVP.
+Статус: завершён 21 июля 2026 года без изменения production runtime.
+
+- [x] Добавлена единая точка входа `docs/OPERATIONS.md`: normal checks, уровни S1–S3, stop conditions и безопасная передача смены.
+- [x] Добавлен `docs/DEPLOYMENT.md`: preflight, GitHub Pages, обновление существующего Apps Script deployment без смены URL, post-deploy verification и rollback.
+- [x] Добавлен `docs/PRIVACY_CHECKLIST.md`: pilot blockers, приглашение, обработка, запрос субъекта, инцидент и регулярная сверка.
+- [x] README содержит назначение, архитектуру, локальный запуск, карту файлов, Script Property names, smoke, ограничения MVP и ссылки на runbooks.
+- [x] Deployment/privacy docs защищены regression-тестом `test-operations-docs.js`; полная матрица запускается через `npm test`.
+- [x] `PROJECT_STATUS.md`, `ROADMAP.md`, `TODO.md`, `PROJECT_CONTEXT.md`, `BACKUP_AND_RECOVERY.md` и `TESTING.md` синхронизированы с фактическим baseline.
 
 ## Этап 17. Подготовка к пилоту
 
@@ -368,7 +375,7 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Ближайшая очередь
 
-1. Перейти к этапу 16 — полной эксплуатационной документации; рекомендуемый режим `средний`.
+1. Перейти к этапу 17 — подготовке и полному checklist пилота; рекомендуемый режим `очень высокий`.
 2. Отдельно получить подтверждение на содержательную ротацию банков — обязательный pilot blocker; рекомендуемый режим `ультра`.
 3. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 

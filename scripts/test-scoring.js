@@ -35,6 +35,7 @@ const frontendFunctions = [
   "selectRandomQuestions",
   "normalizeQuestionBank",
   "getQuestionsPerAttempt",
+  "getBlockDefinitions",
   "normalizeQuestion",
   "prepareQuestions",
   "calculatePenalty",
@@ -58,6 +59,25 @@ assert.equal(
   frontendContext.normalizeQuestionBank({ questions: [{ id: "active" }, { id: "inactive", active: false }] }).questions.length,
   1,
   "inactive questions must be excluded"
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(frontendContext.getBlockDefinitions(
+    { finance: { name: "Config name", weight: 0.7 }, excel: { name: "Excel", weight: 0.3 } },
+    { finance: "Bank name", excel: "Excel bank name" }
+  ))),
+  {
+    finance: { name: "Bank name", weight: 0.7 },
+    excel: { name: "Excel bank name", weight: 0.3 }
+  },
+  "bank labels must not erase configured block weights"
+);
+assert.deepEqual(
+  Object.keys(frontendContext.getBlockDefinitions(
+    { legacy: { name: "Legacy", weight: 1 } },
+    { current: "Current bank block" }
+  )),
+  ["current"],
+  "bank block schema must be authoritative when present"
 );
 
 function answer(points, earnedPoints, selectedAnswer = "Ответ", status = earnedPoints ? "Верно" : "Неверно") {
@@ -86,6 +106,7 @@ assert.equal(perfect.badge, "Junior Strong");
 assert.equal(perfect.trustScore, 100);
 assert.equal(perfect.recommendation, "Рекомендуется к интервью");
 assert.equal(perfect.blockResults.finance.percent, 100);
+assert.equal(perfect.blockResults.finance.weight, 0.7, "Skill Card weight must follow selected question points");
 
 const zero = frontendContext.calculateTestResult(
   [answer(5, 0, "Нет ответа", "Время вышло"), answer(5, 0, "Нет ответа", "Нет ответа")],

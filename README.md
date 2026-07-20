@@ -53,6 +53,7 @@ admin.html              Обезличенная админ-панель по к
 data/*.json             Банки вопросов
 apps-script/Code.gs     Google Apps Script API для Яндекс Диска
 docs/QA_REVIEW.md       QA-аудит банков вопросов
+docs/QUESTION_BANK_AUDIT.md Полный технический и содержательный аудит банков
 docs/SCORING_AUDIT.md  Аудит расчёта результатов
 scripts/validate-tests.js Проверка структуры JSON-банков
 README.md               Общее описание
@@ -95,6 +96,7 @@ http://localhost:8000/test.html?test=dev-quick
 
 ```bash
 node scripts/validate-tests.js
+node scripts/audit-question-banks.js
 node scripts/test-telegram.js
 node scripts/test-retake.js
 node scripts/test-scoring.js

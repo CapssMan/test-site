@@ -297,12 +297,12 @@
         bankVersion: "Financial Analyst Junior v1.0",
         questionsFile: "data/fa-junior.json",
         blocks: {
-          "excel": { name: "Excel / Google Sheets", weight: 0.20 },
-          "finance": { name: "Финансовый анализ", weight: 0.25 },
-          "reporting": { name: "Отчётность (БДР/БДДС)", weight: 0.20 },
-          "budget": { name: "Budgeting / FP&A", weight: 0.15 },
-          "sql": { name: "SQL", weight: 0.10 },
-          "accounting": { name: "Бухгалтерия", weight: 0.10 }
+          "excel": "Excel / Google Sheets",
+          "finance": "Финансовый анализ",
+          "reporting": "Отчётность (БДР/БДДС)",
+          "budget": "Budgeting / FP&A",
+          "sql": "SQL",
+          "accounting": "Бухгалтерия"
         }
       },
       "ca-junior": {
@@ -312,11 +312,14 @@
         bankVersion: "Credit Analyst Junior v1.0",
         questionsFile: "data/ca-junior.json",
         blocks: {
-          "liquidity": { name: "Ликвидность", weight: 0.20 },
-          "debt": { name: "Долговая нагрузка", weight: 0.25 },
-          "cashflow": { name: "Cash Flow", weight: 0.20 },
-          "credit": { name: "Кредитный риск", weight: 0.20 },
-          "reporting": { name: "Отчётность", weight: 0.15 }
+          "logic": "Базовая финансовая логика",
+          "pnl": "P&L / ОПиУ",
+          "balance": "Balance Sheet / Баланс",
+          "cashflow": "Cash Flow / ДДС",
+          "debt": "Ликвидность и долговая нагрузка",
+          "excel": "Excel логика",
+          "cases": "Мини-кейсы",
+          "final": "Финальная логика и выводы"
         }
       },
       "fpa-junior": {
@@ -326,11 +329,14 @@
         bankVersion: "FP&A / Budget Analyst Junior v1.0",
         questionsFile: "data/fpa-junior.json",
         blocks: {
-          "budget": { name: "Бюджетирование", weight: 0.25 },
-          "planfact": { name: "План-факт", weight: 0.25 },
-          "forecast": { name: "Прогнозирование", weight: 0.20 },
-          "scenario": { name: "Сценарный анализ", weight: 0.15 },
-          "reporting": { name: "Отчётность", weight: 0.15 }
+          "budget": "БДР / БДДС и бюджетирование",
+          "planfact": "План-факт и факторный анализ",
+          "forecast": "Forecast и сценарии",
+          "margin": "Маржинальность и прибыль",
+          "capex": "OPEX / CAPEX",
+          "unit": "Unit economics",
+          "data": "Excel и качество данных",
+          "commentary": "Управленческий комментарий"
         }
       },
       "acc-junior": {
@@ -340,11 +346,14 @@
         bankVersion: "Accounting / Reporting Junior v1.0",
         questionsFile: "data/acc-junior.json",
         blocks: {
-          "entries": { name: "Проводки", weight: 0.25 },
-          "assets": { name: "Активы / Пассивы", weight: 0.20 },
-          "vat": { name: "НДС", weight: 0.15 },
-          "amort": { name: "Амортизация", weight: 0.15 },
-          "docs": { name: "Первичная документация", weight: 0.25 }
+          "entries": "Проводки и принцип начисления",
+          "assets": "Активы, обязательства, капитал",
+          "revenue": "Выручка, расходы, запасы",
+          "vat": "НДС и налог на прибыль",
+          "amort": "Основные средства и амортизация",
+          "closing": "Закрытие периода и сверки",
+          "docs": "Первичные документы",
+          "excel": "Excel и проверка данных"
         }
       },
       "bi-junior": {
@@ -354,11 +363,14 @@
         bankVersion: "Finance BI / Data Analyst Junior v1.0",
         questionsFile: "data/bi-junior.json",
         blocks: {
-          "sql": { name: "SQL", weight: 0.30 },
-          "powerbi": { name: "Power BI / Визуализация", weight: 0.25 },
-          "metrics": { name: "Финансовые метрики", weight: 0.20 },
-          "excel": { name: "Excel продвинутый", weight: 0.15 },
-          "data": { name: "Работа с данными", weight: 0.10 }
+          "sql": "SQL базовый",
+          "joins": "JOIN и агрегации",
+          "dates": "Даты и периоды",
+          "model": "Справочники и витрины",
+          "quality": "Качество данных",
+          "powerbi": "Power BI / Dashboards",
+          "metrics": "Финансовые метрики",
+          "business": "Интерпретация для бизнеса"
         }
       },
       "dev-quick": {
@@ -762,21 +774,24 @@
     }
 
     function getBlockDefinitions(configBlocks, bankBlocks) {
-      var source = bankBlocks && Object.keys(bankBlocks).length ? bankBlocks : configBlocks;
-      var keys = Object.keys(source || {});
+      var configSource = configBlocks || {};
+      var bankSource = bankBlocks || {};
+      var keys = Object.keys(bankSource).length ? Object.keys(bankSource) : Object.keys(configSource);
       var defaultWeight = keys.length ? 1 / keys.length : 1;
       var result = {};
 
       keys.forEach(function(key) {
-        var block = source[key];
-        if (typeof block === "string") {
-          result[key] = { name: block, weight: defaultWeight };
-        } else {
-          result[key] = {
-            name: block.name || key,
-            weight: Number(block.weight || defaultWeight)
-          };
-        }
+        var configBlock = configSource[key];
+        var bankBlock = bankSource[key];
+        var configName = typeof configBlock === "string" ? configBlock : (configBlock && configBlock.name);
+        var bankName = typeof bankBlock === "string" ? bankBlock : (bankBlock && bankBlock.name);
+        var configWeight = configBlock && typeof configBlock === "object" ? Number(configBlock.weight) : NaN;
+        var bankWeight = bankBlock && typeof bankBlock === "object" ? Number(bankBlock.weight) : NaN;
+
+        result[key] = {
+          name: bankName || configName || key,
+          weight: isFinite(bankWeight) ? bankWeight : (isFinite(configWeight) ? configWeight : defaultWeight)
+        };
       });
 
       return result;
@@ -985,7 +1000,7 @@
         var blockPercent = scores.total > 0 ? Math.round((scores.earned / scores.total) * 100) : 0;
         blockResults[blockKey] = {
           name: block.name,
-          weight: block.weight,
+          weight: rawTotal > 0 ? scores.total / rawTotal : 0,
           earned: scores.earned,
           total: scores.total,
           percent: Math.max(0, Math.min(100, blockPercent))

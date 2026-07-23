@@ -38,11 +38,12 @@
 
 ### Передаваемые материалы
 
-- закрытая книга `SkillCheck_SME_Review_v4_r3.xlsx`;
+- соответствующая закрытая role-книга `SkillCheck_SME_FA_v4_r3.xlsx`, `SkillCheck_SME_CA_v4_r3.xlsx`, `SkillCheck_SME_FPA_v4_r3.xlsx`, `SkillCheck_SME_ACC_v4_r3.xlsx` или `SkillCheck_SME_BI_v4_r3.xlsx`;
+- master-книга `SkillCheck_SME_Review_v4_r3.xlsx` — только если один назначенный эксперт подтверждённо покрывает все пять областей;
 - `SME_REVIEW_HANDOFF.md` либо его утверждённый экспорт;
 - описание целевой роли и уровня junior из книги/постановки задачи.
 
-Не передавать authoring-source и production credentials. GitHub-ссылка не заменяет закрытую книгу: публичные банки намеренно не содержат answer key и комментарии.
+Не передавать эксперту ключи остальных банков, authoring-source и production credentials. GitHub-ссылка не заменяет закрытую книгу: публичные банки намеренно не содержат answer key и комментарии.
 
 ### Что требуется от эксперта
 

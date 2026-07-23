@@ -52,6 +52,7 @@
 - [x] Завершить production rollout 10A в существующий deployment `@51` без смены URL; implementation commit `2addd59`, owner smoke `FA-LDUB2`, 14/14 suite и desktop/mobile browser QA подтверждены.
 - [x] Выполнить техническую содержательную ротацию пяти банков: 240 новых вопросов/вариантов/ключей/ID, private/public v4 и fail-closed atomic cutover.
 - [x] Подготовить закрытую Excel-книгу для независимого SME review: 240 вопросов, ключи, dropdown-вердикты, формульная сводка, структурные проверки и `docs/SME_REVIEW_HANDOFF.md`; файл не хранить в Git.
+- [x] Разделить master SME-книгу на пять закрытых role-пакетов FA/CA/FPA/ACC/BI, проверить формулы/рендер и зафиксировать SHA-256 вне Git для минимального раскрытия ключей добровольным reviewers.
 - [x] Подготовить `docs/PRE_PILOT_INPUTS.md` для безопасного сбора operator/legal/SME/cleanup/owner решений без секретов и закрытых заключений в Git.
 - [x] Подготовить `docs/EXTERNAL_REVIEW_BRIEF.md` с готовыми заданиями, сообщениями, scope и acceptance criteria для независимого SME и legal/retention специалиста.
 - [x] Подтвердить owner-решение сохранить все пять финансовых тестов в MVP и не сокращать продукт до одного банка.

@@ -13,7 +13,7 @@ Backend создаёт закрытый snapshot предыдущей валид
 - `private/attempt-sessions-v1.json`;
 - `private/invites-v1.json`.
 
-Snapshots находятся только в `disk:/skillcheck/private/backups-v1/<store-key>/`. Для каждого store сохраняются не более 12 последних версий. Временные forensic-копии повреждённого active-файла находятся в `backups-v1/corrupt/<store-key>/`, не более трёх на store.
+Snapshots находятся только в `app:/skillcheck/private/backups-v1/<store-key>/`. Для каждого store сохраняются не более 12 последних версий. Временные forensic-копии повреждённого active-файла находятся в `backups-v1/corrupt/<store-key>/`, не более трёх на store.
 
 Полные TXT-отчёты не дублируются этим механизмом. Закрытые банки вопросов являются versioned-артефактами с SHA-256 anchors и восстанавливаются отдельным owner-bootstrap. Транзакционные копии операции удаления относятся к `docs/DATA_DELETION.md` и уничтожаются после успешной проверки.
 

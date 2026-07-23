@@ -20,7 +20,7 @@ function extractTopLevelFunction(source, name) {
 }
 
 assert.match(frontend, /const FRONTEND_BUILD = "2026\.07\.21\.13"/);
-assert.match(backend, /const BACKEND_VERSION = "yandex-disk-mvp-2026-07-21-14"/);
+assert.match(backend, /const BACKEND_VERSION = "yandex-disk-mvp-2026-07-23-15"/);
 assert.match(frontend, /const MAX_AUTOMATIC_RETRIES = 2/);
 assert.match(frontend, /const AUTOMATIC_RETRY_DELAYS_MS = \[1500, 4000\]/);
 assert.match(frontend, /const MAX_PENDING_RESULT_TTL_MS = 6 \* 60 \* 60 \* 1000/);

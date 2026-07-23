@@ -56,7 +56,7 @@
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
 - [ ] Зафиксировать, что retake — deterrence, и выбрать уровень identity verification для пилота.
-- [ ] Проверить scope/возраст Яндекс OAuth-токена, выполнить безопасную ротацию по регламенту и оценить app-folder/least-privilege credential.
+- [x] Проверить scope Яндекс OAuth, создать отдельное app-folder-only приложение, выполнить checksum migration, write/read backup, реальный rollback drill и повторный production cutover (`@61`).
 - [ ] Для открытого/adversarial пилота решить, требуется ли backend question delivery.
 - [ ] Указать полное наименование/ФИО, статус и адрес оператора в `privacy.html` и `consent.html`.
 - [ ] Указать реальный email для запросов по персональным данным в обоих документах.
@@ -66,11 +66,11 @@
 - [ ] Подготовить отдельное согласие для конкретного получателя, если проект начнёт передавать результаты компании.
 - [x] Подготовить технический регламент удаления данных по коду в `docs/DATA_DELETION.md`.
 - [ ] Оператору с профильным специалистом утвердить legal-регламент, сроки, legal hold и форму подтверждения уничтожения.
-- [x] Проверить, что `disk:/skillcheck/admin/results.json` существует и читается.
-- [x] Проверить, что `disk:/skillcheck/private/attempts.json` существует и читается.
+- [x] Проверить, что `app:/skillcheck/admin/results.json` существует и читается.
+- [x] Проверить, что `app:/skillcheck/private/attempts.json` существует и читается.
 - [x] Пройти `dev-quick` и проверить запись результата, admin JSON, TXT-условие и код.
 - [x] Проверить `checkAttempt` через `attempts.json` и POST.
-- [x] Проверить, что успешный результат создаёт `disk:/skillcheck/reports/<code>.txt`.
+- [x] Проверить, что успешный результат создаёт `app:/skillcheck/reports/<code>.txt`.
 - [x] Проверить, что неуспешный результат не создаёт TXT-отчёт.
 - [x] Проверить, что `admin.html` показывает только псевдонимизированные коды без открытых контактов.
 - [x] Проверить, что `admin.html` запрашивает пароль через `action=adminResults` и не содержит моковых кандидатов.
@@ -102,7 +102,7 @@
 
 ## Следующий этап
 
-Техническая ротация пяти банков v4 завершена, а закрытый Excel-пакет и `docs/SME_REVIEW_HANDOFF.md` готовы к передаче эксперту; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/credential/data-cleanup checklist, рекомендуемый режим для оставшейся инженерной части — `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`, evidence ротации — в `docs/QUESTION_BANK_ROTATION.md`.
+Техническая ротация пяти банков v4 и app-folder-only ротация Яндекс credential завершены, а закрытый Excel-пакет и `docs/SME_REVIEW_HANDOFF.md` готовы к передаче эксперту; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/data-cleanup checklist. Для документального/контентного этапа достаточно режима `высокий`; для удаления production smoke и gate cutover снова нужен `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`.
 
 ## Financial Analyst Junior
 

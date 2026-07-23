@@ -6,9 +6,9 @@
 
 ## Текущее состояние
 
-Production runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, deployment `@57`, API `attempt-v2`.
+Production runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`, API `attempt-v2`, Яндекс storage root `app:/skillcheck`.
 
-Сервис технически готов к контролируемому сценарию, включая банки v4, но не открыт для реальных кандидатов. Legal approval, issuance и автоматический retention закрыты. Главные внешние blockers: реквизиты оператора, legal/retention approval, независимый человеческий SME sign-off v4, credential review, очистка smoke-данных и owner sign-off.
+Сервис технически готов к контролируемому сценарию, включая банки v4 и app-folder-only storage, но не открыт для реальных кандидатов. Legal approval, issuance и автоматический retention закрыты. Главные внешние blockers: реквизиты оператора, legal/retention approval, независимый человеческий SME sign-off v4, очистка smoke-данных и owner sign-off.
 
 ## Карта процедур
 
@@ -21,6 +21,7 @@ Production runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`
 | Удаление результата/попытки | `DATA_DELETION.md` |
 | Privacy/legal решение | `PRIVACY_CHECKLIST.md`, `LEGAL_PRIVACY_REVIEW.md` |
 | Ротация банков v4 | `QUESTION_BANK_ROTATION.md` |
+| Ротация Яндекс credential | `YANDEX_CREDENTIAL_ROTATION.md` |
 | Security boundaries | `SECURITY_AUDIT.md` |
 | Состояние и следующие этапы | `../PROJECT_STATUS.md`, `../ROADMAP.md` |
 

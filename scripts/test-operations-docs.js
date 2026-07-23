@@ -10,7 +10,8 @@ const requiredDocs = [
   "docs/PRIVACY_CHECKLIST.md",
   "docs/OPERATIONS.md",
   "docs/BACKUP_AND_RECOVERY.md",
-  "docs/TESTING.md"
+  "docs/TESTING.md",
+  "docs/YANDEX_CREDENTIAL_ROTATION.md"
 ];
 
 requiredDocs.forEach(relativePath => {
@@ -41,6 +42,17 @@ const operations = read("docs/OPERATIONS.md");
 ["DEPLOYMENT.md", "OBSERVABILITY.md", "PRIVACY_CHECKLIST.md", "Stop conditions", "S1", "S2"].forEach(fragment => {
   assert.ok(operations.includes(fragment), `operations guide missing: ${fragment}`);
 });
+
+const credentialRotation = read("docs/YANDEX_CREDENTIAL_ROTATION.md");
+[
+  "cloud_api:disk.app_folder",
+  "app:/skillcheck",
+  "stageYandexAppFolderMigrationForOwner",
+  "promoteYandexAppFolderMigrationForOwner",
+  "rollbackYandexAppFolderMigrationForOwner",
+  "ATTEMPT_ISSUANCE_ENABLED=false"
+].forEach(fragment => assert.ok(credentialRotation.includes(fragment), `credential runbook missing: ${fragment}`));
+assert.doesNotMatch(credentialRotation, /OAuth\s+[A-Za-z0-9._~+\/=\/-]{20,}/, "credential runbook must not contain a token");
 
 const readme = read("README.md");
 requiredDocs.slice(0, 3).forEach(relativePath => {

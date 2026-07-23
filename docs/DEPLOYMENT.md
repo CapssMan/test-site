@@ -7,10 +7,10 @@
 ## Текущий production baseline
 
 - ветка frontend: `main`;
-- Apps Script deployment: `@57`;
+- Apps Script deployment: `@61`;
 - candidate: `Build 2026.07.21.13`;
 - admin: `Build 2026.07.21.13`;
-- backend: `yandex-disk-mvp-2026-07-21-14`;
+- backend: `yandex-disk-mvp-2026-07-23-15`;
 - API: `attempt-v2`;
 - `LEGAL_PILOT_APPROVED=false`;
 - `ATTEMPT_ISSUANCE_ENABLED=false`;

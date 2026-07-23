@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-21-14";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-23-15";
 const CANDIDATE_FRONTEND_BUILD = "2026.07.21.13";
 const ADMIN_FRONTEND_BUILD = "2026.07.21.13";
 const SUCCESS_THRESHOLD = 80;
@@ -21,12 +21,12 @@ const PUBLIC_BANK_RELEASE_PROPERTY = "PUBLIC_BANK_RELEASE_V1";
 const CURRENT_PUBLIC_BANK_RELEASE_ID = "rotation-v4-2026-07-21-r3";
 const ATTEMPT_ACTIVE_TTL_MS = 6 * 60 * 60 * 1000;
 const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_YANDEX_INVITES_FILE = "disk:/skillcheck/private/invites-v1.json";
-const DEFAULT_YANDEX_SESSIONS_FILE = "disk:/skillcheck/private/attempt-sessions-v1.json";
-const DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER = "disk:/skillcheck/private/banks";
-const DEFAULT_YANDEX_DELETION_LOG_FILE = "disk:/skillcheck/private/deletion-log-v1.json";
-const DEFAULT_YANDEX_DELETION_BACKUPS_FOLDER = "disk:/skillcheck/private/deletion-backups";
-const DEFAULT_YANDEX_OPERATIONAL_BACKUPS_FOLDER = "disk:/skillcheck/private/backups-v1";
+const DEFAULT_YANDEX_INVITES_FILE = "app:/skillcheck/private/invites-v1.json";
+const DEFAULT_YANDEX_SESSIONS_FILE = "app:/skillcheck/private/attempt-sessions-v1.json";
+const DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER = "app:/skillcheck/private/banks";
+const DEFAULT_YANDEX_DELETION_LOG_FILE = "app:/skillcheck/private/deletion-log-v1.json";
+const DEFAULT_YANDEX_DELETION_BACKUPS_FOLDER = "app:/skillcheck/private/deletion-backups";
+const DEFAULT_YANDEX_OPERATIONAL_BACKUPS_FOLDER = "app:/skillcheck/private/backups-v1";
 const DELETION_PREVIEW_TTL_SECONDS = 10 * 60;
 const RETENTION_AUTOMATION_ENABLED = false;
 const OPERATIONAL_BACKUP_SCHEMA_VERSION = 1;
@@ -43,6 +43,8 @@ const PROTECTED_DIAGNOSTIC_PROPERTY_NAMES = [
   "YANDEX_DISK_ATTEMPT_SESSIONS_FILE",
   "YANDEX_DISK_PRIVATE_BANKS_FOLDER",
   "YANDEX_DISK_OPERATIONAL_BACKUPS_FOLDER",
+  "YANDEX_DISK_NEXT_TOKEN",
+  "YANDEX_DISK_ROLLBACK_TOKEN",
   "ATTEMPT_HASH_SALT",
   "ADMIN_PASSWORD",
   "ATTEMPT_SIGNING_SECRET_V1",
@@ -71,9 +73,16 @@ const REQUIRED_AUTHORITATIVE_PROPERTIES = [
   "IDENTITY_HASH_SECRET_V1"
 ];
 const PUBLIC_DEV_TEST_ENABLED = false;
-const DEFAULT_YANDEX_REPORTS_FOLDER = "disk:/skillcheck/reports";
-const DEFAULT_YANDEX_ADMIN_FILE = "disk:/skillcheck/admin/results.json";
-const DEFAULT_YANDEX_ATTEMPTS_FILE = "disk:/skillcheck/private/attempts.json";
+const DEFAULT_YANDEX_REPORTS_FOLDER = "app:/skillcheck/reports";
+const DEFAULT_YANDEX_ADMIN_FILE = "app:/skillcheck/admin/results.json";
+const DEFAULT_YANDEX_ATTEMPTS_FILE = "app:/skillcheck/private/attempts.json";
+const YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT = "disk:/skillcheck";
+const YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT = "app:/skillcheck";
+const YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY = "YANDEX_DISK_NEXT_TOKEN";
+const YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY = "YANDEX_DISK_ROLLBACK_TOKEN";
+const YANDEX_APP_FOLDER_MIGRATION_MANIFEST_PROPERTY = "YANDEX_DISK_MIGRATION_MANIFEST_V1";
+const YANDEX_APP_FOLDER_MIGRATION_MAX_FILES = 5000;
+const YANDEX_APP_FOLDER_MIGRATION_MAX_BYTES = 250 * 1024 * 1024;
 
 const TEST_CODE_PREFIX = {
   "fa-junior": "FA",
@@ -1657,7 +1666,10 @@ function probeYandexDiskAccess() {
   }
 
   try {
-    const response = UrlFetchApp.fetch("https://cloud-api.yandex.net/v1/disk/", {
+    const probePath = getConfiguredSkillCheckStorageRoot();
+    const probeUrl = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
+      encodeURIComponent(probePath) + "&fields=type";
+    const response = UrlFetchApp.fetch(probeUrl, {
       method: "get",
       headers: {
         Authorization: "OAuth " + token
@@ -1783,11 +1795,21 @@ function listYandexFolderContents(folderPath) {
 }
 
 function yandexApiRequest(method, url, payload, contentType) {
+  return yandexApiRequestWithToken(
+    method,
+    url,
+    payload,
+    contentType,
+    getRequiredProperty("YANDEX_DISK_TOKEN")
+  );
+}
+
+function yandexApiRequestWithToken(method, url, payload, contentType, token) {
   const normalizedMethod = String(method || "get").toLowerCase();
   const options = {
     method: normalizedMethod,
     headers: {
-      Authorization: "OAuth " + getRequiredProperty("YANDEX_DISK_TOKEN")
+      Authorization: "OAuth " + String(token || "")
     },
     muteHttpExceptions: true
   };
@@ -1797,9 +1819,16 @@ function yandexApiRequest(method, url, payload, contentType) {
     if (contentType) options.contentType = contentType;
   }
 
-  const response = UrlFetchApp.fetch(url, options);
-  const status = response.getResponseCode();
-  const text = response.getContentText();
+  let response;
+  let status = 0;
+  let text = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    response = UrlFetchApp.fetch(url, options);
+    status = response.getResponseCode();
+    text = response.getContentText();
+    if ([429, 500, 502, 503, 504].indexOf(status) === -1 || attempt === 2) break;
+    Utilities.sleep(500 * Math.pow(2, attempt));
+  }
 
   if (status < 200 || status >= 300) {
     throw new Error(
@@ -1814,18 +1843,24 @@ function yandexApiRequest(method, url, payload, contentType) {
 }
 
 function ensureYandexFolderExists(folderPath) {
-  const parts = normalizeDiskPath(folderPath).replace("disk:/", "").split("/").filter(Boolean);
-  let currentPath = "disk:";
+  ensureYandexFolderExistsWithToken(folderPath, getRequiredProperty("YANDEX_DISK_TOKEN"));
+}
+
+function ensureYandexFolderExistsWithToken(folderPath, token) {
+  const normalizedPath = normalizeDiskPath(folderPath);
+  const root = normalizedPath.indexOf("app:/") === 0 ? "app:" : "disk:";
+  const parts = normalizedPath.replace(/^(?:disk|app):\//, "").split("/").filter(Boolean);
+  let currentPath = root;
 
   parts.forEach(part => {
     currentPath += "/" + part;
     const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" + encodeURIComponent(currentPath);
 
     try {
-      yandexApiRequest("get", url, null, null);
+      yandexApiRequestWithToken("get", url, null, null, token);
     } catch (error) {
       if (String(error.message || "").indexOf("Yandex API error 404") !== -1) {
-        yandexApiRequest("put", url, null, null);
+        yandexApiRequestWithToken("put", url, null, null, token);
       } else {
         throw error;
       }
@@ -2865,7 +2900,7 @@ function getAdminBadge(finalScore, tabSwitches) {
 }
 
 function ensureSkillCheckFolders() {
-  ensureYandexFolderExists("disk:/skillcheck");
+  ensureYandexFolderExists(getConfiguredSkillCheckStorageRoot());
   ensureYandexFolderExists(getReportsFolderPath());
   ensureYandexFolderExists(getParentDiskPath(getAdminFilePath()));
   ensureYandexFolderExists(getParentDiskPath(getAttemptsFilePath()));
@@ -2883,7 +2918,7 @@ function ensureSkillCheckFolders() {
 function assertAuthoritativePrivateStorageNotShared(testId) {
   const privateFolder = getParentDiskPath(getPrivateBanksFolderPath());
   const targets = [
-    "disk:/skillcheck",
+    getConfiguredSkillCheckStorageRoot(),
     privateFolder,
     getPrivateBanksFolderPath(),
     getReportsFolderPath(),
@@ -2999,15 +3034,459 @@ function getOperationalBackupsFolderPath() {
   return getConfiguredDiskPath("YANDEX_DISK_OPERATIONAL_BACKUPS_FOLDER", DEFAULT_YANDEX_OPERATIONAL_BACKUPS_FOLDER);
 }
 
+function getSkillCheckStorageRootForPath(path) {
+  const normalized = validateSkillCheckDiskPath(path);
+  return normalized.indexOf("app:/") === 0
+    ? YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT
+    : YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT;
+}
+
+function getConfiguredSkillCheckStorageRoot() {
+  const configuredPaths = getYandexStoragePathPropertyMap();
+  const roots = Object.keys(configuredPaths).map(name => getSkillCheckStorageRootForPath(configuredPaths[name]));
+  const root = roots[0];
+  if (roots.some(item => item !== root)) {
+    throw new Error("SkillCheck storage paths must use one storage root.");
+  }
+  return root;
+}
+
+function getYandexStoragePathPropertyMap(rootPath) {
+  const root = rootPath ? validateSkillCheckDiskPath(rootPath) : "";
+  const resolvePath = relativePath => root ? joinDiskPath(root, relativePath) : "";
+  return {
+    YANDEX_DISK_REPORTS_FOLDER: root ? resolvePath("reports") : getReportsFolderPath(),
+    YANDEX_DISK_ADMIN_FILE: root ? resolvePath("admin/results.json") : getAdminFilePath(),
+    YANDEX_DISK_ATTEMPTS_FILE: root ? resolvePath("private/attempts.json") : getAttemptsFilePath(),
+    YANDEX_DISK_INVITES_FILE: root ? resolvePath("private/invites-v1.json") : getInvitesFilePath(),
+    YANDEX_DISK_ATTEMPT_SESSIONS_FILE: root ? resolvePath("private/attempt-sessions-v1.json") : getAttemptSessionsFilePath(),
+    YANDEX_DISK_PRIVATE_BANKS_FOLDER: root ? resolvePath("private/banks") : getPrivateBanksFolderPath(),
+    YANDEX_DISK_DELETION_LOG_FILE: root ? resolvePath("private/deletion-log-v1.json") : getDeletionLogFilePath(),
+    YANDEX_DISK_DELETION_BACKUPS_FOLDER: root ? resolvePath("private/deletion-backups") : getDeletionBackupsFolderPath(),
+    YANDEX_DISK_OPERATIONAL_BACKUPS_FOLDER: root ? resolvePath("private/backups-v1") : getOperationalBackupsFolderPath()
+  };
+}
+
+function assertYandexCredentialMigrationGatesClosed() {
+  if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true" ||
+      getScriptProperty(LEGAL_PILOT_APPROVAL_PROPERTY) === "true") {
+    throw new Error("Yandex credential migration requires closed pilot gates.");
+  }
+}
+
+function getYandexResourceMetadataWithToken(path, token) {
+  const normalizedPath = normalizeDiskPath(path);
+  const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
+    encodeURIComponent(normalizedPath) +
+    "&fields=name,type,size,created,modified,public_key,public_url,share";
+  try {
+    const resource = yandexApiRequestWithToken("get", url, null, null, token);
+    return {
+      exists: true,
+      name: String(resource.name || getDiskPathName(normalizedPath)),
+      type: String(resource.type || "unknown"),
+      path: normalizedPath,
+      size: resource.type === "file" ? Number(resource.size || 0) : null,
+      publicKey: String(resource.public_key || ""),
+      publicUrl: String(resource.public_url || ""),
+      shared: Boolean(resource.share)
+    };
+  } catch (error) {
+    if (String(error.message || "").indexOf("Yandex API error 404") !== -1) {
+      return {
+        exists: false,
+        name: getDiskPathName(normalizedPath),
+        type: "missing",
+        path: normalizedPath,
+        size: null,
+        publicKey: "",
+        publicUrl: "",
+        shared: false
+      };
+    }
+    throw error;
+  }
+}
+
+function listAllYandexFolderItemsWithToken(folderPath, token) {
+  const normalizedPath = normalizeDiskPath(folderPath);
+  const items = [];
+  let offset = 0;
+  const limit = 500;
+  while (true) {
+    const url = "https://cloud-api.yandex.net/v1/disk/resources?path=" +
+      encodeURIComponent(normalizedPath) + "&limit=" + limit + "&offset=" + offset +
+      "&fields=type,public_key,public_url,share,_embedded.total,_embedded.items.name," +
+      "_embedded.items.type,_embedded.items.size,_embedded.items.md5,_embedded.items.public_key," +
+      "_embedded.items.public_url,_embedded.items.share";
+    const resource = yandexApiRequestWithToken("get", url, null, null, token);
+    if (String(resource.type || "") !== "dir") throw new Error("Migration source is not a folder.");
+    if (resource.public_key || resource.public_url || resource.share) {
+      throw new Error("Yandex credential migration refuses published or shared storage.");
+    }
+    const page = resource && resource._embedded && Array.isArray(resource._embedded.items)
+      ? resource._embedded.items
+      : [];
+    page.forEach(item => {
+      const name = String(item.name || "");
+      if (!/^[A-Za-z0-9._-]+$/.test(name)) throw new Error("Migration encountered an unsupported storage name.");
+      items.push({
+        name: name,
+        type: String(item.type || "unknown"),
+        path: joinDiskPath(normalizedPath, name),
+        size: item.type === "file" ? Number(item.size || 0) : null,
+        md5: item.type === "file" ? String(item.md5 || "") : "",
+        publicKey: String(item.public_key || ""),
+        publicUrl: String(item.public_url || ""),
+        shared: Boolean(item.share)
+      });
+    });
+    const total = Number(resource && resource._embedded ? resource._embedded.total : items.length);
+    offset += page.length;
+    if (!page.length || offset >= total) break;
+    if (offset > YANDEX_APP_FOLDER_MIGRATION_MAX_FILES * 2) throw new Error("Migration inventory limit exceeded.");
+  }
+  return items;
+}
+
+function downloadYandexBytesWithToken(path, token) {
+  const normalizedPath = normalizeDiskPath(path);
+  const url = "https://cloud-api.yandex.net/v1/disk/resources/download?path=" + encodeURIComponent(normalizedPath);
+  const downloadInfo = yandexApiRequestWithToken("get", url, null, null, token);
+  if (!downloadInfo.href) throw new Error("Yandex migration download link is missing.");
+  const options = { method: "get", escaping: false, muteHttpExceptions: true };
+  let response;
+  let status = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    response = UrlFetchApp.fetch(downloadInfo.href, options);
+    status = response.getResponseCode();
+    if ([429, 500, 502, 503, 504].indexOf(status) === -1 || attempt === 2) break;
+    Utilities.sleep(500 * Math.pow(2, attempt));
+  }
+  if (status < 200 || status >= 300) {
+    throw new Error("Yandex migration download failed with status " + status + ".");
+  }
+  return response.getBlob().getBytes();
+}
+
+function uploadYandexBytesWithToken(path, bytes, token) {
+  const normalizedPath = validateSkillCheckDiskPath(path);
+  ensureYandexFolderExistsWithToken(getParentDiskPath(normalizedPath), token);
+  const uploadUrl = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=" +
+    encodeURIComponent(normalizedPath) + "&overwrite=true";
+  const uploadInfo = yandexApiRequestWithToken("get", uploadUrl, null, null, token);
+  const uploadMethod = String(uploadInfo.method || "PUT").toLowerCase();
+  if (!uploadInfo.href || uploadMethod !== "put" || uploadInfo.templated === true) {
+    throw new Error("Yandex migration upload link is invalid.");
+  }
+  const options = {
+    method: uploadMethod,
+    payload: bytes,
+    contentType: "application/octet-stream",
+    escaping: false,
+    muteHttpExceptions: true
+  };
+  let response;
+  let status = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    response = UrlFetchApp.fetch(uploadInfo.href, options);
+    status = response.getResponseCode();
+    if ([429, 500, 502, 503, 504].indexOf(status) === -1 || attempt === 2) break;
+    Utilities.sleep(500 * Math.pow(2, attempt));
+  }
+  if (status < 200 || status >= 300) {
+    throw new Error("Yandex migration upload failed with status " + status + ".");
+  }
+}
+
+function sha256BytesHex(bytes) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes)
+    .map(value => (value & 255).toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function md5BytesHex(bytes) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, bytes)
+    .map(value => (value & 255).toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function inventoryYandexStorageTree(rootPath, token, includeBytes) {
+  const root = validateSkillCheckDiskPath(rootPath);
+  const rootMetadata = getYandexResourceMetadataWithToken(root, token);
+  if (!rootMetadata.exists || rootMetadata.type !== "dir") throw new Error("Migration storage root is unavailable.");
+  if (rootMetadata.publicKey || rootMetadata.publicUrl || rootMetadata.shared) {
+    throw new Error("Yandex credential migration refuses published or shared storage.");
+  }
+  const queue = [root];
+  const directories = [""];
+  const files = [];
+  let totalBytes = 0;
+  while (queue.length) {
+    const folder = queue.shift();
+    listAllYandexFolderItemsWithToken(folder, token).forEach(item => {
+      if (item.publicKey || item.publicUrl || item.shared) {
+        throw new Error("Yandex credential migration refuses published or shared storage.");
+      }
+      const relativePath = item.path.slice(root.length + 1);
+      if (item.type === "dir") {
+        directories.push(relativePath);
+        queue.push(item.path);
+        return;
+      }
+      if (item.type !== "file") throw new Error("Migration encountered an unsupported resource type.");
+      if (files.length >= YANDEX_APP_FOLDER_MIGRATION_MAX_FILES) throw new Error("Migration file limit exceeded.");
+      const bytes = includeBytes === true ? downloadYandexBytesWithToken(item.path, token) : null;
+      const size = bytes ? bytes.length : Number(item.size || 0);
+      const md5 = bytes ? md5BytesHex(bytes) : String(item.md5 || "");
+      if (!/^[a-f0-9]{32}$/.test(md5)) throw new Error("Migration file checksum is unavailable.");
+      totalBytes += size;
+      if (totalBytes > YANDEX_APP_FOLDER_MIGRATION_MAX_BYTES) throw new Error("Migration byte limit exceeded.");
+      files.push({
+        relativePath: relativePath,
+        size: size,
+        md5: md5,
+        sha256: bytes ? sha256BytesHex(bytes) : "",
+        bytes: bytes
+      });
+    });
+  }
+  directories.sort();
+  files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  const manifestRows = files.map(file => ({ relativePath: file.relativePath, size: file.size, md5: file.md5 }));
+  return {
+    root: root,
+    directories: directories,
+    files: files,
+    fileCount: files.length,
+    directoryCount: directories.length,
+    totalBytes: totalBytes,
+    manifestSha256: sha256Hex(JSON.stringify(manifestRows))
+  };
+}
+
+function summarizeYandexStorageInventory(inventory) {
+  return {
+    fileCount: Number(inventory.fileCount || 0),
+    directoryCount: Number(inventory.directoryCount || 0),
+    totalBytes: Number(inventory.totalBytes || 0),
+    manifestSha256: String(inventory.manifestSha256 || "")
+  };
+}
+
+function assertMatchingYandexStorageInventories(source, target) {
+  const left = summarizeYandexStorageInventory(source);
+  const right = summarizeYandexStorageInventory(target);
+  if (left.fileCount !== right.fileCount || left.directoryCount !== right.directoryCount ||
+      left.totalBytes !== right.totalBytes || !timingSafeEqual(left.manifestSha256, right.manifestSha256)) {
+    throw new Error("Yandex credential migration verification failed.");
+  }
+}
+
+function mirrorYandexStorageTree(sourceRoot, sourceToken, targetRoot, targetToken) {
+  const source = inventoryYandexStorageTree(sourceRoot, sourceToken, true);
+  ensureYandexFolderExistsWithToken(targetRoot, targetToken);
+  const targetBefore = inventoryYandexStorageTree(targetRoot, targetToken, false);
+  const sourcePaths = Object.create(null);
+  source.directories.forEach(path => { sourcePaths["d:" + path] = true; });
+  source.files.forEach(file => { sourcePaths["f:" + file.relativePath] = true; });
+  targetBefore.directories.forEach(path => {
+    if (!sourcePaths["d:" + path]) throw new Error("Migration target contains an unexpected folder.");
+  });
+  targetBefore.files.forEach(file => {
+    if (!sourcePaths["f:" + file.relativePath]) throw new Error("Migration target contains an unexpected file.");
+  });
+  source.directories.filter(Boolean).forEach(path => {
+    ensureYandexFolderExistsWithToken(joinDiskPath(targetRoot, path), targetToken);
+  });
+  const targetFilesBefore = Object.create(null);
+  targetBefore.files.forEach(file => { targetFilesBefore[file.relativePath] = file; });
+  source.files.forEach(file => {
+    const existing = targetFilesBefore[file.relativePath];
+    if (existing && existing.size === file.size && timingSafeEqual(existing.md5, file.md5)) return;
+    uploadYandexBytesWithToken(joinDiskPath(targetRoot, file.relativePath), file.bytes, targetToken);
+  });
+  const target = inventoryYandexStorageTree(targetRoot, targetToken, false);
+  assertMatchingYandexStorageInventories(source, target);
+  return summarizeYandexStorageInventory(source);
+}
+
+function buildYandexCredentialMigrationRecord(summary) {
+  return {
+    schemaVersion: 1,
+    sourceRoot: YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT,
+    targetRoot: YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT,
+    fileCount: summary.fileCount,
+    directoryCount: summary.directoryCount,
+    totalBytes: summary.totalBytes,
+    manifestSha256: summary.manifestSha256,
+    stagedAt: new Date().toISOString()
+  };
+}
+
+function stageYandexAppFolderMigrationForOwner() {
+  assertYandexCredentialMigrationGatesClosed();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    assertYandexCredentialMigrationGatesClosed();
+    if (getConfiguredSkillCheckStorageRoot() !== YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT) {
+      throw new Error("Yandex credential migration source is not active.");
+    }
+    assertAuthoritativePrivateStorageNotShared();
+    const currentToken = getRequiredProperty("YANDEX_DISK_TOKEN");
+    const nextToken = getRequiredProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY);
+    if (timingSafeEqual(currentToken, nextToken)) throw new Error("Migration requires a separate least-privilege credential.");
+    const summary = mirrorYandexStorageTree(
+      YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT,
+      currentToken,
+      YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT,
+      nextToken
+    );
+    const record = buildYandexCredentialMigrationRecord(summary);
+    PropertiesService.getScriptProperties().setProperty(
+      YANDEX_APP_FOLDER_MIGRATION_MANIFEST_PROPERTY,
+      JSON.stringify(record)
+    );
+    return Object.assign({ ok: true, status: "staged", backendVersion: BACKEND_VERSION }, summary);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function verifyYandexAppFolderMigrationForOwner() {
+  assertYandexCredentialMigrationGatesClosed();
+  const properties = PropertiesService.getScriptProperties();
+  const currentToken = getRequiredProperty("YANDEX_DISK_TOKEN");
+  const nextToken = getRequiredProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY);
+  const source = inventoryYandexStorageTree(YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT, currentToken, true);
+  const target = inventoryYandexStorageTree(YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT, nextToken, false);
+  assertMatchingYandexStorageInventories(source, target);
+  const storedText = properties.getProperty(YANDEX_APP_FOLDER_MIGRATION_MANIFEST_PROPERTY);
+  const stored = storedText ? JSON.parse(storedText) : null;
+  if (!stored || !timingSafeEqual(String(stored.manifestSha256 || ""), source.manifestSha256)) {
+    throw new Error("Stored Yandex migration manifest is missing or stale.");
+  }
+  return Object.assign({ ok: true, status: "verified", backendVersion: BACKEND_VERSION }, summarizeYandexStorageInventory(source));
+}
+
+function setYandexStoragePathProperties(rootPath) {
+  PropertiesService.getScriptProperties().setProperties(getYandexStoragePathPropertyMap(rootPath), false);
+}
+
+function validateActiveYandexStorageForOwner() {
+  ensureSkillCheckFolders();
+  assertAuthoritativePrivateStorageNotShared();
+  getOperationalStoreKeys().forEach(storeKey => {
+    const descriptor = getOperationalStoreDescriptor(storeKey);
+    readRequiredJsonArray(descriptor.path, descriptor.label);
+  });
+  Object.keys(BANK_VERSIONS_BY_ID).forEach(testId => {
+    loadAuthoritativePrivateBank(testId, BANK_VERSIONS_BY_ID[testId]);
+  });
+  return true;
+}
+
+function promoteYandexAppFolderMigrationForOwner() {
+  assertYandexCredentialMigrationGatesClosed();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  const properties = PropertiesService.getScriptProperties();
+  const oldToken = getRequiredProperty("YANDEX_DISK_TOKEN");
+  const nextToken = getRequiredProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY);
+  const oldExplicitPaths = {};
+  Object.keys(getYandexStoragePathPropertyMap(YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT)).forEach(name => {
+    oldExplicitPaths[name] = properties.getProperty(name);
+  });
+  try {
+    assertYandexCredentialMigrationGatesClosed();
+    verifyYandexAppFolderMigrationForOwner();
+    properties.setProperty(YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY, oldToken);
+    properties.setProperty("YANDEX_DISK_TOKEN", nextToken);
+    setYandexStoragePathProperties(YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT);
+    properties.deleteProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY);
+    validateActiveYandexStorageForOwner();
+    return { ok: true, status: "promoted", backendVersion: BACKEND_VERSION, storageRoot: "app:/skillcheck", rollbackReady: true };
+  } catch (error) {
+    properties.setProperty("YANDEX_DISK_TOKEN", oldToken);
+    Object.keys(oldExplicitPaths).forEach(name => {
+      if (oldExplicitPaths[name] === null) properties.deleteProperty(name);
+      else properties.setProperty(name, oldExplicitPaths[name]);
+    });
+    properties.setProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY, nextToken);
+    properties.deleteProperty(YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY);
+    throw error;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function rollbackYandexAppFolderMigrationForOwner() {
+  assertYandexCredentialMigrationGatesClosed();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    assertYandexCredentialMigrationGatesClosed();
+    if (getConfiguredSkillCheckStorageRoot() !== YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT) {
+      throw new Error("Yandex app-folder storage is not active.");
+    }
+    const properties = PropertiesService.getScriptProperties();
+    const appToken = getRequiredProperty("YANDEX_DISK_TOKEN");
+    const rollbackToken = getRequiredProperty(YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY);
+    const summary = mirrorYandexStorageTree(
+      YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT,
+      appToken,
+      YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT,
+      rollbackToken
+    );
+    properties.setProperty("YANDEX_DISK_TOKEN", rollbackToken);
+    setYandexStoragePathProperties(YANDEX_APP_FOLDER_MIGRATION_SOURCE_ROOT);
+    properties.setProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY, appToken);
+    properties.deleteProperty(YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY);
+    validateActiveYandexStorageForOwner();
+    return Object.assign({ ok: true, status: "rolled-back", backendVersion: BACKEND_VERSION }, summary);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function retireYandexDiskRollbackCredentialForOwner() {
+  assertYandexCredentialMigrationGatesClosed();
+  if (getConfiguredSkillCheckStorageRoot() !== YANDEX_APP_FOLDER_MIGRATION_TARGET_ROOT) {
+    throw new Error("Least-privilege app-folder storage is not active.");
+  }
+  validateActiveYandexStorageForOwner();
+  const properties = PropertiesService.getScriptProperties();
+  properties.deleteProperty(YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY);
+  properties.deleteProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY);
+  return { ok: true, status: "rollback-credential-retired", backendVersion: BACKEND_VERSION, storageRoot: "app:/skillcheck" };
+}
+
+function getYandexCredentialMigrationStatusForOwner() {
+  const properties = PropertiesService.getScriptProperties();
+  let manifest = null;
+  try { manifest = JSON.parse(properties.getProperty(YANDEX_APP_FOLDER_MIGRATION_MANIFEST_PROPERTY) || "null"); } catch (error) {}
+  return {
+    ok: true,
+    backendVersion: BACKEND_VERSION,
+    storageRoot: getConfiguredSkillCheckStorageRoot(),
+    hasNextCredential: Boolean(properties.getProperty(YANDEX_APP_FOLDER_MIGRATION_NEXT_TOKEN_PROPERTY)),
+    hasRollbackCredential: Boolean(properties.getProperty(YANDEX_APP_FOLDER_MIGRATION_ROLLBACK_TOKEN_PROPERTY)),
+    staged: Boolean(manifest && manifest.manifestSha256),
+    stagedFileCount: manifest ? Number(manifest.fileCount || 0) : 0,
+    stagedTotalBytes: manifest ? Number(manifest.totalBytes || 0) : 0
+  };
+}
+
 function normalizeDiskPath(path) {
-  return String(path || "").replace(/\/+/g, "/").replace(/^disk:\//, "disk:/");
+  return String(path || "").replace(/\/+/g, "/").replace(/^(disk|app):\//, "$1:/");
 }
 
 function validateSkillCheckDiskPath(path) {
   const source = String(path || "");
   const normalized = normalizeDiskPath(source);
   if (/[\u0000-\u001f\u007f]/.test(source) || source.indexOf("..") !== -1 ||
-      !/^disk:\/skillcheck(?:\/[A-Za-z0-9._-]+)*$/.test(normalized)) {
+      !/^(?:disk|app):\/skillcheck(?:\/[A-Za-z0-9._-]+)*$/.test(normalized)) {
     throw new Error("Некорректный путь хранилища SkillCheck.");
   }
   return normalized;
@@ -3020,7 +3499,8 @@ function joinDiskPath(folderPath, fileName) {
 function getParentDiskPath(path) {
   const normalized = normalizeDiskPath(path);
   const index = normalized.lastIndexOf("/");
-  return index <= "disk:".length ? "disk:/" : normalized.slice(0, index);
+  const root = normalized.indexOf("app:/") === 0 ? "app:/" : "disk:/";
+  return index <= root.length - 1 ? root : normalized.slice(0, index);
 }
 
 function getDiskPathName(path) {

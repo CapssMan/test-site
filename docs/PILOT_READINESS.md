@@ -16,10 +16,11 @@
 
 | Проверка | Результат | Статус |
 |---|---|---|
-| Публичный health | четыре публичных поля; runtime ротации — backend `yandex-disk-mvp-2026-07-21-14` | verified после post-deploy smoke |
+| Публичный health | четыре публичных поля; runtime — backend `yandex-disk-mvp-2026-07-23-15` | verified после post-deploy и post-cutover smoke |
 | Protected owner diagnostics | `healthy`, четыре operational store, 9 result rows и 9 anti-retake rows | verified |
 | Operational backup | свежий проверяемый snapshot четырёх store создан owner-функцией | verified |
-| Apps Script deployments | существующий versioned deployment обновлён до `@57`; Web App URL не менялся | verified |
+| Apps Script deployments | существующий versioned deployment обновлён до `@61`; Web App URL не менялся | verified |
+| Яндекс credential/storage | отдельное API-only приложение, только `cloud_api:disk.app_folder`, root `app:/skillcheck`; checksum cutover, write/read backup и реальный rollback drill | verified |
 | Public negative smoke | GET begin → `method_not_allowed`; legacy → `client_upgrade_required`; unknown → `unknown_action`; dev-quick → `test_not_public` | verified |
 | GitHub CI/Pages | этап 16 опубликован зелёными workflow; этап 17 повторно проверяется при публикации этого отчёта | verified |
 
@@ -56,7 +57,6 @@ CacheService rate limiting является best-effort и не заменяет
 | Реквизиты оператора | `privacy.html` и `consent.html` содержат явные «не указано» | владелец предоставляет и утверждает реквизиты/контакт |
 | Legal и retention | нет внешнего заключения, сроков, legal hold, формы подтверждения уничтожения | оператор + профильный специалист подписывают checklist |
 | Исторически раскрытый answer key / SME v4 | техническая ротация выполнена; закрытая review-книга на 240 вопросов и runbook `SME_REVIEW_HANDOFF.md` подготовлены, но внешний review ещё не выполнен | профильный эксперт подтверждает банки v4 либо возвращает точечные правки новой версией |
-| Яндекс credential | scope app-folder/least-privilege не подтверждён, дата ротации не зафиксирована | ротация OAuth-токена и документированная проверка scope вне Git |
 | Чистая pilot-база | protected diagnostics показывает 9 smoke result/attempt rows | точечный deletion workflow после подтверждения точного списка |
 | Финальный owner sign-off | нет закрытого go/no-go журнала с ответственными | заполнить `PRIVACY_CHECKLIST.md` и эту финальную секцию после остальных блокеров |
 
@@ -65,14 +65,13 @@ CacheService rate limiting является best-effort и не заменяет
 ## Финальная последовательность перед первым кандидатом
 
 1. По `SME_REVIEW_HANDOFF.md` передать закрытую review-книгу независимому профильному эксперту и получить sign-off; замечания исправлять только новой versioned-ротацией.
-2. Ротировать Яндекс OAuth credential, проверить private storage и protected status.
-3. Заполнить operator contacts, получить внешнее legal/retention решение, обновить consent version при необходимости.
-4. По утверждённому списку удалить smoke results/attempts через admin preview/confirm; проверить operational backups и diagnostics.
-5. Выполнить desktop/mobile QA, CI, health, protected status и rollback drill/readiness.
-6. В закрытом owner-журнале зафиксировать версии, gates, ответственных, объём и решение `go`.
-7. Сначала включить legal approval с точной consent version, затем отдельным действием issuance. Не менять оба gate одновременно с runtime rollout.
-8. Создать одно owner-smoke приглашение, завершить его, проверить replay/report/status и удалить smoke-данные.
-9. Ограничить первую волну 3–5 работодателями/рекрутерами и 10–30 прохождениями; при S1/S2 немедленно выключить issuance.
+2. Заполнить operator contacts, получить внешнее legal/retention решение, обновить consent version при необходимости.
+3. По утверждённому списку удалить smoke results/attempts через admin preview/confirm; проверить operational backups и diagnostics.
+4. Выполнить desktop/mobile QA, CI, health, protected status и readiness.
+5. В закрытом owner-журнале зафиксировать версии, gates, ответственных, объём и решение `go`.
+6. Сначала включить legal approval с точной consent version, затем отдельным действием issuance. Не менять оба gate одновременно с runtime rollout.
+7. Создать одно owner-smoke приглашение, завершить его, проверить replay/report/status и удалить smoke-данные.
+8. Ограничить первую волну 3–5 работодателями/рекрутерами и 10–30 прохождениями; при S1/S2 немедленно выключить issuance.
 
 ## План измерений пилота
 

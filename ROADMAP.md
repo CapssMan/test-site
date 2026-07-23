@@ -45,9 +45,10 @@
 - Банки: `data/fa-junior.json`, `data/ca-junior.json`, `data/fpa-junior.json`, `data/acc-junior.json`, `data/bi-junior.json`, `data/dev-quick.json`.
 - Backend: `apps-script/Code.gs`, `apps-script/appsscript.json`.
 - Яндекс.Диск:
-  - `disk:/skillcheck/reports` — подробные TXT успешных кандидатов;
-  - `disk:/skillcheck/admin/results.json` — псевдонимизированные результаты без открытых контактов;
-  - `disk:/skillcheck/private/attempts.json` — хеши и даты попыток.
+  - `app:/skillcheck/reports` — подробные TXT успешных кандидатов;
+  - `app:/skillcheck/admin/results.json` — псевдонимизированные результаты без открытых контактов;
+  - `app:/skillcheck/private/attempts.json` — хеши и даты попыток;
+  - отдельное API-only OAuth-приложение имеет только `cloud_api:disk.app_folder`.
 - Script Properties, только названия: `YANDEX_DISK_TOKEN`, `YANDEX_DISK_REPORTS_FOLDER`, `YANDEX_DISK_ADMIN_FILE`, `YANDEX_DISK_ATTEMPTS_FILE`, `ATTEMPT_HASH_SALT`, `ADMIN_PASSWORD`, `ATTEMPT_SIGNING_SECRET_V1`, `INVITE_CODE_SECRET_V1`, `IDENTITY_HASH_SECRET_V1`, `PRIVATE_BANK_DIGESTS_V1`, `ATTEMPT_ISSUANCE_ENABLED`, `LEGAL_PILOT_APPROVED`.
 
 Значения Script Properties нельзя выводить или коммитить.
@@ -72,8 +73,8 @@
 | 13 | Резервные копии | Завершён и production-verified |
 | 14 | Наблюдаемость и диагностика | Завершён и production-verified |
 | 15 | Автоматические тесты и CI | Завершён и включён для main/PR |
-| 16 | Документация | В работе |
-| 17 | Подготовка к пилоту | Не начат |
+| 16 | Документация | Завершён; поддерживается как living runbook |
+| 17 | Подготовка к пилоту | Технически завершён; NO-GO до внешних sign-off/cleanup |
 | 18 | Пилот | Не начат |
 | 19 | Аналитика качества тестов | Не начат |
 | 20 | Решение о следующей версии | Не начат |
@@ -368,10 +369,11 @@ Production smoke был немутирующим: health подтвердил `.
 - [x] Owner diagnostics: `healthy`, четыре operational store, backend `.13`; создан свежий проверяемый snapshot четырёх store.
 - [x] Retake, signed invitation/attempt, replay/recovery, TXT, admin, deletion, backup, monitoring и rollback покрыты тестами/runbooks.
 - [x] Abuse boundary классифицирован: best-effort rate limits допустимы только для малого controlled pilot; внешний gateway обязателен для открытого запуска.
-- [x] Зафиксированы реальные блокеры: operator contacts, legal/retention, независимый SME sign-off v4, least-privilege credential, очистка 9/9 smoke rows и owner sign-off.
+- [x] Least-privilege Яндекс credential переведён на отдельное app-folder-only приложение; checksum cutover, write/read backup и реальный rollback drill подтверждены.
+- [x] Зафиксированы оставшиеся реальные блокеры: operator contacts, legal/retention, независимый SME sign-off v4, очистка 9/9 smoke rows и owner sign-off.
 - [x] Добавлен `test-pilot-readiness.js`, не позволяющий документально открыть пилот при известных блокерах.
 
-Не приглашать реальных кандидатов и не переходить к этапу 18 до независимого SME sign-off банков v4, внешнего legal/retention решения, ротации Яндекс credential, точечной очистки smoke-данных и осознанного включения gates по последовательности из readiness report.
+Не приглашать реальных кандидатов и не переходить к этапу 18 до независимого SME sign-off банков v4, внешнего legal/retention решения, точечной очистки smoke-данных и осознанного включения gates по последовательности из readiness report.
 
 ## Этап 18. Пилот
 
@@ -389,7 +391,7 @@ Production smoke был немутирующим: health подтвердил `.
 
 1. Закрытая Excel-книга и `docs/SME_REVIEW_HANDOFF.md` подготовлены; передать пакет независимому профильному эксперту и зафиксировать SME sign-off либо точечные правки новой версией.
 2. Параллельно владелец предоставляет реквизиты/контакт оператора и получает внешнее legal/retention решение; эти данные нельзя выдумывать.
-3. Выполнить точечную очистку известных smoke-данных, ротацию/least-privilege review Яндекс credential и финальный owner sign-off.
+3. После подтверждения точного списка выполнить deletion workflow для известных smoke-данных и финальный owner sign-off; ротация/least-privilege review Яндекс credential уже закрыта.
 4. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 
 ## Ограничения работы

@@ -2,7 +2,7 @@
 
 Дата аудита: 23 июля 2026 года.
 
-Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56`. Техническая ротация v4 опубликована в существующем deployment `@57` без смены URL. Текущие версии: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56`, техническая ротация v4 — в `@57`. Least-privilege Яндекс migration опубликована в существующем deployment `@61` без смены URL. Текущие версии: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
 Этап 15 добавил read-only GitHub Actions без production secrets/deploy. Workflow использует locked dependency-free install с отключёнными lifecycle scripts и выполняет тот же `npm test`, что и локальная проверка.
 
@@ -82,7 +82,7 @@
 - Локальный `.clasp.json` содержит только идентификатор Apps Script проекта. Сам по себе `scriptId` не является токеном доступа, но файл всё равно не публикуется.
 - Manifest использует `script.external_request` для Яндекс Диска и `script.storage` для Script Properties. Дополнительные Drive/Sheets/Gmail scopes отсутствуют.
 - Web App доступен анонимно, потому что кандидат должен отправлять результат без Google-аккаунта. Поэтому безопасность строится на узком API, строгой валидации, квотах и отсутствии доверия к клиентским полям.
-- Фактический scope Яндекс OAuth-токена не подтверждён кодом и, вероятно, шире `disk:/skillcheck`. Allowlist путей в `Code.gs` ограничивает только штатные операции приложения, но не blast radius самого токена при его компрометации. Нужны регламент ротации и последующая миграция к app-folder/иному least-privilege credential, если Яндекс предоставляет подходящую модель.
+- 23 июля 2026 production переведён на отдельное API-only OAuth-приложение с единственным `cloud_api:disk.app_folder` и root `app:/skillcheck`. Выполнены checksum migration, post-cutover private-bank validation, write/read backup и реальный rollback drill; процедура описана в `YANDEX_CREDENTIAL_ROTATION.md`.
 
 Список Apps Script deployments сверён через `clasp`: кроме HEAD и текущего стабильного deployment устаревших активных deployments в этом проекте не обнаружено. Исторические URL не считаются активными deployments текущего проекта. Если в будущем появится лишний deployment, его нужно отозвать без публикации URL/ID.
 
@@ -194,7 +194,7 @@ Production evidence 10A: deployment `@51`, Web App URL не изменён; owne
 | Ошибочное включение выдачи | Закрыт gate по умолчанию | `ATTEMPT_ISSUANCE_ENABLED=false`; admin/candidate показывают pilot lock. Не включать до полного внешнего checklist и SME sign-off v4. |
 | Identity без OTP/account | Высокий | Email-bound invite и fingerprint ограничивают поток, но не доказывают личность. Для более сильной идентификации нужны OTP/magic link или аккаунт. |
 | Анонимный Apps Script endpoint и best-effort rate limits | Высокий при открытом запуске | Controlled flow сужен invite/token/state. `CacheService` не является атомарным IP-based limiter; для открытого трафика нужен внешний gateway/WAF/CAPTCHA. |
-| Широкий/неподтверждённый scope Яндекс-токена | Высокий | Code path allowlist не ограничивает украденный токен; определить scope, безопасно ротировать credential и оценить app-folder/least privilege. |
+| Компрометация app-folder токена | Средний | Blast radius ограничен папкой приложения; хранить токен только в Script Properties, периодически ротировать по `YANDEX_CREDENTIAL_ROTATION.md`, не добавлять broad scopes. |
 | Shared admin password | Высокий | POST + advisory limit; до масштабирования перейти на индивидуальную аутентификацию/MFA и безопасный audit trail. |
 | Нет автоматического retention и независимой off-site копии | Высокий | Ручное удаление и bounded application-level backup/restore реализованы; сроки должен утвердить оператор, а отдельный failure-domain/credential остаётся pilot checklist. |
 | CSP только через meta и inline code | Средний | Вынести JS/CSS и выставлять заголовки на управляемом hosting при следующем усилении. |

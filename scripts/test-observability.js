@@ -56,7 +56,7 @@ function makeHarness(options = {}) {
   const state = { reads: 0 };
   const context = {
     String, Number, Boolean, Array, Object, JSON, Math, Date, Error, RegExp,
-    BACKEND_VERSION: "yandex-disk-mvp-2026-07-21-14",
+    BACKEND_VERSION: "yandex-disk-mvp-2026-07-23-15",
     AUTHORITATIVE_API_VERSION: "attempt-v2",
     CANDIDATE_FRONTEND_BUILD: "2026.07.21.13",
     ADMIN_FRONTEND_BUILD: "2026.07.21.13",
@@ -118,7 +118,7 @@ assert.equal(protectedHarness.state.reads, 0, "wrong password must be rejected b
 response = protectedHarness.context.getAdminDiagnostics("correct-password");
 assert.equal(response.ok, true);
 assert.equal(response.status, "healthy");
-assert.equal(response.backendVersion, "yandex-disk-mvp-2026-07-21-14");
+assert.equal(response.backendVersion, "yandex-disk-mvp-2026-07-23-15");
 assert.equal(response.frontendVersions.candidate, "2026.07.21.13");
 assert.equal(response.frontendVersions.admin, "2026.07.21.13");
 assert.equal(response.yandexDisk.accessible, true);

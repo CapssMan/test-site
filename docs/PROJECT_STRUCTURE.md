@@ -100,14 +100,14 @@ Production-файлы переведены на банки v4: 240 новых в
 
 Backend больше не использует Google Sheets и Google Drive. Все результаты пишутся через Яндекс.Диск REST API:
 
-- `disk:/skillcheck/reports/<code>.txt` — полные отчёты успешных результатов;
-- `disk:/skillcheck/admin/results.json` — псевдонимизированная база без открытых контактов для `admin.html`;
-- `disk:/skillcheck/private/attempts.json` — legacy-compatible projection hash попыток;
-- `disk:/skillcheck/private/invites-v1.json` — hash/состояния одноразовых приглашений;
-- `disk:/skillcheck/private/attempt-sessions-v1.json` — active/reserved/completed attempt state и recovery;
-- `disk:/skillcheck/private/banks/<test>/<version>.json` — закрытые versioned-банки с answer key.
-- `disk:/skillcheck/private/backups-v1/<store-key>/...` — до 12 проверяемых snapshots каждого operational store.
-- `disk:/skillcheck/private/backups-v1/corrupt/<store-key>/...` — до трёх forensic artifacts повреждённого active-файла.
+- `app:/skillcheck/reports/<code>.txt` — полные отчёты успешных результатов;
+- `app:/skillcheck/admin/results.json` — псевдонимизированная база без открытых контактов для `admin.html`;
+- `app:/skillcheck/private/attempts.json` — legacy-compatible projection hash попыток;
+- `app:/skillcheck/private/invites-v1.json` — hash/состояния одноразовых приглашений;
+- `app:/skillcheck/private/attempt-sessions-v1.json` — active/reserved/completed attempt state и recovery;
+- `app:/skillcheck/private/banks/<test>/<version>.json` — закрытые versioned-банки с answer key.
+- `app:/skillcheck/private/backups-v1/<store-key>/...` — до 12 проверяемых snapshots каждого operational store.
+- `app:/skillcheck/private/backups-v1/corrupt/<store-key>/...` — до трёх forensic artifacts повреждённого active-файла.
 
 `Code.gs` отдаёт минимальный немутирующий `?action=health`. Публичный POST-контракт `attempt-v2` состоит из `beginAttempt` и token-bound `saveResult`; он требует точную versioned consent binding, а `attempt-v1` и legacy `checkAttempt` отключены. Admin POST после проверки `ADMIN_PASSWORD` загружает результаты/отчёты, управляет приглашениями и отдаёт read-only `adminDiagnostics` без secret/PII/path values.
 

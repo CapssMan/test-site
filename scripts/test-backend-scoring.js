@@ -36,7 +36,7 @@ const validationConstants = `
   const MAX_ANSWERS_PER_RESULT = 40;
   const PUBLIC_DEV_TEST_ENABLED = false;
   const TEST_TITLES_BY_ID = { "fa-junior": "FA", "ca-junior": "CA", "dev-quick": "DEV" };
-  const BANK_VERSIONS_BY_ID = { "fa-junior": "FA Junior v3.0", "ca-junior": "CA Junior v3.0", "dev-quick": "DEV Quick v2.0" };
+  const BANK_VERSIONS_BY_ID = { "fa-junior": "FA Junior v4.0", "ca-junior": "CA Junior v4.0", "dev-quick": "DEV Quick v2.0" };
   const ALLOWED_ENGLISH_LEVELS = ["B2"];
   const ALLOWED_CANDIDATE_SOURCES = ["career"];
   const ALLOWED_CANDIDATE_EXPERIENCE = ["junior"];
@@ -62,7 +62,7 @@ const validRequest = {
   attemptId: "att_" + "b".repeat(32),
   attemptToken: "a".repeat(90) + "." + "b".repeat(90) + "." + "c".repeat(90),
   testId: "fa-junior",
-  bankVersion: "FA Junior v3.0",
+  bankVersion: "FA Junior v4.0",
   name: "Candidate",
   email: "candidate@example.test",
   telegram: "",
@@ -74,7 +74,7 @@ const validRequest = {
   ageConfirmed: true,
   browserFingerprint: "deadbeef",
   tabSwitches: 0,
-  clientBuild: "2026.07.20.12",
+  clientBuild: "2026.07.21.13",
   answers: [{ questionId: "q_001", optionId: null, timedOut: false, timeSpent: 10 }]
 };
 
@@ -84,6 +84,12 @@ assert.deepEqual(
   Object.keys(accepted.data.answers[0]),
   ["questionId", "optionId", "timedOut", "timeSpent"],
   "validated answers must contain only the opaque answer contract"
+);
+const staleV3Request = { ...validRequest, bankVersion: "FA Junior v3.0" };
+assert.equal(
+  validationContext.__validation.validateAuthoritativeSubmissionRequest(realmJson(validationContext, staleV3Request)).response.failureCode,
+  "unsupported_test_version",
+  "stale v3 submissions must fail closed after the content rotation"
 );
 
 const missingConsent = { ...validRequest };
@@ -247,25 +253,25 @@ vm.runInContext(
 );
 const caPrivateShape = realmJson(selectionContext, {
   questionsPerAttempt: 40,
-  questions: Array.from({ length: 80 }, (_, index) => ({ id: `ca_${String(index + 1).padStart(3, "0")}` }))
+  questions: Array.from({ length: 80 }, (_, index) => ({ id: `ca4_${String(index + 1).padStart(3, "0")}` }))
 });
 const manifestA = selectionContext.__select(caPrivateShape, "att_" + "1".repeat(32), "2".repeat(32));
 const manifestB = selectionContext.__select(caPrivateShape, "att_" + "1".repeat(32), "2".repeat(32));
 assert.equal(manifestA.length, 40, "CA session must receive exactly 40 of 80 questions");
 assert.equal(new Set(manifestA).size, 40, "CA manifest must not contain duplicates");
 assert.deepEqual(Array.from(manifestA), Array.from(manifestB), "CA manifest selection must be deterministic for one session seed");
-assert(manifestA.every(id => /^ca_\d{3}$/.test(id)), "CA manifest must contain only normalized bank ids");
+assert(manifestA.every(id => /^ca4_\d{3}$/.test(id)), "CA manifest must contain only rotated bank ids");
 
 const missingBankContext = {
   String, Number, Object, Array, JSON, Error,
-  BANK_VERSIONS_BY_ID: { "fa-junior": "FA Junior v3.0" },
+  BANK_VERSIONS_BY_ID: { "fa-junior": "FA Junior v4.0" },
   getAuthoritativePrivateBankPath() { return "disk:/skillcheck/private/banks/fa-junior/fa-junior-v3-0.json"; },
   readTextFromYandexDisk() { return null; }
 };
 vm.createContext(missingBankContext);
 vm.runInContext(extractTopLevelFunction(backend, "loadAuthoritativePrivateBank"), missingBankContext, { filename: backendPath });
 assert.throws(
-  () => missingBankContext.loadAuthoritativePrivateBank("fa-junior", "FA Junior v3.0"),
+  () => missingBankContext.loadAuthoritativePrivateBank("fa-junior", "FA Junior v4.0"),
   /private bank is missing/i,
   "missing private key must fail closed and must never synthesize an empty bank"
 );

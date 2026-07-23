@@ -38,6 +38,11 @@ assert.match(code, /function createOperationalBackupsForOwner\(\)/);
 
 assert.match(privacy, /Наименование\/ФИО оператора: не указано/);
 assert.match(consent, /Email для обращений по персональным данным: не указан/);
-assert.doesNotMatch(report, /\[x\].*(реквизит|legal|ротац|credential|smoke)/i, "external blockers must not be marked complete");
+assert.doesNotMatch(report, /\[x\].*(реквизит|legal|credential|smoke|SME sign-off)/i,
+  "external blockers must not be marked complete");
+assert.match(read("ROADMAP.md"), /\[x\].*Техническая содержательная ротация пяти банков/,
+  "technical v4 rotation must be recorded separately");
+assert.match(read("ROADMAP.md"), /\[ \].*независимый человеческий SME sign-off/,
+  "independent human SME gate must remain open");
 
 console.log("Stage 17 pilot-readiness checks passed: technical controls documented, launch remains NO-GO.");

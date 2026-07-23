@@ -56,7 +56,7 @@ const frontendFunctions = [
 vm.runInNewContext(
   'const TECHNICAL_TEST_ID = "dev-quick";\n' +
     'const TEST_LABELS = {"fa-junior":"Financial Analyst","ca-junior":"Credit Analyst","fpa-junior":"FP&A / Budget","acc-junior":"Accounting","bi-junior":"Finance BI","dev-quick":"Dev Quick"};\n' +
-    'const BANK_VERSIONS = {"fa-junior":"FA Junior v3.0","ca-junior":"CA Junior v3.0","fpa-junior":"FP&A Junior v3.0","acc-junior":"ACC Junior v3.0","bi-junior":"BI Junior v3.0","dev-quick":"DEV Quick v2.0"};\n' +
+    'const BANK_VERSIONS = {"fa-junior":"FA Junior v4.0","ca-junior":"CA Junior v4.0","fpa-junior":"FP&A Junior v4.0","acc-junior":"ACC Junior v4.0","bi-junior":"BI Junior v4.0","dev-quick":"DEV Quick v2.0"};\n' +
     frontendFunctions,
   frontendContext
 );
@@ -131,7 +131,7 @@ const verifiedFrontendRow = frontendContext.normalizeAdminRows([{
   reportCreated: true,
   scoreVerification: "server-verified",
   scoringAlgorithmVersion: "authoritative-v1",
-  bankVersion: "FA Junior v3.0",
+  bankVersion: "FA Junior v4.0",
   telemetryVerification: "client-reported-unverified"
 }])[0];
 assert.equal(verifiedFrontendRow.scoreVerification, "server-verified");
@@ -191,7 +191,7 @@ vm.runInNewContext(
     'const SCORE_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";\n' +
     'const SCORE_VERIFICATION_SERVER = "server-verified";\n' +
     'const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";\n' +
-    'const BANK_VERSIONS_BY_ID = {"fa-junior":"FA Junior v3.0","ca-junior":"CA Junior v3.0","fpa-junior":"FP&A Junior v3.0","acc-junior":"ACC Junior v3.0","bi-junior":"BI Junior v3.0","dev-quick":"DEV Quick v2.0"};\n' +
+    'const BANK_VERSIONS_BY_ID = {"fa-junior":"FA Junior v4.0","ca-junior":"CA Junior v4.0","fpa-junior":"FP&A Junior v4.0","acc-junior":"ACC Junior v4.0","bi-junior":"BI Junior v4.0","dev-quick":"DEV Quick v2.0"};\n' +
     'const TEST_TITLES_BY_ID = {"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budgeting Junior","acc-junior":"Accounting Junior","bi-junior":"Finance BI Junior","dev-quick":"Dev Quick Test"};\n' +
     extractFunction(backend, "normalizeResultCode") + "\n" +
     extractFunction(backend, "getAdminBadge") + "\n" +
@@ -234,7 +234,7 @@ const verifiedBackendRow = backendContext.sanitizeAdminResult({
   reportCreated: true,
   scoreVerification: "server-verified",
   scoringAlgorithmVersion: "authoritative-v1",
-  bankVersion: "FA Junior v3.0",
+  bankVersion: "FA Junior v4.0",
   telemetryVerification: "client-reported-unverified"
 });
 assert.equal(verifiedBackendRow.scoreVerification, "server-verified");

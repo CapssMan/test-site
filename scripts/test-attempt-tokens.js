@@ -94,7 +94,7 @@ const session = {
   attemptId: "att_" + "a".repeat(32),
   inviteId: "inv_" + "b".repeat(32),
   testId: "fa-junior",
-  bankVersion: "FA Junior v3.0",
+  bankVersion: "FA Junior v4.0",
   questionSetHash: "c".repeat(64),
   privacyConsentVersion: "skillcheck-pd-consent-2026-07-20-v1",
   tokenJti: "d".repeat(32),

@@ -1,14 +1,14 @@
 # SkillCheck — текущее состояние
 
-Обновлено: 21 июля 2026 года.
+Обновлено: 23 июля 2026 года.
 
 ## Текущий этап
 
-- Технически завершён этап 17 — live pilot-readiness audit; решение для реальных кандидатов: **NO-GO**.
-- Локально воспроизведены locked install и 24 проверки: 19 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
-- Production Apps Script не изменялся и остаётся на проверенном deployment `@56`; workflow не имеет secrets и не выполняет deploy/storage calls.
-- Следующее обязательное действие: отдельно подтверждённая содержательная ротация пяти банков с SME review, рекомендуемый режим `ультра`.
-- Этап 18 заблокирован до реквизитов оператора, внешнего legal/retention checklist, ротации/least-privilege review Яндекс credential, очистки smoke-данных и содержательной ротации банков.
+- Технически завершены этап 17 и содержательная ротация пяти production-банков v4; решение для реальных кандидатов остаётся **NO-GO**.
+- Локально воспроизведены locked install и 26 проверок: 21 test-файл, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
+- Runtime ротации: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, deployment `@57`; workflow не имеет secrets и не выполняет deploy/storage calls.
+- Следующее обязательное действие: независимый человеческий SME sign-off v4 и внешний pre-pilot checklist, рекомендуемый режим для инженерной части `очень высокий`.
+- Этап 18 заблокирован до реквизитов оператора, внешнего legal/retention checklist, SME sign-off, ротации/least-privilege review Яндекс credential и очистки smoke-данных.
 - Полный план: `ROADMAP.md`.
 
 ## Репозиторий и публикация
@@ -24,16 +24,17 @@
 - Production stage 12: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-11`, deployment `@54`, API `attempt-v2`.
 - Production stage 13: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.11`, backend `yandex-disk-mvp-2026-07-20-12`, deployment `@55`, API `attempt-v2`.
 - Production stage 14: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, backend `yandex-disk-mvp-2026-07-20-13`, deployment `@56`, API `attempt-v2`.
+- Production bank rotation v4: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, deployment `@57`, API `attempt-v2`.
 - Web App URL не изменён.
 - Implementation commit 10A: `2addd59`.
 
 ## Live health
 
-На 20 июля 2026 года:
+На 23 июля 2026 года:
 
 - `ok: true`;
 - ответ содержит ровно четыре ключа: `ok`, `status`, `service`, `backendVersion`;
-- `backendVersion: yandex-disk-mvp-2026-07-20-13`;
+- `backendVersion: yandex-disk-mvp-2026-07-21-14`;
 - endpoint не обращается к Яндекс Диску, не создаёт файлы и не раскрывает paths/properties/storage state.
 
 ## Завершено
@@ -132,7 +133,7 @@
 - Любой признак публикации private storage (`public_key`, `public_url`, `share`) блокирует bootstrap, issuance, invite, begin/save; publish/share endpoints не вызываются.
 - Добавлены проверки public-bank secrecy, токенов, server scoring и recovery; полная матрица 14/14 скриптов и live browser QA на desktop/mobile прошли.
 
-Техническая миграция не отзывает старые answer keys из Git history, клонов и кэшей. Поэтому включение приглашений для реальных кандидатов запрещено до отдельно подтверждённой содержательной ротации банков и SME review.
+Техническая ротация v4 заменяет старые question/option ID, формулировки, варианты и ключи, поэтому раскрытые v3 answer keys не применимы к новой попытке. Включение приглашений для реальных кандидатов всё равно запрещено до независимого человеческого SME sign-off и внешнего checklist.
 
 ## Технически завершено на этапе 11
 
@@ -187,7 +188,7 @@
 - Workflow имеет только `contents: read`, Node 24, timeout 10 минут, locked `npm ci --ignore-scripts` и не использует production secrets/environments/deploy.
 - Checkout/setup actions закреплены полными commit SHA; `persist-credentials:false` не оставляет workflow token в локальном Git config.
 - Full history checkout нужен только для проверки legacy commit anchors; первый shallow run выявил эту зависимость и был исправлен без ослабления теста.
-- CI configuration, operator docs и NO-GO readiness boundary защищены regression-тестами; полная локальная матрица — 24/24 проверки.
+- CI configuration, operator docs, NO-GO readiness boundary и ротация v4 защищены regression-тестами; полная локальная матрица — 26/26 проверок.
 
 ## Этап 16 — эксплуатационная документация
 
@@ -206,12 +207,22 @@
 - В `docs/PILOT_READINESS.md` технические controls отделены от внешних блокеров; решение остаётся NO-GO.
 - `test-pilot-readiness.js` фиксирует закрытые gates, незаполненные operator details и запрет документального открытия пилота.
 
+## Техническая ротация банков v4
+
+- Выпуск `rotation-v4-2026-07-21-r3` содержит 240 новых production-вопросов: FA 40, CA 80, FP&A 40, Accounting 40, BI 40.
+- Authoring-source и private artifacts находятся вне Git; public JSON не содержат answer key или объяснений.
+- Builder запрещает legacy ID/точные тексты/варианты, контролирует сходство, position/length side channels и воспроизводимо создаёт opaque option IDs.
+- Private/public parity, digests и pending trust anchors проверяются повторной детерминированной сборкой.
+- Public promoter заменяет пять файлов одной crash-safe транзакцией с journal, backup и commit marker; partial/corrupt сценарии покрыты тестами.
+- Production legacy bootstrap навсегда отключён; он разрешён только для закрытого `dev-quick` fixture.
+- Полная локальная матрица — 26/26; аудит — 240 вопросов, 0 ошибок, 0 предупреждений.
+- Внутренний multi-review не является независимым человеческим SME sign-off. Полный evidence: `docs/QUESTION_BANK_ROTATION.md`.
+
 ## Оценка до финала roadmap
 
 - Осталось 3 плановых этапа (`18–20`): 20–40 часов, 110–240 тыс. токенов и 2–4 календарные недели пилота; этап 18 пока заблокирован.
-- Отдельная содержательная ротация банков: 50–100 часов, 400–800 тыс. токенов плюс SME review.
-- До limited-pilot readiness: содержательная ротация 50–100 часов / 400–800 тыс. токенов плюс внешняя legal/SME проверка и owner actions.
-- До конца roadmap вместе с ротацией: 70–140 часов / 510 тыс. – 1,04 млн токенов + 2–4 недели пилота.
+- Оставшийся технический pre-pilot checklist после внешних решений: 4–12 часов, 30–90 тыс. токенов.
+- До конца roadmap: суммарно 24–52 часа / 140–330 тыс. токенов + 2–4 недели пилота и внешнее время SME/legal/operator.
 - Аккаунты/OTP/CAPTCHA, managed gateway и дополнительная server-side delivery для открытого запуска в эти диапазоны не включены.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.
 
@@ -231,12 +242,12 @@
 ## Ограничения и риски MVP
 
 - Текущие public banks больше не раскрывают `correct`, frontend не считает итог, а token-bound backend возвращает только server-verified authoritative result.
-- Старые answer keys уже присутствуют в Git history/клонах/кэшах. Это критический pilot blocker, который устраняется только содержательной ротацией и SME review, а не переписыванием текущей ветки.
-- `LEGAL_PILOT_APPROVED` и `ATTEMPT_ISSUANCE_ENABLED` остаются `false`; реальных кандидатов приглашать нельзя до operator/legal/retention checklist, ротации и этапа 17.
+- Старые answer keys присутствуют в Git history/клонах/кэшах, но относятся к выведенным v3 банкам и не совпадают с новым v4 содержанием. Открытым остаётся внешний SME gate v4.
+- `LEGAL_PILOT_APPROVED` и `ATTEMPT_ISSUANCE_ENABLED` остаются `false`; реальных кандидатов приглашать нельзя до operator/legal/retention/SME/credential/data checklist.
 - Controlled-pilot email enumeration закрыт удалением `checkAttempt` и email/test-bound invite flow. Для открытого потока всё ещё нужны OTP/auth, CAPTCHA и/или внешний gateway.
 - Invite и fingerprint ограничивают повтор/доступ, но не подтверждают личность кандидата. Более сильная identity model требует OTP/magic link или аккаунт.
 - Scope Яндекс OAuth-токена неизвестен и, вероятно, шире `disk:/skillcheck`; code path allowlist не ограничивает blast radius токена. До пилота нужны регламент ротации и оценка app-folder/least-privilege доступа.
-- До пилота желательно переписать 4 высокоприоритетных спорных вопроса из `docs/QUESTION_BANK_AUDIT.md`; текущие тексты оставлены без изменений до подтверждения.
+- Новые v4 банки прошли внутреннюю техническую вычитку, но независимый профильный эксперт ещё не подписал содержательную пригодность.
 - Четыре банка содержат ровно 40 вопросов; полноценная ротация 40 из 80 есть только у Credit Analyst.
 - Ручное удаление и application-level rotating backup/restore реализованы; нет независимой off-site копии и утверждённого автоматического retention.
 - В `privacy.html` и `consent.html` остаются явно выделенные заглушки реквизитов оператора и contact email; без них legal gate не открывается.
@@ -244,4 +255,4 @@
 
 ## Ручной шаг пользователя
 
-Для завершения документов нужны полное наименование/ФИО оператора, его статус (физлицо/ИП/юрлицо), адрес и действующий email для обращений по персональным данным. До получения этих сведений разработка безопасно продолжается с этапа 14, а оба pilot gate остаются закрытыми.
+Для завершения документов нужны полное наименование/ФИО оператора, его статус (физлицо/ИП/юрлицо), адрес и действующий email для обращений по персональным данным. Дополнительно нужны независимый SME sign-off и внешнее legal/retention решение. До этого оба pilot gate остаются закрытыми.

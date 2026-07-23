@@ -1,6 +1,6 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-20-13";
-const CANDIDATE_FRONTEND_BUILD = "2026.07.20.12";
-const ADMIN_FRONTEND_BUILD = "2026.07.20.12";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-21-14";
+const CANDIDATE_FRONTEND_BUILD = "2026.07.21.13";
+const ADMIN_FRONTEND_BUILD = "2026.07.21.13";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
 const RETAKE_WINDOW_MS = RETAKE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -16,6 +16,9 @@ const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const TELEMETRY_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
 const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1";
 const LEGAL_PILOT_APPROVAL_PROPERTY = "LEGAL_PILOT_APPROVED";
+const PRIVATE_BANK_ROTATION_PENDING_PROPERTY = "PRIVATE_BANK_ROTATION_PENDING_V1";
+const PUBLIC_BANK_RELEASE_PROPERTY = "PUBLIC_BANK_RELEASE_V1";
+const CURRENT_PUBLIC_BANK_RELEASE_ID = "rotation-v4-2026-07-21-r3";
 const ATTEMPT_ACTIVE_TTL_MS = 6 * 60 * 60 * 1000;
 const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_YANDEX_INVITES_FILE = "disk:/skillcheck/private/invites-v1.json";
@@ -45,6 +48,8 @@ const PROTECTED_DIAGNOSTIC_PROPERTY_NAMES = [
   "ATTEMPT_SIGNING_SECRET_V1",
   "INVITE_CODE_SECRET_V1",
   "IDENTITY_HASH_SECRET_V1",
+  "PRIVATE_BANK_ROTATION_PENDING_V1",
+  "PUBLIC_BANK_RELEASE_V1",
   "LEGAL_PILOT_APPROVED",
   "ATTEMPT_ISSUANCE_ENABLED"
 ];
@@ -137,20 +142,20 @@ const ALLOWED_CANDIDATE_EXPERIENCE = [
 ];
 
 const TEST_VERSIONS_BY_ID = {
-  "fa-junior": "FA Junior v3.0",
-  "ca-junior": "CA Junior v3.0",
-  "fpa-junior": "FP&A Junior v3.0",
-  "acc-junior": "ACC Junior v3.0",
-  "bi-junior": "BI Junior v3.0",
+  "fa-junior": "FA Junior v4.0",
+  "ca-junior": "CA Junior v4.0",
+  "fpa-junior": "FP&A Junior v4.0",
+  "acc-junior": "ACC Junior v4.0",
+  "bi-junior": "BI Junior v4.0",
   "dev-quick": "DEV Quick v2.0"
 };
 
 const BANK_VERSIONS_BY_ID = {
-  "fa-junior": "FA Junior v3.0",
-  "ca-junior": "CA Junior v3.0",
-  "fpa-junior": "FP&A Junior v3.0",
-  "acc-junior": "ACC Junior v3.0",
-  "bi-junior": "BI Junior v3.0",
+  "fa-junior": "FA Junior v4.0",
+  "ca-junior": "CA Junior v4.0",
+  "fpa-junior": "FP&A Junior v4.0",
+  "acc-junior": "ACC Junior v4.0",
+  "bi-junior": "BI Junior v4.0",
   "dev-quick": "DEV Quick v2.0"
 };
 
@@ -3563,11 +3568,11 @@ function assertAllowedLegacyKeys(value, allowedKeys, label) {
 
 function getExpectedAuthoritativeQuestionId(testId, index) {
   const prefixes = {
-    "fa-junior": "fa",
-    "ca-junior": "ca",
-    "fpa-junior": "fpa",
-    "acc-junior": "acc",
-    "bi-junior": "bi",
+    "fa-junior": "fa4",
+    "ca-junior": "ca4",
+    "fpa-junior": "fpa4",
+    "acc-junior": "acc4",
+    "bi-junior": "bi4",
     "dev-quick": "dev_quick"
   };
   return String(prefixes[testId] || "q") + "_" + String(index + 1).padStart(3, "0");
@@ -3703,6 +3708,9 @@ function loadAuthoritativePrivateBank(testId, bankVersion, skipPrivateAnchor) {
 }
 
 function buildPrivateBankFromLegacySource(testId, source) {
+  if (testId !== "dev-quick") {
+    throw new Error("Legacy production-bank migration is disabled after the v4 content rotation.");
+  }
   const expectedQuestionCount = EXPECTED_BANK_QUESTIONS_BY_TEST_ID[testId];
   const expectedQuestionsPerAttempt = EXPECTED_ANSWERS_BY_TEST_ID[testId];
   const expectedLegacyVersion = LEGACY_BANK_VERSIONS_BY_TEST_ID[testId];
@@ -3819,84 +3827,163 @@ function initializePrivateArrayFileIfMissing(path) {
 }
 
 function bootstrapAuthoritativeBanksFromLegacyPages() {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-  const properties = PropertiesService.getScriptProperties();
-  REQUIRED_AUTHORITATIVE_PROPERTIES.forEach(ensureAuthoritativeSecret);
-  properties.setProperty("ATTEMPT_ISSUANCE_ENABLED", "false");
-  properties.setProperty(LEGAL_PILOT_APPROVAL_PROPERTY, "false");
-  ensureSkillCheckFolders();
-  assertAuthoritativePrivateStorageNotShared();
-  initializePrivateArrayFileIfMissing(getInvitesFilePath());
-  initializePrivateArrayFileIfMissing(getAttemptSessionsFilePath());
-  initializePrivateArrayFileIfMissing(getDeletionLogFilePath());
-  const existingAnchors = parsePrivateBankTrustAnchors(false);
-  const generatedAnchors = Object.create(null);
+  throw new Error("Legacy private-bank bootstrap is permanently disabled after the v4 content rotation.");
+}
 
-  const legacyFiles = {
-    "fa-junior": "fa-junior.json",
-    "ca-junior": "ca-junior.json",
-    "fpa-junior": "fpa-junior.json",
-    "acc-junior": "acc-junior.json",
-    "bi-junior": "bi-junior.json",
-    "dev-quick": "dev-quick.json"
-  };
-  const report = [];
-  Object.keys(legacyFiles).forEach(testId => {
-    const response = UrlFetchApp.fetch(LEGACY_PUBLIC_BANK_BASE_URL + legacyFiles[testId], {
-      method: "get",
-      muteHttpExceptions: true,
-      followRedirects: true
-    });
-    if (response.getResponseCode() !== 200) throw new Error("Legacy bank bootstrap fetch failed for " + testId + ".");
-    const sourceText = response.getContentText("UTF-8");
-    const expectedSourceDigest = LEGACY_PUBLIC_BANK_SHA256_BY_TEST_ID[testId];
-    if (!expectedSourceDigest || !timingSafeEqual(sha256Hex(sourceText), expectedSourceDigest)) {
-      throw new Error("Immutable legacy bank digest mismatch for " + testId + ".");
+function getRotatedProductionTestIds() {
+  return ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
+}
+
+function assertPrivateBankRotationGatesClosed() {
+  if (getScriptProperty("ATTEMPT_ISSUANCE_ENABLED") === "true" || isLegalPilotApproved()) {
+    throw new Error("Private-bank rotation requires closed pilot gates.");
+  }
+}
+
+function assertPrivateBankRotationHasNoLiveAttempts() {
+  const now = Date.now();
+  const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+  const liveSessions = sessions.filter(session => {
+    if (!session) return false;
+    if (session.state === "active") {
+      const expiresAt = new Date(session.tokenExpiresAt || "").getTime();
+      return Number.isFinite(expiresAt) && expiresAt > now;
     }
-    let source;
-    try {
-      source = JSON.parse(sourceText);
-    } catch (error) {
-      throw new Error("Legacy bank bootstrap JSON is invalid for " + testId + ".");
+    if (session.state === "reserved") {
+      const reservedAt = new Date(session.reservedAt || "").getTime();
+      return Number.isFinite(reservedAt) && now - reservedAt >= 0 && now - reservedAt < AUTHORITATIVE_RECOVERY_TTL_MS;
     }
-    const bank = buildPrivateBankFromLegacySource(testId, source);
-    const path = getAuthoritativePrivateBankPath(testId, bank.bankVersion);
-    ensureYandexFolderExists(getParentDiskPath(path));
-    const metadata = getYandexResourceMetadata(path);
-    if (metadata.exists) {
-      if (metadata.type !== "file") throw new Error("Private bank path conflicts with a directory.");
-      const existing = loadAuthoritativePrivateBank(testId, bank.bankVersion, true);
-      if (!timingSafeEqual(sha256Hex(JSON.stringify(existing)), sha256Hex(JSON.stringify(bank)))) {
-        throw new Error("Existing authoritative private bank differs from the freshly generated legacy source for " + testId + ".");
-      }
-      const privateDigest = getPrivateBankArtifactDigest(existing);
-      generatedAnchors[getPrivateBankAnchorKey(testId, bank.bankVersion)] = privateDigest;
-      report.push({ testId: testId, status: "existing", questionCount: existing.questions.length, publicDigest: existing.publicDigest, privateDigest: privateDigest });
-    } else {
-      writeJsonToYandexDisk(path, bank);
-      const verified = loadAuthoritativePrivateBank(testId, bank.bankVersion, true);
-      const privateDigest = getPrivateBankArtifactDigest(verified);
-      generatedAnchors[getPrivateBankAnchorKey(testId, bank.bankVersion)] = privateDigest;
-      report.push({ testId: testId, status: "created", questionCount: verified.questions.length, publicDigest: verified.publicDigest, privateDigest: privateDigest });
+    return false;
+  });
+  const invites = readRequiredJsonArray(getInvitesFilePath(), "Invite store");
+  const liveInvites = invites.filter(invite => {
+    if (!invite || ["issued", "active"].indexOf(String(invite.state || "")) === -1) return false;
+    const expiresAt = new Date(invite.expiresAt || "").getTime();
+    return Number.isFinite(expiresAt) && expiresAt > now;
+  });
+  if (liveSessions.length || liveInvites.length) {
+    throw new Error("Private-bank rotation requires all live attempts and invitations to be drained or revoked.");
+  }
+}
+
+function parsePendingPrivateBankRotation() {
+  const source = getScriptProperty(PRIVATE_BANK_ROTATION_PENDING_PROPERTY);
+  if (!source) throw new Error("Pending private-bank rotation manifest is missing.");
+  let pending;
+  try {
+    pending = JSON.parse(source);
+  } catch (error) {
+    throw new Error("Pending private-bank rotation manifest is corrupt.");
+  }
+  assertExactPrivateKeys(pending, ["schemaVersion", "rotationId", "banks"], "Pending private-bank rotation");
+  if (Number(pending.schemaVersion) !== 1 || pending.rotationId !== CURRENT_PUBLIC_BANK_RELEASE_ID ||
+      !isPlainObject(pending.banks)) {
+    throw new Error("Pending private-bank rotation manifest is invalid.");
+  }
+  const testIds = getRotatedProductionTestIds();
+  if (Object.keys(pending.banks).length !== testIds.length ||
+      testIds.some(testId => !Object.prototype.hasOwnProperty.call(pending.banks, testId))) {
+    throw new Error("Pending private-bank rotation must include all production banks.");
+  }
+  testIds.forEach(testId => {
+    const entry = pending.banks[testId];
+    assertExactPrivateKeys(entry, ["bankVersion", "questionCount", "publicDigest", "privateDigest"], "Pending bank entry");
+    if (entry.bankVersion !== BANK_VERSIONS_BY_ID[testId] ||
+        Number(entry.questionCount) !== EXPECTED_BANK_QUESTIONS_BY_TEST_ID[testId] ||
+        !/^[a-f0-9]{64}$/.test(String(entry.publicDigest || "")) ||
+        !/^[a-f0-9]{64}$/.test(String(entry.privateDigest || ""))) {
+      throw new Error("Pending private-bank rotation entry is invalid for " + testId + ".");
     }
   });
-  if (existingAnchors) {
-    Object.keys(generatedAnchors).forEach(key => {
-      if (!existingAnchors[key] || !timingSafeEqual(String(existingAnchors[key]), generatedAnchors[key])) {
-        throw new Error("Existing private bank trust anchor conflicts with the freshly generated authoritative bank.");
-      }
-    });
-  } else {
-    properties.setProperty("PRIVATE_BANK_DIGESTS_V1", JSON.stringify(generatedAnchors));
-  }
+  return pending;
+}
+
+function verifyPendingPrivateBankRotationUnlocked(pending) {
+  assertPrivateBankRotationGatesClosed();
+  ensureSkillCheckFolders();
+  assertAuthoritativePrivateStorageNotShared();
+  assertPrivateBankRotationHasNoLiveAttempts();
+  const banks = getRotatedProductionTestIds().map(testId => {
+    const entry = pending.banks[testId];
+    const path = getAuthoritativePrivateBankPath(testId, entry.bankVersion);
+    const metadata = getYandexResourceMetadata(path);
+    if (!metadata.exists || metadata.type !== "file" || metadata.publicKey || metadata.publicUrl || metadata.shared) {
+      throw new Error("Rotated private bank is missing or not private for " + testId + ".");
+    }
+    const bank = loadAuthoritativePrivateBank(testId, entry.bankVersion, true);
+    const privateDigest = getPrivateBankArtifactDigest(bank);
+    if (!timingSafeEqual(privateDigest, entry.privateDigest) ||
+        !timingSafeEqual(String(bank.publicDigest || ""), entry.publicDigest)) {
+      throw new Error("Rotated private bank digest mismatch for " + testId + ".");
+    }
+    return {
+      testId: testId,
+      bankVersion: bank.bankVersion,
+      questionCount: bank.questions.length,
+      publicDigest: bank.publicDigest,
+      privateDigest: privateDigest,
+      private: true
+    };
+  });
   return {
     ok: true,
     backendVersion: BACKEND_VERSION,
+    rotationId: pending.rotationId,
     issuanceEnabled: false,
-    banks: report
+    legalPilotApproved: false,
+    banks: banks
   };
+}
+
+function verifyPrivateBankRotationForOwner() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return verifyPendingPrivateBankRotationUnlocked(parsePendingPrivateBankRotation());
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function promotePrivateBankRotationForOwner() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const pending = parsePendingPrivateBankRotation();
+    const verified = verifyPendingPrivateBankRotationUnlocked(pending);
+    const anchors = parsePrivateBankTrustAnchors(false) || {};
+    verified.banks.forEach(bank => {
+      const key = getPrivateBankAnchorKey(bank.testId, bank.bankVersion);
+      const existing = String(anchors[key] || "");
+      if (existing && !timingSafeEqual(existing, bank.privateDigest)) {
+        throw new Error("Existing private-bank trust anchor conflicts with rotation " + bank.testId + ".");
+      }
+      anchors[key] = bank.privateDigest;
+    });
+    const properties = PropertiesService.getScriptProperties();
+    properties.setProperty("PRIVATE_BANK_DIGESTS_V1", JSON.stringify(anchors));
+    properties.deleteProperty(PRIVATE_BANK_ROTATION_PENDING_PROPERTY);
+    return {
+      ok: true,
+      status: "promoted",
+      backendVersion: BACKEND_VERSION,
+      rotationId: pending.rotationId,
+      issuanceEnabled: false,
+      legalPilotApproved: false,
+      banks: verified.banks
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function abortPrivateBankRotationForOwner() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    assertPrivateBankRotationGatesClosed();
+    PropertiesService.getScriptProperties().deleteProperty(PRIVATE_BANK_ROTATION_PENDING_PROPERTY);
+    return { ok: true, status: "aborted", backendVersion: BACKEND_VERSION };
   } finally {
     lock.releaseLock();
   }
@@ -3909,6 +3996,9 @@ function setAuthoritativeAttemptIssuanceEnabled(enabled) {
   if (typeof enabled !== "boolean") throw new Error("Issuance flag must be boolean.");
   if (enabled) {
     if (!isLegalPilotApproved()) throw new Error("Legal pilot approval is not enabled.");
+    if (getScriptProperty(PUBLIC_BANK_RELEASE_PROPERTY) !== CURRENT_PUBLIC_BANK_RELEASE_ID) {
+      throw new Error("Current public-bank release has not been verified.");
+    }
     assertAuthoritativeConfigurationReady();
     assertAuthoritativePrivateStorageNotShared();
     readRequiredJsonArray(getInvitesFilePath(), "Invite store");

@@ -13,5 +13,10 @@ attempts.json
 invites-v1.json
 attempt-sessions-v1.json
 *.private.json
+*.rotation-source.json
+private-bank-anchors*.json
+private-bank-rotation*.json
+rotation-manifest.private.json
 private-banks/
+rotation-source/
 secrets.*

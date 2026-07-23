@@ -41,6 +41,9 @@ files.forEach(fileName => {
   const normalized = fileName.replace(/\\/g, "/");
   assert(!forbiddenFileName.test(normalized), "Credential-like file must not be committed: " + fileName);
   assert(!/(?:^|\/)private-banks(?:\/|$)/i.test(normalized), "Private banks must not be committed: " + fileName);
+  assert(!/(?:^|\/)rotation-source(?:\/|$)/i.test(normalized), "Rotation authoring sources must not be committed: " + fileName);
+  assert(!/\.rotation-source\.json$/i.test(normalized), "Rotation authoring sources must not be committed: " + fileName);
+  assert(!/(?:^|\/)private-bank-anchors[^/]*\.json$/i.test(normalized), "Private bank anchor manifests must not be committed: " + fileName);
   if (!textExtension.test(fileName)) return;
   const absolutePath = path.join(root, fileName);
   const text = fs.readFileSync(absolutePath, "utf8");

@@ -113,8 +113,14 @@ assert.match(backend, /const LEGACY_PUBLIC_BANK_COMMIT = "70e569cf267e043aabc780
 const legacyDigests = backend.match(/"(?:fa|ca|fpa|acc|bi)-junior": "[a-f0-9]{64}"|"dev-quick": "[a-f0-9]{64}"/g) || [];
 assert.equal(legacyDigests.length, 6, "every immutable legacy bank needs an exact SHA-256 anchor");
 const bootstrap = extractTopLevelFunction(backend, "bootstrapAuthoritativeBanksFromLegacyPages");
-assert(bootstrap.indexOf("sha256Hex(sourceText)") < bootstrap.indexOf("JSON.parse(sourceText)"), "legacy bytes must be anchored before parsing");
-assert.match(bootstrap, /lock\.waitLock\(30000\)/, "bootstrap must serialize with issuance changes");
+assert.match(bootstrap, /permanently disabled after the v4 content rotation/);
+assert.doesNotMatch(bootstrap, /UrlFetchApp|writeJsonToYandexDisk|setProperty/,
+  "legacy bootstrap must not be able to recreate compromised production keys");
+assert.match(extractTopLevelFunction(backend, "buildPrivateBankFromLegacySource"), /testId !== "dev-quick"/);
+const rotationPromote = extractTopLevelFunction(backend, "promotePrivateBankRotationForOwner");
+assert(rotationPromote.indexOf("verifyPendingPrivateBankRotationUnlocked") < rotationPromote.indexOf('setProperty("PRIVATE_BANK_DIGESTS_V1"'),
+  "all five rotated banks must verify before anchors are promoted");
+assert.match(rotationPromote, /deleteProperty\(PRIVATE_BANK_ROTATION_PENDING_PROPERTY\)/);
 
 const metadata = extractTopLevelFunction(backend, "getYandexResourceMetadata");
 assert.match(metadata, /public_key,public_url,share/);

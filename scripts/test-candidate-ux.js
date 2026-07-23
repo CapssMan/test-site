@@ -28,7 +28,7 @@ new vm.Script(scripts[0], { filename: "test.html" });
 new vm.Script(backend, { filename: "Code.gs" });
 
 assert.match(testPage, /const API_VERSION = "attempt-v2"/);
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.20\.12"/, "candidate build must be current");
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.21\.13"/, "candidate build must be current");
 assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1"/);
 assert.match(testPage, /<label for="inviteCode">[\s\S]*?<input[^>]+id="inviteCode"[^>]+required/i, "invite code must be required");
 assert.match(testPage, /<label for="name">[\s\S]*?<input[^>]+id="name"[^>]+required/i);

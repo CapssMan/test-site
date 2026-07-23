@@ -1,16 +1,16 @@
 # SkillCheck — безопасный deployment и rollback
 
-Обновлено: 21 июля 2026 года, этап 16.
+Обновлено: 23 июля 2026 года, выпуск банков v4.
 
 Этот runbook описывает публикацию статического frontend через GitHub Pages и обновление Google Apps Script backend. Production deployment обновляется **на месте**: новый Web App URL без отдельного решения не создаётся.
 
 ## Текущий production baseline
 
 - ветка frontend: `main`;
-- Apps Script deployment: `@56`;
-- candidate: `Build 2026.07.20.12`;
-- admin: `Build 2026.07.20.12`;
-- backend: `yandex-disk-mvp-2026-07-20-13`;
+- Apps Script deployment: `@57`;
+- candidate: `Build 2026.07.21.13`;
+- admin: `Build 2026.07.21.13`;
+- backend: `yandex-disk-mvp-2026-07-21-14`;
 - API: `attempt-v2`;
 - `LEGAL_PILOT_APPROVED=false`;
 - `ATTEMPT_ISSUANCE_ENABLED=false`;

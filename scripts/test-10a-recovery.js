@@ -37,7 +37,7 @@ function makeHarness(failureStage = "") {
         beginRequestId: "scb_" + "d".repeat(24),
         state: "active",
         testId: "fa-junior",
-        bankVersion: "FA Junior v3.0",
+        bankVersion: "FA Junior v4.0",
         publicDigest: "e".repeat(64),
         questionIds: ["q_1"],
         questionSetHash: "f".repeat(64),
@@ -73,7 +73,7 @@ function makeHarness(failureStage = "") {
     attemptId,
     attemptToken: "signed-attempt-token-secret",
     testId: "fa-junior",
-    bankVersion: "FA Junior v3.0",
+    bankVersion: "FA Junior v4.0",
     name: "Private Candidate",
     email: "private.candidate@example.test",
     telegram: "@private_candidate",
@@ -391,8 +391,8 @@ assert.match(extractTopLevelFunction(backend, "adminListInvites"), /issuanceEnab
 const bootstrapSource = extractTopLevelFunction(backend, "bootstrapAuthoritativeBanksFromLegacyPages");
 assert.match(
   bootstrapSource,
-  /existing[\s\S]*(?:JSON\.stringify|sha256Hex|timingSafeEqual)[\s\S]*bank|bank[\s\S]*(?:JSON\.stringify|sha256Hex|timingSafeEqual)[\s\S]*existing/,
-  "bootstrap must compare an existing immutable private bank with the generated legacy answer key"
+  /permanently disabled after the v4 content rotation/,
+  "legacy production bootstrap must stay fail-closed after content rotation"
 );
 
 console.log("Stage 10A recovery tests passed (single-use, exact replay, injected crash windows and neutral legacy boundary).");

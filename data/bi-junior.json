@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "testId": "bi-junior",
-  "testVersion": "BI Junior v3.0",
-  "bankVersion": "BI Junior v3.0",
+  "testVersion": "BI Junior v4.0",
+  "bankVersion": "BI Junior v4.0",
   "questionsPerAttempt": 40,
   "blocks": {
     "sql": "SQL базовый",
@@ -16,1125 +16,1125 @@
   },
   "questions": [
     {
-      "id": "bi_001",
-      "topic": "SQL SELECT",
+      "id": "bi4_001",
+      "topic": "Полуоткрытый интервал дат",
       "block": "sql",
       "difficulty": "medium",
       "timeLimit": 45,
-      "points": 3,
-      "text": "Какой SQL-запрос выберет выручку и дату из таблицы sales?",
-      "context": "",
+      "points": 4,
+      "text": "Какой фильтр надёжно выберет все события июня 2026 года из timestamp-поля `event_ts`, включая события с временем в последний день?",
+      "context": "Границы периода заданы в той же временной зоне, что и `event_ts`. Используется SQL с литералами TIMESTAMP.",
       "options": [
         {
-          "id": "opt_36d68856f7a0729f26c5",
-          "text": "SELECT revenue FROM sales GROUP BY sale_date"
+          "id": "opt_7d3d85627b06dbfa0fe5",
+          "text": "event_ts = TIMESTAMP '2026-06-30 00:00:00'"
         },
         {
-          "id": "opt_625af0da57ade02c129f",
-          "text": "SELECT sale_date revenue FROM sales"
+          "id": "opt_af92acca1d65958aab79",
+          "text": "event_ts >= TIMESTAMP '2026-06-01 00:00:00' AND event_ts < TIMESTAMP '2026-07-01 00:00:00'"
         },
         {
-          "id": "opt_97d6fa174686bef96448",
-          "text": "SELECT sale_date, revenue FROM sales"
+          "id": "opt_c0122d7c95e52e47bf73",
+          "text": "event_ts > TIMESTAMP '2026-06-01 00:00:00' AND event_ts <= TIMESTAMP '2026-06-30 00:00:00'"
         },
         {
-          "id": "opt_bc6507facacbf1866877",
-          "text": "SELECT sale_date, revenue WHERE sales"
+          "id": "opt_f45a9317f26124f7bbef",
+          "text": "EXTRACT(DAY FROM event_ts) BETWEEN 1 AND 30"
         }
       ]
     },
     {
-      "id": "bi_002",
-      "topic": "SQL WHERE",
+      "id": "bi4_002",
+      "topic": "COUNT DISTINCT",
       "block": "sql",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Как отфильтровать только продажи с положительной выручкой?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_491a788f030c1e053e07",
-          "text": "WHERE revenue > 0"
-        },
-        {
-          "id": "opt_7c15e17ec1c98d5d305c",
-          "text": "WHERE revenue >= 0"
-        },
-        {
-          "id": "opt_8832a709b899860bd7cc",
-          "text": "HAVING SUM(revenue) > 0"
-        },
-        {
-          "id": "opt_a655ba5febc17a3d4ec1",
-          "text": "WHERE revenue IS NOT NULL"
-        }
-      ]
-    },
-    {
-      "id": "bi_003",
-      "topic": "SQL GROUP BY",
-      "block": "sql",
-      "difficulty": "medium",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Что вернёт запрос SELECT region, SUM(revenue) FROM sales GROUP BY region?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_7382a3c8d014dc8f88d4",
-          "text": "Средний чек по клиентам"
-        },
-        {
-          "id": "opt_8d1a1470c729cafc99e7",
-          "text": "Выручку по каждому региону"
-        },
-        {
-          "id": "opt_cf4d1a0e319267e2c407",
-          "text": "Все продажи без группировки"
-        },
-        {
-          "id": "opt_f50671397cbef6ec334f",
-          "text": "Регион с максимальной выручкой"
-        }
-      ]
-    },
-    {
-      "id": "bi_004",
-      "topic": "SQL ORDER BY",
-      "block": "sql",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Как отсортировать клиентов по выручке от большей к меньшей?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_20e022e997c305d1d9bb",
-          "text": "ORDER BY revenue DESC"
-        },
-        {
-          "id": "opt_45f2ee79ee5dfe83d605",
-          "text": "GROUP BY revenue DESC"
-        },
-        {
-          "id": "opt_933c6fdd348e1290becd",
-          "text": "WHERE revenue DESC"
-        },
-        {
-          "id": "opt_c9042b0e05b713249ab7",
-          "text": "ORDER BY revenue ASC"
-        }
-      ]
-    },
-    {
-      "id": "bi_005",
-      "topic": "SQL NULL",
-      "block": "sql",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "В поле discount есть NULL. Что важно помнить при расчёте средней скидки?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_72523e7400bf14f10690",
-          "text": "NULL исключает заказ из расчёта"
-        },
-        {
-          "id": "opt_77a720eaaae7e5364bf4",
-          "text": "NULL можно считать максимальной скидкой"
-        },
-        {
-          "id": "opt_8d6459e23d9d259b2aa0",
-          "text": "NULL лучше заменить без проверки"
-        },
-        {
-          "id": "opt_9fbd829632eef806de19",
-          "text": "NULL не равен нулевой скидке"
-        }
-      ]
-    },
-    {
-      "id": "bi_006",
-      "topic": "JOIN",
-      "block": "joins",
-      "difficulty": "medium",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "После JOIN продажи задвоились. Какая причина наиболее вероятна?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_39b31fcfe517ce5b3a6f",
-          "text": "В таблице продаж нет дат"
-        },
-        {
-          "id": "opt_749602893808490da8bf",
-          "text": "Выручка стала отрицательной"
-        },
-        {
-          "id": "opt_99fbefe2ec1fac43eae3",
-          "text": "В справочнике несколько строк на один ключ"
-        },
-        {
-          "id": "opt_9daf4cdb796f16a426d0",
-          "text": "Фильтр WHERE не используется перед соединением"
-        }
-      ]
-    },
-    {
-      "id": "bi_007",
-      "topic": "JOIN",
-      "block": "joins",
-      "difficulty": "medium",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Какой JOIN сохранить все продажи, даже если клиент не найден в справочнике?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_3fb9120aaf7ecb58c90b",
-          "text": "INNER JOIN от клиентов к продажам"
-        },
-        {
-          "id": "opt_6ab738859b0f24d98c88",
-          "text": "CROSS JOIN всех таблиц"
-        },
-        {
-          "id": "opt_7a56a358e7a0c1479523",
-          "text": "RIGHT JOIN от справочника клиентов"
-        },
-        {
-          "id": "opt_d83cfb1d6fc8c713dc8c",
-          "text": "LEFT JOIN от продаж к клиентам"
-        }
-      ]
-    },
-    {
-      "id": "bi_008",
-      "topic": "Агрегации",
-      "block": "joins",
-      "difficulty": "medium",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Почему нельзя просто суммировать выручку после JOIN без проверки ключей?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1bb23dec05377ba3df96",
-          "text": "SUM исправит дубли после JOIN"
-        },
-        {
-          "id": "opt_388342f1eec61ca5254f",
-          "text": "WHERE удалит повторы по ключам"
-        },
-        {
-          "id": "opt_9803ceb31eefdfd2461f",
-          "text": "JOIN может размножить строки факта"
-        },
-        {
-          "id": "opt_f29814223ea187675be5",
-          "text": "GROUP BY сохранит исходную гранулярность"
-        }
-      ]
-    },
-    {
-      "id": "bi_009",
-      "topic": "Агрегации",
-      "block": "joins",
       "difficulty": "calc",
       "timeLimit": 60,
-      "points": 4,
-      "text": "Выручка 1 000 000, заказов 500. Средний чек равен:",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1849d67d103984c06d25",
-          "text": "2 000"
-        },
-        {
-          "id": "opt_43ec9744a13e2a5d1228",
-          "text": "1 500"
-        },
-        {
-          "id": "opt_87471ca316ad5ef4f0f7",
-          "text": "5 000"
-        },
-        {
-          "id": "opt_a26b37d78cb977cb705c",
-          "text": "500"
-        }
-      ]
-    },
-    {
-      "id": "bi_010",
-      "topic": "HAVING",
-      "block": "joins",
-      "difficulty": "medium",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Нужно показать регионы с выручкой больше 10 млн после группировки. Что использовать?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_0e55f6e76f9dfd10c916",
-          "text": "JOIN revenue > 10000000"
-        },
-        {
-          "id": "opt_c5e7112ec0d88ec3864f",
-          "text": "HAVING SUM(revenue) > 10000000"
-        },
-        {
-          "id": "opt_e120a94c13aa97ae33e2",
-          "text": "ORDER BY region > 10000000"
-        },
-        {
-          "id": "opt_ea477fc531cf8c0f5793",
-          "text": "WHERE SUM(revenue) > 10000000 после группировки"
-        }
-      ]
-    },
-    {
-      "id": "bi_011",
-      "topic": "Даты",
-      "block": "dates",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Почему для отчёта по месяцам важно привести даты к единому календарю?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1299f294bb5bed448632",
-          "text": "Чтобы заменить дату названием месяца"
-        },
-        {
-          "id": "opt_1b4389df470a7faa1de5",
-          "text": "Чтобы группировать по номеру дня без календаря"
-        },
-        {
-          "id": "opt_95a5a40c8e0f2ef4cbe8",
-          "text": "Чтобы не хранить дату операции"
-        },
-        {
-          "id": "opt_edd60f1cd9ddac41ef45",
-          "text": "Чтобы корректно группировать отчётные периоды"
-        }
-      ]
-    },
-    {
-      "id": "bi_012",
-      "topic": "Периоды",
-      "block": "dates",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Отчёт за май включает продажи 1 июня. Что проверить первым?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_433bd9a00d0467363805",
-          "text": "Границы календарного справочника"
-        },
-        {
-          "id": "opt_68062ecb4514258747d8",
-          "text": "Тип даты в таблице продаж"
-        },
-        {
-          "id": "opt_9b76fd2b61244b316fba",
-          "text": "Условие фильтра по дате"
-        },
-        {
-          "id": "opt_ae9025538b859255aca9",
-          "text": "Дату последнего обновления источника"
-        }
-      ]
-    },
-    {
-      "id": "bi_013",
-      "topic": "Даты",
-      "block": "dates",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Что лучше использовать для сравнения месяц к месяцу?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_8de7f1a28ea6cd17c611",
-          "text": "Дату из одной выгрузки"
-        },
-        {
-          "id": "opt_9ffad73572bb5f51b08b",
-          "text": "Единую таблицу календаря"
-        },
-        {
-          "id": "opt_aa7b3d7ea97f57987e39",
-          "text": "Текстовый столбец с месяцем"
-        },
-        {
-          "id": "opt_f1167eda8ac75209c284",
-          "text": "Ручную сортировку месяцев"
-        }
-      ]
-    },
-    {
-      "id": "bi_014",
-      "topic": "Периоды",
-      "block": "dates",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "В источнике дата хранится как текст. Какой риск для BI-отчёта?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1658f94c7830486ecaab",
-          "text": "Период выбирается вручную без календаря"
-        },
-        {
-          "id": "opt_451c09166bb7f4a2d0f6",
-          "text": "Период может фильтроваться неверно"
-        },
-        {
-          "id": "opt_b268a2d60c675211394a",
-          "text": "Месяцы могут сортироваться вручную"
-        },
-        {
-          "id": "opt_caf470a7925d303bc68d",
-          "text": "Календарь может потерять связь"
-        }
-      ]
-    },
-    {
-      "id": "bi_015",
-      "topic": "Справочники",
-      "block": "model",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 3,
-      "text": "Зачем в модели нужен отдельный справочник клиентов?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_000d50157a4a98b8f199",
-          "text": "Чтобы агрегировать факты без ключей"
-        },
-        {
-          "id": "opt_06147b30701c0b7e7dbb",
-          "text": "Чтобы заменить таблицу фактов продаж по клиентам"
-        },
-        {
-          "id": "opt_8de2e3f04d0813368583",
-          "text": "Чтобы хранить продажи вместо заказов"
-        },
-        {
-          "id": "opt_f7e396d8ae647225d72c",
-          "text": "Чтобы хранить единые атрибуты клиента в модели"
-        }
-      ]
-    },
-    {
-      "id": "bi_016",
-      "topic": "Витрина данных",
-      "block": "model",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Что хорошая витрина продаж должна содержать для финансового отчёта?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_583c7b62a7301e660dbc",
-          "text": "Агрегаты без статусов операций"
-        },
-        {
-          "id": "opt_75614894f8836bcfe483",
-          "text": "Ключи, даты, суммы и статусы"
-        },
-        {
-          "id": "opt_8c77ee36b776db01a432",
-          "text": "Названия менеджеров без ключей"
-        },
-        {
-          "id": "opt_ba86357ed40ce09bed2a",
-          "text": "Суммы без даты и статуса заказа"
-        }
-      ]
-    },
-    {
-      "id": "bi_017",
-      "topic": "Гранулярность",
-      "block": "model",
-      "difficulty": "medium",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Почему важно понимать гранулярность таблицы фактов?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1179121f40cfe67c76c7",
-          "text": "Чтобы заменить детализацию справочником"
-        },
-        {
-          "id": "opt_eeaa88e3e95875c8d37f",
-          "text": "Чтобы убрать даты из модели"
-        },
-        {
-          "id": "opt_f2c1179d30a2db0c419a",
-          "text": "Чтобы не хранить справочники"
-        },
-        {
-          "id": "opt_f4508f91fd49ae364f9b",
-          "text": "Чтобы не ошибиться в агрегации"
-        }
-      ]
-    },
-    {
-      "id": "bi_018",
-      "topic": "Справочники",
-      "block": "model",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 3,
-      "text": "В справочнике товаров нет уникального product_id. Что это может сломать в первую очередь?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_224285dc9a14761790ef",
-          "text": "Название категории товара"
-        },
-        {
-          "id": "opt_5566f3865f2d49f7d128",
-          "text": "Сортировку товаров внутри визуала отчёта"
-        },
-        {
-          "id": "opt_7de70b6e5231c1333a9b",
-          "text": "Порядок обновления витрины"
-        },
-        {
-          "id": "opt_fcf4db1b2a3c955c40a9",
-          "text": "Корректность связей с таблицами фактов"
-        }
-      ]
-    },
-    {
-      "id": "bi_019",
-      "topic": "Качество данных",
-      "block": "quality",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "В отчёте появились отрицательные продажи. Что нужно сделать первым?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_62c3be5946b5d7c7b780",
-          "text": "Проверить возвраты, корректировки и ошибки"
-        },
-        {
-          "id": "opt_aa2618b7a44d54b8833f",
-          "text": "Исключить строки без проверки бизнес-статуса"
-        },
-        {
-          "id": "opt_ba163a85f9ed6b8da5db",
-          "text": "Считать их отдельным каналом продаж"
-        },
-        {
-          "id": "opt_c0830ebaf8c875be5db5",
-          "text": "Перенести их в следующий период"
-        }
-      ]
-    },
-    {
-      "id": "bi_020",
-      "topic": "Качество данных",
-      "block": "quality",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Количество заказов резко выросло в один день. Какой первый шаг проверки?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_32d4876bed2f4f7fc142",
-          "text": "Сравнить недельный итог без проверки"
-        },
-        {
-          "id": "opt_554af6ae922a90cdc9d6",
-          "text": "Считать всплеск новым базовым уровнем без сверки"
-        },
-        {
-          "id": "opt_ac94a0914a75103d6887",
-          "text": "Проверить источник, дубли и правила загрузки"
-        },
-        {
-          "id": "opt_b43f3fd2a3f3fab9b0f3",
-          "text": "Исключить день из модели без сверки"
-        }
-      ]
-    },
-    {
-      "id": "bi_021",
-      "topic": "Качество данных",
-      "block": "quality",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "В отчёте по клиентам есть строки без customer_id. Какой главный технический риск?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_047389ded631a804d911",
-          "text": "Строки получат клиентский сегмент"
-        },
-        {
-          "id": "opt_16672038c2a4f8f158b1",
-          "text": "Строки попадут в неверный сегмент"
-        },
-        {
-          "id": "opt_8c4baccddada81842b53",
-          "text": "Строки станут новым каналом продаж"
-        },
-        {
-          "id": "opt_ec8d8ef648f4d69cc456",
-          "text": "Строки не свяжутся со справочником"
-        }
-      ]
-    },
-    {
-      "id": "bi_022",
-      "topic": "Качество данных",
-      "block": "quality",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Какая контрольная сверка полезна перед публикацией финансового дашборда?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1f6c1303729893a053d8",
-          "text": "Проверить только структуру модели"
-        },
-        {
-          "id": "opt_3fd80560ab1b45540f66",
-          "text": "Проверить список страниц отчёта"
-        },
-        {
-          "id": "opt_4bddc055b8c6e17a16c1",
-          "text": "Сравнить число визуалов на страницах"
-        },
-        {
-          "id": "opt_d8ce4a3b62d493a66674",
-          "text": "Сверить итоговую выручку с источником"
-        }
-      ]
-    },
-    {
-      "id": "bi_023",
-      "topic": "Power BI",
-      "block": "powerbi",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "В Power BI связь many-to-many дала странные суммы. Что проверить?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_20007c5a19b5ac4205aa",
-          "text": "Состав страниц без связей"
-        },
-        {
-          "id": "opt_b97daa56881b1e51a9e3",
-          "text": "Порядок мер без проверки связей"
-        },
-        {
-          "id": "opt_d41935e34e67ccbe73a7",
-          "text": "Уникальность ключей и модель связей"
-        },
-        {
-          "id": "opt_e74b222675a71577aa95",
-          "text": "Формат числовых полей в визуалах"
-        }
-      ]
-    },
-    {
-      "id": "bi_024",
-      "topic": "Power BI",
-      "block": "powerbi",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Какой визуал лучше показать динамику выручки по месяцам?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_0f2b9c1d002d2837a7b2",
-          "text": "Линейный график по датам"
-        },
-        {
-          "id": "opt_3cfe18b8582a5733b81a",
-          "text": "Круговая диаграмма клиентов"
-        },
-        {
-          "id": "opt_58bbb257348210a6310b",
-          "text": "Одно число без периода"
-        },
-        {
-          "id": "opt_9ffe27e49fc93417fd4f",
-          "text": "Таблица без сортировки"
-        }
-      ]
-    },
-    {
-      "id": "bi_025",
-      "topic": "Power BI",
-      "block": "powerbi",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "На дашборде слишком много фильтров. Какой риск для пользователя?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_6d5bd6e66ed1e5ec6501",
-          "text": "Часть KPI будет читаться без контекста"
-        },
-        {
-          "id": "opt_748ab29ad3867f1a2fbc",
-          "text": "Сложнее понять применённый срез"
-        },
-        {
-          "id": "opt_b55207e2c1723c1af414",
-          "text": "Противоречивый срез отчёта"
-        },
-        {
-          "id": "opt_f695ff041795ac08b80c",
-          "text": "Пользователь выберет лишний период"
-        }
-      ]
-    },
-    {
-      "id": "bi_026",
-      "topic": "Power BI",
-      "block": "powerbi",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Что лучше вынести на первый экран финансового дашборда?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_0da28a2eb2448c52d8ff",
-          "text": "Ключевые KPI и отклонения"
-        },
-        {
-          "id": "opt_758ae106dc7b9446eae6",
-          "text": "Журнал обновления витрин"
-        },
-        {
-          "id": "opt_92ca548e86fa71be03c2",
-          "text": "Технические ключи справочников"
-        },
-        {
-          "id": "opt_e81b093f6447a8fc7a5f",
-          "text": "Все поля таблицы фактов"
-        }
-      ]
-    },
-    {
-      "id": "bi_027",
-      "topic": "Метрики",
-      "block": "metrics",
-      "difficulty": "calc",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Выручка 2 млн, себестоимость 1,2 млн. Валовая маржа в процентах:",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_2bdcdeb31fa9975f648a",
-          "text": "60%"
-        },
-        {
-          "id": "opt_7fbc5668efaec14805f9",
-          "text": "80%"
-        },
-        {
-          "id": "opt_eacada4ba0f1107e7814",
-          "text": "40%"
-        },
-        {
-          "id": "opt_f2822ba4a37062d1adc1",
-          "text": "20%"
-        }
-      ]
-    },
-    {
-      "id": "bi_028",
-      "topic": "Метрики",
-      "block": "metrics",
-      "difficulty": "calc",
-      "timeLimit": 60,
-      "points": 4,
-      "text": "Выручка 900 000, заказов 300. Средний чек равен:",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_6cd790cb680ebd3eeb33",
-          "text": "300"
-        },
-        {
-          "id": "opt_7173174641d45415b6d9",
-          "text": "3 000"
-        },
-        {
-          "id": "opt_78616dd6c56ee427dca4",
-          "text": "2 700"
-        },
-        {
-          "id": "opt_bfdaea671f28824b61a8",
-          "text": "900"
-        }
-      ]
-    },
-    {
-      "id": "bi_029",
-      "topic": "Метрики",
-      "block": "metrics",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Количество клиентов выросло, а выручка осталась прежней. Какая гипотеза логична?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_0883135467279f6a2f52",
-          "text": "Средний чек снизился"
-        },
-        {
-          "id": "opt_1eaee9686f25a46f8d6a",
-          "text": "Доля небольших клиентов выросла"
-        },
-        {
-          "id": "opt_426dbfe175f291640df6",
-          "text": "Часть клиентов купила один раз"
-        },
-        {
-          "id": "opt_5d4bd46eac665403cd3c",
-          "text": "Повторные продажи стали реже"
-        }
-      ]
-    },
-    {
-      "id": "bi_030",
-      "topic": "Метрики",
-      "block": "metrics",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 3,
-      "text": "Маржа по продукту стала отрицательной. Что проверить в данных?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_14aaf1882a5a344af72b",
-          "text": "Справочник менеджеров продаж"
-        },
-        {
-          "id": "opt_819e2fcf7683bf85da02",
-          "text": "Долю товара в общих продажах"
-        },
-        {
-          "id": "opt_beb96590cf3c42d0b52d",
-          "text": "Среднюю цену без себестоимости"
-        },
-        {
-          "id": "opt_f0c31095d1e2bfc5c90a",
-          "text": "Цену, себестоимость и скидки"
-        }
-      ]
-    },
-    {
-      "id": "bi_031",
-      "topic": "Метрики",
-      "block": "metrics",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 3,
-      "text": "Что лучше использовать для сравнения факта с планом по выручке?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_310b7873bb630f2f2414",
-          "text": "Количество заказов без суммы"
-        },
-        {
-          "id": "opt_d6f0de7e8e2ab51700ac",
-          "text": "Фактическую выручку без плана"
-        },
-        {
-          "id": "opt_d9aedd99242d48706312",
-          "text": "Отклонение в сумме и процентах"
-        },
-        {
-          "id": "opt_e4447780bea6d9d93828",
-          "text": "Процент выполнения без суммы"
-        }
-      ]
-    },
-    {
-      "id": "bi_032",
-      "topic": "Метрики",
-      "block": "metrics",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Почему выручку и количество заказов лучше смотреть вместе?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_0c3b24566587129c5c06",
-          "text": "Так видно цену и объём"
-        },
-        {
-          "id": "opt_56c8ecc4a2f3c9145951",
-          "text": "Так можно не считать средний чек"
-        },
-        {
-          "id": "opt_67f3c2ee526ee58ed46d",
-          "text": "Так не нужна проверка статусов"
-        },
-        {
-          "id": "opt_bd64e11d78057f36c1e6",
-          "text": "Так фильтры периода не влияют"
-        }
-      ]
-    },
-    {
-      "id": "bi_033",
-      "topic": "Бизнес-анализ",
-      "block": "business",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "Дашборд показывает падение выручки в одном регионе. Что лучше сделать первым?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_124026a38f567fb7fc25",
-          "text": "Смотреть общий итог продаж без региона"
-        },
-        {
-          "id": "opt_23c879522bc91894c717",
-          "text": "Сравнить долю региона без сверки"
-        },
-        {
-          "id": "opt_705febd7fb900cc8f751",
-          "text": "Считать падение разовым без проверки"
-        },
-        {
-          "id": "opt_c659f299523336dd119e",
-          "text": "Проверить данные и бизнес-причины"
-        }
-      ]
-    },
-    {
-      "id": "bi_034",
-      "topic": "Бизнес-анализ",
-      "block": "business",
-      "difficulty": "medium",
-      "timeLimit": 50,
-      "points": 4,
-      "text": "В отчёте выросла выручка, но маржа снизилась. Какой вывод наиболее полезен?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_1d82c1fc60501651c580",
-          "text": "Продажи могли быть менее маржинальными"
-        },
-        {
-          "id": "opt_4478ca7a22bfd034dae3",
-          "text": "Рост выручки уже полностью объясняет прибыль"
-        },
-        {
-          "id": "opt_597281b084c8fd69a36c",
-          "text": "Достаточно показать рост выручки"
-        },
-        {
-          "id": "opt_9fffdca205114ad9d4e4",
-          "text": "План по марже можно не смотреть"
-        }
-      ]
-    },
-    {
-      "id": "bi_035",
-      "topic": "Бизнес-анализ",
-      "block": "business",
-      "difficulty": "medium",
-      "timeLimit": 45,
-      "points": 3,
-      "text": "Какой комментарий к аномалии лучше для руководителя?",
-      "context": "",
-      "options": [
-        {
-          "id": "opt_9056a588f5d789b2e30b",
-          "text": "Отклонение есть, требуется анализ"
-        },
-        {
-          "id": "opt_9d25793251218146654f",
-          "text": "Выручка упала, причина не проверена"
-        },
-        {
-          "id": "opt_9f2242640ab27226138e",
-          "text": "Показатель ниже обычного уровня"
-        },
-        {
-          "id": "opt_b41855cfd74964a22613",
-          "text": "Выручка упала из-за заказов"
-        }
-      ]
-    },
-    {
-      "id": "bi_036",
-      "topic": "Бизнес-анализ",
-      "block": "business",
-      "difficulty": "hard",
-      "timeLimit": 75,
       "points": 5,
-      "text": "После обновления справочника часть продаж ушла в категорию 'Не определено'. Что проверить?",
-      "context": "",
+      "text": "Что вернёт выражение `COUNT(DISTINCT order_id)` после фильтра `status = 'paid'`?",
+      "context": "| order_id | line_id | status |\n|---|---|---|\n| A1 | 1 | paid |\n| A1 | 2 | paid |\n| A2 | 1 | paid |\n| A3 | 1 | cancelled |",
       "options": [
         {
-          "id": "opt_64ddf9579898f2050ec9",
-          "text": "Маппинг категорий в справочнике"
+          "id": "opt_3630968f726c239f9d74",
+          "text": "1"
         },
         {
-          "id": "opt_d5ee823686bbc9acf09e",
-          "text": "Права на обновление отчёта"
+          "id": "opt_472562079e5ef894105c",
+          "text": "4"
         },
         {
-          "id": "opt_ed277f54ce6275d5a317",
-          "text": "Ключи и полноту справочника"
+          "id": "opt_51fd0a497f5cc379f385",
+          "text": "3"
         },
         {
-          "id": "opt_fdd5137b0c6c2deac7d3",
-          "text": "Фильтр выбранного периода"
+          "id": "opt_71dfdc27f1be059646af",
+          "text": "2"
         }
       ]
     },
     {
-      "id": "bi_037",
-      "topic": "SQL",
+      "id": "bi4_003",
+      "topic": "GROUP BY",
       "block": "sql",
-      "difficulty": "hard",
-      "timeLimit": 75,
-      "points": 5,
-      "text": "Нужно посчитать выручку только по оплаченным заказам. Какой фильтр логичнее?",
-      "context": "",
+      "difficulty": "case",
+      "timeLimit": 70,
+      "points": 6,
+      "text": "Запрос должен вернуть сумму оплат по каждому клиенту, но СУБД сообщает, что `customer_id` не входит в агрегат. Какое исправление соответствует задаче?",
+      "context": "```sql\nSELECT customer_id, SUM(amount) AS paid_amount\nFROM payments\nWHERE paid_at >= DATE '2026-07-01';\n```",
       "options": [
         {
-          "id": "opt_4e6d1f687936fa7a6566",
-          "text": "ORDER BY status = 'paid'"
+          "id": "opt_090ff03f2e2b239bcc77",
+          "text": "Добавить GROUP BY customer_id перед завершением запроса"
         },
         {
-          "id": "opt_7c880194482a7c17a844",
-          "text": "GROUP BY status = 'paid'"
+          "id": "opt_2d7b2cafd128583fce28",
+          "text": "Удалить SUM и складывать платежи вручную для каждого customer_id после выгрузки"
         },
         {
-          "id": "opt_80c3a0664388f3fa7413",
-          "text": "WHERE status = 'paid'"
+          "id": "opt_313759f38e0ec35c5ea5",
+          "text": "Заменить WHERE на LIMIT 1"
         },
         {
-          "id": "opt_a72ecfae95ae6d9d8922",
-          "text": "WHERE status IS NULL"
+          "id": "opt_d8d1368c1b9b0830754d",
+          "text": "Добавить ORDER BY amount, не меняя агрегацию"
         }
       ]
     },
     {
-      "id": "bi_038",
-      "topic": "JOIN",
+      "id": "bi4_004",
+      "topic": "Последнее состояние записи",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 55,
+      "points": 5,
+      "text": "В `status_history` хранится несколько состояний каждого заказа. Как получить ровно последнее состояние на заказ при уникальном `updated_at` внутри заказа?",
+      "context": "Требуемый результат имеет гранулярность `одна строка = один order_id`.",
+      "options": [
+        {
+          "id": "opt_3dd4ac5520b564765c3e",
+          "text": "Сгруппировать только по status и взять минимальный order_id"
+        },
+        {
+          "id": "opt_838f8870e8ec4a6cbbf3",
+          "text": "Отсортировать всю историю по updated_at и взять один общий LIMIT 1 для всех заказов"
+        },
+        {
+          "id": "opt_9cdc845f621cb35cd850",
+          "text": "Удалить все строки, где status встречается более одного раза"
+        },
+        {
+          "id": "opt_da3da0f0635b160964ae",
+          "text": "Присвоить ROW_NUMBER по order_id, сортировать updated_at DESC и оставить rn = 1"
+        }
+      ]
+    },
+    {
+      "id": "bi4_005",
+      "topic": "NULL в арифметике",
+      "block": "sql",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Поле `discount` иногда равно NULL, а бизнес подтвердил, что в таких строках скидки не было. Как безопасно рассчитать `gross_amount - discount`?",
+      "context": "Без обработки NULL арифметическое выражение может вернуть NULL и занизить последующую сумму.",
+      "options": [
+        {
+          "id": "opt_1848525691fb02e471a8",
+          "text": "Заменять NULL на gross_amount, предполагая полную скидку по каждой такой операции"
+        },
+        {
+          "id": "opt_61d574513a70da2f0a15",
+          "text": "Вычитать COALESCE(discount, 0) и отдельно контролировать долю исходных NULL"
+        },
+        {
+          "id": "opt_64b776f9300473d92b97",
+          "text": "Считать NULL равным средней скидке без согласованного правила"
+        },
+        {
+          "id": "opt_e3a4a5bd7830e523bd9b",
+          "text": "Удалять все строки с NULL независимо от их суммы"
+        }
+      ]
+    },
+    {
+      "id": "bi4_006",
+      "topic": "Условная агрегация",
+      "block": "sql",
+      "difficulty": "calc",
+      "timeLimit": 60,
+      "points": 5,
+      "text": "Какой результат даст `SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END)`?",
+      "context": "| order_id | status | amount |\n|---|---|---:|\n| R1 | paid | 400 |\n| R2 | pending | 200 |\n| R3 | paid | 300 |\n| R4 | refunded | 400 |",
+      "options": [
+        {
+          "id": "opt_7b0a1fd00ed6b1e740f4",
+          "text": "700"
+        },
+        {
+          "id": "opt_880d417d9283a8945b63",
+          "text": "400"
+        },
+        {
+          "id": "opt_b6c983101747484566ae",
+          "text": "900 — если ошибочно включить pending"
+        },
+        {
+          "id": "opt_f85390cddb2bf43fd3c9",
+          "text": "1 300"
+        }
+      ]
+    },
+    {
+      "id": "bi4_007",
+      "topic": "Версионный справочник",
+      "block": "joins",
+      "difficulty": "case",
+      "timeLimit": 80,
+      "points": 6,
+      "text": "После соединения продаж со справочником категорий одна продажа повторяется дважды. Как исправить модель, сохранив исторически верную категорию?",
+      "context": "| product_id | category | valid_from | valid_to |\n|---|---|---|---|\n| P7 | Basic | 2026-01-01 | 2026-04-01 |\n| P7 | Premium | 2026-04-01 | 9999-12-31 |\n\nПродажи содержат product_id и sold_at. Текущий JOIN использует только product_id.",
+      "options": [
+        {
+          "id": "opt_09e177d093954fe89a84",
+          "text": "Удалить sold_at из таблицы продаж"
+        },
+        {
+          "id": "opt_3bc56577a8c5e5b23989",
+          "text": "Выбирать категорию с минимальным названием, игнорируя даты действия версий справочника"
+        },
+        {
+          "id": "opt_d371f8c29202aaf96d29",
+          "text": "Соединять по product_id и условию valid_from <= sold_at < valid_to; проверить интервалы"
+        },
+        {
+          "id": "opt_f3ec3144a0ab57ee3c98",
+          "text": "Оставить обе строки и разделить сумму продажи пополам"
+        }
+      ]
+    },
+    {
+      "id": "bi4_008",
+      "topic": "Поиск ненайденных ключей",
+      "block": "joins",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Как получить продажи, для которых `product_id` отсутствует в справочнике продуктов?",
+      "context": "Таблица `sales` должна быть сохранена полностью; ключ справочника после успешного совпадения не бывает NULL.",
+      "options": [
+        {
+          "id": "opt_5eeab0e3f3e49e878b5a",
+          "text": "Сделать CROSS JOIN и отобрать разные product_id"
+        },
+        {
+          "id": "opt_a72fc4a889f8ff09a30a",
+          "text": "Сделать INNER JOIN и искать NULL в sales.amount"
+        },
+        {
+          "id": "opt_da66d7705af4ab416dd6",
+          "text": "Сделать LEFT JOIN от sales к products и отобрать NULL-ключ products"
+        },
+        {
+          "id": "opt_eee17c7ef93b7b76e2b7",
+          "text": "Удалить неизвестные product_id из sales, затем выполнить обычный INNER JOIN"
+        }
+      ]
+    },
+    {
+      "id": "bi4_009",
+      "topic": "Размножение двух дочерних таблиц",
+      "block": "joins",
+      "difficulty": "calc",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Как подготовить данные, чтобы после соединения суммы строк заказа и оплат не удвоились?",
+      "context": "У заказа O1 две строки товаров: 100 и 150 руб. У него же две оплаты: 60 и 190 руб. Если соединить orders → order_lines и orders → payments одновременно, получится 2 × 2 = 4 строки, а каждая сторона просуммируется до 500 руб. вместо 250 руб.",
+      "options": [
+        {
+          "id": "opt_25fff2752d4fc7b5a29c",
+          "text": "Разделить обе суммы на число столбцов итогового набора после завершения JOIN"
+        },
+        {
+          "id": "opt_41f12b1cdcbce36bf3cb",
+          "text": "Оставить четыре строки и считать удвоенные суммы корректным отражением двух оплат"
+        },
+        {
+          "id": "opt_9c6f6d6527863cda3271",
+          "text": "Использовать MAX для строк и оплат, не проверяя число дочерних записей заказа"
+        },
+        {
+          "id": "opt_e096b5576d3cfee06e62",
+          "text": "Агрегировать order_lines и payments до order_id, затем соединить обе суммы с orders"
+        }
+      ]
+    },
+    {
+      "id": "bi4_010",
+      "topic": "Согласование гранулярности плана и факта",
+      "block": "joins",
+      "difficulty": "case",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Как корректно соединить план и факт для отчёта без размножения плановой суммы?",
+      "context": "| Набор | Гранулярность |\n|---|---|\n| sales_fact | одна строка на позицию заказа |\n| monthly_plan | одна строка на месяц и продукт |\n\nОтчёт нужен в разрезе месяц × продукт.",
+      "options": [
+        {
+          "id": "opt_45a9367a5abd8789e10d",
+          "text": "Соединить таблицы только по product_id, игнорируя месяц"
+        },
+        {
+          "id": "opt_6864fe9ebc7dd17be146",
+          "text": "Присоединить месячный план к каждой позиции заказа и суммировать plan_amount вместе с фактом"
+        },
+        {
+          "id": "opt_75f93c330b8c745613ac",
+          "text": "Агрегировать факт до месяца и продукта, затем соединить его с планом по этим ключам"
+        },
+        {
+          "id": "opt_f1e83cc8d8e5f7ff598c",
+          "text": "Повторить каждую плановую строку столько раз, сколько было заказов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_011",
+      "topic": "Полная сверка наборов",
+      "block": "joins",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "Какой тип соединения удобнее для сверки транзакций, если нужно увидеть записи, отсутствующие на любой из двух сторон?",
+      "context": "Оба набора имеют уникальный transaction_id; требуется классифицировать `только источник`, `только витрина` и `есть в обоих`.",
+      "options": [
+        {
+          "id": "opt_73d16ce9f3156a1e33da",
+          "text": "FULL OUTER JOIN по transaction_id и признаки отсутствия с каждой стороны"
+        },
+        {
+          "id": "opt_74757159db6dfb3e4f39",
+          "text": "LEFT JOIN только от витрины к источнику"
+        },
+        {
+          "id": "opt_9de4494719c2646ba417",
+          "text": "CROSS JOIN всех записей источника и витрины с последующим поиском совпавших комбинаций"
+        },
+        {
+          "id": "opt_f8af46751d596de90cbd",
+          "text": "INNER JOIN без дополнительных проверок"
+        }
+      ]
+    },
+    {
+      "id": "bi4_012",
+      "topic": "As-of JOIN",
       "block": "joins",
       "difficulty": "hard",
-      "timeLimit": 75,
-      "points": 5,
-      "text": "Таблица оплат содержит несколько оплат на один заказ. Что произойдёт при JOIN с заказами?",
-      "context": "",
+      "timeLimit": 95,
+      "points": 7,
+      "text": "Какое условие обеспечивает корректное присвоение исторического тарифа каждой операции?",
+      "context": "`transactions` содержит account_id и occurred_at. `tariff_history` содержит account_id, valid_from, valid_to и rate. Интервалы для одного account_id должны быть непересекающимися; valid_to — исключительная граница.",
       "options": [
         {
-          "id": "opt_034ef3ea6e87c2a0c85c",
-          "text": "Сумма заказа пересчитается по статусу"
+          "id": "opt_2d4938814f041711e88b",
+          "text": "Соединить только по account_id и усреднить все найденные rate"
         },
         {
-          "id": "opt_09ed3f98becfa3075deb",
-          "text": "Заказ станет уникальным ключом"
+          "id": "opt_a41d648989de01664083",
+          "text": "Соединить occurred_at = valid_from, пропуская остальные даты"
         },
         {
-          "id": "opt_a0796496a149e3cdca9f",
-          "text": "Заказ может повториться по оплатам"
+          "id": "opt_a904827716c63e8f337e",
+          "text": "As-of JOIN по account_id и интервалу действия тарифа; интервалы проверять на пересечения"
         },
         {
-          "id": "opt_ce698875a8bc7169b9be",
-          "text": "Оплаты попадут в разные периоды"
+          "id": "opt_cf44be3bc1d10ba14ae4",
+          "text": "Выбрать для всех операций тариф с минимальным valid_from, считая его действующим на всём горизонте"
         }
       ]
     },
     {
-      "id": "bi_039",
-      "topic": "Качество данных",
-      "block": "quality",
+      "id": "bi4_013",
+      "topic": "Бизнес-дата и UTC",
+      "block": "dates",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "Продажи хранятся в UTC, а бизнес-день определяется по часовому поясу Europe/Moscow. Когда нужно вычислять календарную дату для дневного отчёта?",
+      "context": "Операция `2026-07-01 21:30 UTC` относится уже к 2 июля по московскому бизнес-времени.",
+      "options": [
+        {
+          "id": "opt_121aed8f924b6d00632f",
+          "text": "Сначала преобразовать timestamp в бизнес-часовой пояс, затем получить дату"
+        },
+        {
+          "id": "opt_1e10614b100a3ad38342",
+          "text": "Сначала отбросить время в UTC, затем прибавить три дня"
+        },
+        {
+          "id": "opt_5e1bf05363953c85e6ae",
+          "text": "Группировать исходный UTC timestamp по текстовому часу и только после агрегации менять часовую зону"
+        },
+        {
+          "id": "opt_ca3415a9387ec509d4ee",
+          "text": "Использовать дату загрузки файла вместо времени операции"
+        }
+      ]
+    },
+    {
+      "id": "bi4_014",
+      "topic": "Когортное удержание",
+      "block": "dates",
+      "difficulty": "calc",
+      "timeLimit": 65,
+      "points": 5,
+      "text": "Чему равно удержание когорты в следующем календарном месяце?",
+      "context": "В январе впервые активировались 8 клиентов. Из них 6 совершили хотя бы одно целевое действие в феврале. Новые февральские клиенты в эту когорту не входят.",
+      "options": [
+        {
+          "id": "opt_5347f49592ff734c725a",
+          "text": "75% — 6 из 8 клиентов"
+        },
+        {
+          "id": "opt_7ad9243750c18d535d05",
+          "text": "60% — 6 из 10 клиентов"
+        },
+        {
+          "id": "opt_a9121ec173ccbf32f739",
+          "text": "133,3% — отношение 8 к 6"
+        },
+        {
+          "id": "opt_f4243983d600cd2dd40d",
+          "text": "80% — 8 из 10 клиентов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_015",
+      "topic": "Пропущенные даты в ряду",
+      "block": "dates",
+      "difficulty": "case",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Как построить непрерывный дневной график, на котором дни без продаж показаны нулём, а не исчезают?",
+      "context": "В факте есть строки только в дни с заказами. Отчёт должен показывать каждый день выбранного периода.",
+      "options": [
+        {
+          "id": "opt_21bc82b7b6bff6978f20",
+          "text": "Заменить дату заказа порядковым номером строки"
+        },
+        {
+          "id": "opt_6e8bd4057df5d14ddcd9",
+          "text": "Соединить полный календарь с агрегированным фактом и заменить пропуски нулями"
+        },
+        {
+          "id": "opt_7d5b86c753ea23cccf2e",
+          "text": "Удалить из оси все выходные независимо от наличия заказов"
+        },
+        {
+          "id": "opt_e6f80321e85fc568bc3c",
+          "text": "Продлевать последнюю сумму продаж на все дни до следующей фактической операции"
+        }
+      ]
+    },
+    {
+      "id": "bi4_016",
+      "topic": "Сопоставимые MTD-периоды",
+      "block": "dates",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "18 июля руководитель сравнивает текущий MTD с июнем. Как избежать ложного вывода из-за разной длины периодов?",
+      "context": "Июльские данные загружены по 18 июля включительно; июнь полностью закрыт.",
+      "options": [
+        {
+          "id": "opt_2c03981e271e3deb39fe",
+          "text": "Исключить июль из отчёта до конца года"
+        },
+        {
+          "id": "opt_99704902b70df4e779f9",
+          "text": "Умножить июльский факт на два и назвать это фактом месяца"
+        },
+        {
+          "id": "opt_ea0930b5c4e0a33e5ebb",
+          "text": "Сравнить 1–18 июля со всем июнем и не отмечать разную длину периодов"
+        },
+        {
+          "id": "opt_f4a4f718f99c9f0b6c72",
+          "text": "Сравнить 1–18 июля с 1–18 июня и отдельно показать прогноз полного июля"
+        }
+      ]
+    },
+    {
+      "id": "bi4_017",
+      "topic": "Звёздная схема",
+      "block": "model",
+      "difficulty": "case",
+      "timeLimit": 80,
+      "points": 6,
+      "text": "Какая модель лучше поддержит анализ продаж по датам, клиентам и товарам без неоднозначной гранулярности?",
+      "context": "Исходник содержит заказы с несколькими товарными позициями. Для каждой позиции известны quantity, net_revenue и cogs.",
+      "options": [
+        {
+          "id": "opt_131afd059cc720abd7b6",
+          "text": "Три фактовые таблицы, соединённые между собой many-to-many по названию товара"
+        },
+        {
+          "id": "opt_88b93aff1116206f70ea",
+          "text": "Факт на уровне позиции заказа плюс отдельные измерения даты, клиента и товара"
+        },
+        {
+          "id": "opt_9061f8b2134c3f3c1a99",
+          "text": "Факт на уровне клиента без order_id и product_id"
+        },
+        {
+          "id": "opt_f8804d72efbd308e561b",
+          "text": "Одна широкая таблица, где справочник товара повторяется случайное число раз"
+        }
+      ]
+    },
+    {
+      "id": "bi4_018",
+      "topic": "Направление фильтрации",
+      "block": "model",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "Почему не стоит без необходимости включать двунаправленную фильтрацию на всех связях модели?",
+      "context": "В модели несколько фактов используют общие измерения клиента и даты.",
+      "options": [
+        {
+          "id": "opt_08b1ca44a9b8ebbc49df",
+          "text": "Она автоматически преобразует числовые меры в текст и запрещает их агрегацию"
+        },
+        {
+          "id": "opt_3bb761fdfaf6e194abcd",
+          "text": "Она может создать неоднозначные пути фильтра и неожиданные итоги"
+        },
+        {
+          "id": "opt_dffe5fd7c79d935960a0",
+          "text": "Она всегда удаляет таблицу дат из модели"
+        },
+        {
+          "id": "opt_e144add67fbc97717436",
+          "text": "Она запрещает рассчитывать любые меры"
+        }
+      ]
+    },
+    {
+      "id": "bi4_019",
+      "topic": "Взвешенная маржа",
+      "block": "model",
+      "difficulty": "calc",
+      "timeLimit": 65,
+      "points": 5,
+      "text": "Какова общая маржа портфеля, рассчитанная как `SUM(profit) / SUM(revenue)`?",
+      "context": "| Продукт | Revenue | Profit | Маржа строки |\n|---|---:|---:|---:|\n| A | 100 | 40 | 40% |\n| B | 900 | 90 | 10% |",
+      "options": [
+        {
+          "id": "opt_09a69bf6a69a0e6fe16e",
+          "text": "13% — 130 прибыли / 1 000 выручки"
+        },
+        {
+          "id": "opt_9eb3dfd8eb3b1d9c30e6",
+          "text": "50% — сумма двух процентных марж"
+        },
+        {
+          "id": "opt_dc91fe90313a85414517",
+          "text": "25% — простое среднее 40% и 10%"
+        },
+        {
+          "id": "opt_f95f141d1ba0454e4eda",
+          "text": "10% — маржа крупнейшего по выручке продукта"
+        }
+      ]
+    },
+    {
+      "id": "bi4_020",
+      "topic": "Полуаддитивный остаток",
+      "block": "model",
       "difficulty": "hard",
-      "timeLimit": 75,
-      "points": 5,
-      "text": "Итоговая выручка в BI на 8% выше бухгалтерской выгрузки. Что проверить первым?",
-      "context": "",
+      "timeLimit": 95,
+      "points": 7,
+      "text": "Как корректно рассчитать общий остаток денежных средств на конец месяца из ежедневного snapshot-факта?",
+      "context": "В таблице одна строка на account_id и snapshot_date. Поле balance — остаток на конец дня, а не дневной поток. Для каждого счёта даты могут оканчиваться разным последним рабочим днём.",
       "options": [
         {
-          "id": "opt_74f2f0d4cab79b1e1ff6",
-          "text": "Порядок визуалов на странице"
+          "id": "opt_05eb60ebb0f703e30ab3",
+          "text": "Взять последний доступный баланс каждого счёта в периоде и затем сложить счета"
         },
         {
-          "id": "opt_9f12a814a0c189b88c4c",
-          "text": "Список пользователей отчёта"
+          "id": "opt_2fa0976f96842650fc26",
+          "text": "Сложить только первые наблюдения каждого счёта в месяце"
         },
         {
-          "id": "opt_bf99ffe1627cfdedf5d2",
-          "text": "Дубли, фильтры, статусы"
+          "id": "opt_8d6f5120f9459f0567cc",
+          "text": "Сложить остатки каждого счёта за все дни месяца, считая их дневными потоками"
         },
         {
-          "id": "opt_f319556039c4ddc8a832",
-          "text": "Формат денежной меры без сверки"
+          "id": "opt_9561d965d35cb52d856d",
+          "text": "Взять среднее всех дневных остатков без группировки по счетам"
         }
       ]
     },
     {
-      "id": "bi_040",
-      "topic": "Power BI",
+      "id": "bi4_021",
+      "topic": "Контроль ключа измерения",
+      "block": "quality",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Какой автоматический тест наиболее важен для `customer_id` в таблице-справочнике клиентов перед загрузкой модели?",
+      "context": "Ожидается ровно одна актуальная строка на customer_id; неизвестный клиент обрабатывается отдельным техническим ключом.",
+      "options": [
+        {
+          "id": "opt_0c83df31055affc45520",
+          "text": "Разрешить повторяющиеся customer_id и скрывать дубли только в итоговом визуале"
+        },
+        {
+          "id": "opt_375d9c285c740b1640a2",
+          "text": "Проверить customer_id на NULL и дубли; нарушения остановить или изолировать"
+        },
+        {
+          "id": "opt_56968e9a2c8440d1be83",
+          "text": "Заменить каждый customer_id случайным числом при обновлении"
+        },
+        {
+          "id": "opt_71c196bfdb6153e90d62",
+          "text": "Проверить только алфавитную сортировку названий клиентов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_022",
+      "topic": "Полнота данных",
+      "block": "quality",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "Какова полнота обязательного поля `product_id`?",
+      "context": "В партии 10 000 строк. В 180 строках product_id отсутствует. Полнота определяется как доля строк с заполненным полем.",
+      "options": [
+        {
+          "id": "opt_0321d284dd89bcd37a23",
+          "text": "101,8%"
+        },
+        {
+          "id": "opt_2b7504a53aaa4a63741c",
+          "text": "1,8%"
+        },
+        {
+          "id": "opt_6429db624f91059ecc2b",
+          "text": "98,2%"
+        },
+        {
+          "id": "opt_8252d8a25f2667252c33",
+          "text": "82,0%"
+        }
+      ]
+    },
+    {
+      "id": "bi4_023",
+      "topic": "Свежесть витрины",
+      "block": "quality",
+      "difficulty": "case",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Как правильно обработать нарушение SLA свежести до публикации утреннего отчёта?",
+      "context": "| Контроль | Значение |\n|---|---|\n| SLA готовности | 09:00 |\n| Текущее время | 10:30 |\n| Последняя успешная загрузка | вчера, 08:10 |\n| Статус сегодняшней загрузки | failed |",
+      "options": [
+        {
+          "id": "opt_4f646e4f9571c12632a8",
+          "text": "Пометить отчёт устаревшим или заблокировать публикацию, уведомить владельца и устранить сбой"
+        },
+        {
+          "id": "opt_6ae6eb00314cb3eef147",
+          "text": "Подставить план вместо факта, назвать его актуальным и не уведомлять владельца отчёта"
+        },
+        {
+          "id": "opt_74ca9a3297a6f81c40c8",
+          "text": "Показать вчерашние данные как сегодняшние и не раскрывать дату последней загрузки"
+        },
+        {
+          "id": "opt_cb951fd836d0647f9efc",
+          "text": "Обновить только заголовок с текущей датой"
+        }
+      ]
+    },
+    {
+      "id": "bi4_024",
+      "topic": "Сверка BI с главной книгой",
+      "block": "quality",
+      "difficulty": "case",
+      "timeLimit": 85,
+      "points": 7,
+      "text": "Какой план сверки лучше всего локализует расхождение выручки BI и главной книги?",
+      "context": "BI показывает 102,4 млн руб., главная книга — 99,8 млн руб. Источники могут различаться по валютному курсу, cut-off, статусам возврата и гранулярности.",
+      "options": [
+        {
+          "id": "opt_1b0f79566a5ea3acb122",
+          "text": "Скрыть разницу округлением до десятков миллионов"
+        },
+        {
+          "id": "opt_2e5b927088e0fe6b4665",
+          "text": "Умножить BI-итог на 99,8 / 102,4 и сохранить коэффициент навсегда"
+        },
+        {
+          "id": "opt_65f869024e2d4d20e32d",
+          "text": "Выровнять период и определения, затем сверить итоги и transaction_id по валютам и статусам"
+        },
+        {
+          "id": "opt_66acf5d192bc7391e586",
+          "text": "Сверить одну случайную дату и перенести вывод на весь месяц без сопоставления валют и статусов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_025",
+      "topic": "Schema drift",
+      "block": "quality",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Источник изменил тип `amount` с decimal на строку, и часть значений стала NULL после загрузки. Какой контроль снижает риск повторения?",
+      "context": "Некоторые новые строки содержат пробел-разделитель тысяч и десятичную запятую.",
+      "options": [
+        {
+          "id": "opt_0561bc8a4b3cfbe5fc7e",
+          "text": "Автоматически заменять любое непонятное значение средним amount"
+        },
+        {
+          "id": "opt_29aeea232873404c7a40",
+          "text": "Хранить сумму только как картинку в отчёте"
+        },
+        {
+          "id": "opt_7cf410f2280cd8d6ccd0",
+          "text": "Удалить контрольные итоги и считать загрузку успешной, даже если amount создал новые NULL"
+        },
+        {
+          "id": "opt_bbd0a1912a9d7c6253b7",
+          "text": "Проверять контракт схемы и ошибки преобразования; непарсящиеся строки отправлять в карантин"
+        }
+      ]
+    },
+    {
+      "id": "bi4_026",
+      "topic": "Мера или вычисляемый столбец",
+      "block": "powerbi",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "В Power BI нужна валовая маржа, которая корректно пересчитывается при фильтрах даты, региона и продукта. Что выбрать?",
+      "context": "В модели уже есть меры `[Gross Profit]` и `[Revenue]`.",
+      "options": [
+        {
+          "id": "opt_20223f842bbe7bb6b906",
+          "text": "Суммировать процент каждой строки, не учитывая её долю в общей выручке"
+        },
+        {
+          "id": "opt_3cd5c221db4786f13d5a",
+          "text": "Меру DIVIDE([Gross Profit], [Revenue]), вычисляемую в текущем контексте"
+        },
+        {
+          "id": "opt_cb156b7f466997724652",
+          "text": "Статический текстовый столбец с записанным вручную процентом"
+        },
+        {
+          "id": "opt_d7ea35264e0037722e1c",
+          "text": "Номер строки, делённый на количество столбцов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_027",
+      "topic": "Доля продукта в DAX",
+      "block": "powerbi",
+      "difficulty": "case",
+      "timeLimit": 80,
+      "points": 7,
+      "text": "Какой знаменатель нужен для меры доли продаж продукта, если выбранные дата и регион должны сохраняться, а фильтр продукта — сниматься?",
+      "context": "Числитель — `[Sales]`. Модель звёздная, продукт находится в таблице `'Product'`, дата и регион — в других измерениях.",
+      "options": [
+        {
+          "id": "opt_051ff5371374e8839cbb",
+          "text": "CALCULATE([Sales], REMOVEFILTERS('Product')) — убрать только продуктовый фильтр"
+        },
+        {
+          "id": "opt_4c240389cb44d73da75c",
+          "text": "COUNTROWS('Product') — использовать число товаров вместо продаж"
+        },
+        {
+          "id": "opt_be430d91450a597e6377",
+          "text": "[Sales] — оставить в знаменателе тот же продукт без изменения контекста"
+        },
+        {
+          "id": "opt_e6f3ec807ed850404807",
+          "text": "CALCULATE([Sales], REMOVEFILTERS()) — снять продукт, дату, регион и другие фильтры"
+        }
+      ]
+    },
+    {
+      "id": "bi4_028",
+      "topic": "Диагностика RLS",
       "block": "powerbi",
       "difficulty": "hard",
-      "timeLimit": 75,
-      "points": 5,
-      "text": "Пользователь видит в дашборде только часть продаж. Что нужно проверить?",
-      "context": "",
+      "timeLimit": 95,
+      "points": 7,
+      "text": "Пользователь с региональной ролью видит данные двух регионов вместо одного. Какой порядок проверки наиболее обоснован?",
+      "context": "RLS использует таблицу соответствий user_email → region_id, связанную с измерением региона. Обновление набора прошло успешно.",
       "options": [
         {
-          "id": "opt_43c0cbf18e0266632ad2",
-          "text": "Состав мер без фильтров"
+          "id": "opt_3d134e094ec6f4ec51b8",
+          "text": "Проверить Test as role, уникальность user–region mapping и активный путь фильтра"
         },
         {
-          "id": "opt_b16eee0b4604c521a642",
-          "text": "Фильтры, RLS и права доступа"
+          "id": "opt_7f4b7f5be746fcf7f7f6",
+          "text": "Сразу удалить все связи модели и опубликовать пустой отчёт"
         },
         {
-          "id": "opt_e6e8011a604331074507",
-          "text": "Формат отображения таблицы"
+          "id": "opt_9a721da6db4304f3e9cf",
+          "text": "Изменить формат денежных мер, не проверяя роль"
         },
         {
-          "id": "opt_fd7dfddc3ef6eaca70bf",
-          "text": "Последнее обновление без фильтров"
+          "id": "opt_f3b9bb87935078745473",
+          "text": "Скрыть лишний регион фильтром страницы, не проверяя RLS и таблицу mapping"
+        }
+      ]
+    },
+    {
+      "id": "bi4_029",
+      "topic": "Итог процентной меры",
+      "block": "powerbi",
+      "difficulty": "calc",
+      "timeLimit": 65,
+      "points": 5,
+      "text": "Какой процент должна показывать мера маржи в строке `Итого`, если она пересчитывает отношение сумм?",
+      "context": "| Регион | Revenue | Profit |\n|---|---:|---:|\n| Север | 100 | 20 |\n| Юг | 300 | 30 |",
+      "options": [
+        {
+          "id": "opt_064485f3411d46c4efaa",
+          "text": "12,5%"
+        },
+        {
+          "id": "opt_0c95a914bd77831454cf",
+          "text": "20% — процент только Севера"
+        },
+        {
+          "id": "opt_502ebc03d2ea74aacec3",
+          "text": "15%"
+        },
+        {
+          "id": "opt_53cfd234ff57cacaffa4",
+          "text": "30%"
+        }
+      ]
+    },
+    {
+      "id": "bi4_030",
+      "topic": "Производительность визуала",
+      "block": "powerbi",
+      "difficulty": "case",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Один визуал страницы открывается 18 секунд, остальные — меньше секунды. Что сделать первым для локализации причины?",
+      "context": "Визуал содержит меру и детализацию по высококардинальному transaction_id; источник и gateway доступны.",
+      "options": [
+        {
+          "id": "opt_3756fd924f4a239eab10",
+          "text": "Увеличить шрифт визуала, чтобы он загружался быстрее"
+        },
+        {
+          "id": "opt_6e338c2c6927a7c21a9b",
+          "text": "Считать задержку допустимой, отключить журнал и не измерять время DAX-запроса или визуала"
+        },
+        {
+          "id": "opt_d9d5798f53a2348f5796",
+          "text": "Открыть Performance Analyzer, проверить запрос и меру, затем оценить детализацию transaction_id"
+        },
+        {
+          "id": "opt_f0f8e3fda53bdf51091e",
+          "text": "Удалить все остальные страницы, не измеряя время запросов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_031",
+      "topic": "Знаменатель activation rate",
+      "block": "metrics",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Как определить activation rate так, чтобы метрика была сопоставима между неделями?",
+      "context": "Целевое действие должно произойти в течение 7 дней после регистрации; тестовые и заблокированные аккаунты не считаются eligible.",
+      "options": [
+        {
+          "id": "opt_1308406340b298934c92",
+          "text": "Использовать только абсолютное число действий без знаменателя"
+        },
+        {
+          "id": "opt_1c1f8d4d2eac92eb4f76",
+          "text": "Делить все действия на посетителей за всю историю, включая тестовые и заблокированные аккаунты"
+        },
+        {
+          "id": "opt_398e81c9c071988ece8c",
+          "text": "Делить активированные за 7 дней eligible-регистрации на все eligible-регистрации когорты"
+        },
+        {
+          "id": "opt_9e0e013dbffd6c60444b",
+          "text": "Делить активированных на число сотрудников компании"
+        }
+      ]
+    },
+    {
+      "id": "bi4_032",
+      "topic": "Маржа после возвратов",
+      "block": "metrics",
+      "difficulty": "calc",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Какова валовая маржа после возвратов?",
+      "context": "| Показатель | Сумма |\n|---|---:|\n| Выручка до возвратов | 5,0 млн руб. |\n| Возвраты выручки | 0,2 млн руб. |\n| Себестоимость после учёта возврата товара | 3,0 млн руб. |\n\nМаржа = (чистая выручка − себестоимость) / чистая выручка.",
+      "options": [
+        {
+          "id": "opt_106b2b3b1b6a579bb0d2",
+          "text": "40,0%"
+        },
+        {
+          "id": "opt_7c6b7bd817bafb47753b",
+          "text": "36,0%"
+        },
+        {
+          "id": "opt_a4e601d7f5e58f6b86ee",
+          "text": "37,5%"
+        },
+        {
+          "id": "opt_b399ea1ec1449e6b36c8",
+          "text": "60,0%"
+        }
+      ]
+    },
+    {
+      "id": "bi4_033",
+      "topic": "Эффект канального микса",
+      "block": "metrics",
+      "difficulty": "case",
+      "timeLimit": 80,
+      "points": 6,
+      "text": "Общая конверсия выросла, но конверсия каждого канала почти не изменилась. Как проверить, не объясняется ли рост только изменением микса трафика?",
+      "context": "Доля канала с исторически высокой конверсией выросла с 25% до 55%; правила атрибуции не менялись.",
+      "options": [
+        {
+          "id": "opt_2d08b30950c2787be1c3",
+          "text": "Удалить канал с высокой конверсией из исторических данных"
+        },
+        {
+          "id": "opt_7cad8ffbc97b5bdc7f1b",
+          "text": "Сравнить только абсолютное число визитов без целевых действий"
+        },
+        {
+          "id": "opt_a53d00758e38c1c21bbe",
+          "text": "Показать конверсию и долю трафика по каналам, затем пересчитать итог при постоянных весах"
+        },
+        {
+          "id": "opt_edcf56be50176c2c27f6",
+          "text": "Считать рост общей конверсии одинаковым улучшением каждой страницы, не анализируя смену каналов"
+        }
+      ]
+    },
+    {
+      "id": "bi4_034",
+      "topic": "Опережающий индикатор",
+      "block": "metrics",
+      "difficulty": "medium",
+      "timeLimit": 45,
+      "points": 4,
+      "text": "Какой показатель может служить более ранним сигналом выручки следующего месяца для B2B-продаж?",
+      "context": "У компании документированы стадии воронки и исторические вероятности закрытия сделок.",
+      "options": [
+        {
+          "id": "opt_18e742eec5449d3e5d05",
+          "text": "Количество цветов на дашборде продаж"
+        },
+        {
+          "id": "opt_4dbe55158ecc03d49bde",
+          "text": "Выручка прошлого года без поправок на текущий pipeline, сезонность и изменение конверсии"
+        },
+        {
+          "id": "opt_76813469feae6bfbf563",
+          "text": "Фактическая амортизация офиса за прошлый месяц"
+        },
+        {
+          "id": "opt_ecdfc66dce43bc55426e",
+          "text": "Взвешенный qualified pipeline с проверенной конверсией и сроком закрытия"
+        }
+      ]
+    },
+    {
+      "id": "bi4_035",
+      "topic": "Net Revenue Retention",
+      "block": "metrics",
+      "difficulty": "calc",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Чему равен NRR существующей клиентской базы за период?",
+      "context": "| Компонент | Сумма |\n|---|---:|\n| Выручка базы на начало | 100 млн руб. |\n| Churn | −8 млн руб. |\n| Contraction | −4 млн руб. |\n| Expansion | +12 млн руб. |\n| Новые клиенты | +15 млн руб. |\n\nНовые клиенты в NRR не включаются.",
+      "options": [
+        {
+          "id": "opt_754d73a2f366dd59ef11",
+          "text": "85%"
+        },
+        {
+          "id": "opt_b6e690f14c93f5179834",
+          "text": "115%"
+        },
+        {
+          "id": "opt_bf9631ea656bac3c77aa",
+          "text": "96%"
+        },
+        {
+          "id": "opt_d64e19a4d51933c8bed4",
+          "text": "100%"
+        }
+      ]
+    },
+    {
+      "id": "bi4_036",
+      "topic": "Совместная интерпретация AOV и заказов",
+      "block": "metrics",
+      "difficulty": "case",
+      "timeLimit": 75,
+      "points": 6,
+      "text": "Какой комментарий точно описывает изменение выручки и её драйверов?",
+      "context": "| Месяц | Заказы | Средний чек | Выручка |\n|---|---:|---:|---:|\n| Май | 10 000 | 1 000 руб. | 10,0 млн руб. |\n| Июнь | 8 000 | 1 300 руб. | 10,4 млн руб. |",
+      "options": [
+        {
+          "id": "opt_1679b8f000c04ef87130",
+          "text": "Рост среднего чека полностью компенсировал сокращение заказов, поэтому выручка осталась на уровне мая"
+        },
+        {
+          "id": "opt_62cf27795b8928744deb",
+          "text": "Выручка выросла на 4%: рост среднего чека на 30% перекрыл падение заказов на 20%"
+        },
+        {
+          "id": "opt_8fd49c00919a606b5ad5",
+          "text": "Выручка снизилась на 20%, потому что заказов стало меньше"
+        },
+        {
+          "id": "opt_cd3e11916a59ef8f6941",
+          "text": "Заказы и средний чек выросли одновременно"
+        }
+      ]
+    },
+    {
+      "id": "bi4_037",
+      "topic": "Комментарий к отклонению",
+      "block": "business",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "Какая структура комментария к KPI наиболее полезна для управленческого решения?",
+      "context": "Причина отклонения проверена по данным, у команды есть согласованное корректирующее действие.",
+      "options": [
+        {
+          "id": "opt_18c3434081c10ed63099",
+          "text": "Полный журнал SQL-запросов без количественного бизнес-вывода или владельца действия"
+        },
+        {
+          "id": "opt_7196a8262ad5b7cbd2d4",
+          "text": "Непроверенная причина, сформулированная как установленный факт"
+        },
+        {
+          "id": "opt_a49c60902f173db99d95",
+          "text": "Отклонение → подтверждённый драйвер → эффект → действие, владелец и срок"
+        },
+        {
+          "id": "opt_eab2900390fc5829b661",
+          "text": "Только цвет индикатора без чисел и периода"
+        }
+      ]
+    },
+    {
+      "id": "bi4_038",
+      "topic": "Корреляция и причинность",
+      "block": "business",
+      "difficulty": "medium",
+      "timeLimit": 50,
+      "points": 5,
+      "text": "После запуска скидки конверсия выросла одновременно с притоком нового канала. Как корректно оценить причинный эффект скидки?",
+      "context": "Простое сравнение `до/после` смешивает изменение скидки, трафика и сезонности.",
+      "options": [
+        {
+          "id": "opt_1766b8fdc51d7e543a09",
+          "text": "Сравнить только лучший день после запуска с худшим днём до него"
+        },
+        {
+          "id": "opt_9fd2e14b045a6721d956",
+          "text": "Провести контролируемый тест или анализ сопоставимых групп с заранее заданной метрикой"
+        },
+        {
+          "id": "opt_ec381c79fb05ca34e23b",
+          "text": "Удалить данные нового канала после расчёта общего итога"
+        },
+        {
+          "id": "opt_f98d91e30ad8800706da",
+          "text": "Приписать скидке весь рост после запуска, не отделяя новый канал, сезонность и другие изменения"
+        }
+      ]
+    },
+    {
+      "id": "bi4_039",
+      "topic": "Изменение структуры портфеля",
+      "block": "business",
+      "difficulty": "case",
+      "timeLimit": 85,
+      "points": 7,
+      "text": "Почему общая маржа могла вырасти, хотя маржа каждого сегмента снизилась?",
+      "context": "| Сегмент | Маржа 2025 | Доля выручки 2025 | Маржа 2026 | Доля выручки 2026 |\n|---|---:|---:|---:|---:|\n| A | 40% | 30% | 38% | 70% |\n| B | 10% | 70% | 8% | 30% |",
+      "options": [
+        {
+          "id": "opt_16c51edf6a6c1950e762",
+          "text": "Рост доли более маржинального A перекрыл снижение маржи внутри обоих сегментов"
+        },
+        {
+          "id": "opt_9be4fd2d50f57cd3b495",
+          "text": "Считать результат невозможным и не проверять изменение долей выручки сегментов"
+        },
+        {
+          "id": "opt_a50774a2dda5e776baa7",
+          "text": "Общий процент равен простой сумме 38% + 8%"
+        },
+        {
+          "id": "opt_dbe033310b140893e157",
+          "text": "Маржа B выросла, поэтому общий показатель обязан вырасти"
+        }
+      ]
+    },
+    {
+      "id": "bi4_040",
+      "topic": "Изменение определения KPI",
+      "block": "business",
+      "difficulty": "hard",
+      "timeLimit": 95,
+      "points": 7,
+      "text": "В середине квартала команда изменила определение `активного клиента`, и график показал скачок на 18%. Что нужно сделать до использования KPI для решения о бонусах?",
+      "context": "Старое правило: хотя бы одна покупка за 30 дней. Новое: покупка или вход в приложение за 30 дней. Дата изменения известна, исходные события сохранены.",
+      "options": [
+        {
+          "id": "opt_2e21052134150fa30f4d",
+          "text": "Утвердить единое определение, пересчитать историю из событий и задокументировать изменение"
+        },
+        {
+          "id": "opt_486d853ad06eaa6b5566",
+          "text": "Считать скачок доказанным ростом продукта и немедленно выплатить бонус"
+        },
+        {
+          "id": "opt_4949af7e7bd08c328ab5",
+          "text": "Склеить два определения без пометки и удалить старые события"
+        },
+        {
+          "id": "opt_b42d723fb62d8d311c0f",
+          "text": "Оставить разные определения внутри квартала, объединить ряд без отметки и округлить итог перед бонусами"
         }
       ]
     }
   ],
-  "publicDigest": "999c83c43138d6a02a23bf3dbe45ac547a8af8a312ef1cb7f891ed4e0e4a9786"
+  "publicDigest": "5a7eef3f74cdd6a3d9896f6bd250831cce261ab964baf9fa806e729805cdcbb6"
 }

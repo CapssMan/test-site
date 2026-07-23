@@ -1,8 +1,8 @@
-# SkillCheck — security-аудит этапов 10, 10A и addendum 11–13
+# SkillCheck — security-аудит этапов 10–17 и ротации v4
 
-Дата аудита: 20 июля 2026 года.
+Дата аудита: 23 июля 2026 года.
 
-Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56` без смены URL. Текущие версии: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, backend `yandex-disk-mvp-2026-07-20-13`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56`. Техническая ротация v4 опубликована в существующем deployment `@57` без смены URL. Текущие версии: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
 Этап 15 добавил read-only GitHub Actions без production secrets/deploy. Workflow использует locked dependency-free install с отключёнными lifecycle scripts и выполняет тот же `npm test`, что и локальная проверка.
 
@@ -189,9 +189,9 @@ Production evidence 10A: deployment `@51`, Web App URL не изменён; owne
 
 | Риск | Уровень | Состояние / действие |
 |---|---|---|
-| Исторически опубликованные answer keys | Критический | Удалены из текущего HEAD, но остаются в Git history, клонах и кэшах. До реального пилота нужна отдельно согласованная содержательная ротация вопросов/вариантов/ключей и SME review; rewrite истории недостаточен. |
+| Исторически опубликованные answer keys | Техническая часть закрыта v4 | Старые ключи остаются в Git history/клонах/кэшах, но не соответствуют новым v4 ID, формулировкам, вариантам и ключам. До реального пилота всё ещё нужен независимый человеческий SME sign-off v4. |
 | Production rollout 10A | Закрыт | Deployment `@51`, commit `2addd59`, owner smoke `FA-LDUB2`, exact replay, 14/14 suite и desktop/mobile browser QA подтверждены; issuance после проверки выключен. |
-| Ошибочное включение выдачи | Закрыт gate по умолчанию | `ATTEMPT_ISSUANCE_ENABLED=false`; admin/candidate показывают pilot lock. Не включать до content rotation и checklist этапа 17. |
+| Ошибочное включение выдачи | Закрыт gate по умолчанию | `ATTEMPT_ISSUANCE_ENABLED=false`; admin/candidate показывают pilot lock. Не включать до полного внешнего checklist и SME sign-off v4. |
 | Identity без OTP/account | Высокий | Email-bound invite и fingerprint ограничивают поток, но не доказывают личность. Для более сильной идентификации нужны OTP/magic link или аккаунт. |
 | Анонимный Apps Script endpoint и best-effort rate limits | Высокий при открытом запуске | Controlled flow сужен invite/token/state. `CacheService` не является атомарным IP-based limiter; для открытого трафика нужен внешний gateway/WAF/CAPTCHA. |
 | Широкий/неподтверждённый scope Яндекс-токена | Высокий | Code path allowlist не ограничивает украденный токен; определить scope, безопасно ротировать credential и оценить app-folder/least privilege. |

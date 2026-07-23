@@ -265,9 +265,10 @@ Production smoke: minimal health содержит ровно `ok/status/service/
 - [x] Bootstrap привязан к полному immutable Git commit `70e569cf267e043aabc780e81cc4307db7e149b1` и точным SHA-256 legacy-файлов; любое расхождение отклоняется до миграции.
 - [x] Bootstrap/issuance/invite/begin/save fail closed, если private storage Яндекс.Диска имеет `public_key`, `public_url` или `share`; publish/share endpoints не используются.
 - [x] Production rollout выполнен в deployment `@51` без смены URL; owner smoke `FA-LDUB2` подтвердил authoritative result и exact replay, issuance после проверки выключен.
-- [ ] До первого реального приглашения отдельно согласовать и выполнить содержательную ротацию банков с SME review. Старые answer keys сохраняются в Git history, клонах и кэшах; rewrite истории сам по себе не отзывает их.
+- [x] Техническая содержательная ротация пяти банков выполнена выпуском v4: 240 новых вопросов, новые варианты/ключи/ID, private/public split, fail-closed trust anchors и atomic cutover.
+- [ ] До первого реального приглашения получить независимый человеческий SME sign-off банков v4. Внутренняя техническая проверка не заменяет профильного эксперта.
 
-После технического 10A осталось 10 плановых этапов (`11–20`): 63–114 часов, 450–920 тыс. токенов и 2–4 недели пилота. Ротация банков оценивается отдельно в 50–100 часов и 400–800 тыс. токенов плюс SME review. До limited-pilot readiness (`11–17` + ротация) — 93–174 часа / 740 тыс. – 1,48 млн токенов; до полного roadmap вместе с ротацией — 113–214 часов / 850 тыс. – 1,72 млн токенов + 2–4 недели.
+Историческая оценка после 10A включала отдельную ротацию в будущую работу. Техническая ротация v4 теперь выполнена; актуальная оставшаяся оценка находится в `docs/REMAINING_ESTIMATE.md` и не считает эту работу повторно.
 
 Production evidence 10A: owner smoke `FA-LDUB2` получил raw/final/percent `0`, failed, `server-verified`, `authoritative-v1`, `attempt-v1`, telemetry `client-reported-unverified`, `reportCreated:false`; exact replay вернул тот же код с `replayed:true`. `ATTEMPT_ISSUANCE_ENABLED=false` восстановлен после smoke. Временный cutover bridge удалён и отвечает `unknown_action`.
 
@@ -367,10 +368,10 @@ Production smoke был немутирующим: health подтвердил `.
 - [x] Owner diagnostics: `healthy`, четыре operational store, backend `.13`; создан свежий проверяемый snapshot четырёх store.
 - [x] Retake, signed invitation/attempt, replay/recovery, TXT, admin, deletion, backup, monitoring и rollback покрыты тестами/runbooks.
 - [x] Abuse boundary классифицирован: best-effort rate limits допустимы только для малого controlled pilot; внешний gateway обязателен для открытого запуска.
-- [x] Зафиксированы реальные блокеры: operator contacts, legal/retention, ротация банков/SME, least-privilege credential, очистка 9/9 smoke rows и owner sign-off.
+- [x] Зафиксированы реальные блокеры: operator contacts, legal/retention, независимый SME sign-off v4, least-privilege credential, очистка 9/9 smoke rows и owner sign-off.
 - [x] Добавлен `test-pilot-readiness.js`, не позволяющий документально открыть пилот при известных блокерах.
 
-Не приглашать реальных кандидатов и не переходить к этапу 18 до содержательной ротации банков, внешнего legal/retention решения, ротации Яндекс credential, точечной очистки smoke-данных и осознанного включения gates по последовательности из readiness report.
+Не приглашать реальных кандидатов и не переходить к этапу 18 до независимого SME sign-off банков v4, внешнего legal/retention решения, ротации Яндекс credential, точечной очистки smoke-данных и осознанного включения gates по последовательности из readiness report.
 
 ## Этап 18. Пилот
 
@@ -386,9 +387,9 @@ Production smoke был немутирующим: health подтвердил `.
 
 ## Ближайшая очередь
 
-1. Получить явное подтверждение на содержательную ротацию пяти банков — следующий обязательный pilot blocker; рекомендуемый режим `ультра`.
+1. Передать банки v4 независимому профильному эксперту и зафиксировать SME sign-off либо точечные правки новой версией.
 2. Параллельно владелец предоставляет реквизиты/контакт оператора и получает внешнее legal/retention решение; эти данные нельзя выдумывать.
-3. После ротации выполнить точечную очистку известных smoke-данных, ротацию/least-privilege review Яндекс credential и финальный owner sign-off.
+3. Выполнить точечную очистку известных smoke-данных, ротацию/least-privilege review Яндекс credential и финальный owner sign-off.
 4. Содержательные предложения этапа 5 сохранить в backlog до отдельного подтверждения пользователя.
 
 ## Ограничения работы

@@ -56,10 +56,10 @@ function makeHarness(options = {}) {
   const state = { reads: 0 };
   const context = {
     String, Number, Boolean, Array, Object, JSON, Math, Date, Error, RegExp,
-    BACKEND_VERSION: "yandex-disk-mvp-2026-07-20-13",
+    BACKEND_VERSION: "yandex-disk-mvp-2026-07-21-14",
     AUTHORITATIVE_API_VERSION: "attempt-v2",
-    CANDIDATE_FRONTEND_BUILD: "2026.07.20.12",
-    ADMIN_FRONTEND_BUILD: "2026.07.20.12",
+    CANDIDATE_FRONTEND_BUILD: "2026.07.21.13",
+    ADMIN_FRONTEND_BUILD: "2026.07.21.13",
     RETENTION_AUTOMATION_ENABLED: false,
     PROTECTED_DIAGNOSTIC_PROPERTY_NAMES: [
       "YANDEX_DISK_TOKEN", "YANDEX_DISK_REPORTS_FOLDER", "ATTEMPT_HASH_SALT", "ADMIN_PASSWORD",
@@ -118,9 +118,9 @@ assert.equal(protectedHarness.state.reads, 0, "wrong password must be rejected b
 response = protectedHarness.context.getAdminDiagnostics("correct-password");
 assert.equal(response.ok, true);
 assert.equal(response.status, "healthy");
-assert.equal(response.backendVersion, "yandex-disk-mvp-2026-07-20-13");
-assert.equal(response.frontendVersions.candidate, "2026.07.20.12");
-assert.equal(response.frontendVersions.admin, "2026.07.20.12");
+assert.equal(response.backendVersion, "yandex-disk-mvp-2026-07-21-14");
+assert.equal(response.frontendVersions.candidate, "2026.07.21.13");
+assert.equal(response.frontendVersions.admin, "2026.07.21.13");
 assert.equal(response.yandexDisk.accessible, true);
 assert.equal(response.stores.length, 4);
 assert.equal(response.stores.find(item => item.key === "admin-results").rowCount, 1);
@@ -165,7 +165,7 @@ assert.match(doPost, /assertAllowedObjectKeys\(data, \["action", "apiVersion", "
 
 assert.match(admin, /requestAdminAction\("adminDiagnostics", password, \{\}, 45000\)/);
 assert.match(admin, /Значения properties, пути, идентификаторы и персональные данные не возвращаются/);
-assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.20\.12"/);
+assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.21\.13"/);
 assert.doesNotMatch(admin, /[?&]password=/i, "admin password must never be placed in a URL");
 assert.doesNotMatch(admin, /(?:localStorage|sessionStorage)\.(?:setItem|getItem)/, "admin password and diagnostics must not be persisted in browser storage");
 

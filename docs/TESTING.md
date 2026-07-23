@@ -1,6 +1,6 @@
 # SkillCheck — тестирование и CI
 
-Обновлено: 21 июля 2026 года, этап 17.
+Обновлено: 23 июля 2026 года, выпуск банков v4.
 
 ## Единая команда
 
@@ -24,7 +24,9 @@ npm test
 5. `audit-question-banks.js` — IDs, тайминги, баллы, ошибки и предупреждения 240 production-вопросов.
 6. Все файлы `scripts/test-*.js` в стабильном алфавитном порядке.
 
-Тесты покрывают расчёт, Telegram normalization, retake boundary, candidate/admin escaping, report formatter/access, submission recovery, authoritative scoring, signed tokens, legal gates, удаление, backup/restore, наблюдаемость и CI configuration.
+Тесты покрывают расчёт, Telegram normalization, retake boundary, candidate/admin escaping, report formatter/access, submission recovery, authoritative scoring, signed tokens, legal gates, удаление, backup/restore, наблюдаемость, CI configuration и техническую ротацию банков. Для v4 отдельно проверяются zero legacy reuse, отсутствие закрытых полей, детерминированная private/public сборка, containment/symlink boundaries и crash recovery атомарного promoter.
+
+Текущая матрица: 5 infrastructure validators + 21 regression suite = 26 проверок. Аудит production-банков: 240 вопросов, 0 ошибок, 0 предупреждений.
 
 Любой ненулевой exit code или timeout отдельного скрипта 120 секунд останавливает матрицу. Runner не скрывает stdout/stderr провалившейся проверки.
 

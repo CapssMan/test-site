@@ -1,14 +1,14 @@
 # SkillCheck — руководство оператора
 
-Обновлено: 21 июля 2026 года, этап 16.
+Обновлено: 23 июля 2026 года, выпуск банков v4.
 
 Это главная точка входа для эксплуатации SkillCheck. Она не заменяет тематические runbooks, а задаёт порядок действий и безопасные границы.
 
 ## Текущее состояние
 
-Production runtime: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`, backend `yandex-disk-mvp-2026-07-20-13`, deployment `@56`, API `attempt-v2`.
+Production runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, deployment `@57`, API `attempt-v2`.
 
-Сервис технически готов к контролируемому сценарию, но не открыт для реальных кандидатов. Legal approval, issuance и автоматический retention закрыты. Главные внешние blockers: реквизиты оператора, legal/retention approval, содержательная ротация банков с SME review и этап 17.
+Сервис технически готов к контролируемому сценарию, включая банки v4, но не открыт для реальных кандидатов. Legal approval, issuance и автоматический retention закрыты. Главные внешние blockers: реквизиты оператора, legal/retention approval, независимый человеческий SME sign-off v4, credential review, очистка smoke-данных и owner sign-off.
 
 ## Карта процедур
 
@@ -20,6 +20,7 @@ Production runtime: candidate `Build 2026.07.20.12`, admin `Build 2026.07.20.12`
 | Snapshot, corrupt store, restore | `BACKUP_AND_RECOVERY.md` |
 | Удаление результата/попытки | `DATA_DELETION.md` |
 | Privacy/legal решение | `PRIVACY_CHECKLIST.md`, `LEGAL_PRIVACY_REVIEW.md` |
+| Ротация банков v4 | `QUESTION_BANK_ROTATION.md` |
 | Security boundaries | `SECURITY_AUDIT.md` |
 | Состояние и следующие этапы | `../PROJECT_STATUS.md`, `../ROADMAP.md` |
 
@@ -63,7 +64,7 @@ OAuth-токены, пароли, salts, signing secrets, deployment ID и priva
 - CI красный или проверяемая версия не совпадает с опубликованной;
 - protected status не `healthy` либо private/operational store отсутствует или повреждён;
 - privacy notice/consent/operator contacts не утверждены;
-- текущие банки не прошли согласованную ротацию и SME review;
+- текущие банки v4 не получили независимый человеческий SME sign-off;
 - неизвестно, кто отвечает за rollback/incident;
 - есть нерешённый S1/S2 incident;
 - требуется действие с production-данными, но scope или backup не подтверждены.

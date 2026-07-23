@@ -50,7 +50,8 @@
 - [x] Реализовать authoritative backend-scoring, обязательные `questionId`/`optionId`, single-use signed attempt/invite и best-effort abuse limits.
 - [x] Убрать публичный email-enumeration lookup из controlled-pilot потока: попытка начинается только по email/test-bound invite.
 - [x] Завершить production rollout 10A в существующий deployment `@51` без смены URL; implementation commit `2addd59`, owner smoke `FA-LDUB2`, 14/14 suite и desktop/mobile browser QA подтверждены.
-- [ ] Выполнить отдельно согласованную содержательную ротацию банков и SME review: старые answer keys остаются в Git history, клонах и кэшах.
+- [x] Выполнить техническую содержательную ротацию пяти банков: 240 новых вопросов/вариантов/ключей/ID, private/public v4 и fail-closed atomic cutover.
+- [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
 - [ ] Зафиксировать, что retake — deterrence, и выбрать уровень identity verification для пилота.
@@ -100,7 +101,7 @@
 
 ## Следующий этап
 
-Этап 17 технически завершён без изменения production runtime; решение для реальных кандидатов — `NO-GO`. Следующее действие — отдельно подтверждённая содержательная ротация пяти банков с SME review, рекомендуемый режим `ультра`. До неё и закрытия operator/legal/credential/data-cleanup блокеров переход к этапу 18 запрещён. Полная матрица находится в `docs/PILOT_READINESS.md`, спорные вопросы — в `docs/QUESTION_BANK_AUDIT.md`.
+Техническая ротация пяти банков v4 завершена; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/credential/data-cleanup checklist, рекомендуемый режим для оставшейся инженерной части — `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`, evidence ротации — в `docs/QUESTION_BANK_ROTATION.md`.
 
 ## Financial Analyst Junior
 

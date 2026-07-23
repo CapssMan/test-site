@@ -107,6 +107,10 @@ assert.match(read("docs/PRE_PILOT_INPUTS.md"), /EXTERNAL_REVIEW_BRIEF\.md/);
   "Q2. Распределённый peer review без обязательного бюджета",
   "Q3. Контролируемые прохождения",
   "Q4. Versioned-улучшение",
+  "Financial Analyst Junior | 40 / 40",
+  "40 / 240",
+  "16,7% внутреннего Q1",
+  "Детальный FA Q1-отчёт хранится в отдельной закрытой книге вне Git",
   "100% вопросов покрыты внутренней вычиткой и независимым review",
   "реальные приглашения, рейтинг и заявления о подтверждённой компетентности остаются выключенными"
 ].forEach(fragment => assert.ok(fiveBankQualityPlan.includes(fragment), `five-bank quality plan missing: ${fragment}`));
@@ -128,6 +132,9 @@ assert.match(read("docs/SME_REVIEW_HANDOFF.md"), /FIVE_BANK_QUALITY_PLAN\.md/);
 assert.match(read("ROADMAP.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\.md/);
 assert.match(read("README.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\.md/);
 assert.match(read("docs/PROJECT_STRUCTURE.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\.md/);
+assert.match(read("TODO.md"), /маркетинговую стратегию/);
+assert.match(read("TODO.md"), /официальные реестры товарных знаков/);
+assert.match(read("ROADMAP.md"), /Owner marketing goal/);
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

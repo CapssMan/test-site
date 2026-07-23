@@ -21,6 +21,7 @@ Production runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`
 | Удаление результата/попытки | `DATA_DELETION.md` |
 | Privacy/legal решение | `PRIVACY_CHECKLIST.md`, `LEGAL_PRIVACY_REVIEW.md` |
 | Сбор входных решений перед пилотом | `PRE_PILOT_INPUTS.md` |
+| Передача заданий внешним SME/legal специалистам | `EXTERNAL_REVIEW_BRIEF.md` |
 | Проведение первой контролируемой волны | `PILOT_RUNBOOK.md` |
 | Ротация банков v4 | `QUESTION_BANK_ROTATION.md` |
 | Ротация Яндекс credential | `YANDEX_CREDENTIAL_ROTATION.md` |

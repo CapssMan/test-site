@@ -13,6 +13,7 @@ const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
 const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
 const pilotRunbook = read("docs/PILOT_RUNBOOK.md");
 const productVision = read("docs/PRODUCT_VISION.md");
+const externalReviewBrief = read("docs/EXTERNAL_REVIEW_BRIEF.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -77,6 +78,24 @@ assert.doesNotMatch(pilotRunbook, /пилот (?:запущен|начат)/i,
 assert.match(read("ROADMAP.md"), /Долгосрочная продуктовая цель[\s\S]*docs\/PRODUCT_VISION\.md/);
 assert.match(read("README.md"), /docs\/PRODUCT_VISION\.md/);
 assert.match(read("docs/PROJECT_STRUCTURE.md"), /PRODUCT_VISION\.md/);
+
+[
+  "Задание независимому SME",
+  "SkillCheck_SME_Review_v4_r3.xlsx",
+  "все 240 вопросов",
+  "READY FOR OWNER DECISION",
+  "Задание специалисту по персональным данным",
+  "12. Какие внутренние акты",
+  "APPROVED WITH CONDITIONS",
+  "Пустая строка, устное мнение или отправленный без ответа файл не закрывают blocker",
+  "LEGAL_PILOT_APPROVED=false",
+  "ATTEMPT_ISSUANCE_ENABLED=false",
+  "RETENTION_AUTOMATION_ENABLED=false"
+].forEach(fragment => assert.ok(externalReviewBrief.includes(fragment), `external review brief missing: ${fragment}`));
+
+assert.match(read("README.md"), /EXTERNAL_REVIEW_BRIEF\.md/);
+assert.match(read("docs/OPERATIONS.md"), /EXTERNAL_REVIEW_BRIEF\.md/);
+assert.match(read("docs/PRE_PILOT_INPUTS.md"), /EXTERNAL_REVIEW_BRIEF\.md/);
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

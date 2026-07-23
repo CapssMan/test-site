@@ -53,6 +53,7 @@
 - [x] Выполнить техническую содержательную ротацию пяти банков: 240 новых вопросов/вариантов/ключей/ID, private/public v4 и fail-closed atomic cutover.
 - [x] Подготовить закрытую Excel-книгу для независимого SME review: 240 вопросов, ключи, dropdown-вердикты, формульная сводка, структурные проверки и `docs/SME_REVIEW_HANDOFF.md`; файл не хранить в Git.
 - [x] Подготовить `docs/PRE_PILOT_INPUTS.md` для безопасного сбора operator/legal/SME/cleanup/owner решений без секретов и закрытых заключений в Git.
+- [x] Подготовить `docs/EXTERNAL_REVIEW_BRIEF.md` с готовыми заданиями, сообщениями, scope и acceptance criteria для независимого SME и legal/retention специалиста.
 - [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.

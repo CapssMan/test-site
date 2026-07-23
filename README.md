@@ -92,6 +92,7 @@ docs/PILOT_READINESS.md Техническое evidence, NO-GO блокеры и
 docs/PRE_PILOT_INPUTS.md Безопасный шаблон входных решений SME/operator/legal/cleanup/owner
 docs/PILOT_RUNBOOK.md    Допуск, метрики, feedback и stop conditions первой волны
 docs/PRODUCT_VISION.md   North Star кандидатов, рейтинга и employer discovery
+docs/EXTERNAL_REVIEW_BRIEF.md Готовые задания независимому SME и legal/retention специалисту
 docs/QUESTION_BANK_ROTATION.md Evidence и runbook технической ротации пяти банков v4
 docs/SME_REVIEW_HANDOFF.md Закрытая передача банков v4 независимому эксперту и критерии sign-off
 scripts/validate-tests.js Проверка структуры JSON-банков

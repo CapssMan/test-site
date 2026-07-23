@@ -92,4 +92,6 @@
 4. утверждённый точный список кодов/scope из секции D;
 5. финальное решение владельца из секции E, когда остальные пункты закрыты.
 
-Связанные документы: `PILOT_READINESS.md`, `PRIVACY_CHECKLIST.md`, `SME_REVIEW_HANDOFF.md`, `DATA_DELETION.md`, `OPERATIONS.md`.
+Готовые тексты постановки задачи и acceptance criteria для внешних специалистов находятся в `EXTERNAL_REVIEW_BRIEF.md`.
+
+Связанные документы: `PILOT_READINESS.md`, `PRIVACY_CHECKLIST.md`, `SME_REVIEW_HANDOFF.md`, `EXTERNAL_REVIEW_BRIEF.md`, `DATA_DELETION.md`, `OPERATIONS.md`.

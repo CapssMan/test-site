@@ -107,6 +107,14 @@
 
 Техническая ротация пяти банков v4 и app-folder-only ротация Яндекс credential завершены, а закрытый Excel-пакет и `docs/SME_REVIEW_HANDOFF.md` готовы к передаче эксперту; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/data-cleanup checklist. Для документального/контентного этапа достаточно режима `высокий`; для удаления production smoke и gate cutover снова нужен `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`.
 
+## Post-pilot North Star — не начинать до этапа 20
+
+- [x] Зафиксировать конечную идею: self-service специалисты, opt-in профиль/рейтинг по профессии и employer shortlist.
+- [ ] По данным пилота выбрать account/OTP и visibility/consent model.
+- [ ] Спроектировать version-aware ranking без сравнения несопоставимых банков и ложной точности малой выборки.
+- [ ] Спроектировать employer search, shortlist и consent-based contact flow без массовой выдачи контактов.
+- [ ] Проверить outcome feedback и спрос до выбора монетизации.
+
 ## Financial Analyst Junior
 
 - [x] Проверить совместимость с random engine.

@@ -1,10 +1,12 @@
 # SkillCheck
 
-SkillCheck — статическая MVP assessment-platform для первичного отбора junior-кандидатов в финансовых направлениях.
+SkillCheck — статическая MVP assessment-platform для первичного отбора junior-кандидатов в финансовых направлениях и техническое ядро будущей платформы рейтинга специалистов и поиска талантов работодателями.
 
 Сайт проверяет практическую финансовую логику: отчётность, cash flow, кредитный риск, Excel/аналитику, внимательность к деталям и способность принимать решения по кейсам.
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
+
+Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Публичные аккаунты, рейтинг и employer discovery начнут проектироваться только после пилота и анализа; границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
 
 ## Текущий статус
 
@@ -89,6 +91,7 @@ docs/PRIVACY_CHECKLIST.md Privacy checklist оператора и stop condition
 docs/PILOT_READINESS.md Техническое evidence, NO-GO блокеры и порядок первого пилота
 docs/PRE_PILOT_INPUTS.md Безопасный шаблон входных решений SME/operator/legal/cleanup/owner
 docs/PILOT_RUNBOOK.md    Допуск, метрики, feedback и stop conditions первой волны
+docs/PRODUCT_VISION.md   North Star кандидатов, рейтинга и employer discovery
 docs/QUESTION_BANK_ROTATION.md Evidence и runbook технической ротации пяти банков v4
 docs/SME_REVIEW_HANDOFF.md Закрытая передача банков v4 независимому эксперту и критерии sign-off
 scripts/validate-tests.js Проверка структуры JSON-банков

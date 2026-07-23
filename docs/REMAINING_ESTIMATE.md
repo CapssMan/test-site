@@ -24,7 +24,7 @@
 
 Следующее действие — **независимый SME sign-off и внешний pre-pilot checklist**. Для инженерных правок и финального production cutover рекомендуемый режим — **очень высокий**; для механической документации и наблюдения пилота достаточно **высокого**. Этап 18 не является допустимым следующим шагом до закрытия остальных блокеров из `PILOT_READINESS.md`.
 
-Технический 10A рассчитан на controlled-pilot perimeter. Полноценные аккаунты, внешний OTP/magic-link, CAPTCHA, managed API gateway и расширенная backend question delivery остаются возможным усилением для открытого/adversarial запуска и в текущие диапазоны не включены. App-folder/least-privilege ротация Яндекс OAuth уже выполнена; следующая плановая ротация проводится по `YANDEX_CREDENTIAL_ROTATION.md`.
+Технический 10A рассчитан на controlled-pilot perimeter. North Star из `PRODUCT_VISION.md` — self-service кандидаты, аккаунты/OTP, управляемые публичные профили, рейтинг по профессиям, employer search/shortlist и consent-based contact flow — является отдельной post-pilot версией и в текущие диапазоны не включена. То же относится к CAPTCHA, managed API gateway и расширенной backend question delivery. App-folder/least-privilege ротация Яндекс OAuth уже выполнена; следующая плановая ротация проводится по `YANDEX_CREDENTIAL_ROTATION.md`.
 
 Юридическая проверка профильным специалистом, работа рекрутеров и работодателей, а также само прохождение тестов кандидатами в часы разработки не включены.
 

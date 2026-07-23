@@ -12,6 +12,7 @@ const consent = read("consent.html");
 const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
 const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
 const pilotRunbook = read("docs/PILOT_RUNBOOK.md");
+const productVision = read("docs/PRODUCT_VISION.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -61,6 +62,21 @@ const pilotRunbook = read("docs/PILOT_RUNBOOK.md");
 
 assert.doesNotMatch(pilotRunbook, /пилот (?:запущен|начат)/i,
   "pilot runbook must not claim that the blocked pilot has started");
+
+[
+  "двусторонней платформой проверенных профессиональных навыков",
+  "участвовать в рейтинге только по явному opt-in",
+  "объяснимый shortlist",
+  "один тест доказывает профессиональную пригодность",
+  "Публичный рейтинг нельзя строить как один глобальный список по raw score",
+  "L1 controlled invite",
+  "Публичный self-service рейтинг требует как минимум спроектированного L2",
+  "Что намеренно не делаем до пилота"
+].forEach(fragment => assert.ok(productVision.includes(fragment), `product vision missing: ${fragment}`));
+
+assert.match(read("ROADMAP.md"), /Долгосрочная продуктовая цель[\s\S]*docs\/PRODUCT_VISION\.md/);
+assert.match(read("README.md"), /docs\/PRODUCT_VISION\.md/);
+assert.match(read("docs/PROJECT_STRUCTURE.md"), /PRODUCT_VISION\.md/);
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

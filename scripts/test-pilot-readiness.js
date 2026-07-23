@@ -110,9 +110,10 @@ assert.match(read("docs/PRE_PILOT_INPUTS.md"), /EXTERNAL_REVIEW_BRIEF\.md/);
   "Financial Analyst Junior | 40 / 40",
   "Credit Analyst Junior | 80 / 80",
   "FP&A / Budget Analyst Junior | 40 / 40",
-  "160 / 240",
-  "66,7% внутреннего Q1",
-  "Детальные FA, CA и FP&A Q1-отчёты хранятся в отдельных закрытых книгах вне Git",
+  "Accounting / Reporting Junior | 40 / 40",
+  "200 / 240",
+  "83,3% внутреннего Q1",
+  "Детальные FA, CA, FP&A и Accounting Q1-отчёты хранятся в отдельных закрытых книгах вне Git",
   "100% вопросов покрыты внутренней вычиткой и независимым review",
   "реальные приглашения, рейтинг и заявления о подтверждённой компетентности остаются выключенными"
 ].forEach(fragment => assert.ok(fiveBankQualityPlan.includes(fragment), `five-bank quality plan missing: ${fragment}`));

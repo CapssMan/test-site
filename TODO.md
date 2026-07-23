@@ -59,6 +59,7 @@
 - [x] Выполнить внутренний Q1 review Financial Analyst Junior: 40/40; детали сохранить в отдельной закрытой книге без изменения v4 и без подмены SME sign-off.
 - [x] Выполнить внутренний Q1 review Credit Analyst Junior: 80/80; детали сохранить в отдельной закрытой книге, слабые distractors и policy-dependent расчёты отложить до общей versioned-ротации.
 - [x] Выполнить внутренний Q1 review FP&A Junior: 40/40; детали сохранить в отдельной закрытой книге, hard-калибровку, distractors и action/trigger формулировки отложить до общей versioned-ротации.
+- [x] Выполнить внутренний Q1 review Accounting / Reporting Junior: 40/40; детали сохранить в отдельной закрытой книге, hard-калибровку, рамку учёта и Excel-логику отложить до общей versioned-ротации.
 - [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.

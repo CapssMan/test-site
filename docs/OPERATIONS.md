@@ -20,6 +20,7 @@ Production runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`
 | Snapshot, corrupt store, restore | `BACKUP_AND_RECOVERY.md` |
 | Удаление результата/попытки | `DATA_DELETION.md` |
 | Privacy/legal решение | `PRIVACY_CHECKLIST.md`, `LEGAL_PRIVACY_REVIEW.md` |
+| Сбор входных решений перед пилотом | `PRE_PILOT_INPUTS.md` |
 | Ротация банков v4 | `QUESTION_BANK_ROTATION.md` |
 | Ротация Яндекс credential | `YANDEX_CREDENTIAL_ROTATION.md` |
 | Security boundaries | `SECURITY_AUDIT.md` |

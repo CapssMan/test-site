@@ -35,7 +35,7 @@
 - [x] Этап 12 технически завершён: preview, подтверждаемое result/full-attempt удаление, транзакционная копия, verification, purge, crash recovery и закрытый журнал опубликованы в `@54`.
 - [x] Этап 13 технически завершён: verified snapshots четырёх stores, rotation 12, fail-closed write, editor-only restore, corrupt artifacts и deletion redaction опубликованы в `@55`; production baseline создан.
 - [x] Этап 14 технически завершён: защищённая read-only диагностика, storage aggregates, configuration presence и allowlisted errors опубликованы в `@56`; публичный health остался минимальным.
-- [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 22/22 проверки.
+- [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 27/27 проверок.
 - [x] Этап 16 завершён: operator guide, deployment/rollback runbook, privacy checklist и regression-проверка эксплуатационной документации.
 - [x] Этап 17 технически завершён: live desktop/mobile, public smoke, owner diagnostics, свежий snapshot и NO-GO readiness report с точными блокерами.
 
@@ -52,11 +52,13 @@
 - [x] Завершить production rollout 10A в существующий deployment `@51` без смены URL; implementation commit `2addd59`, owner smoke `FA-LDUB2`, 14/14 suite и desktop/mobile browser QA подтверждены.
 - [x] Выполнить техническую содержательную ротацию пяти банков: 240 новых вопросов/вариантов/ключей/ID, private/public v4 и fail-closed atomic cutover.
 - [x] Подготовить закрытую Excel-книгу для независимого SME review: 240 вопросов, ключи, dropdown-вердикты, формульная сводка, структурные проверки и `docs/SME_REVIEW_HANDOFF.md`; файл не хранить в Git.
+- [x] Подготовить `docs/PRE_PILOT_INPUTS.md` для безопасного сбора operator/legal/SME/cleanup/owner решений без секретов и закрытых заключений в Git.
 - [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
 - [ ] Зафиксировать, что retake — deterrence, и выбрать уровень identity verification для пилота.
 - [x] Проверить scope Яндекс OAuth, создать отдельное app-folder-only приложение, выполнить checksum migration, write/read backup, реальный rollback drill и повторный production cutover (`@61`).
+- [x] Удалить старое широкоправное OAuth-приложение и временные next/rollback credentials после healthy owner-проверки.
 - [ ] Для открытого/adversarial пилота решить, требуется ли backend question delivery.
 - [ ] Указать полное наименование/ФИО, статус и адрес оператора в `privacy.html` и `consent.html`.
 - [ ] Указать реальный email для запросов по персональным данным в обоих документах.

@@ -15,7 +15,7 @@
 - [ ] утверждены получатели результатов и отдельное основание/согласие на передачу каждому работодателю;
 - [x] банки технически содержательно ротированы выпуском v4 после исторической публикации answer keys;
 - [ ] банки v4 получили независимый человеческий SME sign-off;
-- [ ] Яндекс OAuth-токен ротирован и оценён на least privilege/app-folder scope;
+- [x] Яндекс OAuth-токен ротирован на отдельное app-folder-only приложение; старое широкоправное приложение и временный rollback credential удалены;
 - [x] технический этап 17 и rollback/readiness runbooks завершены с решением NO-GO;
 - [ ] после закрытия остальных блокеров выполнен финальный owner sign-off с решением `go`.
 
@@ -109,4 +109,4 @@
 | Открытые риски | Legal, content, credential, incidents |
 | Решение | `go`, `no-go` или ограниченный scope |
 
-Связанные документы: `LEGAL_PRIVACY_REVIEW.md`, `DATA_DELETION.md`, `BACKUP_AND_RECOVERY.md`, `OBSERVABILITY.md`, `DEPLOYMENT.md`.
+Связанные документы: `PRE_PILOT_INPUTS.md`, `LEGAL_PRIVACY_REVIEW.md`, `DATA_DELETION.md`, `BACKUP_AND_RECOVERY.md`, `OBSERVABILITY.md`, `DEPLOYMENT.md`.

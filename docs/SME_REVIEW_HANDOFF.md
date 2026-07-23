@@ -73,7 +73,7 @@ Sign-off можно передать владельцу на финальное 
 - вкладка `Проверки` показывает `PASS`, формульная сводка не содержит ошибок;
 - владелец сверил замечания с private source и зафиксировал отдельное решение `accept` либо список правок.
 
-`READY FOR OWNER DECISION` означает лишь полное и непротиворечивое заполнение книги. Оно не включает legal/retention, operator contacts, credential review, очистку smoke-данных или разрешение production gates.
+`READY FOR OWNER DECISION` означает лишь полное и непротиворечивое заполнение книги. Оно не включает legal/retention, operator contacts, очистку smoke-данных или разрешение production gates. Least-privilege credential review закрыт отдельно и не считается частью SME-вердикта.
 
 ## Обработка замечаний
 

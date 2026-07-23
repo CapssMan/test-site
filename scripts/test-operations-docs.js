@@ -11,7 +11,8 @@ const requiredDocs = [
   "docs/OPERATIONS.md",
   "docs/BACKUP_AND_RECOVERY.md",
   "docs/TESTING.md",
-  "docs/YANDEX_CREDENTIAL_ROTATION.md"
+  "docs/YANDEX_CREDENTIAL_ROTATION.md",
+  "docs/PRE_PILOT_INPUTS.md"
 ];
 
 requiredDocs.forEach(relativePath => {
@@ -53,6 +54,18 @@ const credentialRotation = read("docs/YANDEX_CREDENTIAL_ROTATION.md");
   "ATTEMPT_ISSUANCE_ENABLED=false"
 ].forEach(fragment => assert.ok(credentialRotation.includes(fragment), `credential runbook missing: ${fragment}`));
 assert.doesNotMatch(credentialRotation, /OAuth\s+[A-Za-z0-9._~+\/=\/-]{20,}/, "credential runbook must not contain a token");
+
+const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
+[
+  "LEGAL_PILOT_APPROVED=false",
+  "ATTEMPT_ISSUANCE_ENABLED=false",
+  "RETENTION_AUTOMATION_ENABLED=false",
+  "Не удалять «все 9» по одному счётчику",
+  "READY FOR OWNER DECISION",
+  "LIMITED GO"
+].forEach(fragment => assert.ok(prePilotInputs.includes(fragment), `pre-pilot input template missing: ${fragment}`));
+assert.doesNotMatch(prePilotInputs, /AKfy[a-zA-Z0-9_-]{20,}|OAuth\s+[A-Za-z0-9._~+\/=\/-]{20,}/,
+  "pre-pilot input template must not contain live credentials or deployment ids");
 
 const readme = read("README.md");
 requiredDocs.slice(0, 3).forEach(relativePath => {

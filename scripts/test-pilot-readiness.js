@@ -10,6 +10,7 @@ const code = read("apps-script/Code.gs");
 const privacy = read("privacy.html");
 const consent = read("consent.html");
 const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
+const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -36,6 +37,9 @@ const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
   "На доработку",
   "Отклонить"
 ].forEach(fragment => assert.ok(smeHandoff.includes(fragment), `SME handoff missing: ${fragment}`));
+
+["Публичные реквизиты оператора", "Внешнее legal/retention решение", "Подтверждение очистки smoke-данных", "Финальный owner sign-off"]
+  .forEach(fragment => assert.ok(prePilotInputs.includes(fragment), `pre-pilot inputs missing: ${fragment}`));
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

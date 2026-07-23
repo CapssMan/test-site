@@ -1,6 +1,6 @@
 # SkillCheck — готовность к контролируемому пилоту
 
-Обновлено: 23 июля 2026 года, после технической ротации банков v4.
+Обновлено: 23 июля 2026 года, после технической ротации банков v4 и retirement старого OAuth credential.
 
 ## Решение
 
@@ -20,9 +20,9 @@
 | Protected owner diagnostics | `healthy`, четыре operational store, 9 result rows и 9 anti-retake rows | verified |
 | Operational backup | свежий проверяемый snapshot четырёх store создан owner-функцией | verified |
 | Apps Script deployments | существующий versioned deployment обновлён до `@61`; Web App URL не менялся | verified |
-| Яндекс credential/storage | отдельное API-only приложение, только `cloud_api:disk.app_folder`, root `app:/skillcheck`; checksum cutover, write/read backup и реальный rollback drill | verified |
+| Яндекс credential/storage | отдельное API-only приложение, только `cloud_api:disk.app_folder`, root `app:/skillcheck`; checksum cutover, write/read backup и реальный rollback drill; старое приложение и rollback credential удалены | verified |
 | Public negative smoke | GET begin → `method_not_allowed`; legacy → `client_upgrade_required`; unknown → `unknown_action`; dev-quick → `test_not_public` | verified |
-| GitHub CI/Pages | этап 16 опубликован зелёными workflow; этап 17 повторно проверяется при публикации этого отчёта | verified |
+| GitHub CI/Pages | commit retirement `2d9254d`: SkillCheck CI #9 и Pages #71 завершены успешно | verified |
 
 В production остаются известные smoke-данные. Значение `9/9` не является пилотной выборкой и не должно попадать в будущую аналитику. Коды известных smoke перечислены в `PROJECT_STATUS.md`. Перед пилотом они удаляются только через preview/confirmed deletion с проверкой backup purge; ручное редактирование JSON запрещено.
 
@@ -64,7 +64,7 @@ CacheService rate limiting является best-effort и не заменяет
 
 ## Финальная последовательность перед первым кандидатом
 
-1. По `SME_REVIEW_HANDOFF.md` передать закрытую review-книгу независимому профильному эксперту и получить sign-off; замечания исправлять только новой versioned-ротацией.
+1. Создать закрытую рабочую копию `PRE_PILOT_INPUTS.md`; по `SME_REVIEW_HANDOFF.md` передать review-книгу независимому профильному эксперту и получить sign-off; замечания исправлять только новой versioned-ротацией.
 2. Заполнить operator contacts, получить внешнее legal/retention решение, обновить consent version при необходимости.
 3. По утверждённому списку удалить smoke results/attempts через admin preview/confirm; проверить operational backups и diagnostics.
 4. Выполнить desktop/mobile QA, CI, health, protected status и readiness.
@@ -87,4 +87,4 @@ CacheService rate limiting является best-effort и не заменяет
 
 На выборке 10–30 прохождений не делать сильных статистических выводов и не менять scoring автоматически.
 
-Связанные документы: `QUESTION_BANK_ROTATION.md`, `SME_REVIEW_HANDOFF.md`, `PRIVACY_CHECKLIST.md`, `OPERATIONS.md`, `DEPLOYMENT.md`, `OBSERVABILITY.md`, `BACKUP_AND_RECOVERY.md`, `DATA_DELETION.md`, `QUESTION_BANK_AUDIT.md`.
+Связанные документы: `PRE_PILOT_INPUTS.md`, `QUESTION_BANK_ROTATION.md`, `SME_REVIEW_HANDOFF.md`, `PRIVACY_CHECKLIST.md`, `OPERATIONS.md`, `DEPLOYMENT.md`, `OBSERVABILITY.md`, `BACKUP_AND_RECOVERY.md`, `DATA_DELETION.md`, `QUESTION_BANK_AUDIT.md`.

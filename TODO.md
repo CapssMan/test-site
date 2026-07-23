@@ -62,6 +62,7 @@
 - [x] Выполнить внутренний Q1 review FP&A Junior: 40/40; детали сохранить в отдельной закрытой книге, hard-калибровку, distractors и action/trigger формулировки отложить до общей versioned-ротации.
 - [x] Выполнить внутренний Q1 review Accounting / Reporting Junior: 40/40; детали сохранить в отдельной закрытой книге, hard-калибровку, рамку учёта и Excel-логику отложить до общей versioned-ротации.
 - [x] Выполнить внутренний Q1 review Finance BI / Data Analyst Junior: 40/40; детали сохранить в отдельной закрытой книге, freshness, RLS/KPI hard-cases и distractors отложить до общей versioned-ротации.
+- [x] Свести 16 средних Q1-замечаний в единый закрытый draft v5 proposal: 8 уточнений условия/техники и 8 redesign hard/case; production v4 не менять до SME/owner решения.
 - [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.

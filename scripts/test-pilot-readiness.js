@@ -15,6 +15,7 @@ const pilotRunbook = read("docs/PILOT_RUNBOOK.md");
 const productVision = read("docs/PRODUCT_VISION.md");
 const externalReviewBrief = read("docs/EXTERNAL_REVIEW_BRIEF.md");
 const fiveBankQualityPlan = read("docs/FIVE_BANK_QUALITY_PLAN.md");
+const sourcePrivacyPlan = read("docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -113,6 +114,20 @@ assert.match(read("docs/PRE_PILOT_INPUTS.md"), /EXTERNAL_REVIEW_BRIEF\.md/);
 assert.match(read("ROADMAP.md"), /MVP сохраняет все пять финансовых тестов/);
 assert.match(read("README.md"), /FIVE_BANK_QUALITY_PLAN\.md/);
 assert.match(read("docs/SME_REVIEW_HANDOFF.md"), /FIVE_BANK_QUALITY_PLAN\.md/);
+
+[
+  "Приватность разработки",
+  "Публичная атрибуция",
+  "не отзывает ранее созданные клоны",
+  "Адрес `capssman.github.io` раскрывает GitHub-псевдоним",
+  "может немедленно выключить действующий Pages-сайт",
+  "Backend выдаёт только разрешённую порцию вопросов",
+  "не отменяет обязанностей оператора"
+].forEach(fragment => assert.ok(sourcePrivacyPlan.includes(fragment), `source privacy plan missing: ${fragment}`));
+
+assert.match(read("ROADMAP.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\.md/);
+assert.match(read("README.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\.md/);
+assert.match(read("docs/PROJECT_STRUCTURE.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\.md/);
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

@@ -113,6 +113,10 @@
 ## Post-pilot North Star — не начинать до этапа 20
 
 - [x] Зафиксировать конечную идею: self-service специалисты, opt-in профиль/рейтинг по профессии и employer shortlist.
+- [x] Зафиксировать цель закрыть source repository и убрать личный GitHub username из основного URL без обещания невозможности копирования публичного frontend.
+- [ ] Выбрать вариант миграции из `SOURCE_PRIVACY_AND_ATTRIBUTION.md`: GitHub Pro/private Pages, private source + public build или отдельный hosting.
+- [ ] Подключить нейтральный домен и проверить новый контур до перевода текущего repository в private.
+- [ ] Для снижения массового копирования спроектировать per-attempt backend delivery вместо публикации полных display-банков.
 - [ ] По данным пилота выбрать account/OTP и visibility/consent model.
 - [ ] Спроектировать version-aware ranking без сравнения несопоставимых банков и ложной точности малой выборки.
 - [ ] Спроектировать employer search, shortlist и consent-based contact flow без массовой выдачи контактов.

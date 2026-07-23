@@ -399,6 +399,8 @@ Production smoke был немутирующим: health подтвердил `.
 
 После пилота ранжировать задачи по ценности, риску, трудоёмкости, срочности и зависимостям. North Star: self-service кандидаты, управляемые профили, version-aware рейтинг по профессиям, employer search/shortlist и consent-based contact flow. Возможные supporting-направления: accounts/OTP, защищённые отчёты, abuse perimeter, дальнейшее усиление server-side delivery, БД, экспорт, dashboard, уведомления и тарифы. Не начинать до пилота и анализа; точный post-MVP roadmap утверждается здесь по данным этапов 18–19.
 
+Owner privacy goal от 23 июля 2026 года: после MVP основной source repository должен стать private, а публичный URL — перестать раскрывать личный GitHub username. Миграция выполняется без простоя по `docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md`; она не объявляется полной защитой от копирования браузерных artifacts и не отменяет обязательные сведения оператора.
+
 ## Ближайшая очередь
 
 1. Закрытая Excel-книга, `docs/SME_REVIEW_HANDOFF.md`, `docs/EXTERNAL_REVIEW_BRIEF.md` и безопасный шаблон `docs/PRE_PILOT_INPUTS.md` подготовлены; создать закрытую рабочую копию, передать пакет независимому профильному эксперту и зафиксировать SME sign-off либо точечные правки новой версией.

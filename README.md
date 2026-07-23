@@ -94,6 +94,7 @@ docs/PILOT_RUNBOOK.md    Допуск, метрики, feedback и stop conditio
 docs/PRODUCT_VISION.md   North Star кандидатов, рейтинга и employer discovery
 docs/EXTERNAL_REVIEW_BRIEF.md Готовые задания независимому SME и legal/retention специалисту
 docs/FIVE_BANK_QUALITY_PLAN.md Повторная проверка качества всех пяти банков после MVP
+docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md План private-репозитория, нейтрального домена и границы защиты от копирования
 docs/QUESTION_BANK_ROTATION.md Evidence и runbook технической ротации пяти банков v4
 docs/SME_REVIEW_HANDOFF.md Закрытая передача банков v4 независимому эксперту и критерии sign-off
 scripts/validate-tests.js Проверка структуры JSON-банков

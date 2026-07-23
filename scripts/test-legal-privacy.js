@@ -66,5 +66,15 @@ assert.match(admin, /const API_VERSION = "attempt-v2"/);
 assert.match(admin, /setInviteFormEnabled\(attemptIssuanceEnabled && legalPilotApproved\)/);
 assert.match(home, /реквизитов оператора[\s\S]*юридического checklist/);
 assert.match(review, /Реальный пилот юридически не готов/);
+assert.match(review, /Дата технической сверки: 23 июля 2026 года/);
+assert.match(review, /Граница актуальности:[\s\S]*не даёт ответ `APPROVED`/);
+assert.match(review, /приказ(?:ом)? Роскомнадзора № 180/i);
+assert.match(review, /приказ(?:ом)? Роскомнадзора № 179/i);
+assert.match(review, /приказ Роскомнадзора № 140/i);
+assert.match(review, /псевдонимизированными, не анонимными/);
+assert.match(review, /`APPROVED` нельзя выводить из наличия ссылок или технических controls/);
+assert.match(review, /`LEGAL_PILOT_APPROVED=false`/);
+assert.match(review, /`ATTEMPT_ISSUANCE_ENABLED=false`/);
+assert.match(review, /`RETENTION_AUTOMATION_ENABLED=false`/);
 
 console.log("Stage 11 legal/privacy checks passed: versioned separate consent, disabled sharing and fail-closed dual pilot gate.");

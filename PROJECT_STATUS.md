@@ -7,9 +7,9 @@
 - Технически завершены этап 17 и содержательная ротация пяти production-банков v4; решение для реальных кандидатов остаётся **NO-GO**.
 - Локально воспроизведены locked install и 27 проверок: 22 test-файла, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`; workflow не имеет secrets и не выполняет deploy/storage calls.
-- Следующее обязательное действие: независимый человеческий SME sign-off v4 и внешний pre-pilot checklist, рекомендуемый режим для инженерной части `очень высокий`.
+- Следующее обязательное действие: независимый человеческий SME sign-off v4 и внешний pre-pilot checklist; для документальной/контентной части достаточно режима `высокий`, для production cleanup и gate cutover нужен `очень высокий`.
 - Для внешнего review подготовлены закрытая Excel-книга на 240 вопросов и `docs/SME_REVIEW_HANDOFF.md`; workbook хранится вне Git, его наличие не считается sign-off.
-- Яндекс storage переведён на отдельное API-only OAuth-приложение с единственным `cloud_api:disk.app_folder`; активный root `app:/skillcheck`, выполнены checksum migration, write/read backup test и реальный rollback drill.
+- Яндекс storage переведён на отдельное API-only OAuth-приложение с единственным `cloud_api:disk.app_folder`; активный root `app:/skillcheck`, выполнены checksum migration, write/read backup test и реальный rollback drill. Старое широкоправное приложение удалено, его токены отозваны, временные next/rollback credentials удалены из Script Properties после healthy owner-проверки.
 - Этап 18 заблокирован до реквизитов оператора, внешнего legal/retention checklist, SME sign-off, очистки smoke-данных и owner sign-off.
 - Полный план: `ROADMAP.md`.
 

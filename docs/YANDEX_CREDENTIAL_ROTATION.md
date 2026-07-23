@@ -9,6 +9,8 @@
 - Активный storage root: `app:/skillcheck`.
 - OAuth-приложение: отдельное API-only приложение `SkillCheck Storage`.
 - Единственное право приложения: `cloud_api:disk.app_folder` — доступ только к папке приложения на Яндекс.Диске.
+- Старое широкоправное приложение `skillcheck` удалено; выданные ему токены отозваны.
+- Временные next/rollback credentials удалены из Script Properties после проверки активного хранилища.
 - `LEGAL_PILOT_APPROVED=false` и `ATTEMPT_ISSUANCE_ENABLED=false` на всём протяжении операции.
 
 Токен, Client ID, Client secret, значения Script Properties и контрольные суммы отдельных private-файлов в Git и документацию не записываются.
@@ -42,17 +44,13 @@ Owner-only функции отсутствуют в публичном `doGet`/`
 8. Новый credential создал и перечитал свежие snapshot четырёх operational store.
 9. Выполнен реальный rollback с обратной синхронизацией; health на прежнем пути снова вернул HTTP `200`.
 10. Manifest обновлён, повторный promote завершён, health снова вернул HTTP `200` на app-folder storage.
+11. Старое широкоправное OAuth-приложение удалено из кабинета Яндекса; в списке осталось только `SkillCheck Storage`.
+12. `retireYandexDiskRollbackCredentialForOwner()` повторно проверила активное хранилище и удалила временные next/rollback credentials.
+13. После retirement защищённая диагностика вернула `healthy`: доступны 4 operational store, 9 result rows и 9 anti-retake rows; public health повторно вернул HTTP `200`.
 
-## Аварийная процедура
+## Состояние rollback после retirement
 
-Пока старое приложение ещё не отозвано:
-
-1. Немедленно оставить оба pilot gate закрытыми.
-2. Запустить `rollbackYandexAppFolderMigrationForOwner()` из редактора Apps Script.
-3. Проверить public health, затем `verifyProtectedDiagnosticsForOwner()`.
-4. Не удалять новый app-folder и не редактировать JSON вручную.
-
-После отзыва старого OAuth-приложения rollback на `disk:/skillcheck` больше не считается доступным. Восстановление выполняется из verified operational backups внутри `app:/skillcheck` по `BACKUP_AND_RECOVERY.md` либо через новую credential-ротацию.
+Rollback на `disk:/skillcheck` намеренно больше недоступен: старое приложение и временный credential удалены. Восстановление выполняется из verified operational backups внутри `app:/skillcheck` по `BACKUP_AND_RECOVERY.md` либо через новую credential-ротацию. Pilot gates при восстановлении должны оставаться закрытыми; production JSON вручную не редактируется.
 
 ## Запрещено
 

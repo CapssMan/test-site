@@ -11,6 +11,7 @@
 - Для внешнего review подготовлены закрытая Excel-книга на 240 вопросов и `docs/SME_REVIEW_HANDOFF.md`; workbook хранится вне Git, его наличие не считается sign-off.
 - Добавлен `docs/PRE_PILOT_INPUTS.md`: единый безопасный шаблон реквизитов оператора, legal/retention решения, SME verdict, точного smoke-cleanup scope и owner sign-off; заполненная копия хранится вне Git.
 - `docs/LEGAL_PRIVACY_REVIEW.md` повторно сверен 23 июля 2026 года по официальным источникам: добавлен реестр evidence для отдельного согласия, уведомления, локализации/трансграничности, подтверждения уничтожения и границы обезличивания. Это не открывает legal gate и не заменяет внешнее заключение.
+- Подготовлен `docs/PILOT_RUNBOOK.md`: первая волна ограничена 3–5 работодателями/рекрутерами, 10–30 завершениями и партиями до пяти приглашений; выбран L1 без заявления о подтверждённой личности, заданы метрики, feedback и stop conditions. Пилот не начат, gates закрыты.
 - Яндекс storage переведён на отдельное API-only OAuth-приложение с единственным `cloud_api:disk.app_folder`; активный root `app:/skillcheck`, выполнены checksum migration, write/read backup test и реальный rollback drill. Старое широкоправное приложение удалено, его токены отозваны, временные next/rollback credentials удалены из Script Properties после healthy owner-проверки.
 - Этап 18 заблокирован до реквизитов оператора, внешнего legal/retention checklist, SME sign-off, очистки smoke-данных и owner sign-off.
 - Полный план: `ROADMAP.md`.

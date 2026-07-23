@@ -11,6 +11,7 @@ const privacy = read("privacy.html");
 const consent = read("consent.html");
 const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
 const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
+const pilotRunbook = read("docs/PILOT_RUNBOOK.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -26,7 +27,8 @@ const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
 [
   "test-operations-docs.js",
   "PILOT_READINESS.md",
-  "SME_REVIEW_HANDOFF.md"
+  "SME_REVIEW_HANDOFF.md",
+  "PILOT_RUNBOOK.md"
 ].forEach(fragment => assert.ok(read("README.md").includes(fragment), `README missing: ${fragment}`));
 
 [
@@ -40,6 +42,25 @@ const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
 
 ["Публичные реквизиты оператора", "Внешнее legal/retention решение", "Подтверждение очистки smoke-данных", "Финальный owner sign-off"]
   .forEach(fragment => assert.ok(prePilotInputs.includes(fragment), `pre-pilot inputs missing: ${fragment}`));
+
+[
+  "подготовлен, пилот не начат",
+  "LEGAL_PILOT_APPROVED=false",
+  "ATTEMPT_ISSUANCE_ENABLED=false",
+  "RETENTION_AUTOMATION_ENABLED=false",
+  "3–5 работодателей или рекрутеров",
+  "10–30 завершённых прохождений",
+  "L1 — непубличное персональное приглашение без подтверждения юридической личности",
+  "retake, fingerprint и signed attempt являются deterrence",
+  "запрещена формулировка «личность кандидата подтверждена»",
+  "не более пяти одновременно",
+  "не `0`",
+  "Немедленно выключить issuance",
+  "достигнут лимит 30 завершённых прохождений"
+].forEach(fragment => assert.ok(pilotRunbook.includes(fragment), `pilot runbook missing: ${fragment}`));
+
+assert.doesNotMatch(pilotRunbook, /пилот (?:запущен|начат)/i,
+  "pilot runbook must not claim that the blocked pilot has started");
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

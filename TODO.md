@@ -56,7 +56,8 @@
 - [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
-- [ ] Зафиксировать, что retake — deterrence, и выбрать уровень identity verification для пилота.
+- [x] Зафиксировать для первой контролируемой волны L1: непубличное персональное приглашение без подтверждения юридической личности; retake/fingerprint — deterrence, а не identity verification. При необходимости OTP/account/KYC требуется отдельный проект.
+- [x] Подготовить `docs/PILOT_RUNBOOK.md`: допуск, роли, малые партии, метрики, feedback, ежедневная сверка и stop conditions без открытия production gates.
 - [x] Проверить scope Яндекс OAuth, создать отдельное app-folder-only приложение, выполнить checksum migration, write/read backup, реальный rollback drill и повторный production cutover (`@61`).
 - [x] Удалить старое широкоправное OAuth-приложение и временные next/rollback credentials после healthy owner-проверки.
 - [ ] Для открытого/adversarial пилота решить, требуется ли backend question delivery.

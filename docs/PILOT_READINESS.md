@@ -55,7 +55,7 @@ CacheService rate limiting является best-effort и не заменяет
 |---|---|---|
 | Реквизиты оператора | `privacy.html` и `consent.html` содержат явные «не указано» | владелец предоставляет и утверждает реквизиты/контакт |
 | Legal и retention | нет внешнего заключения, сроков, legal hold, формы подтверждения уничтожения | оператор + профильный специалист подписывают checklist |
-| Исторически раскрытый answer key / SME v4 | техническая ротация и новая private/public миграция выполнены, но независимый человеческий review не задокументирован | профильный эксперт подтверждает банки v4 либо возвращает точечные правки новой версией |
+| Исторически раскрытый answer key / SME v4 | техническая ротация выполнена; закрытая review-книга на 240 вопросов и runbook `SME_REVIEW_HANDOFF.md` подготовлены, но внешний review ещё не выполнен | профильный эксперт подтверждает банки v4 либо возвращает точечные правки новой версией |
 | Яндекс credential | scope app-folder/least-privilege не подтверждён, дата ротации не зафиксирована | ротация OAuth-токена и документированная проверка scope вне Git |
 | Чистая pilot-база | protected diagnostics показывает 9 smoke result/attempt rows | точечный deletion workflow после подтверждения точного списка |
 | Финальный owner sign-off | нет закрытого go/no-go журнала с ответственными | заполнить `PRIVACY_CHECKLIST.md` и эту финальную секцию после остальных блокеров |
@@ -64,7 +64,7 @@ CacheService rate limiting является best-effort и не заменяет
 
 ## Финальная последовательность перед первым кандидатом
 
-1. Получить независимый человеческий SME sign-off банков v4; замечания исправлять только новой versioned-ротацией.
+1. По `SME_REVIEW_HANDOFF.md` передать закрытую review-книгу независимому профильному эксперту и получить sign-off; замечания исправлять только новой versioned-ротацией.
 2. Ротировать Яндекс OAuth credential, проверить private storage и protected status.
 3. Заполнить operator contacts, получить внешнее legal/retention решение, обновить consent version при необходимости.
 4. По утверждённому списку удалить smoke results/attempts через admin preview/confirm; проверить operational backups и diagnostics.
@@ -88,4 +88,4 @@ CacheService rate limiting является best-effort и не заменяет
 
 На выборке 10–30 прохождений не делать сильных статистических выводов и не менять scoring автоматически.
 
-Связанные документы: `QUESTION_BANK_ROTATION.md`, `PRIVACY_CHECKLIST.md`, `OPERATIONS.md`, `DEPLOYMENT.md`, `OBSERVABILITY.md`, `BACKUP_AND_RECOVERY.md`, `DATA_DELETION.md`, `QUESTION_BANK_AUDIT.md`.
+Связанные документы: `QUESTION_BANK_ROTATION.md`, `SME_REVIEW_HANDOFF.md`, `PRIVACY_CHECKLIST.md`, `OPERATIONS.md`, `DEPLOYMENT.md`, `OBSERVABILITY.md`, `BACKUP_AND_RECOVERY.md`, `DATA_DELETION.md`, `QUESTION_BANK_AUDIT.md`.

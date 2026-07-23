@@ -8,6 +8,7 @@
 - Локально воспроизведены locked install и 26 проверок: 21 test-файл, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Runtime ротации: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-21-14`, deployment `@57`; workflow не имеет secrets и не выполняет deploy/storage calls.
 - Следующее обязательное действие: независимый человеческий SME sign-off v4 и внешний pre-pilot checklist, рекомендуемый режим для инженерной части `очень высокий`.
+- Для внешнего review подготовлены закрытая Excel-книга на 240 вопросов и `docs/SME_REVIEW_HANDOFF.md`; workbook хранится вне Git, его наличие не считается sign-off.
 - Этап 18 заблокирован до реквизитов оператора, внешнего legal/retention checklist, SME sign-off, ротации/least-privilege review Яндекс credential и очистки smoke-данных.
 - Полный план: `ROADMAP.md`.
 
@@ -217,6 +218,7 @@
 - Production legacy bootstrap навсегда отключён; он разрешён только для закрытого `dev-quick` fixture.
 - Полная локальная матрица — 26/26; аудит — 240 вопросов, 0 ошибок, 0 предупреждений.
 - Внутренний multi-review не является независимым человеческим SME sign-off. Полный evidence: `docs/QUESTION_BANK_ROTATION.md`.
+- Закрытый SME workbook содержит пять role-вкладок, answer key, жёлтые поля вердикта/критичности/исправления, формульную сводку и 25 структурных checks; порядок безопасной передачи и acceptance criteria описан в `docs/SME_REVIEW_HANDOFF.md`.
 
 ## Оценка до финала roadmap
 

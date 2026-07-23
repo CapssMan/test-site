@@ -51,6 +51,7 @@
 - [x] Убрать публичный email-enumeration lookup из controlled-pilot потока: попытка начинается только по email/test-bound invite.
 - [x] Завершить production rollout 10A в существующий deployment `@51` без смены URL; implementation commit `2addd59`, owner smoke `FA-LDUB2`, 14/14 suite и desktop/mobile browser QA подтверждены.
 - [x] Выполнить техническую содержательную ротацию пяти банков: 240 новых вопросов/вариантов/ключей/ID, private/public v4 и fail-closed atomic cutover.
+- [x] Подготовить закрытую Excel-книгу для независимого SME review: 240 вопросов, ключи, dropdown-вердикты, формульная сводка, структурные проверки и `docs/SME_REVIEW_HANDOFF.md`; файл не хранить в Git.
 - [ ] Получить независимый человеческий SME review и sign-off банков v4; внутренний review не считать внешней экспертной приёмкой.
 - [ ] Оставлять `ATTEMPT_ISSUANCE_ENABLED=false` до завершения ротации и pilot checklist.
 - [ ] Для открытого публичного потока выбрать OTP/auth, CAPTCHA и/или внешний gateway.
@@ -101,7 +102,7 @@
 
 ## Следующий этап
 
-Техническая ротация пяти банков v4 завершена; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/credential/data-cleanup checklist, рекомендуемый режим для оставшейся инженерной части — `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`, evidence ротации — в `docs/QUESTION_BANK_ROTATION.md`.
+Техническая ротация пяти банков v4 завершена, а закрытый Excel-пакет и `docs/SME_REVIEW_HANDOFF.md` готовы к передаче эксперту; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/credential/data-cleanup checklist, рекомендуемый режим для оставшейся инженерной части — `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`, evidence ротации — в `docs/QUESTION_BANK_ROTATION.md`.
 
 ## Financial Analyst Junior
 

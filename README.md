@@ -86,6 +86,7 @@ docs/DEPLOYMENT.md    Безопасная публикация Apps Script/Page
 docs/PRIVACY_CHECKLIST.md Privacy checklist оператора и stop conditions пилота
 docs/PILOT_READINESS.md Техническое evidence, NO-GO блокеры и порядок первого пилота
 docs/QUESTION_BANK_ROTATION.md Evidence и runbook технической ротации пяти банков v4
+docs/SME_REVIEW_HANDOFF.md Закрытая передача банков v4 независимому эксперту и критерии sign-off
 scripts/validate-tests.js Проверка структуры JSON-банков
 scripts/migrate-public-banks-10a.js Воспроизводимая структурная миграция банков 10A
 README.md               Общее описание

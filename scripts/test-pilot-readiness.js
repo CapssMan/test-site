@@ -9,6 +9,7 @@ const report = read("docs/PILOT_READINESS.md");
 const code = read("apps-script/Code.gs");
 const privacy = read("privacy.html");
 const consent = read("consent.html");
+const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -23,8 +24,18 @@ const consent = read("consent.html");
 
 [
   "test-operations-docs.js",
-  "PILOT_READINESS.md"
+  "PILOT_READINESS.md",
+  "SME_REVIEW_HANDOFF.md"
 ].forEach(fragment => assert.ok(read("README.md").includes(fragment), `README missing: ${fragment}`));
+
+[
+  "240 вопросов",
+  "Не загружать в Git",
+  "READY FOR OWNER DECISION",
+  "не включает legal/retention",
+  "На доработку",
+  "Отклонить"
+].forEach(fragment => assert.ok(smeHandoff.includes(fragment), `SME handoff missing: ${fragment}`));
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

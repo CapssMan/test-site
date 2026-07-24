@@ -151,7 +151,8 @@ assert.match(code, /function verifyProtectedDiagnosticsForOwner\(\)/);
 assert.match(code, /function createOperationalBackupsForOwner\(\)/);
 
 assert.match(privacy, /Наименование\/ФИО оператора: не указано/);
-assert.match(consent, /Email для обращений по персональным данным: не указан/);
+assert.match(consent, /skillcheck\.project@yandex\.ru/);
+assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
 assert.doesNotMatch(report, /\[x\].*(реквизит|legal|credential|smoke|SME sign-off)/i,
   "external blockers must not be marked complete");
 assert.match(read("ROADMAP.md"), /\[x\].*Техническая содержательная ротация пяти банков/,

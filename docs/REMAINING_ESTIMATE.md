@@ -8,7 +8,7 @@ Assessment-ядро уже работает: пять тестов, закрыт
 
 | Блок | Готовый результат | Часы | Токены |
 |---|---|---:|---:|
-| 18 | Российский runtime: Yandex Object Storage + API Gateway + Cloud Functions + YDB/Lockbox; private source в GitVerse. Минимальный opt-in рейтинг по пяти профессиям | 25–45 | 100–200 тыс. |
+| 18 | Закон-ориентированный российский runtime: Yandex Object Storage + API Gateway + Cloud Functions + YDB/Lockbox. Source repository становится приватным; GitVerse необязателен. Минимальный opt-in рейтинг по пяти профессиям | 25–45 | 100–200 тыс. |
 | 19 | Короткий pilot 10–30 прохождений и одна сгруппированная версия исправлений | 8–15 + ожидание | 30–70 тыс. |
 | 20 | Публичный self-service запуск рейтинга, базовый employer shortlist и контрольный cutover | 10–18 | 40–90 тыс. |
 

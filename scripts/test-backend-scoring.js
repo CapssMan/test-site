@@ -253,7 +253,10 @@ vm.runInContext(
 );
 const caPrivateShape = realmJson(selectionContext, {
   questionsPerAttempt: 40,
-  questions: Array.from({ length: 80 }, (_, index) => ({ id: `ca4_${String(index + 1).padStart(3, "0")}` }))
+  questions: Array.from({ length: 80 }, (_, index) => ({
+    id: `ca4_${String(index + 1).padStart(3, "0")}`,
+    block: `block_${Math.floor(index / 10) + 1}`
+  }))
 });
 const manifestA = selectionContext.__select(caPrivateShape, "att_" + "1".repeat(32), "2".repeat(32));
 const manifestB = selectionContext.__select(caPrivateShape, "att_" + "1".repeat(32), "2".repeat(32));
@@ -261,6 +264,37 @@ assert.equal(manifestA.length, 40, "CA session must receive exactly 40 of 80 que
 assert.equal(new Set(manifestA).size, 40, "CA manifest must not contain duplicates");
 assert.deepEqual(Array.from(manifestA), Array.from(manifestB), "CA manifest selection must be deterministic for one session seed");
 assert(manifestA.every(id => /^ca4_\d{3}$/.test(id)), "CA manifest must contain only rotated bank ids");
+const caBlockCounts = manifestA.reduce((counts, questionId) => {
+  const questionNumber = Number(questionId.slice(-3));
+  const block = `block_${Math.floor((questionNumber - 1) / 10) + 1}`;
+  counts[block] = (counts[block] || 0) + 1;
+  return counts;
+}, {});
+assert.deepEqual(
+  Object.values(caBlockCounts).sort((left, right) => left - right),
+  Array(8).fill(5),
+  "CA manifest must contain exactly five questions from every thematic block"
+);
+
+const unevenShape = realmJson(selectionContext, {
+  questionsPerAttempt: 5,
+  questions: [
+    ...Array.from({ length: 5 }, (_, index) => ({ id: `a_${index}`, block: "a" })),
+    ...Array.from({ length: 3 }, (_, index) => ({ id: `b_${index}`, block: "b" })),
+    ...Array.from({ length: 2 }, (_, index) => ({ id: `c_${index}`, block: "c" }))
+  ]
+});
+const unevenManifest = selectionContext.__select(unevenShape, "att_" + "3".repeat(32), "4".repeat(32));
+const unevenCounts = unevenManifest.reduce((counts, questionId) => {
+  const block = questionId.charAt(0);
+  counts[block] = (counts[block] || 0) + 1;
+  return counts;
+}, {});
+assert.equal(unevenManifest.length, 5, "proportional selection must preserve the requested attempt size");
+assert.equal(unevenCounts.c, 1, "an exact proportional quota must remain exact");
+assert.equal((unevenCounts.a || 0) + (unevenCounts.b || 0), 4, "largest remainders must receive all remaining slots");
+assert(Math.abs((unevenCounts.a || 0) - 2.5) < 1, "block a must stay within one question of its exact quota");
+assert(Math.abs((unevenCounts.b || 0) - 1.5) < 1, "block b must stay within one question of its exact quota");
 
 const missingBankContext = {
   String, Number, Object, Array, JSON, Error,
@@ -280,4 +314,4 @@ const sanitizeAdminSource = extractTopLevelFunction(backend, "sanitizeAdminResul
 assert.match(sanitizeAdminSource, /row\.scoreVerification === SCORE_VERIFICATION_SERVER/);
 assert.match(sanitizeAdminSource, /SCORE_VERIFICATION_CLIENT_REPORTED/, "legacy rows must remain explicitly unverified");
 
-console.log("Stage 10A authoritative scoring tests passed (validation, 0/80/100%, CA manifest and fail-closed bank).");
+console.log("Stage 10A authoritative scoring tests passed (validation, 0/80/100%, stratified manifests and fail-closed bank).");

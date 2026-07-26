@@ -35,7 +35,7 @@
 - [x] Этап 12 технически завершён: preview, подтверждаемое result/full-attempt удаление, транзакционная копия, verification, purge, crash recovery и закрытый журнал опубликованы в `@54`.
 - [x] Этап 13 технически завершён: verified snapshots четырёх stores, rotation 12, fail-closed write, editor-only restore, corrupt artifacts и deletion redaction опубликованы в `@55`; production baseline создан.
 - [x] Этап 14 технически завершён: защищённая read-only диагностика, storage aggregates, configuration presence и allowlisted errors опубликованы в `@56`; публичный health остался минимальным.
-- [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 27/27 проверок.
+- [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 28/28 проверок.
 - [x] Этап 16 завершён: operator guide, deployment/rollback runbook, privacy checklist и regression-проверка эксплуатационной документации.
 - [x] Этап 17 технически завершён: live desktop/mobile, public smoke, owner diagnostics, свежий snapshot и NO-GO readiness report с точными блокерами.
 
@@ -168,9 +168,9 @@
 
 ## Позже
 
-- [ ] Сделать распределение случайной выборки по блокам, а не просто общий random.
+- [x] Сделать распределение случайной выборки по блокам, а не просто общий random: backend использует детерминированную пропорциональную выборку с методом наибольших остатков; CA получает 5 вопросов из каждого из 8 блоков.
 - [ ] Добавить поддержку `active: false` в редакторский процесс банков.
-- [ ] Улучшить TXT-отчёт: сильные/слабые темы и блок `Что проверить на интервью`.
+- [x] Улучшить TXT-отчёт: добавить сильные стороны, зоны развития и блок `Что проверить на интервью`, рассчитанные backend по Skill Card.
 - [x] Реализовать псевдонимизированную `admin.html` без открытых контактов и с защищённой выдачей TXT.
 - [ ] Рассмотреть PDF-отчёты.
 - [ ] Собрать первые 20-50 прохождений и улучшить вопросы по статистике.

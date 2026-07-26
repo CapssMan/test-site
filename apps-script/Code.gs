@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-23-15";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-26-16";
 const CANDIDATE_FRONTEND_BUILD = "2026.07.21.13";
 const ADMIN_FRONTEND_BUILD = "2026.07.21.13";
 const SUCCESS_THRESHOLD = 80;
@@ -1424,6 +1424,34 @@ function generateUniqueResultCode(testId, reservedSessions) {
   throw new Error("Не удалось создать уникальный код результата.");
 }
 
+function buildReportSkillInsights(blockResults) {
+  const ranked = Object.keys(blockResults || {}).map(blockKey => {
+    const block = blockResults[blockKey] || {};
+    return {
+      key: String(blockKey),
+      name: String(block.name || blockKey),
+      percent: Math.max(0, Math.min(100, Number(block.percent || 0))),
+      earned: Number(block.earned || 0),
+      total: Number(block.total || 0)
+    };
+  }).sort((left, right) => left.percent - right.percent || left.name.localeCompare(right.name));
+  const strengths = ranked.filter(block => block.percent >= 80)
+    .sort((left, right) => right.percent - left.percent || left.name.localeCompare(right.name))
+    .slice(0, 3);
+  const developmentAreas = ranked.filter(block => block.percent < 70).slice(0, 3);
+  const interviewChecks = (developmentAreas.length ? developmentAreas : ranked.slice(0, 2)).map(block => ({
+    key: block.key,
+    name: block.name,
+    percent: block.percent,
+    prompt: "Попросить разобрать практический кейс по этому блоку и вслух объяснить ход решения."
+  }));
+  return {
+    strengths: strengths,
+    developmentAreas: developmentAreas,
+    interviewChecks: interviewChecks
+  };
+}
+
 function buildTxtReport(resultData) {
   const answers = Array.isArray(resultData.answers) ? resultData.answers : [];
   const blockResults = resultData.blockResults && typeof resultData.blockResults === "object"
@@ -1475,6 +1503,7 @@ function buildTxtReport(resultData) {
   report += "Итоговый вывод: " + safeText(resultData.recommendation || resultData.finalDecision || "") + "\n\n";
 
   if (Object.keys(blockResults).length) {
+    const insights = buildReportSkillInsights(blockResults);
     report += "SKILL CARD\n";
     report += "----------\n";
     Object.keys(blockResults).forEach(blockKey => {
@@ -1484,6 +1513,35 @@ function buildTxtReport(resultData) {
       report += ", вес " + Math.round(Number(block.weight || 0) * 100) + "%)\n";
     });
     report += "\n";
+
+    report += "СИЛЬНЫЕ СТОРОНЫ\n";
+    report += "----------------\n";
+    if (insights.strengths.length) {
+      insights.strengths.forEach(block => {
+        report += "- " + safeText(block.name) + ": " + Number(block.percent) + "%\n";
+      });
+    } else {
+      report += "- По порогу 80% сильные блоки пока не выделены.\n";
+    }
+    report += "\n";
+
+    report += "ЗОНЫ РАЗВИТИЯ\n";
+    report += "-------------\n";
+    if (insights.developmentAreas.length) {
+      insights.developmentAreas.forEach(block => {
+        report += "- " + safeText(block.name) + ": " + Number(block.percent) + "%\n";
+      });
+    } else {
+      report += "- Блоков ниже 70% не выявлено.\n";
+    }
+    report += "\n";
+
+    report += "ЧТО ПРОВЕРИТЬ НА ИНТЕРВЬЮ\n";
+    report += "--------------------------\n";
+    insights.interviewChecks.forEach(block => {
+      report += "- " + safeText(block.name) + " (" + Number(block.percent) + "%): " + safeText(block.prompt) + "\n";
+    });
+    report += "Результат теста — сигнал для структурированного интервью, а не самостоятельное доказательство профессиональной пригодности.\n\n";
   }
 
   report += "ВОПРОСЫ И ОТВЕТЫ\n";
@@ -4844,12 +4902,52 @@ function verifyAttemptToken(token, allowExpired) {
 }
 
 function selectAuthoritativeQuestionIds(bank, attemptId, selectionNonce) {
-  const ordered = bank.questions.map(question => String(question.id)).sort((left, right) => {
-    const leftHash = sha256Hex("selection-v1|" + attemptId + "|" + selectionNonce + "|" + left);
-    const rightHash = sha256Hex("selection-v1|" + attemptId + "|" + selectionNonce + "|" + right);
+  const attemptSize = Number(bank.questionsPerAttempt);
+  const blockGroups = Object.create(null);
+  bank.questions.forEach(question => {
+    const block = String(question.block || "");
+    if (!blockGroups[block]) blockGroups[block] = [];
+    blockGroups[block].push(String(question.id));
+  });
+  const blockKeys = Object.keys(blockGroups);
+  const totalQuestions = bank.questions.length;
+  const allocations = blockKeys.map(block => {
+    const exactQuota = attemptSize * blockGroups[block].length / totalQuestions;
+    return {
+      block: block,
+      quota: Math.floor(exactQuota),
+      remainder: exactQuota - Math.floor(exactQuota),
+      tieBreaker: sha256Hex("selection-block-v2|" + attemptId + "|" + selectionNonce + "|" + block)
+    };
+  });
+  let remaining = attemptSize - allocations.reduce((sum, allocation) => sum + allocation.quota, 0);
+  allocations.sort((left, right) => {
+    if (left.remainder !== right.remainder) return right.remainder - left.remainder;
+    if (left.tieBreaker !== right.tieBreaker) return left.tieBreaker < right.tieBreaker ? -1 : 1;
+    return left.block.localeCompare(right.block);
+  });
+  allocations.forEach(allocation => {
+    if (remaining > 0 && allocation.quota < blockGroups[allocation.block].length) {
+      allocation.quota += 1;
+      remaining -= 1;
+    }
+  });
+  if (remaining !== 0) throw new Error("Authoritative question block allocation failed.");
+
+  const selected = [];
+  allocations.forEach(allocation => {
+    const orderedBlock = blockGroups[allocation.block].slice().sort((left, right) => {
+      const leftHash = sha256Hex("selection-question-v2|" + attemptId + "|" + selectionNonce + "|" + left);
+      const rightHash = sha256Hex("selection-question-v2|" + attemptId + "|" + selectionNonce + "|" + right);
+      return leftHash < rightHash ? -1 : (leftHash > rightHash ? 1 : left.localeCompare(right));
+    });
+    selected.push.apply(selected, orderedBlock.slice(0, allocation.quota));
+  });
+  return selected.sort((left, right) => {
+    const leftHash = sha256Hex("selection-order-v2|" + attemptId + "|" + selectionNonce + "|" + left);
+    const rightHash = sha256Hex("selection-order-v2|" + attemptId + "|" + selectionNonce + "|" + right);
     return leftHash < rightHash ? -1 : (leftHash > rightHash ? 1 : left.localeCompare(right));
   });
-  return ordered.slice(0, Number(bank.questionsPerAttempt));
 }
 
 function hasRecentAuthoritativeRetake(testId, identityHash, legacyEmailHash, sessions) {

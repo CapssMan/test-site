@@ -10,7 +10,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 ## Текущий статус
 
-Этап 17, техническая ротация пяти production-банков v4 и least-privilege ротация Яндекс credential завершены с решением **NO-GO для реальных кандидатов**: опубликованы 240 новых вопросов/вариантов/ключей/ID, private/public split, fail-closed trust anchors, crash-safe cutover и app-folder-only storage. Dependency-free `npm test` и read-only GitHub Actions CI выполняют 22 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`; API `attempt-v2`.
+Этап 17, техническая ротация пяти production-банков v4 и least-privilege ротация Яндекс credential завершены с решением **NO-GO для реальных кандидатов**: опубликованы 240 новых вопросов/вариантов/ключей/ID, private/public split, fail-closed trust anchors, crash-safe cutover и app-folder-only storage. Dependency-free `npm test` и read-only GitHub Actions CI выполняют 23 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`; API `attempt-v2`. В следующем backend source `yandex-disk-mvp-2026-07-26-16` подготовлены пропорциональная выборка по тематическим блокам и расширенный TXT с сильными сторонами, зонами развития и подсказками для интервью; до отдельного rollout production runtime не изменён.
 
 `LEGAL_PILOT_APPROVED` и `ATTEMPT_ISSUANCE_ENABLED` остаются `false`. Реальные кандидаты не допускаются до заполнения реквизитов оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, очистки smoke-данных и owner sign-off.
 

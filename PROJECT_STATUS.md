@@ -1,13 +1,14 @@
 # SkillCheck — текущее состояние
 
-Обновлено: 24 июля 2026 года.
+Обновлено: 26 июля 2026 года.
 
 ## Текущий этап
 
 - Технически завершены этап 17 и содержательная ротация пяти production-банков v4; решение для реальных кандидатов остаётся **NO-GO**.
 - Создан отдельный публичный контакт проекта `skillcheck.project@yandex.ru` и внесён в privacy/consent; 24.07.2026 владелец подтвердил входящее/исходящее письмо и двухфакторную защиту аккаунта. ФИО/наименование и адрес оператора остаются legal-блокерами.
-- Локально воспроизведены locked install и 27 проверок: 22 test-файла, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
+- Локально воспроизведены locked install и 28 проверок: 23 test-файла, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`; workflow не имеет secrets и не выполняет deploy/storage calls.
+- В локальном backend source `yandex-disk-mvp-2026-07-26-16` подготовлено pre-pilot product hardening: пропорциональная server-side выборка по тематическим блокам (для CA — ровно 5 из каждого из 8 блоков) и расширенный успешный TXT с сильными сторонами, зонами развития и блоком проверки на интервью. Изменения ещё не опубликованы в Apps Script, production остаётся на `.15/@61`.
 - Следующее обязательное действие: независимый человеческий SME sign-off v4 и внешний pre-pilot checklist; для документальной/контентной части достаточно режима `высокий`, для production cleanup и gate cutover нужен `очень высокий`.
 - Для внешнего review подготовлены master-книга на 240 вопросов и пять минимальных role-пакетов FA/CA/FPA/ACC/BI с отдельными checks; файлы хранятся вне Git, а `docs/SME_REVIEW_HANDOFF.md` предписывает передавать reviewer только банк его компетенции. Наличие workbook не считается sign-off.
 - Вне Git подготовлен безбюджетный reviewer recruitment pack: минимальная команда по четырём компетенциям, воронка из 12+ персональных кандидатов, проверка опыта/независимости, безопасная двухшаговая передача, готовые сообщения FA/FPA/CA/ACC/BI и закрытый реестр контактов. Массовая рассылка и передача master-книги запрещены.
@@ -211,7 +212,7 @@
 - Workflow имеет только `contents: read`, Node 24, timeout 10 минут, locked `npm ci --ignore-scripts` и не использует production secrets/environments/deploy.
 - Checkout/setup actions закреплены полными commit SHA; `persist-credentials:false` не оставляет workflow token в локальном Git config.
 - Full history checkout нужен только для проверки legacy commit anchors; первый shallow run выявил эту зависимость и был исправлен без ослабления теста.
-- CI configuration, operator docs, NO-GO readiness boundary, ротация v4 и credential migration защищены regression-тестами; полная локальная матрица — 27/27 проверок.
+- CI configuration, operator docs, NO-GO readiness boundary, ротация v4, credential migration, сбалансированная выборка и TXT insights защищены regression-тестами; полная локальная матрица — 28/28 проверок.
 
 ## Этап 16 — эксплуатационная документация
 
@@ -238,7 +239,7 @@
 - Private/public parity, digests и pending trust anchors проверяются повторной детерминированной сборкой.
 - Public promoter заменяет пять файлов одной crash-safe транзакцией с journal, backup и commit marker; partial/corrupt сценарии покрыты тестами.
 - Production legacy bootstrap навсегда отключён; он разрешён только для закрытого `dev-quick` fixture.
-- Полная локальная матрица — 27/27; аудит — 240 вопросов, 0 ошибок, 0 предупреждений.
+- Полная локальная матрица — 28/28; аудит — 240 вопросов, 0 ошибок, 0 предупреждений.
 - Внутренний multi-review не является независимым человеческим SME sign-off. Полный evidence: `docs/QUESTION_BANK_ROTATION.md`.
 - Закрытый SME workbook содержит пять role-вкладок, answer key, жёлтые поля вердикта/критичности/исправления, формульную сводку и 25 структурных checks; порядок безопасной передачи и acceptance criteria описан в `docs/SME_REVIEW_HANDOFF.md`.
 

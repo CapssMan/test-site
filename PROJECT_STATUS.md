@@ -11,8 +11,9 @@
 
 - Технически завершены этап 17 и содержательная ротация пяти production-банков v4; решение для реальных кандидатов остаётся **NO-GO**.
 - Создан отдельный публичный контакт проекта `skillcheck.project@yandex.ru` и внесён в privacy/consent; 24.07.2026 владелец подтвердил входящее/исходящее письмо и двухфакторную защиту аккаунта. В policy/consent опубликованы только ФИО и project email; статус НПД и регион убраны как избыточные. Вопрос адреса остаётся на legal-проверку.
-- Локально воспроизведены locked install и 28 проверок: 23 test-файла, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
+- Локально воспроизведены locked install и 29 проверок: 24 test-файла, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Runtime: candidate `Build 2026.07.26.14`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-26-21`, deployment `@67`; workflow не имеет secrets и не выполняет deploy/storage calls.
+- Этап 18 начат бесплатно и локально: создана публичная страница рейтинга и dependency-free read API core/handler для будущей Yandex Cloud Function. Контракт принимает только добровольно опубликованные server-verified результаты текущей версии банка, исключает девять технических кодов и не возвращает имя, контакты, ответы, полный отчёт или код результата. До подключения YDB страница остаётся fail-closed и не показывает mock-данные.
 - Production backend yandex-disk-mvp-2026-07-26-21, candidate Build 2026.07.26.14 и Admin Build 2026.07.26.15 опубликованы: server-side sampling и расширенные TXT работают, а известные технические коды исключаются из обычной аналитики.
 - Следующее обязательное действие: независимый человеческий SME sign-off v4 и внешний pre-pilot checklist; для документальной/контентной части достаточно режима высокий, для gate cutover нужен очень высокий.
 - Для внешнего review подготовлены master-книга на 240 вопросов и пять минимальных role-пакетов FA/CA/FPA/ACC/BI с отдельными checks; файлы хранятся вне Git, а `docs/SME_REVIEW_HANDOFF.md` предписывает передавать reviewer только банк его компетенции. Наличие workbook не считается sign-off.
@@ -217,7 +218,7 @@
 - Workflow имеет только `contents: read`, Node 24, timeout 10 минут, locked `npm ci --ignore-scripts` и не использует production secrets/environments/deploy.
 - Checkout/setup actions закреплены полными commit SHA; `persist-credentials:false` не оставляет workflow token в локальном Git config.
 - Full history checkout нужен только для проверки legacy commit anchors; первый shallow run выявил эту зависимость и был исправлен без ослабления теста.
-- CI configuration, operator docs, NO-GO readiness boundary, ротация v4, credential migration, сбалансированная выборка и TXT insights защищены regression-тестами; полная локальная матрица — 28/28 проверок.
+- CI configuration, operator docs, NO-GO readiness boundary, ротация v4, credential migration, сбалансированная выборка и TXT insights защищены regression-тестами; полная локальная матрица — 29/29 проверок.
 
 ## Этап 16 — эксплуатационная документация
 
@@ -244,14 +245,14 @@
 - Private/public parity, digests и pending trust anchors проверяются повторной детерминированной сборкой.
 - Public promoter заменяет пять файлов одной crash-safe транзакцией с journal, backup и commit marker; partial/corrupt сценарии покрыты тестами.
 - Production legacy bootstrap навсегда отключён; он разрешён только для закрытого `dev-quick` fixture.
-- Полная локальная матрица — 28/28; аудит — 240 вопросов, 0 ошибок, 0 предупреждений.
+- Полная локальная матрица — 29/29; аудит — 240 вопросов, 0 ошибок, 0 предупреждений.
 - Внутренний multi-review не является независимым человеческим SME sign-off. Полный evidence: `docs/QUESTION_BANK_ROTATION.md`.
 - Закрытый SME workbook содержит пять role-вкладок, answer key, жёлтые поля вердикта/критичности/исправления, формульную сводку и 25 структурных checks; порядок безопасной передачи и acceptance criteria описан в `docs/SME_REVIEW_HANDOFF.md`.
 
 ## Оценка до финала roadmap
 
-- Осталось 3 продуктовых блока: российский runtime + рейтинг, короткий пилот, публичный запуск.
-- До запуска рейтинга: примерно 43–78 часов, 170–360 тыс. токенов и 1–3 календарные недели пилота.
+- Осталось 3 продуктовых блока: российский runtime + рейтинг (в работе), короткий пилот, публичный запуск.
+- После локальной основы рейтинга осталось примерно 40–72 часа, 160–330 тыс. токенов и 1–3 календарные недели пилота.
 - Рейтинг и российский runtime включены в оценку; сложный кабинет работодателя, платежи и marketplace не включены.
 - Повторная шлифовка неизменённых тестов и новые попытки удаления девяти smoke-результатов не планируются.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.

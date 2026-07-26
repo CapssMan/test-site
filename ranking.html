@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
+  <title>Рейтинг специалистов — SkillCheck</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; color: #e2e8f0; background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .container { width: min(980px, 100%); margin: 0 auto; }
+    .back { display: inline-block; margin-bottom: 20px; color: #93c5fd; text-decoration: none; }
+    .card { padding: 28px; border: 1px solid rgba(148,163,184,.18); border-radius: 18px; background: rgba(30,41,59,.88); box-shadow: 0 20px 45px rgba(0,0,0,.22); }
+    h1 { margin: 0 0 10px; font-size: clamp(30px, 6vw, 46px); }
+    .lead { max-width: 760px; margin: 0; color: #94a3b8; line-height: 1.6; }
+    .privacy-note { margin: 20px 0; padding: 14px 16px; border: 1px solid rgba(96,165,250,.3); border-radius: 12px; background: rgba(59,130,246,.1); color: #bfdbfe; line-height: 1.5; }
+    label { display: block; margin: 24px 0 8px; color: #cbd5e1; font-weight: 700; }
+    select { width: 100%; padding: 13px 14px; color: #e2e8f0; background: #0f172a; border: 1px solid #475569; border-radius: 10px; font-size: 16px; }
+    .status { margin-top: 22px; padding: 20px; border: 1px dashed #475569; border-radius: 12px; text-align: center; color: #cbd5e1; }
+    .status strong { display: block; margin-bottom: 8px; color: #f8fafc; font-size: 18px; }
+    .summary { display: none; justify-content: space-between; gap: 16px; margin: 22px 0 12px; color: #94a3b8; }
+    .table-wrap { display: none; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 620px; }
+    th, td { padding: 13px 12px; border-bottom: 1px solid rgba(148,163,184,.16); text-align: left; }
+    th { color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+    .score { color: #86efac; font-weight: 800; }
+    .build { margin-top: 18px; color: #64748b; font-size: 12px; }
+    @media (max-width: 600px) { body { padding: 12px; } .card { padding: 20px; } .summary { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="index.html">&larr; На главную</a>
+    <section class="card">
+      <h1>Рейтинг специалистов</h1>
+      <p class="lead">Сравнение server-verified результатов отдельно по каждой финансовой профессии и совместимой версии теста.</p>
+      <div class="privacy-note">Участие только добровольное. Публично показываются псевдоним, балл, дата и уровень проверки. Имя, контакты, ответы и полный отчёт не публикуются.</div>
+
+      <label for="rankingTest">Профессия</label>
+      <select id="rankingTest">
+        <option value="fa-junior">Financial Analyst Junior</option>
+        <option value="ca-junior">Credit Analyst Junior</option>
+        <option value="fpa-junior">FP&amp;A / Budget Analyst Junior</option>
+        <option value="acc-junior">Accounting / Reporting Junior</option>
+        <option value="bi-junior">Finance BI / Data Analyst Junior</option>
+      </select>
+
+      <div id="rankingStatus" class="status" role="status" aria-live="polite">
+        <strong>Рейтинг готовится</strong>
+        Российский API ещё не подключён. После переноса на YDB здесь появятся только добровольно опубликованные результаты.
+      </div>
+
+      <div id="rankingSummary" class="summary"></div>
+      <div id="rankingTableWrap" class="table-wrap">
+        <table>
+          <thead><tr><th>Место</th><th>Псевдоним</th><th>Балл</th><th>Дата</th><th>Проверка</th></tr></thead>
+          <tbody id="rankingRows"></tbody>
+        </table>
+      </div>
+      <div class="build">Ranking Build 2026.07.26.1</div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+    const RANKING_API_URL = "";
+    const RANKING_BUILD = "2026.07.26.1";
+    const testSelect = document.getElementById("rankingTest");
+    const statusBlock = document.getElementById("rankingStatus");
+    const summaryBlock = document.getElementById("rankingSummary");
+    const tableWrap = document.getElementById("rankingTableWrap");
+    const rows = document.getElementById("rankingRows");
+
+    function setStatus(title, message) {
+      statusBlock.hidden = false;
+      statusBlock.replaceChildren();
+      const heading = document.createElement("strong");
+      heading.textContent = title;
+      statusBlock.append(heading, document.createTextNode(message));
+      summaryBlock.style.display = "none";
+      tableWrap.style.display = "none";
+      rows.replaceChildren();
+    }
+
+    function safeEntry(entry) {
+      if (!entry || typeof entry !== "object") return null;
+      const alias = String(entry.alias || "").trim();
+      const score = Number(entry.score);
+      const date = new Date(String(entry.completedAt || ""));
+      if (!alias || alias.length > 40 || !Number.isFinite(score) || score < 0 || score > 100 || Number.isNaN(date.getTime())) return null;
+      return { rank: Number.isInteger(entry.rank) && entry.rank > 0 ? entry.rank : null, alias, score, date, verificationLevel: String(entry.verificationLevel || "") };
+    }
+
+    function renderRanking(payload) {
+      const entries = Array.isArray(payload && payload.entries) ? payload.entries.map(safeEntry).filter(Boolean) : [];
+      if (!payload || payload.ok !== true || !["active", "collecting"].includes(payload.state)) {
+        setStatus("Рейтинг временно недоступен", "Попробуйте открыть страницу позже.");
+        return;
+      }
+      if (payload.state === "collecting") {
+        setStatus("Набираем первые результаты", "Позиции появятся после пяти добровольных участников. Сейчас участников: " + String(payload.participantsCount || 0) + ".");
+        return;
+      }
+      statusBlock.hidden = true;
+      summaryBlock.textContent = "";
+      const left = document.createElement("span");
+      left.textContent = String(payload.testTitle || "Рейтинг");
+      const right = document.createElement("span");
+      right.textContent = "Участников: " + String(payload.participantsCount || entries.length);
+      summaryBlock.append(left, right);
+      summaryBlock.style.display = "flex";
+      rows.replaceChildren();
+      entries.forEach(entry => {
+        const row = document.createElement("tr");
+        [entry.rank == null ? "—" : String(entry.rank), entry.alias, entry.score.toFixed(1) + "%", entry.date.toLocaleDateString("ru-RU"), entry.verificationLevel]
+          .forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = value; if (index === 2) cell.className = "score"; row.append(cell); });
+        rows.append(row);
+      });
+      tableWrap.style.display = "block";
+    }
+
+    async function loadRanking() {
+      if (!RANKING_API_URL) {
+        setStatus("Рейтинг готовится", "Российский API ещё не подключён. После переноса на YDB здесь появятся только добровольно опубликованные результаты.");
+        return;
+      }
+      setStatus("Загрузка", "Получаем актуальный рейтинг…");
+      try {
+        const url = new URL(RANKING_API_URL);
+        url.searchParams.set("testId", testSelect.value);
+        url.searchParams.set("limit", "50");
+        const response = await fetch(url.toString(), { method: "GET", cache: "no-store", referrerPolicy: "no-referrer" });
+        if (!response.ok) throw new Error("ranking_http_error");
+        renderRanking(await response.json());
+      } catch (_error) {
+        setStatus("Рейтинг временно недоступен", "Попробуйте открыть страницу позже.");
+      }
+    }
+
+    testSelect.addEventListener("change", loadRanking);
+    loadRanking();
+  </script>
+</body>
+</html>

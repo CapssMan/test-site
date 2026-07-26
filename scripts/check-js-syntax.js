@@ -10,7 +10,13 @@ const scriptFiles = fs.readdirSync(path.join(root, "scripts"))
   .filter(name => name.endsWith(".js"))
   .sort()
   .map(name => path.join("scripts", name));
-const sourceFiles = ["apps-script/Code.gs"].concat(scriptFiles);
+const cloudFiles = fs.existsSync(path.join(root, "cloud"))
+  ? fs.readdirSync(path.join(root, "cloud"))
+      .filter(name => name.endsWith(".js"))
+      .sort()
+      .map(name => path.join("cloud", name))
+  : [];
+const sourceFiles = ["apps-script/Code.gs"].concat(cloudFiles, scriptFiles);
 let compiledBlocks = 0;
 
 function compile(source, filename) {

@@ -6,11 +6,11 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Локальная основа минимального opt-in рейтинга уже реализована в этапе 18; подключение к российскому runtime остаётся следующим шагом; расширенный employer discovery остаётся после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
+Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Минимальный read-only рейтинг уже работает через российские YDB Serverless, Cloud Functions и API Gateway; запись/отзыв профиля и перенос остального runtime остаются в этапе 18, а расширенный employer discovery — после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
 
 ## Текущий статус
 
-Этап 17 и внутреннее pre-pilot hardening завершены с решением **NO-GO для реальных кандидатов**. Опубликованы пять банков v4, server-side scoring/sampling, расширенные отчёты, app-folder-only storage и проверяемое исключение девяти технических кодов из обычной аналитики. Dependency-free `npm test` и GitHub Actions CI выполняют 24 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.26.14`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-26-21`, deployment `@67`; API `attempt-v2`. Этап 18 начат: `ranking.html` и проверяемый read-only контракт рейтинга готовы локально, но российский API/YDB ещё не созданы и рейтинг не принимает реальные профили.
+Этап 17 и внутреннее pre-pilot hardening завершены с решением **NO-GO для реальных кандидатов**. Опубликованы пять банков v4, server-side scoring/sampling, расширенные отчёты, app-folder-only storage и проверяемое исключение девяти технических кодов из обычной аналитики. Dependency-free `npm test` и GitHub Actions CI выполняют 24 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.26.14`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-26-21`, deployment `@67`; API `attempt-v2`. Этап 18 продолжается: YDB-схема, read-only Cloud Function и API Gateway развёрнуты в `skillcheck-prod`, а `ranking.html` подключена к live API. База рейтинга пуста; запись и отзыв реального профиля ещё не реализованы.
 
 LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до утверждения полного публичного адреса оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 
@@ -19,7 +19,7 @@ LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реа�
 Рабочая версия включает:
 
 - выбор теста на `index.html`;
-- отдельную публичную страницу `ranking.html` с выбором одной из пяти профессий, безопасным пустым состоянием и без вымышленных участников;
+- отдельную публичную страницу `ranking.html` с выбором одной из пяти профессий, live Yandex API, безопасным состоянием набора участников и без вымышленных профилей;
 - локальное серверное ядро рейтинга: отдельный opt-in, точная версия согласия, разделение по версии банка, исключение технических кодов, минимум пять участников и строгий список публичных полей;
 - прохождение теста на `test.html?test=<testId>`;
 - загрузку display-only банка вопросов из `data/*.json` без `correct`, комментариев к ответу и клиентского scoring;
@@ -76,7 +76,7 @@ privacy.html            Политика обработки персональн
 consent.html            Отдельное versioned-согласие на обработку данных
 admin.html              Псевдонимизированная админ-панель по кодам
 ranking.html            Публичная страница добровольного рейтинга
-cloud/ranking-*.js      Ядро и handler будущей Yandex Cloud Function
+cloud/*.js              Ядро, YDB store и handler действующей Yandex Cloud Function
 data/*.json             Display-only банки без answer key
 apps-script/Code.gs     Google Apps Script API для Яндекс Диска
 docs/QA_REVIEW.md       QA-аудит банков вопросов

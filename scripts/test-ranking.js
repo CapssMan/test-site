@@ -92,7 +92,8 @@ const handler = createRankingHandler({ store, allowedOrigin: "https://skillcheck
   assert.deepEqual(JSON.parse(unavailable.body), { ok: false, error: "ranking_temporarily_unavailable" });
 
   assert.match(indexPage, /href="ranking\.html"/);
-  assert.match(rankingPage, /const RANKING_API_URL = ""/);
+  assert.match(rankingPage, /const RANKING_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/ranking"/);
+  assert.match(rankingPage, /connect-src 'self' https:\/\/[^"\s]+\.apigw\.yandexcloud\.net/);
   assert.match(rankingPage, /Участие только добровольное/);
   assert.match(rankingPage, /Позиции появятся после пяти добровольных участников/);
   assert.doesNotMatch(rankingPage, /mock|demo candidate|пример участника/i);

@@ -1,0 +1,50 @@
+openapi: "3.0.0"
+info:
+  title: Assessment Ranking API
+  version: "1.0.0"
+x-yc-apigateway:
+  cors:
+    origin: "https://capssman.github.io"
+    methods:
+      - GET
+    allowedHeaders:
+      - Content-Type
+    maxAge: 600
+paths:
+  /v1/ranking:
+    get:
+      operationId: getPublicRanking
+      summary: Read the voluntary public ranking
+      parameters:
+        - name: testId
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - fa-junior
+              - ca-junior
+              - fpa-junior
+              - acc-junior
+              - bi-junior
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Public ranking or collecting state
+        "400":
+          description: Unsupported test
+        "503":
+          description: Ranking is temporarily unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1qffg3l40q6jgq0t9
+        tag: "$latest"
+        service_account_id: ajerg3btsr8m7va4gi2m
+        payload_format_version: "0.1"

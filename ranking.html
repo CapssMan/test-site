@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <title>Рейтинг специалистов — SkillCheck</title>
   <style>
@@ -47,8 +47,8 @@
       </select>
 
       <div id="rankingStatus" class="status" role="status" aria-live="polite">
-        <strong>Рейтинг готовится</strong>
-        Российский API ещё не подключён. После переноса на YDB здесь появятся только добровольно опубликованные результаты.
+        <strong>Загрузка рейтинга</strong>
+        Получаем актуальные добровольно опубликованные результаты.
       </div>
 
       <div id="rankingSummary" class="summary"></div>
@@ -58,14 +58,14 @@
           <tbody id="rankingRows"></tbody>
         </table>
       </div>
-      <div class="build">Ranking Build 2026.07.26.1</div>
+      <div class="build">Ranking Build 2026.07.26.2</div>
     </section>
   </main>
 
   <script>
     "use strict";
-    const RANKING_API_URL = "";
-    const RANKING_BUILD = "2026.07.26.1";
+    const RANKING_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking";
+    const RANKING_BUILD = "2026.07.26.2";
     const testSelect = document.getElementById("rankingTest");
     const statusBlock = document.getElementById("rankingStatus");
     const summaryBlock = document.getElementById("rankingSummary");
@@ -122,7 +122,7 @@
 
     async function loadRanking() {
       if (!RANKING_API_URL) {
-        setStatus("Рейтинг готовится", "Российский API ещё не подключён. После переноса на YDB здесь появятся только добровольно опубликованные результаты.");
+        setStatus("Рейтинг готовится", "Получаем актуальные добровольно опубликованные результаты.");
         return;
       }
       setStatus("Загрузка", "Получаем актуальный рейтинг…");

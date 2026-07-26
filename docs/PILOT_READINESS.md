@@ -16,7 +16,7 @@
 
 | Проверка | Результат | Статус |
 |---|---|---|
-| Публичный health | четыре публичных поля; runtime — backend `yandex-disk-mvp-2026-07-23-15` | verified после post-deploy и post-cutover smoke |
+| Публичный health | четыре публичных поля; runtime — backend yandex-disk-mvp-2026-07-26-20, admin Build 2026.07.26.15 | verified после rollout; gates закрыты |
 | Protected owner diagnostics | `healthy`, четыре operational store, 9 result rows и 9 anti-retake rows | verified |
 | Operational backup | свежий проверяемый snapshot четырёх store создан owner-функцией | verified |
 | Apps Script deployments | существующий versioned deployment обновлён до `@61`; Web App URL не менялся | verified |
@@ -24,7 +24,7 @@
 | Public negative smoke | GET begin → `method_not_allowed`; legacy → `client_upgrade_required`; unknown → `unknown_action`; dev-quick → `test_not_public` | verified |
 | GitHub CI/Pages | commit retirement `2d9254d`: SkillCheck CI #9 и Pages #71 завершены успешно | verified |
 
-В production остаются известные smoke-данные. Значение `9/9` не является пилотной выборкой и не должно попадать в будущую аналитику. Коды известных smoke перечислены в `PROJECT_STATUS.md`. Перед пилотом они удаляются только через preview/confirmed deletion с проверкой backup purge; ручное редактирование JSON запрещено.
+В production могут оставаться строки из известного набора девяти smoke-кодов. По решению владельца они не удаляются, не являются пилотной выборкой и исключаются из таблицы, метрик и диаграмм Admin Build .15; контракт и точный перечень зафиксированы в TECHNICAL_DATA_EXCLUSION.md.
 
 ## Техническая матрица
 
@@ -57,7 +57,7 @@ CacheService rate limiting является best-effort и не заменяет
 | Реквизиты оператора | рабочий контакт `skillcheck.project@yandex.ru` внесён; владелец подтвердил входящее/исходящее письмо и 2FA 24.07.2026; ФИО/наименование и адрес остаются «не указано» | владелец с профильным специалистом утверждает оставшиеся публичные реквизиты |
 | Legal и retention | нет внешнего заключения, сроков, legal hold, формы подтверждения уничтожения | оператор + профильный специалист подписывают checklist |
 | Исторически раскрытый answer key / SME v4 | техническая ротация выполнена; закрытая review-книга на 240 вопросов и runbook `SME_REVIEW_HANDOFF.md` подготовлены; 24.07.2026 отправлены четыре адресных письма без вложений по потокам FA/FPA, CA, ACC и BI, ответы ожидаются; внешний review ещё не выполнен | профильный эксперт подтверждает банки v4 либо возвращает точечные правки новой версией |
-| Чистая pilot-база | protected diagnostics показывает 9 smoke result/attempt rows | точечный deletion workflow после подтверждения точного списка |
+| Чистая pilot-база / техническое исключение | известный набор девяти smoke-кодов сохраняется по решению владельца; Admin Build .15 исключает фактически присутствующие строки из обычной аналитики | перед открытием gates подтвердить нулевое влияние известных кодов на базовые метрики и сохранить переключатель выключенным |
 | Финальный owner sign-off | нет закрытого go/no-go журнала с ответственными | заполнить `PRIVACY_CHECKLIST.md` и эту финальную секцию после остальных блокеров |
 
 Ни один из блокеров нельзя закрывать изменением текста на `verified` без фактического доказательства.
@@ -66,7 +66,7 @@ CacheService rate limiting является best-effort и не заменяет
 
 1. Закрытая рабочая копия `PRE_PILOT_INPUTS.md` создана, первая адресная волна reviewer outreach отправлена 24.07.2026. Ждать ответы 4–7 дней; после явного согласия по `SME_REVIEW_HANDOFF.md` подтвердить компетенцию/независимость и передать reviewer только его review-книгу. Получить sign-off; замечания исправлять только новой versioned-ротацией.
 2. Заполнить оставшиеся реквизиты оператора, получить внешнее legal/retention решение и обновить consent version при необходимости; project email и 2FA уже проверены владельцем.
-3. По утверждённому списку удалить smoke results/attempts через admin preview/confirm; проверить operational backups и diagnostics.
+3. В Admin Build .15 проверить, что при выключенном техническом переключателе известные smoke-коды отсутствуют в таблице, метриках и диаграммах; не выполнять новые попытки их массового удаления.
 4. Выполнить desktop/mobile QA, CI, health, protected status и readiness.
 5. В закрытом owner-журнале зафиксировать версии, gates, ответственных, объём и решение `go`.
 6. Сначала включить legal approval с точной consent version, затем отдельным действием issuance. Не менять оба gate одновременно с runtime rollout.
@@ -87,4 +87,4 @@ CacheService rate limiting является best-effort и не заменяет
 
 На выборке 10–30 прохождений не делать сильных статистических выводов и не менять scoring автоматически.
 
-Связанные документы: `PRE_PILOT_INPUTS.md`, `QUESTION_BANK_ROTATION.md`, `SME_REVIEW_HANDOFF.md`, `PRIVACY_CHECKLIST.md`, `OPERATIONS.md`, `DEPLOYMENT.md`, `OBSERVABILITY.md`, `BACKUP_AND_RECOVERY.md`, `DATA_DELETION.md`, `QUESTION_BANK_AUDIT.md`.
+Связанные документы: PRE_PILOT_INPUTS.md, QUESTION_BANK_ROTATION.md, SME_REVIEW_HANDOFF.md, PRIVACY_CHECKLIST.md, OPERATIONS.md, DEPLOYMENT.md, OBSERVABILITY.md, BACKUP_AND_RECOVERY.md, DATA_DELETION.md, TECHNICAL_DATA_EXCLUSION.md, QUESTION_BANK_AUDIT.md.

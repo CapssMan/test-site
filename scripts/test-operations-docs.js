@@ -12,7 +12,8 @@ const requiredDocs = [
   "docs/BACKUP_AND_RECOVERY.md",
   "docs/TESTING.md",
   "docs/YANDEX_CREDENTIAL_ROTATION.md",
-  "docs/PRE_PILOT_INPUTS.md"
+  "docs/PRE_PILOT_INPUTS.md",
+  "docs/TECHNICAL_DATA_EXCLUSION.md"
 ];
 
 requiredDocs.forEach(relativePath => {
@@ -60,7 +61,7 @@ const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
   "LEGAL_PILOT_APPROVED=false",
   "ATTEMPT_ISSUANCE_ENABLED=false",
   "RETENTION_AUTOMATION_ENABLED=false",
-  "Не удалять «все 9» по одному счётчику",
+  "Не выполнять новые попытки массового удаления известных девяти кодов",
   "READY FOR OWNER DECISION",
   "LIMITED GO"
 ].forEach(fragment => assert.ok(prePilotInputs.includes(fragment), `pre-pilot input template missing: ${fragment}`));

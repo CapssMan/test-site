@@ -16,6 +16,7 @@ const productVision = read("docs/PRODUCT_VISION.md");
 const externalReviewBrief = read("docs/EXTERNAL_REVIEW_BRIEF.md");
 const fiveBankQualityPlan = read("docs/FIVE_BANK_QUALITY_PLAN.md");
 const sourcePrivacyPlan = read("docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md");
+const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
 
 [
   "NO-GO для реальных кандидатов",
@@ -139,6 +140,20 @@ assert.match(read("docs/PROJECT_STRUCTURE.md"), /SOURCE_PRIVACY_AND_ATTRIBUTION\
 assert.match(read("TODO.md"), /маркетинговую стратегию/);
 assert.match(read("TODO.md"), /официальные реестры товарных знаков/);
 assert.match(read("ROADMAP.md"), /Owner marketing goal/);
+
+[
+  "DEV-Z2VK8",
+  "DEV-E94Y8",
+  "DEV-EZ3BY",
+  "FA-5DU43",
+  "DEV-B4ABJ",
+  "DEV-TVENX",
+  "DEV-7S2N2",
+  "FA-X5P66",
+  "FA-LDUB2",
+  "2026.07.26.15",
+  "не считается самостоятельным blocker пилота"
+].forEach(fragment => assert.ok(technicalDataExclusion.includes(fragment), "technical exclusion contract missing: " + fragment));
 
 assert.match(code, /const PUBLIC_DEV_TEST_ENABLED = false;/);
 assert.match(code, /const RETENTION_AUTOMATION_ENABLED = false;/);

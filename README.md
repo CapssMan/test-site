@@ -12,7 +12,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 Этап 17, техническая ротация пяти production-банков v4 и least-privilege ротация Яндекс credential завершены с решением **NO-GO для реальных кандидатов**: опубликованы 240 новых вопросов/вариантов/ключей/ID, private/public split, fail-closed trust anchors, crash-safe cutover и app-folder-only storage. Dependency-free `npm test` и read-only GitHub Actions CI выполняют 23 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`; API `attempt-v2`. В следующем backend source `yandex-disk-mvp-2026-07-26-16` подготовлены пропорциональная выборка по тематическим блокам и расширенный TXT с сильными сторонами, зонами развития и подсказками для интервью; до отдельного rollout production runtime не изменён.
 
-`LEGAL_PILOT_APPROVED` и `ATTEMPT_ISSUANCE_ENABLED` остаются `false`. Реальные кандидаты не допускаются до заполнения реквизитов оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, очистки smoke-данных и owner sign-off.
+LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до заполнения реквизитов оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 
 Официальная инженерная legal/privacy-сверка обновлена 23 июля 2026 года: уведомление об обработке, локализация/трансграничность, форма подтверждения уничтожения и квалификация обезличивания вынесены в явный внешний checklist. Наличие технических controls не считается юридическим одобрением.
 
@@ -82,6 +82,7 @@ docs/SECURITY_AUDIT.md Security-аудит и остаточные риски
 docs/BACKEND_SCORING_DECISION.md Решение по авторитетному расчёту
 docs/LEGAL_PRIVACY_REVIEW.md Инженерный legal/privacy review и owner checklist
 docs/DATA_DELETION.md  Механизм удаления, crash recovery и retention boundary
+- Решение о сохранении и исключении известных smoke-кодов: docs/TECHNICAL_DATA_EXCLUSION.md.
 docs/BACKUP_AND_RECOVERY.md Проверяемые snapshots, ротация и restore runbook
 docs/OBSERVABILITY.md Защищённый status contract и operator runbook
 docs/TESTING.md       Единая CI-матрица, безопасный workflow и добавление тестов

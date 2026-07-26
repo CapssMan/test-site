@@ -18,9 +18,9 @@ Google Apps Script остаётся backend/API. Google Sheets и Google Drive �
 
 Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Расширенная read-only диагностика реализована отдельным POST `adminDiagnostics` за админ-паролем и возвращает только безопасные технические агрегаты.
 
-Historical baseline этапа 10 опубликован в deployment `@49`, implementation commit `e251be3`; 10A — в `@51`, commit `2addd59`. Текущий production runtime: backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`, candidate/admin `Build 2026.07.21.13`, API `attempt-v2`, storage root `app:/skillcheck`. Этап 15 добавил dependency-free `npm test` и read-only GitHub Actions, этап 16 — operator/deployment/privacy runbooks, этап 17 — live pilot-readiness audit с решением NO-GO; банки v4 и app-folder-only credential migration технически завершены.
+Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Текущий production runtime: backend yandex-disk-mvp-2026-07-26-20, deployment @65, candidate Build 2026.07.21.13, admin Build 2026.07.26.15, API attempt-v2, storage root app:/skillcheck. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
 
-Owner smoke 10A `FA-LDUB2` исторически подтвердил `server-verified` / `authoritative-v1` / `attempt-v1`. Текущий `attempt-v2` требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, application-level backup/restore, защищённая наблюдаемость и CI реализованы; автоматический retention выключен до утверждения сроков. Реальный пилот заблокирован до реквизитов оператора, внешнего legal/retention checklist, независимого SME sign-off v4, точечной очистки smoke-данных и owner sign-off.
+Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; retention выключен до утверждения сроков. Реальный пилот заблокирован до реквизитов оператора, legal/retention, независимого SME sign-off v4 и owner sign-off; известные smoke-коды сохраняются и системно исключаются из аналитики.
 
 Рабочие тесты:
 
@@ -114,7 +114,7 @@ telemetryVerification
 - authoritative scoring, single-use session и fail-closed private storage;
 - секреты Script Properties;
 - правило: GitHub Pages не хранит результаты, персональные данные, токены или JSON-базы.
-- pilot lock: не включать legal approval/issuance до operator/legal/retention/SME/data-cleanup checklist и owner sign-off.
+- pilot lock: не включать legal approval/issuance до operator/legal/retention/SME/owner checklist и проверки исключения известных технических кодов.
 
 ## Security-границы текущего MVP
 

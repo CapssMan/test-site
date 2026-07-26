@@ -21,7 +21,7 @@
 1. Независимый человеческий SME sign-off пяти банков v4 завершён без блокирующих замечаний.
 2. Публичные реквизиты оператора утверждены и внесены одновременно в `privacy.html` и `consent.html`.
 3. Внешнее legal/retention решение имеет итог `APPROVED` либо выполненные условия `APPROVED WITH CONDITIONS`.
-4. Точный перечень smoke-кодов удалён через preview/confirm; backup purge и protected diagnostics проверены.
+4. Известный набор smoke-кодов либо удалён по подтверждённому workflow, либо сохранён по owner-решению и проверяемо исключён из аналитики согласно TECHNICAL_DATA_EXCLUSION.md.
 5. CI, Pages, health, protected status, snapshot readiness и desktop/mobile QA зелёные на одной версии.
 6. В закрытом журнале назначены owner, оператор пилота, incident owner и privacy contact.
 7. Владелец зафиксировал `GO`/`LIMITED GO`, предел когорты и stop conditions.
@@ -143,4 +143,4 @@
 4. Передать этапу 19 только псевдонимизированные агрегаты и тематическую сводку feedback.
 5. Не менять банки, пороги или scoring до независимого разбора и versioned-решения этапа 20.
 
-Связанные документы: `PRE_PILOT_INPUTS.md`, `PILOT_READINESS.md`, `PRIVACY_CHECKLIST.md`, `OPERATIONS.md`, `OBSERVABILITY.md`, `DATA_DELETION.md`, `BACKUP_AND_RECOVERY.md`.
+Связанные документы: PRE_PILOT_INPUTS.md, PILOT_READINESS.md, PRIVACY_CHECKLIST.md, OPERATIONS.md, OBSERVABILITY.md, DATA_DELETION.md, TECHNICAL_DATA_EXCLUSION.md, BACKUP_AND_RECOVERY.md.

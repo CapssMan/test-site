@@ -31,6 +31,7 @@ skillcheck/
 │   ├── BACKEND_SCORING_DECISION.md
 │   ├── LEGAL_PRIVACY_REVIEW.md
 │   ├── DATA_DELETION.md
+│   ├── TECHNICAL_DATA_EXCLUSION.md
 │   ├── BACKUP_AND_RECOVERY.md
 │   ├── OBSERVABILITY.md
 │   ├── TESTING.md
@@ -134,13 +135,14 @@ Owner-bootstrap воспроизводит private banks только из по�
 - `DEPLOYMENT.md` — безопасный rollout/rollback GitHub Pages и существующего Apps Script deployment.
 - `PRIVACY_CHECKLIST.md` — privacy controls до приглашения, во время обработки, при запросе и инциденте.
 - `PILOT_READINESS.md` — техническое evidence этапа 17, NO-GO блокеры и последовательность первого пилота.
-- `PRE_PILOT_INPUTS.md` — безопасный шаблон входных решений SME/operator/legal, точного cleanup scope и owner sign-off.
+- PRE_PILOT_INPUTS.md — безопасный шаблон входных решений SME/operator/legal, проверки технического исключения и owner sign-off.
 - `PILOT_RUNBOOK.md` — допуск, L1 identity boundary, метрики, feedback и stop conditions первой контролируемой волны.
 - `PRODUCT_VISION.md` — постоянная North Star self-service кандидатов, рейтинга и employer discovery после пилота.
 - `EXTERNAL_REVIEW_BRIEF.md` — готовые постановки задачи, материалы и acceptance criteria внешнего SME и legal/retention review.
 - `FIVE_BANK_QUALITY_PLAN.md` — owner-решение сохранить пять тестов и повторный цикл качества Q1–Q4 для всех 240 вопросов.
 - `SOURCE_PRIVACY_AND_ATTRIBUTION.md` — post-MVP миграция private source/нейтрального домена и честная граница защиты публичного frontend от копирования.
 - `DATA_DELETION.md` — удаление, crash recovery и граница retention.
+- TECHNICAL_DATA_EXCLUSION.md — точный набор исторических smoke-кодов и обязательное исключение из аналитики.
 - `BACKUP_AND_RECOVERY.md` — snapshot/rotation/restore runbook и ограничения failure-domain.
 - `REMAINING_ESTIMATE.md` — часы, токены и режимы оставшейся работы.
 

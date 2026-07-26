@@ -38,6 +38,7 @@
 - [x] Этап 15 завершён: dependency-free `npm test`, secret/link/syntax validators и read-only GitHub Actions CI; локально 28/28 проверок.
 - [x] Этап 16 завершён: operator guide, deployment/rollback runbook, privacy checklist и regression-проверка эксплуатационной документации.
 - [x] Этап 17 технически завершён: live desktop/mobile, public smoke, owner diagnostics, свежий snapshot и NO-GO readiness report с точными блокерами.
+- [x] Решение владельца по smoke-данным реализовано: известные девять кодов сохраняются, Admin Build .15 исключает их из обычной аналитики и помечает при явном показе; контракт — docs/TECHNICAL_DATA_EXCLUSION.md.
 
 ## До запуска кандидатов
 
@@ -116,7 +117,7 @@
 
 ## Следующий этап
 
-Техническая ротация пяти банков v4 и app-folder-only ротация Яндекс credential завершены, а закрытый Excel-пакет и `docs/SME_REVIEW_HANDOFF.md` готовы к передаче эксперту; решение для реальных кандидатов остаётся `NO-GO`. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/data-cleanup checklist. Для документального/контентного этапа достаточно режима `высокий`; для удаления production smoke и gate cutover снова нужен `очень высокий`. Полная матрица находится в `docs/PILOT_READINESS.md`.
+Техническая ротация пяти банков v4 и app-folder-only ротация Яндекс credential завершены, а закрытый Excel-пакет и docs/SME_REVIEW_HANDOFF.md готовы к передаче эксперту; решение для реальных кандидатов остаётся NO-GO. Следующее действие — независимый человеческий SME sign-off вместе с operator/legal/owner checklist. Исторический data-cleanup заменён проверяемым исключением известных технических кодов. Для документального/контентного этапа достаточно режима высокий; для gate cutover снова нужен очень высокий.
 
 ## Post-pilot North Star — не начинать до этапа 20
 

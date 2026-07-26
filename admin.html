@@ -300,7 +300,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.26.14</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.26.15</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -461,7 +461,7 @@
 
       <label class="technical-toggle" for="showTechnical">
         <input id="showTechnical" type="checkbox">
-        Показывать технические записи dev-quick в общей аналитике
+        Показывать 9 известных технических результатов в общей аналитике
       </label>
 
       <section class="stats-grid" aria-label="Сводные метрики">
@@ -493,9 +493,13 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.26.14";
+    const FRONTEND_BUILD = "2026.07.26.15";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
+    const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze([
+      "DEV-Z2VK8", "DEV-E94Y8", "DEV-EZ3BY", "FA-5DU43", "DEV-B4ABJ",
+      "DEV-TVENX", "DEV-7S2N2", "FA-X5P66", "FA-LDUB2"
+    ]);
     const TEST_LABELS = {
       "fa-junior": "Financial Analyst",
       "ca-junior": "Credit Analyst",
@@ -1099,6 +1103,13 @@
       });
     }
 
+    function isTechnicalResult(row) {
+      return Boolean(row) && (
+        row.testId === TECHNICAL_TEST_ID ||
+        KNOWN_TECHNICAL_RESULT_CODES.indexOf(String(row.code || "").toUpperCase()) !== -1
+      );
+    }
+
     function filterAndSortResults(rows, filters) {
       const search = String(filters.search || "").trim().toLowerCase();
       const selectedTest = String(filters.test || "");
@@ -1107,7 +1118,7 @@
       const sortOrder = String(filters.sortOrder || "date-desc");
 
       return rows.filter(function(row) {
-        if (!showTechnical && !selectedTest && row.testId === TECHNICAL_TEST_ID) return false;
+        if (!showTechnical && isTechnicalResult(row)) return false;
         if (search && row.code.toLowerCase().indexOf(search) === -1) return false;
         if (selectedTest && row.testId !== selectedTest) return false;
         if (selectedStatus && row.status !== selectedStatus) return false;
@@ -1203,7 +1214,8 @@
 
       const body = rows.map(function(row) {
         return "<tr>" +
-          cell("Код", '<span class="code">' + escapeHtml(row.code) + "</span>") +
+          cell("Код", '<span class="code">' + escapeHtml(row.code) + "</span>" +
+            (isTechnicalResult(row) ? ' <span class="badge badge-warn">Технический</span>' : "")) +
           cell("Дата", escapeHtml(formatDate(row.date))) +
           cell("Тест", escapeHtml(row.testTitle || testLabel(row.testId))) +
           cell("Итог", formatNumber(row.finalScore)) +

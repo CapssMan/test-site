@@ -43,6 +43,7 @@ const frontendContext = { Array, Boolean, Date, Number, Object, String };
 const frontendFunctions = [
   "normalizeResultCode",
   "normalizeAdminRows",
+  "isTechnicalResult",
   "filterAndSortResults",
   "calculateAdminMetrics",
   "buildTestDistribution",
@@ -55,6 +56,7 @@ const frontendFunctions = [
 
 vm.runInNewContext(
   'const TECHNICAL_TEST_ID = "dev-quick";\n' +
+    'const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze(["DEV-Z2VK8","DEV-E94Y8","DEV-EZ3BY","FA-5DU43","DEV-B4ABJ","DEV-TVENX","DEV-7S2N2","FA-X5P66","FA-LDUB2"]);\n' +
     'const TEST_LABELS = {"fa-junior":"Financial Analyst","ca-junior":"Credit Analyst","fpa-junior":"FP&A / Budget","acc-junior":"Accounting","bi-junior":"Finance BI","dev-quick":"Dev Quick"};\n' +
     'const BANK_VERSIONS = {"fa-junior":"FA Junior v4.0","ca-junior":"CA Junior v4.0","fpa-junior":"FP&A Junior v4.0","acc-junior":"ACC Junior v4.0","bi-junior":"BI Junior v4.0","dev-quick":"DEV Quick v2.0"};\n' +
     frontendFunctions,
@@ -95,6 +97,15 @@ const fixture = [
     date: "2026-07-03T10:00:00.000Z",
     status: "passed",
     reportCreated: true
+  },
+  {
+    code: "FA-X5P66",
+    testId: "fa-junior",
+    finalScore: 0,
+    percent: 0,
+    date: "2026-07-04T10:00:00.000Z",
+    status: "failed",
+    reportCreated: false
   },
   {
     code: "FA-DDDD4",
@@ -147,11 +158,23 @@ assert(
   "revoke id may be cleared only after server success"
 );
 
+assert.equal(frontendContext.isTechnicalResult(normalized.find(row => row.code === "FA-X5P66")), true, "known financial smoke must be classified as technical");
+assert.equal(frontendContext.isTechnicalResult(normalized.find(row => row.code === "FA-AAAA2")), false, "ordinary financial results must remain in analytics");
+
 const defaultRows = frontendContext.filterAndSortResults(normalized, { sortOrder: "date-desc" });
 assert.deepEqual(Array.from(defaultRows, row => row.code), ["FA-AAAA2", "CA-BBBB2", "FA-DDDD4"], "technical rows hidden by default and dates sorted newest first");
 
 const devRows = frontendContext.filterAndSortResults(normalized, { test: "dev-quick", sortOrder: "date-desc" });
-assert.deepEqual(Array.from(devRows, row => row.code), ["DEV-CCCC3"], "technical test can be selected explicitly");
+assert.deepEqual(Array.from(devRows, row => row.code), [], "technical test remains excluded until the explicit toggle is enabled");
+
+const visibleDevRows = frontendContext.filterAndSortResults(normalized, { test: "dev-quick", showTechnical: true, sortOrder: "date-desc" });
+assert.deepEqual(Array.from(visibleDevRows, row => row.code), ["DEV-CCCC3"], "technical dev result can be shown explicitly");
+
+const hiddenKnownFinancialSmoke = frontendContext.filterAndSortResults(normalized, { search: "x5p66", sortOrder: "date-desc" });
+assert.deepEqual(Array.from(hiddenKnownFinancialSmoke, row => row.code), [], "known financial smoke must not leak into default analytics");
+
+const visibleKnownFinancialSmoke = frontendContext.filterAndSortResults(normalized, { search: "x5p66", showTechnical: true, sortOrder: "date-desc" });
+assert.deepEqual(Array.from(visibleKnownFinancialSmoke, row => row.code), ["FA-X5P66"], "known financial smoke can be shown explicitly");
 
 const searchedRows = frontendContext.filterAndSortResults(normalized, { search: "bbbb", sortOrder: "date-desc" });
 assert.deepEqual(Array.from(searchedRows, row => row.code), ["CA-BBBB2"], "code search must be case-insensitive");

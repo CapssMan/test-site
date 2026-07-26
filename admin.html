@@ -300,7 +300,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.21.13</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.26.14</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -493,7 +493,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
-    const FRONTEND_BUILD = "2026.07.21.13";
+    const FRONTEND_BUILD = "2026.07.26.14";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const TEST_LABELS = {
@@ -601,11 +601,11 @@
     }
 
     async function requestDeletionPreview(password, code, scope) {
-      return requestAdminAction("adminDeletionPreview", password, { code: code, scope: scope });
+      return requestAdminAction("adminDeletionPreview", password, { code: code, scope: scope }, 90000);
     }
 
     async function requestDeletionCommit(password, payload) {
-      return requestAdminAction("adminDeleteResult", password, payload);
+      return requestAdminAction("adminDeleteResult", password, payload, 120000);
     }
 
     async function requestAdminInvites(password) {
@@ -618,7 +618,7 @@
 
     async function requestAdminAction(action, password, payload, timeoutMs) {
       const controller = new AbortController();
-      const safeTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Math.min(60000, Math.max(5000, Number(timeoutMs))) : 20000;
+      const safeTimeoutMs = Number.isFinite(Number(timeoutMs)) ? Math.min(120000, Math.max(5000, Number(timeoutMs))) : 20000;
       const timeout = window.setTimeout(function() { controller.abort(); }, safeTimeoutMs);
 
       try {

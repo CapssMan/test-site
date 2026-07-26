@@ -12,6 +12,13 @@ const backendPath = path.join(root, "apps-script", "Code.gs");
 const backend = fs.readFileSync(backendPath, "utf8");
 const admin = fs.readFileSync(path.join(root, "admin.html"), "utf8");
 
+assert.match(admin, /requestAdminAction\("adminDeletionPreview", password, \{ code: code, scope: scope \}, 90000\)/,
+  "deletion preview must allow slow verified storage reads");
+assert.match(admin, /requestAdminAction\("adminDeleteResult", password, payload, 120000\)/,
+  "deletion commit must allow verified backup, deletion and purge to finish");
+assert.match(admin, /Math\.min\(120000, Math\.max\(5000, Number\(timeoutMs\)\)\)/,
+  "admin request timeout cap must preserve the deletion commit budget");
+
 function extractTopLevelFunction(source, name) {
   const marker = "function " + name + "(";
   const start = source.indexOf(marker);

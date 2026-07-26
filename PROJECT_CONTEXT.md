@@ -2,7 +2,7 @@
 
 ## Что это за проект
 
-SkillCheck — MVP assessment-platform и будущее ядро двусторонней платформы профессиональных навыков. В текущем controlled-pilot потоке кандидат получает приглашение, проходит тест, backend авторитетно считает результат, сохраняет advisory telemetry и возвращает случайный код. Долгосрочно специалисты смогут самостоятельно проходить тесты, по opt-in участвовать в рейтинге по профессии, а работодатели — получать объяснимый shortlist. North Star и ограничения: `docs/PRODUCT_VISION.md`.
+SkillCheck — MVP assessment-platform и будущее ядро двусторонней платформы профессиональных навыков. В текущем controlled-pilot потоке кандидат получает приглашение, проходит тест, backend авторитетно считает результат, сохраняет advisory telemetry и возвращает случайный код. Ближайший этап переносит runtime на российскую инфраструктуру и добавляет opt-in рейтинг по профессии; затем работодатели получат объяснимый shortlist. North Star и ограничения: `docs/PRODUCT_VISION.md`.
 
 Результат тестирования является предварительной оценкой отдельных навыков. Он не является самостоятельным решением о найме, отказе в найме или профессиональной пригодности.
 
@@ -20,7 +20,7 @@ Backend имеет публичный endpoint `?action=health`, который 
 
 Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Текущий production runtime: backend yandex-disk-mvp-2026-07-26-21, deployment @67, candidate Build 2026.07.26.14, admin Build 2026.07.26.15, API attempt-v2, storage root app:/skillcheck. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
 
-Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; retention выключен до утверждения сроков. Реальный пилот заблокирован до реквизитов оператора, legal/retention, независимого SME sign-off v4 и owner sign-off; известные smoke-коды сохраняются и системно исключаются из аналитики.
+Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; retention выключен до утверждения сроков. Разработка российского runtime и рейтинга может начинаться при закрытых gates. Реальные кандидаты остаются заблокированы до короткого legal/retention/SME/owner checklist; известные smoke-коды сохраняются и системно исключаются из аналитики.
 
 Рабочие тесты:
 
@@ -30,7 +30,7 @@ Owner smoke 10A FA-LDUB2 исторически подтвердил server-veri
 - Accounting / Reporting Junior — `data/acc-junior.json`, 40 вопросов;
 - Finance BI / Data Analyst Junior — `data/bi-junior.json`, 40 вопросов.
 
-## Новая модель хранения
+## Текущая модель хранения до российского cloud-cutover
 
 Персональные данные и полный TXT-отчёт хранятся только на закрытом Яндекс Диске:
 
@@ -110,7 +110,7 @@ telemetryVerification
 - display-only JSON и их `publicDigest`;
 - точный server-issued question manifest и перемешивание option-объектов;
 - отправку результата в Apps Script;
-- стабильный Google Script URL;
+- стабильный Google Script URL до проверенного cutover на Yandex Cloud;
 - authoritative scoring, single-use session и fail-closed private storage;
 - секреты Script Properties;
 - правило: GitHub Pages не хранит результаты, персональные данные, токены или JSON-базы.

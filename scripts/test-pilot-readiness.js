@@ -74,8 +74,8 @@ assert.doesNotMatch(pilotRunbook, /пилот (?:запущен|начат)/i,
   "один тест доказывает профессиональную пригодность",
   "Публичный рейтинг нельзя строить как один глобальный список по raw score",
   "L1 controlled invite",
-  "Публичный self-service рейтинг требует как минимум спроектированного L2",
-  "Что намеренно не делаем до пилота"
+  "Открытый self-service поток требует L2",
+  "Что не входит в минимальный рейтинг"
 ].forEach(fragment => assert.ok(productVision.includes(fragment), `product vision missing: ${fragment}`));
 
 assert.match(read("ROADMAP.md"), /Долгосрочная продуктовая цель[\s\S]*docs\/PRODUCT_VISION\.md/);

@@ -27,8 +27,8 @@ const consentVersion = "skillcheck-pd-consent-2026-07-26-v2";
 assert.match(consent, new RegExp(consentVersion));
 assert.match(consent, /Отдельное согласие на обработку персональных данных/);
 assert.match(consent, /Оператор: Кириллов Кирилл Сергеевич/);
-assert.match(consent, /Налог на профессиональный доход/);
-assert.match(consent, /Регион оператора: Москва/);
+assert.doesNotMatch(consent, /Налог на профессиональный доход|Регион оператора: Москва/);
+
 assert.match(consent, /Полный публичный адрес оператора: не утверждён/);
 assert.match(consent, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
 assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
@@ -38,8 +38,8 @@ assert.match(consent, /до 12 проверяемых резервных вер�
 
 assert.match(privacy, /skillcheck-privacy-2026-07-26-v4/);
 assert.match(privacy, /Оператор: Кириллов Кирилл Сергеевич/);
-assert.match(privacy, /Налог на профессиональный доход/);
-assert.match(privacy, /Регион оператора: Москва/);
+assert.doesNotMatch(privacy, /Налог на профессиональный доход|Регион оператора: Москва/);
+
 assert.match(privacy, /Полный публичный адрес оператора: не утверждён/);
 assert.match(privacy, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
 assert.doesNotMatch(privacy, /Email для обращений по персональным данным: не указан/);

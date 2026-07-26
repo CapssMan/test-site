@@ -1,5 +1,5 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-26-20";
-const CANDIDATE_FRONTEND_BUILD = "2026.07.21.13";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-26-21";
+const CANDIDATE_FRONTEND_BUILD = "2026.07.26.14";
 const ADMIN_FRONTEND_BUILD = "2026.07.26.15";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
@@ -14,7 +14,7 @@ const SCORE_VERIFICATION_SERVER = "server-verified";
 const AUTHORITATIVE_API_VERSION = "attempt-v2";
 const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const TELEMETRY_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
-const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-20-v1";
+const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-26-v2";
 const LEGAL_PILOT_APPROVAL_PROPERTY = "LEGAL_PILOT_APPROVED";
 const PRIVATE_BANK_ROTATION_PENDING_PROPERTY = "PRIVATE_BANK_ROTATION_PENDING_V1";
 const PUBLIC_BANK_RELEASE_PROPERTY = "PUBLIC_BANK_RELEASE_V1";
@@ -4718,7 +4718,7 @@ function buildLegalPilotLockedResponse() {
     failureCode: "legal_pilot_locked",
     backendVersion: BACKEND_VERSION,
     privacyConsentVersion: PRIVACY_CONSENT_VERSION,
-    message: "Пилот заблокирован до заполнения реквизитов оператора и завершения юридического checklist."
+    message: "Пилот заблокирован до утверждения полного публичного адреса оператора и завершения юридического checklist."
   };
 }
 

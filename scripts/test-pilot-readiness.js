@@ -165,7 +165,8 @@ assert.match(code, /consumeRateLimit\("save-result-global"/);
 assert.match(code, /function verifyProtectedDiagnosticsForOwner\(\)/);
 assert.match(code, /function createOperationalBackupsForOwner\(\)/);
 
-assert.match(privacy, /Наименование\/ФИО оператора: не указано/);
+assert.match(privacy, /Оператор: Кириллов Кирилл Сергеевич/);
+assert.match(privacy, /Полный публичный адрес оператора: не утверждён/);
 assert.match(consent, /skillcheck\.project@yandex\.ru/);
 assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
 assert.doesNotMatch(report, /\[x\].*(реквизит|legal|credential|smoke|SME sign-off)/i,

@@ -2,7 +2,7 @@
 
 Дата аудита: 23 июля 2026 года.
 
-Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56`, техническая ротация v4 — в `@57`. Least-privilege Яндекс migration опубликована в существующем deployment `@61` без смены URL. Текущие версии: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
+Статус baseline этапа 10: deployment `@49`, implementation commit `e251be3`. Этап 10A: deployment `@51`, implementation commit `2addd59`. Privacy addendum этапа 11 опубликован в deployment `@52`, безопасное удаление этапа 12 — в `@54`, backup/recovery этапа 13 — в `@55`, защищённая диагностика этапа 14 — в `@56`, техническая ротация v4 — в `@57`. Least-privilege Яндекс migration опубликована в существующем deployment `@61` без смены URL. Текущие версии: candidate `Build 2026.07.26.14`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-26-21`, API `attempt-v2`; `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
 
 Этап 15 добавил read-only GitHub Actions без production secrets/deploy. Workflow использует locked dependency-free install с отключёнными lifecycle scripts и выполняет тот же `npm test`, что и локальная проверка.
 

@@ -10,9 +10,9 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 ## Текущий статус
 
-Этап 17, техническая ротация пяти production-банков v4 и least-privilege ротация Яндекс credential завершены с решением **NO-GO для реальных кандидатов**: опубликованы 240 новых вопросов/вариантов/ключей/ID, private/public split, fail-closed trust anchors, crash-safe cutover и app-folder-only storage. Dependency-free `npm test` и read-only GitHub Actions CI выполняют 23 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.21.13`, admin `Build 2026.07.21.13`, backend `yandex-disk-mvp-2026-07-23-15`, deployment `@61`; API `attempt-v2`. В следующем backend source `yandex-disk-mvp-2026-07-26-16` подготовлены пропорциональная выборка по тематическим блокам и расширенный TXT с сильными сторонами, зонами развития и подсказками для интервью; до отдельного rollout production runtime не изменён.
+Этап 17 и внутреннее pre-pilot hardening завершены с решением **NO-GO для реальных кандидатов**. Опубликованы пять банков v4, server-side scoring/sampling, расширенные отчёты, app-folder-only storage и проверяемое исключение девяти технических кодов из обычной аналитики. Dependency-free `npm test` и GitHub Actions CI выполняют 23 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.26.14`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-26-21`, deployment `@67`; API `attempt-v2`.
 
-LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до заполнения реквизитов оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
+LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до утверждения полного публичного адреса оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 
 Официальная инженерная legal/privacy-сверка обновлена 23 июля 2026 года: уведомление об обработке, локализация/трансграничность, форма подтверждения уничтожения и квалификация обезличивания вынесены в явный внешний checklist. Наличие технических controls не считается юридическим одобрением.
 
@@ -30,7 +30,7 @@ LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реа�
 - передачу bearer-кода приглашения только во fragment `#invite=...`: код не попадает в query, fragment сразу забирается в `sessionStorage` и удаляется из адресной строки;
 - серверную attempt-сессию со статусами `active → reserved → completed` и идемпотентным восстановлением;
 - анти-повтор через закрытые identity hashes на backend;
-- отдельное согласие на обработку персональных данных версии `skillcheck-pd-consent-2026-07-20-v1`, связанное с attempt token/session и серверным временем;
+- отдельное согласие на обработку персональных данных версии `skillcheck-pd-consent-2026-07-26-v2`, связанное с attempt token/session и серверным временем;
 - обязательное подтверждение 18+ перед стартом;
 - hard-disabled передачу результата работодателю до отдельного согласия для конкретного получателя;
 - обязательные поля источника кандидата и опыта;
@@ -188,7 +188,7 @@ node scripts/test-pilot-readiness.js
 7. Не хранить результаты, персональные данные, токены или JSON-базы на GitHub Pages.
 8. Google Apps Script обновлять в существующем deployment, не меняя Web App URL без отдельного согласования.
 9. Все секреты хранить только в Apps Script Properties.
-10. Перед публичным запуском заполнить реквизиты и контакт оператора в `privacy.html` и `consent.html`.
+10. Перед публичным запуском утвердить полный публичный адрес оператора и завершить legal/retention checklist; ФИО, статус НПД, регион и контакт уже опубликованы.
 11. Не включать `LEGAL_PILOT_APPROVED` и `ATTEMPT_ISSUANCE_ENABLED` для реальных кандидатов до внешнего legal/retention checklist, SME sign-off v4, data cleanup и owner sign-off.
 12. Не менять вопросы, варианты или правильные ответы без отдельного подтверждения и SME-проверки.
 

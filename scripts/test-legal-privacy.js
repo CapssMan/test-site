@@ -23,17 +23,24 @@ function extractTopLevelFunction(source, name) {
   return source.slice(start, next < 0 ? source.length : next).trim();
 }
 
-const consentVersion = "skillcheck-pd-consent-2026-07-20-v1";
+const consentVersion = "skillcheck-pd-consent-2026-07-26-v2";
 assert.match(consent, new RegExp(consentVersion));
 assert.match(consent, /Отдельное согласие на обработку персональных данных/);
-assert.match(consent, /Наименование\/ФИО оператора: не указано/);
+assert.match(consent, /Оператор: Кириллов Кирилл Сергеевич/);
+assert.match(consent, /Налог на профессиональный доход/);
+assert.match(consent, /Регион оператора: Москва/);
+assert.match(consent, /Полный публичный адрес оператора: не утверждён/);
 assert.match(consent, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
 assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
 assert.match(consent, /не разрешает[\s\S]*передавать результат работодателю/);
 assert.match(consent, /Срок серверного хранения ещё не утверждён/);
 assert.match(consent, /до 12 проверяемых резервных версий/i);
 
-assert.match(privacy, /skillcheck-privacy-2026-07-20-v3/);
+assert.match(privacy, /skillcheck-privacy-2026-07-26-v4/);
+assert.match(privacy, /Оператор: Кириллов Кирилл Сергеевич/);
+assert.match(privacy, /Налог на профессиональный доход/);
+assert.match(privacy, /Регион оператора: Москва/);
+assert.match(privacy, /Полный публичный адрес оператора: не утверждён/);
 assert.match(privacy, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
 assert.doesNotMatch(privacy, /Email для обращений по персональным данным: не указан/);
 assert.match(privacy, /псевдонимизированной, а не полностью обезличенной/);
@@ -67,7 +74,7 @@ assert.doesNotMatch(extractTopLevelFunction(backend, "doPost"), /setLegalPilotAp
 assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.26\.15"/);
 assert.match(admin, /const API_VERSION = "attempt-v2"/);
 assert.match(admin, /setInviteFormEnabled\(attemptIssuanceEnabled && legalPilotApproved\)/);
-assert.match(home, /реквизитов оператора[\s\S]*юридического checklist/);
+assert.match(home, /полного публичного адреса оператора[\s\S]*юридического checklist/);
 assert.match(review, /Реальный пилот юридически не готов/);
 assert.match(review, /Дата технической сверки: 23 июля 2026 года/);
 assert.match(review, /Граница актуальности:[\s\S]*не даёт ответ `APPROVED`/);

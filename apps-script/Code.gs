@@ -1,4 +1,4 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-26-17";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-26-19";
 const CANDIDATE_FRONTEND_BUILD = "2026.07.21.13";
 const ADMIN_FRONTEND_BUILD = "2026.07.26.14";
 const SUCCESS_THRESHOLD = 80;
@@ -195,7 +195,7 @@ function doGet(e) {
     return jsonResponse(buildPublicHealthStatus());
   }
 
-  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite", "adminDeletionPreview", "adminDeleteResult", "adminDiagnostics"].indexOf(action) !== -1) {
+  if (["adminResults", "adminReport", "adminCreateInvite", "adminInvites", "adminRevokeInvite", "adminDeletionPreview", "adminDeleteResult", "adminResumeDeletion", "adminDiagnostics"].indexOf(action) !== -1) {
     return jsonResponse(methodNotAllowedResponse("Для административных операций требуется POST-запрос."));
   }
 
@@ -264,6 +264,12 @@ function doPost(e) {
       const adminGuard = guardAdminRequest(String(data.password || ""), "deletion-commit");
       if (!adminGuard.ok) return jsonResponse(adminGuard.response);
       return jsonResponse(adminDeleteResult(data));
+    }
+
+    if (action === "adminResumeDeletion") {
+      const adminGuard = guardAdminRequest(String(data.password || ""), "deletion-recovery");
+      if (!adminGuard.ok) return jsonResponse(adminGuard.response);
+      return jsonResponse(adminResumeResultDeletion(data));
     }
 
     if (action === "adminDiagnostics") {
@@ -1938,42 +1944,55 @@ function uploadTextToYandexDisk(path, content) {
     );
   }
 
-  const uploadUrl = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=" +
-    encodeURIComponent(normalizedPath) + "&overwrite=true";
-  const uploadInfo = yandexApiRequest("get", uploadUrl, null, null);
-  const uploadMethod = String(uploadInfo.method || "PUT").toLowerCase();
-
-  if (!uploadInfo.href || uploadMethod !== "put" || uploadInfo.templated === true) {
-    throw new Error(
-      "Yandex upload link error during upload-url for " + normalizedPath +
-      ": method=" + String(uploadInfo.method || "") +
-      ", templated=" + String(Boolean(uploadInfo.templated)) +
-      ", uploadUrl=" + sanitizeYandexUploadUrl(uploadInfo.href)
-    );
-  }
-
   const textContent = String(content || "");
   const uploadContent = /\n$/.test(textContent) ? textContent : textContent + "\n";
   const bytes = Utilities.newBlob(uploadContent, "text/plain").getBytes();
-  const response = UrlFetchApp.fetch(uploadInfo.href, {
-    method: uploadMethod,
-    payload: bytes,
-    contentType: "text/plain; charset=utf-8",
-    escaping: false,
-    muteHttpExceptions: true
-  });
-  const statusCode = response.getResponseCode();
+  const uploadUrl = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=" +
+    encodeURIComponent(normalizedPath) + "&overwrite=true";
+  const retryableStatuses = [409, 429, 500, 502, 503, 504];
+  let lastFailure = null;
 
-  if (statusCode < 200 || statusCode >= 300) {
-    throw new Error(
-      "Yandex upload error " + statusCode +
-      " during upload-put for " + normalizedPath +
-      "; uploadUrl=" + sanitizeYandexUploadUrl(uploadInfo.href) +
-      "; method=" + uploadMethod.toUpperCase() +
-      "; responseHeaders=" + sanitizeYandexResponseHeaders(response.getAllHeaders()) +
-      "; responseBody=" + sanitizeYandexResponseText(response.getContentText() || "<empty>")
-    );
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const uploadInfo = yandexApiRequest("get", uploadUrl, null, null);
+    const uploadMethod = String(uploadInfo.method || "PUT").toLowerCase();
+    if (!uploadInfo.href || uploadMethod !== "put" || uploadInfo.templated === true) {
+      throw new Error(
+        "Yandex upload link error during upload-url for " + normalizedPath +
+        ": method=" + String(uploadInfo.method || "") +
+        ", templated=" + String(Boolean(uploadInfo.templated)) +
+        ", uploadUrl=" + sanitizeYandexUploadUrl(uploadInfo.href)
+      );
+    }
+
+    const response = UrlFetchApp.fetch(uploadInfo.href, {
+      method: uploadMethod,
+      payload: bytes,
+      contentType: "text/plain; charset=utf-8",
+      escaping: false,
+      muteHttpExceptions: true
+    });
+    const statusCode = response.getResponseCode();
+    if (statusCode >= 200 && statusCode < 300) return;
+
+    lastFailure = {
+      statusCode: statusCode,
+      uploadUrl: uploadInfo.href,
+      method: uploadMethod,
+      responseHeaders: response.getAllHeaders(),
+      responseBody: response.getContentText() || "<empty>"
+    };
+    if (retryableStatuses.indexOf(statusCode) === -1 || attempt === 3) break;
+    Utilities.sleep(500 * Math.pow(2, attempt));
   }
+
+  throw new Error(
+    "Yandex upload error " + Number(lastFailure && lastFailure.statusCode || 0) +
+    " during upload-put for " + normalizedPath +
+    "; uploadUrl=" + sanitizeYandexUploadUrl(lastFailure && lastFailure.uploadUrl) +
+    "; method=" + String(lastFailure && lastFailure.method || "put").toUpperCase() +
+    "; responseHeaders=" + sanitizeYandexResponseHeaders(lastFailure && lastFailure.responseHeaders) +
+    "; responseBody=" + sanitizeYandexResponseText(lastFailure && lastFailure.responseBody || "<empty>")
+  );
 }
 
 function readTextFromYandexDisk(path) {
@@ -2841,6 +2860,7 @@ function adminDeleteResult(data) {
       status: "error",
       retryable: true,
       failureCode: "deletion_incomplete",
+      failureStage: failureStage,
       backendVersion: BACKEND_VERSION,
       requestId: normalizeDeletionRequestId(requestIdForLog),
       message: "Удаление не завершено. Не меняйте код операции и повторите запрос из этого экрана."
@@ -2850,6 +2870,136 @@ function adminDeleteResult(data) {
   }
 }
 
+function listDeletionTransactionBackupsForCode(code) {
+  const normalizedCode = normalizeResultCode(code);
+  if (!normalizedCode) throw new Error("Invalid deletion recovery code.");
+  const listing = listYandexFolderContents(getDeletionBackupsFolderPath());
+  if (!listing.exists) return [];
+  if (listing.type !== "dir" || listing.error) throw new Error("Deletion backup folder is unavailable.");
+  if (listing.items.some(item => item && (item.publicKey || item.publicUrl || item.shared))) {
+    throw new Error("Deletion backups must remain private.");
+  }
+
+  return listing.items
+    .filter(item => item && item.type === "file" && /^scd_[a-f0-9]{32}.json$/.test(String(item.name || "")))
+    .map(item => {
+      const requestId = String(item.name).replace(/.json$/, "");
+      const text = readTextFromYandexDisk(joinDiskPath(getDeletionBackupsFolderPath(), item.name));
+      if (text === null) return null;
+      let raw;
+      try {
+        raw = JSON.parse(text);
+      } catch (error) {
+        throw new Error("Deletion recovery backup is corrupt.");
+      }
+      if (!raw || String(raw.code || "").toUpperCase() !== normalizedCode) return null;
+      const scope = normalizeDeletionScope(raw.scope);
+      if (!scope) throw new Error("Deletion recovery backup scope is invalid.");
+      return { requestId: requestId, backup: parseDeletionBackup(text, requestId, normalizedCode, scope) };
+    })
+    .filter(Boolean);
+}
+
+function adminResumeResultDeletion(data) {
+  let failureStage = "recovery-validation";
+  try {
+    assertAllowedObjectKeys(data, ["action", "apiVersion", "password", "code", "confirmationCode"], "adminResumeDeletion");
+    if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION) return buildClientUpgradeRequiredResponse();
+    const code = normalizeResultCode(data.code);
+    if (!code || String(data.confirmationCode || "").trim().toUpperCase() !== code) {
+      return buildValidationErrorResponse("invalid_deletion_recovery_confirmation", "Repeat the exact result code to resume deletion.");
+    }
+
+    failureStage = "recovery-discovery";
+    const logs = readDeletionLog();
+    const completed = logs.filter(row => row && row.code === code && row.state === "completed")
+      .sort((left, right) => String(right.updatedAt || "").localeCompare(String(left.updatedAt || "")));
+    const pending = logs.filter(row => row && row.code === code && row.state !== "completed");
+    const backups = listDeletionTransactionBackupsForCode(code);
+    const requestIds = uniqueDeletionIds(
+      pending.map(row => normalizeDeletionRequestId(row.requestId)).concat(backups.map(item => item.requestId))
+    );
+
+    if (requestIds.length > 1 || pending.length > 1) {
+      return buildValidationErrorResponse("deletion_recovery_conflict", "More than one pending deletion requires operator review.");
+    }
+    if (!requestIds.length) {
+      if (completed.length) return buildDeletionResultResponse(completed[0], true);
+      return {
+        ok: true,
+        status: "no_pending",
+        backendVersion: BACKEND_VERSION,
+        apiVersion: AUTHORITATIVE_API_VERSION,
+        code: code
+      };
+    }
+
+    const requestId = requestIds[0];
+    let entry = pending.find(row => normalizeDeletionRequestId(row.requestId) === requestId) || null;
+    const transaction = backups.find(item => item.requestId === requestId) || null;
+    if (!entry && transaction) {
+      failureStage = "recovery-log-write";
+      const lock = LockService.getScriptLock();
+      let lockAcquired = false;
+      try {
+        lock.waitLock(30000);
+        lockAcquired = true;
+        const currentLogs = readDeletionLog();
+        entry = currentLogs.find(row => row && row.requestId === requestId) || null;
+        if (!entry) {
+          const backup = transaction.backup;
+          entry = {
+            schemaVersion: 1,
+            requestId: requestId,
+            code: backup.code,
+            scope: backup.scope,
+            state: "backup_created",
+            counts: {
+              adminRows: backup.adminRows.length,
+              attemptRows: backup.scope === "full_attempt" ? backup.attemptRows.length : 0,
+              sessions: backup.scope === "full_attempt" ? backup.sessionRows.length : 0,
+              invites: backup.scope === "full_attempt" ? backup.inviteRows.length : 0,
+              report: backup.reportExists ? 1 : 0
+            },
+            backupPurged: false,
+            startedAt: String(backup.createdAt || new Date().toISOString()),
+            updatedAt: new Date().toISOString(),
+            completedAt: ""
+          };
+          upsertDeletionLogEntry(currentLogs, entry);
+          writeDeletionLog(currentLogs);
+        }
+      } finally {
+        if (lockAcquired) lock.releaseLock();
+      }
+    }
+
+    if (!entry) {
+      return buildValidationErrorResponse("deletion_recovery_missing_log", "Pending deletion state could not be recovered.");
+    }
+    return adminDeleteResult({
+      action: "adminDeleteResult",
+      apiVersion: AUTHORITATIVE_API_VERSION,
+      password: "",
+      code: entry.code,
+      scope: entry.scope,
+      requestId: requestId,
+      confirmationCode: entry.code,
+      previewToken: ""
+    });
+  } catch (error) {
+    console.error("Admin deletion recovery failed; stage=" + failureStage);
+    return {
+      ok: false,
+      status: "error",
+      retryable: true,
+      failureCode: "deletion_recovery_incomplete",
+      failureStage: failureStage,
+      backendVersion: BACKEND_VERSION,
+      message: "Deletion recovery did not finish. Keep the same result code and retry from this screen."
+    };
+  }
+}
 function getRetentionPolicyStatusForOwner() {
   return {
     ok: true,

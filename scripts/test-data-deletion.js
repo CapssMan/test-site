@@ -28,6 +28,58 @@ function extractTopLevelFunction(source, name) {
 }
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
+function exerciseYandexUpload(statusCodes) {
+  const state = { uploadLinks: 0, uploads: 0, sleeps: [] };
+  const context = {
+    String, Number, Boolean, Array, Object, JSON, Math, Date, Error, RegExp, encodeURIComponent,
+    normalizeDiskPath(value) { return String(value); },
+    ensureYandexFolderExists() {},
+    getParentDiskPath() { return "app:/skillcheck/private"; },
+    getYandexResourceMetadata() { return { exists: false, type: "missing" }; },
+    yandexApiRequest() {
+      state.uploadLinks += 1;
+      return { href: "https://uploader.test/" + state.uploadLinks, method: "PUT", templated: false };
+    },
+    Utilities: {
+      newBlob() { return { getBytes() { return [1, 2]; } }; },
+      sleep(ms) { state.sleeps.push(ms); }
+    },
+    UrlFetchApp: {
+      fetch() {
+        const status = statusCodes[state.uploads] === undefined ? 201 : statusCodes[state.uploads];
+        state.uploads += 1;
+        return {
+          getResponseCode() { return status; },
+          getAllHeaders() { return {}; },
+          getContentText() { return ""; }
+        };
+      }
+    },
+    sanitizeYandexUploadUrl(value) { return String(value || ""); },
+    sanitizeYandexResponseHeaders() { return "{}"; },
+    sanitizeYandexResponseText(value) { return String(value || ""); }
+  };
+  vm.createContext(context);
+  vm.runInContext(extractTopLevelFunction(backend, "uploadTextToYandexDisk") + "\nthis.__upload = uploadTextToYandexDisk;", context);
+  let error = null;
+  try {
+    context.__upload("app:/skillcheck/private/example.json", "[]");
+  } catch (caught) {
+    error = caught;
+  }
+  return { state, error };
+}
+
+const transientUpload = exerciseYandexUpload([409, 201]);
+assert.equal(transientUpload.error, null, "temporary Yandex upload conflict must recover");
+assert.equal(transientUpload.state.uploadLinks, 2, "retry must obtain a fresh signed upload URL");
+assert.deepEqual(transientUpload.state.sleeps, [500], "temporary upload retry must back off");
+
+const permanentUpload = exerciseYandexUpload([400, 201]);
+assert.match(String(permanentUpload.error && permanentUpload.error.message), /Yandex upload error 400/);
+assert.equal(permanentUpload.state.uploads, 1, "non-retryable upload errors must fail closed");
+assert.match(extractTopLevelFunction(backend, "adminDeleteResult"), /failureCode: "deletion_incomplete",[\s\S]*failureStage: failureStage/,
+  "authenticated deletion failures must expose the safe stage for recovery diagnostics");
 
 function makeHarness(options = {}) {
   const code = "FA-ABCDE";
@@ -54,7 +106,9 @@ function makeHarness(options = {}) {
     writes: [],
     errors: [],
     failBackupPurgeOnce: Boolean(options.failBackupPurgeOnce),
-    backupPurgeFailed: false
+    backupPurgeFailed: false,
+    failDeletionLogOnce: Boolean(options.failDeletionLogOnce),
+    deletionLogFailed: false
   };
 
   const context = {
@@ -83,6 +137,10 @@ function makeHarness(options = {}) {
       return clone(state.arrays[storagePath]);
     },
     writeJsonToYandexDisk(storagePath, rows) {
+      if (storagePath === paths.log && state.failDeletionLogOnce && !state.deletionLogFailed) {
+        state.deletionLogFailed = true;
+        throw new Error("injected deletion log failure");
+      }
       state.arrays[storagePath] = clone(rows);
       state.writes.push(storagePath);
     },
@@ -105,6 +163,24 @@ function makeHarness(options = {}) {
       return { exists, type: exists ? "file" : "missing", size: exists ? String(state.files[storagePath]).length : null, modified: exists ? "2026-07-20T10:00:00.000Z" : "" };
     },
     ensureYandexFolderExists() {},
+    listYandexFolderContents(folder) {
+      if (folder !== paths.backups) return { exists: false, type: "missing", items: [] };
+      const prefix = paths.backups + "/";
+      return {
+        exists: true,
+        type: "dir",
+        items: Object.keys(state.files)
+          .filter(storagePath => storagePath.startsWith(prefix))
+          .map(storagePath => ({
+            name: storagePath.slice(prefix.length),
+            type: "file",
+            path: storagePath,
+            publicKey: "",
+            publicUrl: "",
+            shared: false
+          }))
+      };
+    },
     collectOperationalBackupDeletionEntries() { return []; },
     scrubOperationalBackupsForDeletion() {},
     assertAuthoritativePrivateStorageNotShared() {},
@@ -140,10 +216,12 @@ function makeHarness(options = {}) {
     "uniqueDeletionIds", "buildDeletionSnapshot", "buildDeletionStateDigest", "buildDeletionCounts",
     "buildDeletionPreviewToken", "verifyDeletionPreviewToken", "adminPreviewResultDeletion",
     "readDeletionLog", "writeDeletionLog", "upsertDeletionLogEntry", "buildDeletionResultResponse",
-    "parseDeletionBackup", "removeDeletionTargetsFromStores", "adminDeleteResult", "getRetentionPolicyStatusForOwner", "resumePendingDeletionForOwner"
+    "parseDeletionBackup", "removeDeletionTargetsFromStores", "adminDeleteResult",
+    "listDeletionTransactionBackupsForCode", "adminResumeResultDeletion",
+    "getRetentionPolicyStatusForOwner", "resumePendingDeletionForOwner"
   ];
   vm.runInContext(constants + functions.map(name => extractTopLevelFunction(backend, name)).join("\n\n") + `
-    this.__api = { adminPreviewResultDeletion, adminDeleteResult, getRetentionPolicyStatusForOwner, resumePendingDeletionForOwner };
+    this.__api = { adminPreviewResultDeletion, adminDeleteResult, adminResumeResultDeletion, getRetentionPolicyStatusForOwner, resumePendingDeletionForOwner };
   `, context, { filename: backendPath });
   return { code, paths, state, api: context.__api };
 }
@@ -212,6 +290,26 @@ assert.equal(completedRecovery.ok, true);
 assert.equal(completedRecovery.backupPurged, true);
 assert.equal(Object.keys(recovery.state.files).length, 0);
 
+const orphanRecovery = makeHarness({ failDeletionLogOnce: true });
+const orphanPreview = preview(orphanRecovery);
+const orphanRequestId = "scd_" + "2".repeat(32);
+const orphanFailure = commit(orphanRecovery, orphanPreview, "full_attempt", orphanRequestId);
+assert.equal(orphanFailure.failureCode, "deletion_incomplete");
+assert.equal(orphanFailure.failureStage, "log-backup-created");
+assert.equal(orphanRecovery.state.arrays[orphanRecovery.paths.log].length, 0, "injected failure must leave no journal entry");
+assert.equal(Object.keys(orphanRecovery.state.files).length, 2, "report and orphan transaction backup must remain");
+const orphanCompleted = clone(orphanRecovery.api.adminResumeResultDeletion({
+  action: "adminResumeDeletion",
+  apiVersion: "attempt-v2",
+  password: "fixture",
+  code: orphanRecovery.code,
+  confirmationCode: orphanRecovery.code
+}));
+assert.equal(orphanCompleted.ok, true, JSON.stringify({ orphanCompleted, errors: orphanRecovery.state.errors }));
+assert.equal(orphanCompleted.backupPurged, true);
+assert.equal(orphanRecovery.state.arrays[orphanRecovery.paths.admin].length, 0);
+assert.equal(Object.keys(orphanRecovery.state.files).length, 0, "recovered deletion must purge report and orphan transaction backup");
+
 const missing = makeHarness();
 missing.state.arrays[missing.paths.admin] = [];
 missing.state.arrays[missing.paths.attempts] = [];
@@ -233,6 +331,7 @@ assert.match(extractTopLevelFunction(backend, "doGet"), /adminDeletionPreview[\s
 const deletionPost = extractTopLevelFunction(backend, "doPost");
 assert.match(deletionPost, /guardAdminRequest\(String\(data\.password \|\| ""\), "deletion-preview"\)[\s\S]*adminPreviewResultDeletion/);
 assert.match(deletionPost, /guardAdminRequest\(String\(data\.password \|\| ""\), "deletion-commit"\)[\s\S]*adminDeleteResult/);
+assert.match(deletionPost, /deletion-recovery[\s\S]*adminResumeResultDeletion/);
 assert.match(extractTopLevelFunction(backend, "deleteYandexDiskFileIfExists"), /permanently=true[\s\S]*getYandexResourceMetadata/);
 assert.match(extractTopLevelFunction(backend, "adminDeleteResult"), /ensureYandexFolderExists\(getDeletionBackupsFolderPath\(\)\)/);
 assert.match(extractTopLevelFunction(backend, "getRetentionPolicyStatusForOwner"), /manual-deletion-only/);

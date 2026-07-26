@@ -16,10 +16,10 @@
 
 | Проверка | Результат | Статус |
 |---|---|---|
-| Публичный health | четыре публичных поля; runtime — candidate Build 2026.07.26.14, backend yandex-disk-mvp-2026-07-26-21, admin Build 2026.07.26.15 | verified после rollout; gates закрыты |
+| Публичный health | четыре публичных поля; runtime — candidate Build 2026.07.27.16, backend yandex-disk-mvp-2026-07-27-23, admin Build 2026.07.26.15 | verified после rollout; gates закрыты |
 | Protected owner diagnostics | `healthy`, четыре operational store, 9 result rows и 9 anti-retake rows | verified |
 | Operational backup | свежий проверяемый snapshot четырёх store создан owner-функцией | verified |
-| Apps Script deployments | существующий versioned deployment обновлён до `@67`; Web App URL не менялся | verified |
+| Apps Script deployments | существующий versioned deployment обновлён до `@69`; Web App URL не менялся | verified |
 | Яндекс credential/storage | отдельное API-only приложение, только `cloud_api:disk.app_folder`, root `app:/skillcheck`; checksum cutover, write/read backup и реальный rollback drill; старое приложение и rollback credential удалены | verified |
 | Public negative smoke | GET begin → `method_not_allowed`; legacy → `client_upgrade_required`; unknown → `unknown_action`; dev-quick → `test_not_public` | verified |
 | GitHub CI/Pages | commit retirement `2d9254d`: SkillCheck CI #9 и Pages #71 завершены успешно | verified |

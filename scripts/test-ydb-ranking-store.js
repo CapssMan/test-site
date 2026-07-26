@@ -22,7 +22,9 @@ const queuedResults = [
     percent: 91.5,
     completed_at: new Date("2026-07-26T12:00:00.000Z"),
     technical: false
-  }]]
+  }]],
+  [],
+  [[{ public_profile_id: "profile_000000000001" }]]
 ];
 
 function fakeSql(strings, ...values) {
@@ -69,11 +71,52 @@ function fakeSql(strings, ...values) {
   });
   assert.deepEqual(calls[1].values, ["fa-junior", "FA Junior v4.0"]);
 
+  const now = new Date("2026-07-27T10:00:00.000Z");
+  await store.upsertRankingProfile({
+    testId: "fa-junior",
+    publicProfileId: "profile_000000000001",
+    resultCode: "FA-PUBLIC1",
+    publicAlias: "Кандидат 1",
+    publicOptIn: true,
+    publicConsentActive: true,
+    publicConsentVersion: "skillcheck-ranking-public-2026-07-26-v1",
+    bankVersion: "FA Junior v4.0",
+    status: "passed",
+    scoreVerification: "server-verified",
+    percent: 91.5,
+    completedAt: now,
+    technical: false,
+    managementTokenHash: "a".repeat(64),
+    consentedAt: now,
+    expiresAt: new Date("2027-07-27T10:00:00.000Z"),
+    updatedAt: now
+  });
+  const withdrawn = await store.withdrawRankingProfile({
+    testId: "fa-junior",
+    publicProfileId: "profile_000000000001",
+    managementTokenHash: "a".repeat(64)
+  });
+  assert.equal(withdrawn, true);
+  calls.slice(2).forEach(call => {
+    assert.equal(call.isolation.mode, "serializableReadWrite");
+    assert.equal(call.idempotent, true);
+    assert.equal(call.timeout, QUERY_TIMEOUT_MS);
+    assert.doesNotMatch(call.text, /email|telegram|answers|full_report/i);
+  });
+  assert.match(calls[2].text, /UPSERT INTO ranking_profiles/);
+  assert.match(calls[3].text, /DELETE FROM ranking_profiles[\s\S]*management_token_hash[\s\S]*RETURNING public_profile_id/);
+
   const root = path.resolve(__dirname, "..");
   const ddl = fs.readFileSync(path.join(root, "cloud", "schema", "001_ranking.sql"), "utf8");
   assert.match(ddl, /PRIMARY KEY \(test_id, public_profile_id\)/);
   assert.doesNotMatch(ddl, /email|telegram|answers|full_report/i);
-  console.log("YDB ranking store checks passed: read-only queries, timeouts and public-field allowlist.");
+  const managementDdl = fs.readFileSync(path.join(root, "cloud", "schema", "003_ranking_profile_management.sql"), "utf8");
+  const ttlDdl = fs.readFileSync(path.join(root, "cloud", "schema", "004_ranking_profile_ttl.sql"), "utf8");
+  assert.match(managementDdl, /management_token_hash Utf8/);
+  assert.match(managementDdl, /consented_at Timestamp/);
+  assert.match(managementDdl, /expires_at Timestamp/);
+  assert.match(ttlDdl, /TTL = Interval\("PT0S"\) ON expires_at/);
+  console.log("YDB ranking store checks passed: read/write isolation, token-bound withdrawal, TTL and public-field allowlist.");
 })().catch(error => {
   console.error(error);
   process.exit(1);

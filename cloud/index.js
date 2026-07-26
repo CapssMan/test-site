@@ -1,6 +1,7 @@
 "use strict";
 
 const { createRankingHandler, jsonResponse } = require("./ranking-handler");
+const { createRankingProfileHandler, privateJsonResponse } = require("./ranking-profile-handler");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
 
 const DEFAULT_ALLOWED_ORIGIN = "https://capssman.github.io";
@@ -20,20 +21,31 @@ async function createRuntime() {
   });
   await driver.ready();
 
-  return createRankingHandler({
-    store: createYdbRankingStore(query(driver)),
-    allowedOrigin: String(process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN)
-  });
+  const store = createYdbRankingStore(query(driver));
+  const allowedOrigin = String(process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN);
+  const runtimeMode = String(process.env.RUNTIME_MODE || "read");
+  if (runtimeMode === "read") return createRankingHandler({ store, allowedOrigin });
+  if (runtimeMode === "write") {
+    return createRankingProfileHandler({
+      store,
+      allowedOrigin,
+      authorityUrl: String(process.env.RESULT_AUTHORITY_URL || "")
+    });
+  }
+  throw new Error("invalid_runtime_mode");
 }
 
 async function handler(event) {
   try {
     if (!runtimePromise) runtimePromise = createRuntime();
-    const rankingHandler = await runtimePromise;
-    return await rankingHandler(event);
+    const runtimeHandler = await runtimePromise;
+    return await runtimeHandler(event);
   } catch (_error) {
     runtimePromise = null;
-    return jsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, String(process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN));
+    const allowedOrigin = String(process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN);
+    return String(process.env.RUNTIME_MODE || "read") === "write"
+      ? privateJsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, allowedOrigin)
+      : jsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, allowedOrigin);
   }
 }
 

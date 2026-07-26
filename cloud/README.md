@@ -6,25 +6,30 @@ The resource names in this directory are deliberately neutral and temporary. `Sk
 
 - Folder: `skillcheck-prod` (`b1gafbjd3dlhjhge8qoc`).
 - YDB Serverless: `assessment-runtime-db`, throttled to 10 RU/s, 1 GB hard storage limit, deletion protection enabled.
-- Cloud Function: `assessment-ranking-api`, Node.js 22, 128 MB, 8 second timeout, concurrency 1, no provisioned instances, logging disabled.
-- API Gateway: `assessment-public-api`, logging disabled, one public `GET /v1/ranking` operation.
+- Cloud Function: `assessment-ranking-api`, Node.js 22, 128 MB, read timeout 8 seconds, write timeout 15 seconds, concurrency 1, no provisioned instances, logging disabled.
+- Read version: `read-v2` (`d4et5ggl06s201umuj8k`) under `assessment-ranking-reader` with database-specific `ydb.viewer`.
+- Write version: `write-v2` (`d4eo7qcj56pdf6cc5cuv`) under `assessment-ranking-writer` with database-specific `ydb.editor` and no static key.
+- API Gateway: `assessment-public-api`, logging disabled, public `GET /v1/ranking` and `POST /v1/ranking/profile` operations pinned to explicit function tags.
 - Public Object Storage bucket: `assessment-b1gafbjd3dlh-web`, 100 MB hard limit.
 - Private Object Storage bucket: `assessment-b1gafbjd3dlh-private`, 1 GB hard limit.
-- Service account: `assessment-ranking-reader`; it has `ydb.viewer` on the database and `functions.functionInvoker` on the ranking function only.
+- Gateway invocation account: `assessment-ranking-reader`; it has `functions.functionInvoker` on this function only.
 
 Lockbox, Compute Cloud, CDN, a custom domain, provisioned function instances, and other paid add-ons are not enabled.
 
 ## Data boundary
 
-The ranking API selects only the public ranking fields. It does not select email, Telegram, answers, reports, invitations, or attempt tokens. A profile is returned only after the separate public-ranking consent is active and only for the current test bank version. Technical results are excluded again in the application layer.
+The ranking GET selects only the public allowlist. It does not select email, Telegram, answers, reports, invitations, result codes, management hashes or attempt tokens. A profile is returned only after exact separate consent, only for the current bank version, and only for a passed server-verified result. Technical results are excluded again in the application layer.
+
+The profile POST accepts publication only after online proof from the fixed Apps Script authority. The writer receives an opaque subject handle, not contact data. A random management token is returned once to the browser; YDB stores only its SHA-256 hash. Withdrawal is an atomic token-bound delete with a neutral response.
 
 ## Migrations
 
-Apply `schema/001_ranking.sql` first and `schema/002_active_banks.sql` second. YDB does not accept schema and data operations mixed in one query. Both migrations are safe to repeat.
+Apply migrations in numeric order. Schema and data operations must remain separate. Migrations `003` and `004` add management metadata and YDB TTL. The current YDB dialect does not accept `IF NOT EXISTS` for `ADD COLUMN`, so migration `003` is a one-time migration and must not be rerun after the columns exist.
 
-## Public endpoint
+## Public endpoints
 
-`https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking?testId=fa-junior`
+- `https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking?testId=fa-junior`
+- `https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile`
 
 The current GitHub Pages origin is the only allowed cross-origin frontend. Replace this origin in the function environment, API Gateway CORS rule, and page CSP during the later Russian-hosting cutover.
 

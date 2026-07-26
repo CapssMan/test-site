@@ -1,12 +1,13 @@
 openapi: "3.0.0"
 info:
   title: Assessment Ranking API
-  version: "1.0.0"
+  version: "1.1.0"
 x-yc-apigateway:
   cors:
     origin: "https://capssman.github.io"
     methods:
       - GET
+      - POST
     allowedHeaders:
       - Content-Type
     maxAge: 600
@@ -45,6 +46,31 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "$latest"
+        tag: "read-v2"
+        service_account_id: ajerg3btsr8m7va4gi2m
+        payload_format_version: "0.1"
+  /v1/ranking/profile:
+    post:
+      operationId: managePublicRankingProfile
+      summary: Publish or withdraw a voluntary public ranking profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Profile publication or withdrawal accepted
+        "400":
+          description: Invalid request
+        "403":
+          description: Result proof rejected
+        "503":
+          description: Ranking is temporarily unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1qffg3l40q6jgq0t9
+        tag: "write-v2"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"

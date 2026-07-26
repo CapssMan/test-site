@@ -28,14 +28,18 @@ new vm.Script(scripts[0], { filename: "test.html" });
 new vm.Script(backend, { filename: "Code.gs" });
 
 assert.match(testPage, /const API_VERSION = "attempt-v2"/);
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.26\.14"/, "candidate build must be current");
-assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-26-v2"/);
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.27\.16"/, "candidate build must be current");
+assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-27-v3"/);
 assert.match(testPage, /<label for="inviteCode">[\s\S]*?<input[^>]+id="inviteCode"[^>]+required/i, "invite code must be required");
 assert.match(testPage, /<label for="name">[\s\S]*?<input[^>]+id="name"[^>]+required/i);
 assert.match(testPage, /<label for="email">[\s\S]*?<input[^>]+id="email"[^>]+required/i);
 assert.match(testPage, /id="privacyConsent"[^>]+required/i);
 assert.match(testPage, /id="ageConsent"[^>]+required/i);
 assert.match(testPage, /id="employerShareConsent"[^>]+disabled/i, "employer sharing must stay disabled until a recipient-specific consent exists");
+assert.match(testPage, /id="rankingConsent"/, "public ranking requires a separate checkbox");
+assert.match(testPage, /href="ranking-consent\.html"[^>]+target="_blank"/, "ranking consent must be inspectable before opt-in");
+assert.match(testPage, /const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-26-v1"/);
+assert.match(testPage, /const RANKING_PROFILE_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/ranking\/profile"/);
 assert.match(testPage, /href="consent\.html"[^>]+target="_blank"/i, "candidate must be able to inspect the separate consent before opting in");
 assert.doesNotMatch(testPage, /id="startButton"[^>]+onclick=/i);
 assert.doesNotMatch(testPage, /id="nextButton"[^>]+onclick=/i);
@@ -132,7 +136,11 @@ assert.match(extractTopLevelFunction(testPage, "persistPendingResult"), /session
 assert.doesNotMatch(extractTopLevelFunction(testPage, "persistPendingResult"), /localStorage\.setItem/);
 assert.match(extractTopLevelFunction(testPage, "buildPendingResultEnvelope"), /Math\.min\(now \+ MAX_PENDING_RESULT_TTL_MS, attemptExpiry/);
 assert.match(extractTopLevelFunction(testPage, "persistAttemptSession"), /sessionStorage\.setItem/);
-assert.doesNotMatch(testPage, /localStorage\.setItem\([^\n]*(?:attemptToken|inviteCode|email|answers|browserFingerprint)/i, "PII/tokens must never enter localStorage");
+assert.doesNotMatch(testPage, /localStorage\.setItem\([^\n]*(?:attemptToken|inviteCode|email|answers|browserFingerprint)/i, "PII/attempt tokens must never enter localStorage");
+assert.match(extractTopLevelFunction(testPage, "publishRankingProfile"), /attemptToken:\s*rankingPublishProof\.attemptToken/);
+assert.match(extractTopLevelFunction(testPage, "saveRankingManagementState"), /managementToken:\s*result\.managementToken/);
+assert.doesNotMatch(extractTopLevelFunction(testPage, "saveRankingManagementState"), /attemptToken|email|answers|browserFingerprint/);
+assert.match(extractTopLevelFunction(testPage, "withdrawRankingProfile"), /action:\s*"withdraw"/);
 
 const helperContext = {};
 vm.createContext(helperContext);
@@ -155,7 +163,9 @@ assert.match(indexPage, /<div class="stat-number">240<\/div>/, "home must show t
 const doPost = extractTopLevelFunction(backend, "doPost");
 assert.match(doPost, /action === "beginAttempt"/);
 assert.match(doPost, /action === "saveResult"/);
+assert.match(doPost, /action === "rankingProof"/);
+assert.match(doPost, /verifyRankingResultForPublicProfile/);
 assert.match(doPost, /saveAuthoritativeTestResult/);
 assert.match(doPost, /action === "checkAttempt"[\s\S]*buildClientUpgradeRequiredResponse/);
 
-console.log("Candidate UX tests passed: invite flow, server manifest, answer-only payload, verified rendering and session-only retry.");
+console.log("Candidate UX tests passed: invite flow, server manifest, answer-only payload, verified rendering, voluntary ranking and session-only retry.");

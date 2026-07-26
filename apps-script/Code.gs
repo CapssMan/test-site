@@ -1,5 +1,5 @@
-const BACKEND_VERSION = "yandex-disk-mvp-2026-07-26-21";
-const CANDIDATE_FRONTEND_BUILD = "2026.07.26.14";
+const BACKEND_VERSION = "yandex-disk-mvp-2026-07-27-23";
+const CANDIDATE_FRONTEND_BUILD = "2026.07.27.16";
 const ADMIN_FRONTEND_BUILD = "2026.07.26.15";
 const SUCCESS_THRESHOLD = 80;
 const RETAKE_WINDOW_DAYS = 21;
@@ -14,13 +14,15 @@ const SCORE_VERIFICATION_SERVER = "server-verified";
 const AUTHORITATIVE_API_VERSION = "attempt-v2";
 const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const TELEMETRY_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
-const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-26-v2";
+const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-27-v3";
 const LEGAL_PILOT_APPROVAL_PROPERTY = "LEGAL_PILOT_APPROVED";
 const PRIVATE_BANK_ROTATION_PENDING_PROPERTY = "PRIVATE_BANK_ROTATION_PENDING_V1";
 const PUBLIC_BANK_RELEASE_PROPERTY = "PUBLIC_BANK_RELEASE_V1";
 const CURRENT_PUBLIC_BANK_RELEASE_ID = "rotation-v4-2026-07-21-r3";
 const ATTEMPT_ACTIVE_TTL_MS = 6 * 60 * 60 * 1000;
 const AUTHORITATIVE_RECOVERY_TTL_MS = 24 * 60 * 60 * 1000;
+const RANKING_PROOF_API_VERSION = "ranking-proof-v1";
+const RANKING_PROOF_VERSION = "ranking-result-v1";
 const DEFAULT_YANDEX_INVITES_FILE = "app:/skillcheck/private/invites-v1.json";
 const DEFAULT_YANDEX_SESSIONS_FILE = "app:/skillcheck/private/attempt-sessions-v1.json";
 const DEFAULT_YANDEX_PRIVATE_BANKS_FOLDER = "app:/skillcheck/private/banks";
@@ -106,6 +108,17 @@ const RETAKE_BYPASS_TEST_IDS = {
   "dev-quick": true
 };
 
+const TECHNICAL_RESULT_CODES = {
+  "DEV-Z2VK8": true,
+  "DEV-E94Y8": true,
+  "DEV-EZ3BY": true,
+  "FA-5DU43": true,
+  "DEV-B4ABJ": true,
+  "DEV-TVENX": true,
+  "DEV-7S2N2": true,
+  "FA-X5P66": true,
+  "FA-LDUB2": true
+};
 const EXPECTED_ANSWERS_BY_TEST_ID = {
   "fa-junior": 40,
   "ca-junior": 40,
@@ -187,7 +200,7 @@ function doGet(e) {
     return jsonResponse(buildClientUpgradeRequiredResponse());
   }
 
-  if (action === "beginAttempt" || action === "saveResult") {
+  if (action === "beginAttempt" || action === "saveResult" || action === "rankingProof") {
     return jsonResponse(methodNotAllowedResponse("Операция доступна только через POST."));
   }
 
@@ -300,6 +313,23 @@ function doPost(e) {
       return jsonResponse(beginAuthoritativeAttempt(validatedBegin.data));
     }
 
+    if (action === "rankingProof") {
+      if (String(data.apiVersion || "") !== RANKING_PROOF_API_VERSION || !data.attemptToken) {
+        return jsonResponse(buildRankingProofUnavailableResponse());
+      }
+      const validatedProof = validateRankingProofRequest(data);
+      if (!validatedProof.ok) return jsonResponse(validatedProof.response);
+      const preverifiedToken = verifyAttemptToken(validatedProof.data.attemptToken, true);
+      if (!preverifiedToken.valid || preverifiedToken.claims.attemptId !== validatedProof.data.attemptId) {
+        return jsonResponse(buildRankingProofUnavailableResponse());
+      }
+      const proofLimit = consumeRateLimit("ranking-proof", preverifiedToken.claims.jti, 10, 300);
+      const globalProofLimit = consumeRateLimit("ranking-proof-global", "shared", 120, 60);
+      if (!proofLimit.allowed || !globalProofLimit.allowed) {
+        return jsonResponse(buildRateLimitedResponse(Math.max(proofLimit.retryAfterSeconds, globalProofLimit.retryAfterSeconds)));
+      }
+      return jsonResponse(verifyRankingResultForPublicProfile(validatedProof.data, preverifiedToken));
+    }
     if (action === "saveResult") {
       if (String(data.apiVersion || "") !== AUTHORITATIVE_API_VERSION || !data.attemptToken) {
         return jsonResponse(buildClientUpgradeRequiredResponse());
@@ -601,6 +631,17 @@ function buildAttemptUnavailableResponse() {
   };
 }
 
+function buildRankingProofUnavailableResponse() {
+  return {
+    ok: false,
+    status: "unavailable",
+    retryable: false,
+    failureCode: "ranking_proof_unavailable",
+    backendVersion: BACKEND_VERSION,
+    apiVersion: RANKING_PROOF_API_VERSION,
+    message: "Не удалось подтвердить результат для публикации в рейтинге."
+  };
+}
 function buildAuthoritativeStorageErrorResponse() {
   return {
     ok: false,
@@ -703,6 +744,35 @@ function validateBeginAttemptRequest(data) {
   }
 }
 
+function validateRankingProofRequest(data) {
+  try {
+    assertAllowedObjectKeys(data, ["action", "apiVersion", "attemptId", "attemptToken", "resultCode"], "rankingProof");
+    if (String(data.apiVersion || "") !== RANKING_PROOF_API_VERSION) {
+      throw publicRequestError("client_upgrade_required", "Версия запроса устарела.");
+    }
+    const attemptId = String(data.attemptId || "").trim();
+    const attemptToken = String(data.attemptToken || "").trim();
+    const resultCode = String(data.resultCode || "").trim().toUpperCase();
+    if (!/^att_[a-f0-9]{32,64}$/.test(attemptId) || attemptToken.length < 80 ||
+        attemptToken.length > 3000 || attemptToken.split(".").length !== 3 ||
+        !/^(FA|CA|FPA|ACC|BI)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(resultCode)) {
+      return { ok: false, response: buildRankingProofUnavailableResponse() };
+    }
+    return {
+      ok: true,
+      data: {
+        action: "rankingProof",
+        apiVersion: RANKING_PROOF_API_VERSION,
+        attemptId: attemptId,
+        attemptToken: attemptToken,
+        resultCode: resultCode
+      }
+    };
+  } catch (error) {
+    if (error && error.publicRequestError) return { ok: false, response: buildRankingProofUnavailableResponse() };
+    throw error;
+  }
+}
 function validateAuthoritativeSubmissionRequest(data) {
   try {
     assertAllowedObjectKeys(data, [
@@ -5468,6 +5538,59 @@ function consumeInviteForSession(invites, session, completedAt) {
   return false;
 }
 
+function verifyRankingResultForPublicProfile(data, preverifiedToken) {
+  const lock = LockService.getScriptLock();
+  let lockAcquired = false;
+  try {
+    assertAuthoritativeConfigurationReady();
+    if (!lock.tryLock(5000)) return buildAuthoritativeStorageErrorResponse();
+    lockAcquired = true;
+    ensureSkillCheckFolders();
+    const sessions = readRequiredJsonArray(getAttemptSessionsFilePath(), "Attempt session store");
+    const session = sessions.find(row => row && row.attemptId === data.attemptId);
+    if (!session || session.state !== "completed" || session.code !== data.resultCode ||
+        session.testId === "dev-quick" || TECHNICAL_RESULT_CODES[String(session.code || "").toUpperCase()] === true ||
+        session.bankVersion !== BANK_VERSIONS_BY_ID[session.testId] ||
+        !validateTokenAgainstSession(preverifiedToken, session)) {
+      return buildRankingProofUnavailableResponse();
+    }
+    const result = session.result || {};
+    const completedAtMs = new Date(session.completedAt || "").getTime();
+    const ageMs = Date.now() - completedAtMs;
+    if (!Number.isFinite(completedAtMs) || ageMs < -5 * 60 * 1000 || ageMs > AUTHORITATIVE_RECOVERY_TTL_MS ||
+        result.passStatus !== "passed" || result.scoreVerification !== SCORE_VERIFICATION_SERVER ||
+        !Number.isFinite(Number(result.percent)) || Number(result.percent) < SUCCESS_THRESHOLD || Number(result.percent) > 100 ||
+        !/^[a-z0-9-]{3,30}$/.test(String(session.testId || "")) ||
+        !/^[a-f0-9]{64}$/.test(String(session.identityHash || ""))) {
+      return buildRankingProofUnavailableResponse();
+    }
+    const subjectHandle = "rsh_" + hmacSha256Hex(
+      getRequiredProperty("IDENTITY_HASH_SECRET_V1"),
+      "ranking-subject-v1|" + session.testId + "|" + session.identityHash
+    );
+    return {
+      ok: true,
+      status: "verified",
+      backendVersion: BACKEND_VERSION,
+      apiVersion: RANKING_PROOF_API_VERSION,
+      proofVersion: RANKING_PROOF_VERSION,
+      testId: String(session.testId),
+      bankVersion: String(session.bankVersion),
+      resultCode: String(session.code),
+      percent: Number(result.percent),
+      completedAt: new Date(completedAtMs).toISOString(),
+      passStatus: "passed",
+      scoreVerification: SCORE_VERIFICATION_SERVER,
+      rankingSubjectHandle: subjectHandle,
+      technical: false
+    };
+  } catch (error) {
+    console.error("Ranking result proof failed.");
+    return buildAuthoritativeStorageErrorResponse();
+  } finally {
+    if (lockAcquired) lock.releaseLock();
+  }
+}
 function saveAuthoritativeTestResult(data) {
   const lock = LockService.getScriptLock();
   let lockAcquired = false;

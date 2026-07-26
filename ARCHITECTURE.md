@@ -1,6 +1,6 @@
 # SkillCheck — архитектура MVP
 
-Обновлено: 26 июля 2026 года, этап 18A (российская read-основа рейтинга).
+Обновлено: 27 июля 2026 года, этап 18B (добровольная публикация и отзыв профиля).
 
 ## Общая схема
 
@@ -31,10 +31,11 @@ SkillCheck состоит из статического frontend на GitHub Pag
 Браузер -> API Gateway -> Cloud Functions -> YDB Serverless
                                       -> закрытый Object Storage (отчёты/backup)
                                       -> metadata service account (без постоянного ключа)
-Рейтинг -> GET Cloud Function -> только публичный allowlist из YDB
+Рейтинг -> GET API Gateway -> read-v2 (ydb.viewer) -> публичный allowlist
+Результат -> POST API Gateway -> write-v2 (ydb.editor) -> rankingProof Apps Script -> YDB TTL
 ```
 
-Read-контур рейтинга уже развёрнут: API Gateway вызывает приватную Cloud Function под ограниченным service account, функция читает две таблицы YDB Serverless и возвращает только публичную проекцию. Постоянных ключей и Lockbox нет, Cloud Logging выключен. Google Apps Script/Яндекс Диск пока остаются production write-контуром при закрытых pilot gates до единого cutover.
+Read/write-контур рейтинга развёрнут: API Gateway закреплён за двумя tagged-версиями одной приватной Cloud Function. `read-v2` работает под `ydb.viewer`; `write-v2` — под отдельным `ydb.editor` только этой базы. Публикация требует отдельного opt-in и разового online proof от Apps Script; общий signing secret в Yandex Cloud не передаётся. YDB хранит hash management token и удаляет профиль по TTL через 365 дней. Постоянных ключей и Lockbox нет, Cloud Logging выключен. Google Apps Script/Яндекс Диск пока остаются production assessment write-контуром при закрытых pilot gates до единого cutover.
 
 Главная граница доверия: браузер показывает вопросы и собирает ответы, но не знает правильные ответы и не рассчитывает итог как источник истины. Баллы, статус, блоки и рекомендацию вычисляет backend по закрытому versioned-банку.
 
@@ -67,6 +68,7 @@ CI имеет только `contents: read`, не получает Script Proper
 - отправляет для каждого вопроса только `questionId`, `optionId|null`, `timedOut`, `timeSpent`;
 - не отправляет `score`, `isCorrect`, правильные ответы, блоковые итоги или клиентское решение;
 - показывает нейтральный экран расчёта и рендерит результат только при `scoreVerification: server-verified`, `scoringAlgorithmVersion: authoritative-v1`, `telemetryVerification: client-reported-unverified` и `penalty: 0`;
+- только после успешного server-verified результата предлагает отдельное согласие на публичный рейтинг, не сохраняет attempt proof постоянно и получает одноразовый management token только для отзыва профиля;
 - повторяет временно неудавшуюся отправку с тем же token, payload и `requestId`.
 
 В `sessionStorage` текущей вкладки временно находятся:

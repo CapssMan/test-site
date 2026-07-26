@@ -18,9 +18,9 @@ Google Apps Script остаётся backend/API. Google Sheets и Google Drive �
 
 Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Расширенная read-only диагностика реализована отдельным POST `adminDiagnostics` за админ-паролем и возвращает только безопасные технические агрегаты.
 
-Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Текущий production runtime: backend yandex-disk-mvp-2026-07-26-21, deployment @67, candidate Build 2026.07.26.14, admin Build 2026.07.26.15, API attempt-v2, storage root app:/skillcheck. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
+Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Текущий production runtime: backend yandex-disk-mvp-2026-07-27-23, deployment @69, candidate Build 2026.07.27.16, admin Build 2026.07.26.15, API attempt-v2, storage root app:/skillcheck. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
 
-Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; retention выключен до утверждения сроков. Разработка российского runtime и рейтинга может начинаться при закрытых gates. Реальные кандидаты остаются заблокированы до короткого legal/retention/SME/owner checklist; известные smoke-коды сохраняются и системно исключаются из аналитики.
+Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; сроки утверждены, а TTL профиля рейтинга включён, но retention остальных категорий ещё требует cutover. Российские read/write API рейтинга работают при закрытых gates. Реальные кандидаты остаются заблокированы до короткого legal/retention/SME/owner checklist; известные smoke-коды сохраняются и системно исключаются из аналитики.
 
 Рабочие тесты:
 
@@ -137,7 +137,7 @@ telemetryVerification
 - Полная pending-копия хранится только в `sessionStorage` максимум 6 часов; `localStorage` содержит только информационную дату завершения.
 - Код 10A подтверждает сохранение авторитетно рассчитанного результата; public/private банки v4 технически ротированы, но их содержательная пригодность остаётся за независимым SME sign-off.
 - Яндекс OAuth переведён на отдельное приложение только с `cloud_api:disk.app_folder`; активный root `app:/skillcheck`, прежнее широкоправное приложение и временные rollback credentials удалены.
-- Удаление требует пароль, подписанный preview и точный код; транзакционная копия закрыта и уничтожается после проверки, а автоматический retention выключен.
+- Удаление требует пароль, подписанный preview и точный код; транзакционная копия закрыта и уничтожается после проверки. Сроки утверждены: TTL рейтинга включён, автоматизация остальных категорий переносится вместе с write-cutover 18C.
 - Operational JSON получают bounded snapshot предыдущей валидной версии; restore editor-only, а удаление вычищает связанные строки из snapshots.
 
 Подробности: `docs/SECURITY_AUDIT.md`, `docs/BACKEND_SCORING_DECISION.md`, `docs/DATA_DELETION.md` и `docs/BACKUP_AND_RECOVERY.md`.

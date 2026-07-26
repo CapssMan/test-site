@@ -6,11 +6,11 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Минимальный read-only рейтинг уже работает через российские YDB Serverless, Cloud Functions и API Gateway; запись/отзыв профиля и перенос остального runtime остаются в этапе 18, а расширенный employer discovery — после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
+Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Минимальный рейтинг уже работает через российские YDB Serverless, Cloud Functions и API Gateway: чтение, добровольная публикация после серверной проверки, отзыв и TTL профиля реализованы; перенос остального runtime остаётся в этапе 18, а расширенный employer discovery — после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
 
 ## Текущий статус
 
-Этап 17 и внутреннее pre-pilot hardening завершены с решением **NO-GO для реальных кандидатов**. Опубликованы пять банков v4, server-side scoring/sampling, расширенные отчёты, app-folder-only storage и проверяемое исключение девяти технических кодов из обычной аналитики. Dependency-free `npm test` и GitHub Actions CI выполняют 24 regression suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.26.14`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-26-21`, deployment `@67`; API `attempt-v2`. Этап 18 продолжается: YDB-схема, read-only Cloud Function и API Gateway развёрнуты в `skillcheck-prod`, а `ranking.html` подключена к live API. База рейтинга пуста; запись и отзыв реального профиля ещё не реализованы.
+Этап 17 и внутреннее pre-pilot hardening завершены с решением **NO-GO для реальных кандидатов**. Опубликованы пять банков v4, server-side scoring/sampling, расширенные отчёты, app-folder-only storage и проверяемое исключение девяти технических кодов. Локальный CI выполняет 26 test suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.27.16`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-27-23`, deployment `@69`; API `attempt-v2`. Этап 18B завершён: YDB, раздельные read/write Cloud Function versions, API Gateway, отдельное согласие, публикация, отзыв и TTL профиля развёрнуты. База рейтинга пуста, mock-данных нет; pilot gates не открыты.
 
 LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до утверждения полного публичного адреса оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 
@@ -20,7 +20,7 @@ LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реа�
 
 - выбор теста на `index.html`;
 - отдельную публичную страницу `ranking.html` с выбором одной из пяти профессий, live Yandex API, безопасным состоянием набора участников и без вымышленных профилей;
-- локальное серверное ядро рейтинга: отдельный opt-in, точная версия согласия, разделение по версии банка, исключение технических кодов, минимум пять участников и строгий список публичных полей;
+- серверное ядро рейтинга: отдельный opt-in, подтверждение результата через Apps Script без общего секрета, раздельные read/write-права, отзыв по локальному management token, TTL 365 дней, минимум пять участников и строгий список публичных полей;
 - прохождение теста на `test.html?test=<testId>`;
 - загрузку display-only банка вопросов из `data/*.json` без `correct`, комментариев к ответу и клиентского scoring;
 - проверку целостности public bank по `publicDigest`;
@@ -32,7 +32,7 @@ LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реа�
 - передачу bearer-кода приглашения только во fragment `#invite=...`: код не попадает в query, fragment сразу забирается в `sessionStorage` и удаляется из адресной строки;
 - серверную attempt-сессию со статусами `active → reserved → completed` и идемпотентным восстановлением;
 - анти-повтор через закрытые identity hashes на backend;
-- отдельное согласие на обработку персональных данных версии `skillcheck-pd-consent-2026-07-26-v2`, связанное с attempt token/session и серверным временем;
+- отдельное согласие на обработку персональных данных версии `skillcheck-pd-consent-2026-07-27-v3`, связанное с attempt token/session и серверным временем;
 - обязательное подтверждение 18+ перед стартом;
 - hard-disabled передачу результата работодателю до отдельного согласия для конкретного получателя;
 - обязательные поля источника кандидата и опыта;

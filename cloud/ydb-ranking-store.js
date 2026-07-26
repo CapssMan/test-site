@@ -14,6 +14,13 @@ function executeRead(sql, strings, values) {
     .timeout(QUERY_TIMEOUT_MS);
 }
 
+function executeWrite(sql, strings, values) {
+  return sql(strings, ...values)
+    .isolation("serializableReadWrite")
+    .idempotent(true)
+    .timeout(QUERY_TIMEOUT_MS);
+}
+
 function createYdbRankingStore(sql) {
   if (typeof sql !== "function") throw new Error("ydb_query_client_required");
 
@@ -68,8 +75,45 @@ function createYdbRankingStore(sql) {
         completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : String(row.completed_at || ""),
         technical: row.technical === true
       }));
+    },
+
+    async upsertRankingProfile(profile) {
+      const row = profile || {};
+      await executeWrite(sql, [
+        `UPSERT INTO ranking_profiles (
+          test_id, public_profile_id, result_code, public_alias,
+          public_opt_in, public_consent_active, public_consent_version,
+          bank_version, result_status, score_verification, percent,
+          completed_at, technical, management_token_hash, consented_at,
+          expires_at, updated_at
+        ) VALUES (`, ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ");"
+      ], [
+        String(row.testId || ""), String(row.publicProfileId || ""),
+        String(row.resultCode || ""), String(row.publicAlias || ""),
+        row.publicOptIn === true, row.publicConsentActive === true,
+        String(row.publicConsentVersion || ""), String(row.bankVersion || ""),
+        String(row.status || ""), String(row.scoreVerification || ""),
+        Number(row.percent), row.completedAt, row.technical === true,
+        String(row.managementTokenHash || ""), row.consentedAt,
+        row.expiresAt, row.updatedAt
+      ]);
+    },
+
+    async withdrawRankingProfile(options) {
+      const settings = options || {};
+      const resultSets = await executeWrite(sql, [
+        `DELETE FROM ranking_profiles
+        WHERE test_id = `,
+        " AND public_profile_id = ",
+        " AND management_token_hash = ",
+        " RETURNING public_profile_id;"
+      ], [
+        String(settings.testId || ""), String(settings.publicProfileId || ""),
+        String(settings.managementTokenHash || "")
+      ]);
+      return rowsFrom(resultSets).length > 0;
     }
   };
 }
 
-module.exports = { QUERY_TIMEOUT_MS, createYdbRankingStore, rowsFrom };
+module.exports = { QUERY_TIMEOUT_MS, createYdbRankingStore, executeWrite, rowsFrom };

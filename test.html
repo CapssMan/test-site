@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <title>SkillCheck — Прохождение теста</title>
   <style>
@@ -245,6 +245,17 @@
       accent-color: #3b82f6;
     }
     .consent-row a { color: #2563eb; }
+    .ranking-panel {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: #eff6ff;
+    }
+    .ranking-panel h3 { margin: 0 0 8px; }
+    .ranking-panel button { margin-top: 12px; }
+    .secondary-button { background: #334155; }
+    .secondary-button:hover { background: #1e293b; }
     @media (max-width: 600px) {
       body { padding: 12px; }
       .card { padding: 18px; border-radius: 12px; }
@@ -265,7 +276,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.26.14</div>
+      <div class="build-number">Build 2026.07.27.16</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
@@ -275,7 +286,7 @@
 
       <div class="warning">
         <b>Controlled pilot пока закрыт для реальных кандидатов.</b>
-        До запуска должны быть утверждены полный публичный адрес оператора и сроки хранения, завершены юридический checklist и независимый SME review новых банков v4.
+        До запуска должны быть утверждены полный публичный адрес оператора и автоматическое применение согласованных сроков ко всем хранилищам, завершены юридический checklist и независимый SME review банков v4.
       </div>
 
       <div class="field-group">
@@ -346,7 +357,7 @@
 
       <label class="consent-row">
         <input id="privacyConsent" type="checkbox" required />
-        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>20.07.2026-v1</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
+        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>27.07.2026-v3</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
       </label>
 
       <label class="consent-row">
@@ -363,6 +374,12 @@
       <div id="attemptStatus" class="form-status" role="status" aria-live="polite"></div>
     </div>
 
+    <div class="card" id="rankingManagementBlock" style="display:none;">
+      <h2>Управление участием в рейтинге</h2>
+      <p class="small">На этом устройстве сохранён ключ управления вашей публичной записью. Он позволяет только убрать запись из рейтинга и не открывает ответы или контактные данные.</p>
+      <button id="withdrawRankingButton" class="secondary-button" type="button">Убрать мой профиль из рейтинга</button>
+      <div id="rankingManagementStatus" class="form-status" role="status" aria-live="polite"></div>
+    </div>
     <div class="card" id="testBlock" style="display:none;">
       <div class="progress-bar" role="progressbar" aria-label="Прогресс теста" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="test-top">
@@ -379,6 +396,20 @@
       <div id="resultContent"></div>
       <div id="sendStatus" class="send-panel" role="status" aria-live="polite"></div>
       <button id="retrySendButton" class="retry-button" type="button" hidden>Повторить отправку</button>
+      <section id="rankingPublishBlock" class="ranking-panel" style="display:none;" aria-labelledby="rankingPublishTitle">
+        <h3 id="rankingPublishTitle">Добавить результат в публичный рейтинг</h3>
+        <p class="small">Добровольно публикуются только псевдоним, балл, дата, направление и отметка серверной проверки. Email, Telegram, ответы, отчёт и код результата не публикуются.</p>
+        <div class="field-group">
+          <label for="rankingAlias">Публичный псевдоним</label>
+          <input id="rankingAlias" type="text" placeholder="Например, Кирилл К." maxlength="40" autocomplete="off" />
+        </div>
+        <label class="consent-row">
+          <input id="rankingConsent" type="checkbox" />
+          <span>Я добровольно соглашаюсь на публичное размещение результата по условиям <a href="ranking-consent.html" target="_blank" rel="noopener">согласия на участие в рейтинге</a> версии <b>26.07.2026-v1</b>. Отозвать согласие можно кнопкой управления на этом устройстве или через email проекта.</span>
+        </label>
+        <button id="publishRankingButton" type="button">Опубликовать в рейтинге</button>
+        <div id="rankingPublishStatus" class="form-status" role="status" aria-live="polite"></div>
+      </section>
     </div>
   </div>
 
@@ -387,8 +418,11 @@
     // ===== КОНФИГУРАЦИЯ AUTHORITATIVE BACKEND SCORING =====
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const API_VERSION = "attempt-v2";
-    const FRONTEND_BUILD = "2026.07.26.14";
-    const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-26-v2";
+    const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
+    const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
+    const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-26-v1";
+    const FRONTEND_BUILD = "2026.07.27.16";
+    const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-27-v3";
     const NETWORK_TIMEOUT_MS = 20000;
     const MAX_AUTOMATIC_RETRIES = 2;
     const AUTOMATIC_RETRY_DELAYS_MS = [1500, 4000];
@@ -508,12 +542,15 @@
     const pendingResultExpiryTimers = Object.create(null);
     let resultSubmissionInFlight = false;
     let resultSaved = false;
+    let rankingPublishProof = null;
 
     document.addEventListener("DOMContentLoaded", function() {
       document.querySelector(".build-number").textContent = "Build " + FRONTEND_BUILD;
       document.getElementById("startButton").addEventListener("click", handleStartButtonClick);
       document.getElementById("nextButton").addEventListener("click", nextQuestion);
       document.getElementById("retrySendButton").addEventListener("click", retryResultSubmission);
+      document.getElementById("publishRankingButton").addEventListener("click", publishRankingProfile);
+      document.getElementById("withdrawRankingButton").addEventListener("click", withdrawRankingProfile);
       clearLegacyPersistentPendingResults();
       sanitizeLegacyRetakeMarkers();
 
@@ -521,6 +558,7 @@
       currentTestId = params.get("test") || "fa-junior";
       currentTestConfig = TEST_CONFIG[currentTestId];
       currentBrowserFingerprint = generateBrowserFingerprint();
+      renderRankingManagement();
       clearLegacySessionArtifacts(currentTestId);
 
       if (!currentTestConfig || currentTestConfig.publicDisabled) {
@@ -953,6 +991,7 @@
       questionTransitionInProgress = false;
       document.body.classList.add("test-active");
       document.getElementById("startBlock").style.display = "none";
+      document.getElementById("rankingManagementBlock").style.display = "none";
       document.getElementById("resultBlock").style.display = "none";
       document.getElementById("testBlock").style.display = "block";
       document.getElementById("questionTotal").textContent = String(questions.length);
@@ -1191,10 +1230,16 @@
         .then(function(result) {
           var verified = normalizeVerifiedServerResult(result, data);
           resultSaved = true;
+          rankingPublishProof = verified.passStatus === "passed" ? {
+            attemptId: String(data.attemptId || ""),
+            attemptToken: String(data.attemptToken || ""),
+            resultCode: String(result.resultCode || result.code || "")
+          } : null;
           clearPendingResult(data.testId, data.requestId);
           clearAttemptSession();
           saveLocalCompletionMarker(data.testId);
           showVerifiedResult(verified, data.tabSwitches);
+          renderRankingPublishOffer(verified);
 
           var resultCode = String(result.resultCode || result.code || "");
           var reportText = result.reportCreated
@@ -1445,6 +1490,178 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    function normalizeRankingAlias(value) {
+      var alias = String(value || "").trim().replace(/\s+/g, " ");
+      if (alias.length < 2 || alias.length > 40 || !/^[\p{L}\p{N}_. -]+$/u.test(alias)) return "";
+      return alias;
+    }
+
+    function renderRankingPublishOffer(result) {
+      var block = document.getElementById("rankingPublishBlock");
+      var eligible = result && result.passStatus === "passed" && rankingPublishProof && currentTestId !== "dev-quick";
+      block.style.display = eligible ? "block" : "none";
+      if (eligible) {
+        document.getElementById("rankingConsent").checked = false;
+        document.getElementById("rankingPublishStatus").textContent = "";
+      }
+    }
+
+    function getRankingManagementStorageKey(testId) {
+      return "assessment_ranking_management_v1_" + safeTestId(testId);
+    }
+
+    function readRankingManagementState() {
+      try {
+        var raw = localStorage.getItem(getRankingManagementStorageKey(currentTestId));
+        if (!raw || raw.length > 2000) return null;
+        var state = JSON.parse(raw);
+        if (!isPlainObject(state) || state.schemaVersion !== 1 || state.testId !== currentTestId ||
+            !/^profile_[a-f0-9]{32}$/.test(String(state.publicProfileId || "")) ||
+            !/^scm_[A-Za-z0-9_-]{43}$/.test(String(state.managementToken || "")) ||
+            !Number.isFinite(Date.parse(String(state.expiresAt || ""))) ||
+            Date.parse(String(state.expiresAt || "")) <= Date.now()) {
+          localStorage.removeItem(getRankingManagementStorageKey(currentTestId));
+          return null;
+        }
+        return state;
+      } catch (ignored) {
+        return null;
+      }
+    }
+
+    function saveRankingManagementState(result) {
+      localStorage.setItem(getRankingManagementStorageKey(result.testId), JSON.stringify({
+        schemaVersion: 1,
+        testId: result.testId,
+        publicProfileId: result.publicProfileId,
+        managementToken: result.managementToken,
+        expiresAt: result.expiresAt
+      }));
+    }
+
+    function clearRankingManagementState() {
+      try {
+        localStorage.removeItem(getRankingManagementStorageKey(currentTestId));
+      } catch (ignored) {}
+    }
+
+    function renderRankingManagement() {
+      var block = document.getElementById("rankingManagementBlock");
+      if (!block || !currentTestId) return;
+      var state = readRankingManagementState();
+      block.style.display = state ? "block" : "none";
+      if (state) document.getElementById("rankingManagementStatus").textContent = "";
+    }
+
+    function postRankingProfile(payload) {
+      var controller = new AbortController();
+      var timeout = window.setTimeout(function() { controller.abort(); }, NETWORK_TIMEOUT_MS);
+      return fetch(RANKING_PROFILE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        credentials: "omit",
+        referrerPolicy: "no-referrer",
+        signal: controller.signal
+      }).then(function(response) {
+        return response.json().catch(function() { return {}; }).then(function(result) {
+          if (!response.ok || !isPlainObject(result) || result.ok !== true) {
+            throw new Error("ranking_request_failed");
+          }
+          return result;
+        });
+      }).finally(function() {
+        window.clearTimeout(timeout);
+      });
+    }
+
+    function publishRankingProfile() {
+      var status = document.getElementById("rankingPublishStatus");
+      var button = document.getElementById("publishRankingButton");
+      var alias = normalizeRankingAlias(document.getElementById("rankingAlias").value);
+      if (!rankingPublishProof) {
+        status.className = "form-status error";
+        status.textContent = "Подтверждение результата истекло. Обратитесь к организатору.";
+        return;
+      }
+      if (!alias) {
+        status.className = "form-status error";
+        status.textContent = "Укажите публичный псевдоним длиной от 2 до 40 символов.";
+        return;
+      }
+      if (!document.getElementById("rankingConsent").checked) {
+        status.className = "form-status error";
+        status.textContent = "Подтвердите отдельное добровольное согласие на участие в рейтинге.";
+        return;
+      }
+      button.disabled = true;
+      status.className = "form-status";
+      status.textContent = "Проверяем результат и публикуем профиль…";
+      postRankingProfile({
+        action: "publish",
+        apiVersion: RANKING_PROFILE_API_VERSION,
+        publicAlias: alias,
+        publicConsent: true,
+        publicConsentVersion: RANKING_CONSENT_VERSION,
+        resultProof: {
+          attemptId: rankingPublishProof.attemptId,
+          attemptToken: rankingPublishProof.attemptToken,
+          resultCode: rankingPublishProof.resultCode
+        }
+      }).then(function(result) {
+        if (result.apiVersion !== RANKING_PROFILE_API_VERSION || result.state !== "published" ||
+            result.testId !== currentTestId || !/^profile_[a-f0-9]{32}$/.test(String(result.publicProfileId || "")) ||
+            !/^scm_[A-Za-z0-9_-]{43}$/.test(String(result.managementToken || "")) ||
+            !Number.isFinite(Date.parse(String(result.expiresAt || "")))) {
+          throw new Error("ranking_response_invalid");
+        }
+        saveRankingManagementState(result);
+        rankingPublishProof = null;
+        document.getElementById("rankingPublishBlock").style.display = "none";
+        renderRankingManagement();
+        var managementStatus = document.getElementById("rankingManagementStatus");
+        managementStatus.className = "form-status success";
+        managementStatus.textContent = "Профиль опубликован. Запись появится на странице рейтинга; позиция включится после пяти участников.";
+      }).catch(function() {
+        status.className = "form-status error";
+        status.textContent = "Не удалось опубликовать профиль. Повторите действие, не закрывая страницу.";
+      }).finally(function() {
+        button.disabled = false;
+      });
+    }
+
+    function withdrawRankingProfile() {
+      var state = readRankingManagementState();
+      var status = document.getElementById("rankingManagementStatus");
+      var button = document.getElementById("withdrawRankingButton");
+      if (!state) {
+        renderRankingManagement();
+        return;
+      }
+      if (!window.confirm("Убрать ваш публичный профиль из рейтинга?")) return;
+      button.disabled = true;
+      status.className = "form-status";
+      status.textContent = "Убираем профиль…";
+      postRankingProfile({
+        action: "withdraw",
+        apiVersion: RANKING_PROFILE_API_VERSION,
+        testId: state.testId,
+        publicProfileId: state.publicProfileId,
+        managementToken: state.managementToken
+      }).then(function(result) {
+        if (result.apiVersion !== RANKING_PROFILE_API_VERSION || result.state !== "withdrawn") {
+          throw new Error("ranking_response_invalid");
+        }
+        clearRankingManagementState();
+        document.getElementById("rankingManagementBlock").style.display = "none";
+      }).catch(function() {
+        status.className = "form-status error";
+        status.textContent = "Не удалось убрать профиль. Повторите действие позже или напишите на skillcheck.project@yandex.ru.";
+      }).finally(function() {
+        button.disabled = false;
+      });
+    }
     function showSubmissionFailure(error) {
       var retryable = isRetryableSubmissionError(error);
       var status = document.getElementById("sendStatus");

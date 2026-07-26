@@ -23,7 +23,7 @@ function extractTopLevelFunction(source, name) {
   return source.slice(start, next < 0 ? source.length : next).trim();
 }
 
-const consentVersion = "skillcheck-pd-consent-2026-07-26-v2";
+const consentVersion = "skillcheck-pd-consent-2026-07-27-v3";
 assert.match(consent, new RegExp(consentVersion));
 assert.match(consent, /Отдельное согласие на обработку персональных данных/);
 assert.match(consent, /Оператор: Кириллов Кирилл Сергеевич/);
@@ -33,10 +33,12 @@ assert.match(consent, /Полный публичный адрес операто
 assert.match(consent, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
 assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
 assert.match(consent, /не разрешает[\s\S]*передавать результат работодателю/);
-assert.match(consent, /Срок серверного хранения ещё не утверждён/);
+assert.match(consent, /ответы и полный отчёт — 12 месяцев/);
+assert.match(consent, /приглашения и attempt\/session — 90 дней/);
+assert.match(consent, /резервные копии — до 30 дней/);
 assert.match(consent, /до 12 проверяемых резервных версий/i);
 
-assert.match(privacy, /skillcheck-privacy-2026-07-26-v4/);
+assert.match(privacy, /skillcheck-privacy-2026-07-27-v5/);
 assert.match(privacy, /Оператор: Кириллов Кирилл Сергеевич/);
 assert.doesNotMatch(privacy, /Налог на профессиональный доход|Регион оператора: Москва/);
 
@@ -44,12 +46,14 @@ assert.match(privacy, /Полный публичный адрес операто
 assert.match(privacy, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
 assert.doesNotMatch(privacy, /Email для обращений по персональным данным: не указан/);
 assert.match(privacy, /псевдонимизированной, а не полностью обезличенной/);
-assert.match(privacy, /автоматическое удаление по сроку выключено/i);
+assert.match(privacy, /TTL 365 дней уже включён для YDB рейтинга/i);
+assert.match(privacy, /автоматическое применение сроков ещё не завершено/i);
 assert.match(privacy, /закрыт(?:ая|ую) транзакционн(?:ая|ую) копи(?:я|ю)[\s\S]*безвозвратно уничтож/);
 assert.match(privacy, /до 12 закрытых проверяемых версий/i);
 assert.match(privacy, /удаляет связанные строки из обычных резервных версий/i);
-assert.match(privacy, /Передача работодателю или партнёру[\s\S]*выключена/);
-assert.doesNotMatch(privacy, /хран(?:ится|ение)[^<]{0,100}не более 12 месяцев/i, "privacy page must not promise an unimplemented retention period");
+assert.match(privacy, /Прямая передача контактов, отчёта или результата[\s\S]*выключена/);
+assert.match(privacy, /ответы и полный отчёт — 12 месяцев/);
+assert.match(privacy, /профиль рейтинга[\s\S]*не более 365 дней/i);
 
 assert.match(candidate, /href="consent\.html"[^>]+target="_blank"/i);
 assert.match(candidate, /id="privacyConsent"[^>]+required/i);

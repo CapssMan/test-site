@@ -1,10 +1,12 @@
 "use strict";
 
+const { createAdminHandler } = require("./admin-handler");
 const { createAssessmentHandler, jsonResponse: assessmentJsonResponse, storageErrorResponse } = require("./assessment-handler");
 const { createObjectStorageClient } = require("./object-storage-client");
 const { createRankingHandler, jsonResponse } = require("./ranking-handler");
 const { createRankingProfileHandler, privateJsonResponse } = require("./ranking-profile-handler");
 const { createYdbAssessmentStore } = require("./ydb-assessment-store");
+const { createYdbAdminStore } = require("./ydb-admin-store");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
 
 const DEFAULT_ALLOWED_ORIGIN = "https://capssman.github.io";
@@ -47,6 +49,21 @@ async function createRuntime() {
       inviteSecret: String(process.env.INVITE_CODE_SECRET_V1 || "")
     });
   }
+  if (runtimeMode === "admin") {
+    const privateStorage = createObjectStorageClient({ bucket: String(process.env.PRIVATE_BUCKET || "") });
+    const store = Object.assign(createYdbAssessmentStore(sql), createYdbAdminStore(sql));
+    const propertyNames = ["YDB_CONNECTION_STRING", "PRIVATE_BUCKET", "ADMIN_PASSWORD_PBKDF2_V1", "INVITE_CODE_SECRET_V1", "IDENTITY_HASH_SECRET_V1", "DELETION_SIGNING_SECRET_V1"];
+    return createAdminHandler({
+      store,
+      storage: privateStorage,
+      allowedOrigin,
+      adminPasswordRecord: String(process.env.ADMIN_PASSWORD_PBKDF2_V1 || ""),
+      inviteSecret: String(process.env.INVITE_CODE_SECRET_V1 || ""),
+      identitySecret: String(process.env.IDENTITY_HASH_SECRET_V1 || ""),
+      deletionSecret: String(process.env.DELETION_SIGNING_SECRET_V1 || ""),
+      propertyPresence: propertyNames.map(name => ({ name, present: Boolean(process.env[name]), required: true }))
+    });
+  }
   throw new Error("invalid_runtime_mode");
 }
 
@@ -62,7 +79,7 @@ async function handler(event, context) {
     if (runtimeMode === "write") {
       return privateJsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, allowedOrigin);
     }
-    if (runtimeMode === "assessment") {
+    if (runtimeMode === "assessment" || runtimeMode === "admin") {
       return assessmentJsonResponse(503, storageErrorResponse(), allowedOrigin);
     }
     return jsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, allowedOrigin);

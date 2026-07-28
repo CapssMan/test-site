@@ -57,6 +57,7 @@ function mapInvite(row) {
     emailMasked: String(row.email_masked || ""),
     purpose: String(row.purpose || ""),
     allowRetake: row.allow_retake === true,
+    validForHours: Number(row.valid_for_hours || 0),
     state: String(row.state || ""),
     issuedAt: iso(row.issued_at),
     expiresAt: iso(row.expires_at),
@@ -184,9 +185,9 @@ function createYdbAssessmentStore(sql) {
       const row = invite || {};
       await executeWrite(sql, valueStrings(`UPSERT INTO assessment_invites
         (invite_id, request_id, test_id, code_hash, identity_hash, email_masked, purpose,
-         allow_retake, state, issued_at, expires_at, purge_at)
-        VALUES (`, 12), [row.inviteId, row.requestId, row.testId, row.codeHash, row.identityHash, row.emailMasked,
-        row.purpose, row.allowRetake === true, row.state, row.issuedAt, row.expiresAt, row.purgeAt]);
+         allow_retake, valid_for_hours, state, issued_at, expires_at, purge_at)
+        VALUES (`, 13), [row.inviteId, row.requestId, row.testId, row.codeHash, row.identityHash, row.emailMasked,
+        row.purpose, row.allowRetake === true, row.validForHours, row.state, row.issuedAt, row.expiresAt, row.purgeAt]);
     },
 
     async markInviteActive(inviteId, attemptId, activatedAt) {

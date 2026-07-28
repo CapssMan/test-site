@@ -1,6 +1,6 @@
 # Gated Yandex assessment runtime
 
-Status date: 2026-07-27. `SkillCheck` is still a temporary product name; this document makes no claim about a company name, domain, or trademark.
+Status date: 2026-07-28. `SkillCheck` is still a temporary product name; this document makes no claim about a company name, domain, or trademark.
 
 ## Deployed boundary
 
@@ -41,7 +41,7 @@ The public test page still calls the Apps Script authority. Existing ranking rou
 
 ## Remaining before cutover
 
-1. Implement and deploy the protected admin actions against YDB and the private bucket.
+1. Point the existing administration page to the deployed protected runtime documented in `YANDEX_ADMIN_RUNTIME.md` and verify a live authenticated diagnostics request.
 2. Transfer and verify the five private v4 banks without putting answer keys in Git or the browser.
 3. Migrate only the required legacy result/invitation state and preserve the 21-day retake boundary.
 4. Configure report/package/backup retention without adding a paid service silently.

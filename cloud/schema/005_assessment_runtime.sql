@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS assessment_invites (
     email_masked Utf8 NOT NULL,
     purpose Utf8 NOT NULL,
     allow_retake Bool NOT NULL,
+    valid_for_hours Int32,
     state Utf8 NOT NULL,
     issued_at Timestamp NOT NULL,
     expires_at Timestamp NOT NULL,

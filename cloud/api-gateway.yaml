@@ -12,6 +12,41 @@ x-yc-apigateway:
       - Content-Type
     maxAge: 600
 paths:
+  /v1/admin:
+    get:
+      operationId: getAdminHealth
+      summary: Read the protected administration runtime health
+      responses:
+        "200":
+          description: Administration runtime health
+        "503":
+          description: Administration runtime is temporarily unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1qffg3l40q6jgq0t9
+        tag: "admin-v1"
+        service_account_id: ajerg3btsr8m7va4gi2m
+        payload_format_version: "0.1"
+    post:
+      operationId: submitAdminAction
+      summary: Run an authenticated administration action
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Application-level administration response
+        "503":
+          description: Administration runtime is temporarily unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1qffg3l40q6jgq0t9
+        tag: "admin-v1"
+        service_account_id: ajerg3btsr8m7va4gi2m
+        payload_format_version: "0.1"
   /v1/assessment:
     get:
       operationId: getAssessmentHealth

@@ -11,7 +11,7 @@ const purge = new Date("2027-07-27T10:00:00.000Z");
 const inviteRow = {
   invite_id: "inv_" + "1".repeat(32), request_id: "sci_" + "2".repeat(24), test_id: "fa-junior",
   code_hash: "3".repeat(64), identity_hash: "4".repeat(64), email_masked: "c***@example.ru",
-  purpose: "Pilot", allow_retake: false, state: "issued", issued_at: now, expires_at: later, purge_at: purge
+  purpose: "Pilot", allow_retake: false, valid_for_hours: 24, state: "issued", issued_at: now, expires_at: later, purge_at: purge
 };
 const sessionRow = {
   attempt_id: "att_" + "5".repeat(32), invite_id: inviteRow.invite_id, begin_request_id: "scb_" + "6".repeat(24),
@@ -79,7 +79,7 @@ function fakeSql(strings, ...values) {
   assert.deepEqual(result.blockResults, { finance: { percent: 100 } });
 
   await store.upsertBankMetadata({ testId: "fa-junior", bankVersion: "FA Junior v4.0", objectKey: bank.objectKey, privateDigest: bank.privateDigest, publicDigest: bank.publicDigest, active: true, updatedAt: now });
-  await store.upsertInvite({ ...invite, state: "issued", issuedAt: now, expiresAt: later, purgeAt: purge });
+  await store.upsertInvite({ ...invite, validForHours: 24, state: "issued", issuedAt: now, expiresAt: later, purgeAt: purge });
   await store.insertSession({ ...session, questionIds: session.questionIds, tokenIssuedAt: now, tokenExpiresAt: later, startedAt: now, privacyConsentedAt: now, purgeAt: purge });
   await store.reserveSession({ attemptId: session.attemptId, saveRequestId: result.requestId, submissionHash: result.submissionHash, reservedAt: now, completedAt: now, resultCode: result.code, result: { percent: 100 } });
   await store.insertResult({ ...result, privacyConsentedAt: now, completedAt: now, purgeAt: purge });

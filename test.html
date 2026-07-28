@@ -416,12 +416,15 @@
 
   <script>
     // ===== КОНФИГУРАЦИЯ AUTHORITATIVE BACKEND SCORING =====
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
+    const ASSESSMENT_API_MODE = "yandex";
+    const YANDEX_ASSESSMENT_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/assessment";
+    const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
+    const ASSESSMENT_API_URL = ASSESSMENT_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ASSESSMENT_API_URL;
     const API_VERSION = "attempt-v2";
     const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-26-v1";
-    const FRONTEND_BUILD = "2026.07.27.16";
+    const FRONTEND_BUILD = "2026.07.29.1";
     const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-27-v3";
     const NETWORK_TIMEOUT_MS = 20000;
     const MAX_AUTOMATIC_RETRIES = 2;
@@ -1686,13 +1689,17 @@
       var timeout = window.setTimeout(function() {
         controller.abort();
       }, NETWORK_TIMEOUT_MS);
-      return fetch(GOOGLE_SCRIPT_URL, {
+      var requestOptions = {
         method: "POST",
         body: JSON.stringify(payload),
         cache: "no-store",
         credentials: "omit",
         signal: controller.signal
-      })
+      };
+      if (ASSESSMENT_API_MODE === "yandex") {
+        requestOptions.headers = { "Content-Type": "application/json; charset=utf-8" };
+      }
+      return fetch(ASSESSMENT_API_URL, requestOptions)
       .then(function(response) {
         if (!response.ok) {
           throw createSubmissionError(

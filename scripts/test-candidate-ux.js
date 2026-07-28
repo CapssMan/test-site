@@ -28,7 +28,11 @@ new vm.Script(scripts[0], { filename: "test.html" });
 new vm.Script(backend, { filename: "Code.gs" });
 
 assert.match(testPage, /const API_VERSION = "attempt-v2"/);
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.27\.16"/, "candidate build must be current");
+assert.match(testPage, /const ASSESSMENT_API_MODE = "yandex"/);
+assert.match(testPage, /const YANDEX_ASSESSMENT_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/assessment"/);
+assert.match(testPage, /const LEGACY_GOOGLE_SCRIPT_URL = "https:\/\/script\.google\.com\/macros\/s\//);
+assert.match(testPage, /const ASSESSMENT_API_URL = ASSESSMENT_API_MODE === "legacy-google" \? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ASSESSMENT_API_URL/);
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.29\.1"/, "candidate build must be current");
 assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-27-v3"/);
 assert.match(testPage, /<label for="inviteCode">[\s\S]*?<input[^>]+id="inviteCode"[^>]+required/i, "invite code must be required");
 assert.match(testPage, /<label for="name">[\s\S]*?<input[^>]+id="name"[^>]+required/i);
@@ -130,6 +134,9 @@ assert(
 );
 assert.match(send, /normalizeVerifiedServerResult\(result, data\)/, "verified response must be bound to the submitted attempt");
 assert.match(extractTopLevelFunction(testPage, "postJsonOnce"), /new AbortController\(\)/);
+assert.match(extractTopLevelFunction(testPage, "postJsonOnce"), /fetch\(ASSESSMENT_API_URL, requestOptions\)/);
+assert.match(extractTopLevelFunction(testPage, "postJsonOnce"), /ASSESSMENT_API_MODE === "yandex"[\s\S]*Content-Type/);
+assert.doesNotMatch(extractTopLevelFunction(testPage, "postJsonOnce"), /fetch\((?:GOOGLE_SCRIPT_URL|LEGACY_GOOGLE_SCRIPT_URL)/);
 assert.match(extractTopLevelFunction(testPage, "sendResultAttempt"), /MAX_AUTOMATIC_RETRIES/);
 
 assert.match(extractTopLevelFunction(testPage, "persistPendingResult"), /sessionStorage\.setItem/);

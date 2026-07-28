@@ -6,7 +6,7 @@
 
 ## Текущее состояние
 
-Production runtime: candidate `Build 2026.07.27.16`, admin `Build 2026.07.26.15`, backend `yandex-disk-mvp-2026-07-27-23`, deployment `@69`, API `attempt-v2`, Яндекс storage root `app:/skillcheck`.
+Production runtime: candidate `Build 2026.07.27.16`, admin `Build 2026.07.28.1`, backend `yandex-disk-mvp-2026-07-27-23`, deployment `@69`, API `attempt-v2`, Яндекс storage root `app:/skillcheck`.
 
 Сервис технически готов к контролируемому сценарию, включая банки v4 и app-folder-only storage, но не открыт для реальных кандидатов. Legal approval, issuance и автоматический retention закрыты. Главные внешние blockers: реквизиты оператора, legal/retention approval, независимый человеческий SME sign-off v4, очистка smoke-данных и owner sign-off.
 

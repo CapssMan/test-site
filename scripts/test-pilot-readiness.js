@@ -151,7 +151,7 @@ assert.match(read("ROADMAP.md"), /Owner marketing goal/);
   "DEV-7S2N2",
   "FA-X5P66",
   "FA-LDUB2",
-  "2026.07.26.15",
+  "2026.07.28.1",
   "не считается самостоятельным blocker пилота"
 ].forEach(fragment => assert.ok(technicalDataExclusion.includes(fragment), "technical exclusion contract missing: " + fragment));
 

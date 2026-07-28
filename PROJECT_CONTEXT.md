@@ -11,14 +11,16 @@ SkillCheck — MVP assessment-platform и будущее ядро двустор
 Frontend остаётся статическим GitHub Pages сайтом:
 
 ```text
-index.html -> test.html?test=<testId>#invite=... -> display-only data/<testId>.json -> Google Apps Script attempt-v2 -> Яндекс Диск
+candidate: index.html -> test.html?test=<testId>#invite=... -> Google Apps Script attempt-v2 -> Яндекс Диск
+admin: admin.html -> Yandex API Gateway /v1/admin -> Cloud Function admin-v1 -> YDB/private Object Storage
+ranking: ranking.html -> Yandex API Gateway -> read-v2/write-v2 -> YDB
 ```
 
-Google Apps Script остаётся backend/API. Google Sheets и Google Drive больше не используются.
+Google Apps Script временно остаётся backend/API только для candidate attempt write-path. Админка и рейтинг уже используют Yandex Cloud Functions, API Gateway и YDB; Google Sheets и Google Drive не используются.
 
 Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Расширенная read-only диагностика реализована отдельным POST `adminDiagnostics` за админ-паролем и возвращает только безопасные технические агрегаты.
 
-Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Текущий production runtime: backend yandex-disk-mvp-2026-07-27-23, deployment @69, candidate Build 2026.07.27.16, admin Build 2026.07.26.15, API attempt-v2, storage root app:/skillcheck. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
+Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Candidate runtime: backend yandex-disk-mvp-2026-07-27-23, deployment @69, Build 2026.07.27.16, API attempt-v2, storage root app:/skillcheck. Admin Build 2026.07.28.1 использует активную Yandex Function admin-v1 и YDB/private Object Storage; pilot gates закрыты. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
 
 Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; сроки утверждены, а TTL профиля рейтинга включён, но retention остальных категорий ещё требует cutover. Российские read/write API рейтинга работают при закрытых gates. Реальные кандидаты остаются заблокированы до короткого legal/retention/SME/owner checklist; известные smoke-коды сохраняются и системно исключаются из аналитики.
 

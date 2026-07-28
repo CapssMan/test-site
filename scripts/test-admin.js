@@ -28,7 +28,14 @@ new vm.Script(inlineScripts[0][1], { filename: "admin.html" });
 new vm.Script(backend, { filename: "Code.gs" });
 
 const requestFunction = extractFunction(frontend, "requestAdminAction");
+assert.match(frontend, /const ADMIN_API_MODE = "yandex"/, "Yandex admin API must be the active contour");
+assert.match(frontend, /const YANDEX_ADMIN_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/admin"/,
+  "admin page must pin the protected Yandex API route");
+assert.match(frontend, /const ADMIN_API_URL = ADMIN_API_MODE === "legacy-google" \? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ADMIN_API_URL/,
+  "admin page must retain one explicit rollback switch");
 assert.match(requestFunction, /method:\s*"POST"/, "admin data must use POST");
+assert.match(requestFunction, /fetch\(ADMIN_API_URL, requestOptions\)/, "admin requests must use the selected contour");
+assert.match(requestFunction, /"Content-Type": "application\/json; charset=utf-8"/, "Yandex admin requests must declare JSON");
 assert.match(requestFunction, /JSON\.stringify\(Object\.assign\([^\n]+password:\s*password/, "password must be in POST body");
 assert.doesNotMatch(requestFunction, /[?&]password=/, "password must never be added to URL");
 assert.doesNotMatch(frontend, /adminResultsCallback_|createElement\("script"\)/, "password-bearing JSONP must be removed");

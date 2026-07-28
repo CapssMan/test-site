@@ -75,13 +75,13 @@ try {
   $deletionSecret = ConvertTo-Base64Url (New-RandomBytes 32)
 
   if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI не найден." }
-  $assessmentRaw = & $yc serverless function version get-by-tag --function-id $functionId --tag assessment-v2 --format json
-  if ($LASTEXITCODE -ne 0) { throw "Не удалось прочитать действующую конфигурацию assessment-v2." }
+  $assessmentRaw = & $yc serverless function version get-by-tag --function-id $functionId --tag assessment-v4 --format json
+  if ($LASTEXITCODE -ne 0) { throw "Не удалось прочитать действующую конфигурацию assessment-v4." }
   $assessment = $assessmentRaw | ConvertFrom-Json
   $requiredNames = @("ALLOWED_ORIGIN", "YDB_CONNECTION_STRING", "PRIVATE_BUCKET", "INVITE_CODE_SECRET_V1", "IDENTITY_HASH_SECRET_V1")
   foreach ($name in $requiredNames) {
     $property = $assessment.environment.PSObject.Properties[$name]
-    if ($null -eq $property -or [String]::IsNullOrWhiteSpace([string]$property.Value)) { throw "В assessment-v2 отсутствует обязательная настройка $name." }
+    if ($null -eq $property -or [String]::IsNullOrWhiteSpace([string]$property.Value)) { throw "В assessment-v4 отсутствует обязательная настройка $name." }
   }
 
   if (Test-Path -LiteralPath $packagePath) { Remove-Item -LiteralPath $packagePath -Force }
@@ -125,7 +125,7 @@ try {
     "--package-sha256", $packageSha,
     "--description", "Protected administration runtime v1",
     "--environment", $environment,
-    "--tags", "admin-v1",
+    "--tags", "admin-v2",
     "--concurrency", "1",
     "--no-logging",
     "--format", "json"

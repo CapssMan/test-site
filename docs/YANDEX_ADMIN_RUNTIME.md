@@ -1,12 +1,12 @@
 # Protected Yandex administration runtime
 
-Status date: 2026-07-28. `SkillCheck` remains a temporary product name; this document makes no claim about a company name, domain, or trademark.
+Status date: 2026-07-29. `SkillCheck` remains a temporary product name; this document makes no claim about a company name, domain, or trademark.
 
 ## Deployed boundary
 
 - Existing Cloud Function: `assessment-ranking-api` (`d4e1qffg3l40q6jgq0t9`).
-- Protected administration version: `admin-v1` (`d4e8foec43g4ie401l7d`), Node.js 22, 128 MB, 15-second timeout, concurrency 1, no provisioned instances, logging disabled.
-- Existing API Gateway: `d5d0v6g7vmk9ku6kofjm`, with `GET|POST /v1/admin` pinned to `admin-v1`.
+- Protected administration version: `admin-v2` (`d4euharntpfhnqc8rotg`), Node.js 22, 128 MB, 15-second timeout, concurrency 1, no provisioned instances, logging disabled.
+- Existing API Gateway: `d5d0v6g7vmk9ku6kofjm`, with `GET|POST /v1/admin` pinned to `admin-v2`.
 - Existing YDB Serverless database: `assessment-runtime-db` (`etnkl7r9gkk0in6fitmv`), capped at 10 RU/s and 1 GB.
 - Existing private Object Storage bucket: `assessment-b1gafbjd3dlh-private`, capped at 1 GB with anonymous access and static-key authentication disabled.
 - Existing runtime service account: `assessment-runtime-writer` (`ajesa9at6fmpd0ukbb25`), with database-specific edit access and private-bucket ACL read/write only. It has no static key.
@@ -38,7 +38,7 @@ No Lockbox, VM, CDN, custom domain, provisioned function instance, or other fixe
 
 ## Live verification
 
-- `admin-v1` is `ACTIVE` and the API Gateway is `ACTIVE`.
+- `admin-v2` is `ACTIVE` and the API Gateway is `ACTIVE`.
 - `GET /v1/admin` returns healthy runtime metadata.
 - A protected request with a deliberately incorrect password returns `ok=false`, `status=error`, and the neutral message `Доступ запрещён.`
 - The owner completed a live correct-password login through Admin Build `2026.07.28.1`; protected YDB diagnostics loaded successfully through `/v1/admin`.
@@ -53,9 +53,6 @@ The following settings remain unchanged:
 
 No invitation can be issued and no candidate attempt can start from the new contour yet.
 
-## Remaining before candidate cutover
+## Remaining before opening the pilot
 
-The administration frontend cutover, authenticated live diagnostics, private-bank migration, and zero-record legacy operational review are complete. Remaining work:
-
-1. Run one protected end-to-end smoke attempt with issuance closed before and after the test.
-2. Switch the candidate frontend endpoint with an immediate rollback constant, then review the five banks for content quality before opening the pilot.
+Administration cutover, authenticated diagnostics, private-bank migration, owner-only end-to-end smoke, candidate endpoint switch and Russian static hosting are complete. Before any real invitation, perform one final content/visual QA pass and record explicit SME, legal and owner sign-off. Gates remain closed until that separate decision.

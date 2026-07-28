@@ -11,8 +11,10 @@ const {
   validateWithdrawRequest
 } = require("./ranking-profile-core");
 const { getMethod } = require("./ranking-handler");
+const { resolveAllowedOrigin } = require("./cors-origin");
 
 const AUTHORITY_TIMEOUT_MS = 7000;
+const ASSESSMENT_AUTHORITY_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/assessment";
 
 function privateJsonResponse(statusCode, payload, origin) {
   return {
@@ -29,7 +31,7 @@ function privateJsonResponse(statusCode, payload, origin) {
 }
 
 async function fetchAuthorityProof(authorityUrl, request, fetchImpl) {
-  if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(authorityUrl)) {
+  if (authorityUrl !== ASSESSMENT_AUTHORITY_URL) {
     throw new Error("invalid_authority_url");
   }
   const controller = new AbortController();
@@ -58,7 +60,7 @@ async function fetchAuthorityProof(authorityUrl, request, fetchImpl) {
 function createRankingProfileHandler(dependencies) {
   const settings = dependencies || {};
   const store = settings.store;
-  const allowedOrigin = String(settings.allowedOrigin || "https://skillcheck.example");
+  const allowedOrigins = settings.allowedOrigins || settings.allowedOrigin || "https://skillcheck.example";
   const authorityUrl = String(settings.authorityUrl || "");
   const fetchImpl = settings.fetchImpl || globalThis.fetch;
   const now = typeof settings.now === "function" ? settings.now : () => new Date();
@@ -68,6 +70,7 @@ function createRankingProfileHandler(dependencies) {
   if (typeof fetchImpl !== "function") throw new Error("fetch_required");
 
   return async function rankingProfileHandler(event) {
+    const allowedOrigin = resolveAllowedOrigin(event, allowedOrigins);
     if (getMethod(event) !== "POST") {
       return privateJsonResponse(405, { ok: false, error: "method_not_allowed" }, allowedOrigin);
     }
@@ -132,4 +135,4 @@ function createRankingProfileHandler(dependencies) {
   };
 }
 
-module.exports = { AUTHORITY_TIMEOUT_MS, createRankingProfileHandler, fetchAuthorityProof, privateJsonResponse };
+module.exports = { ASSESSMENT_AUTHORITY_URL, AUTHORITY_TIMEOUT_MS, createRankingProfileHandler, fetchAuthorityProof, privateJsonResponse };

@@ -83,7 +83,7 @@ SkillCheck развивается в двустороннюю платформу
 | 15 | Автоматические тесты и CI | Завершён и включён для main/PR |
 | 16 | Документация | Завершён; поддерживается как living runbook |
 | 17 | Подготовка к пилоту | Технически завершён; NO-GO до внешних sign-off/cleanup |
-| 18 | Российский runtime и рейтинг MVP | В работе: candidate/admin backend и owner-smoke завершены; остались frontend cutover, Object Storage hosting и QA |
+| 18 | Российский runtime и рейтинг MVP | Технически завершён; Yandex hosting/runtime/ranking live, pilot gates закрыты |
 | 19 | Короткий пилот и единая калибровка | Не начат |
 | 20 | Публичный запуск и employer-функции | Не начат |
 
@@ -396,21 +396,23 @@ Production smoke был немутирующим: health подтвердил `.
 | Технические smoke-данные | девять известных кодов классифицированы; удаление прекращено по решению владельца, Admin Build 2026.07.28.1 исключает сохранившиеся строки из обычной аналитики и помечает их при явном показе | RESOLVED BY VERIFIED EXCLUSION |
 | Финальный owner sign-off | шаблон готов; выполняется после остальных четырёх потоков | `WAITING` |
 
-Внутреннее pre-pilot product hardening от 26.07.2026 подготовлено локально без открытия gates: backend source `.16` формирует пропорциональный набор вопросов по тематическим блокам и расширяет успешный TXT разделами сильных сторон, зон развития и проверки на интервью. Полная матрица — 29/29. Production: candidate `.16`, admin `2026.07.28.1`, backend `.23`, deployment `@69`; добровольная публикация/отзыв рейтинга и TTL развёрнуты, реальные pilot gates закрыты.
+Внутреннее pre-pilot product hardening и российский технический cutover завершены без открытия gates. Candidate Build `2026.07.29.2` опубликован в Yandex Object Storage и обращается к `assessment-v4`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v4`. Live owner-smoke, dual-origin CORS, 13-file public allowlist и нулевое состояние YDB подтверждены; реальные pilot gates закрыты.
 
 Не приглашать реальных кандидатов и не открывать pilot gates до независимого SME sign-off банков v4, внешнего legal/privacy решения и owner sign-off. Утверждённые retention-сроки уже применяются в новой YDB/Object Storage схеме. Локальную разработку российского runtime и рейтинга выполнять при закрытых gates.
 
 ## Этап 18. Российский runtime и рейтинг MVP
 
+Статус: технически завершён 29 июля 2026 года; реальные кандидаты остаются NO-GO до внешних sign-off.
+
 Один продуктовый этап вместо отдельного post-MVP проекта:
 
-- [ ] перенести публичный сайт с GitHub Pages в Yandex Object Storage;
-- [ ] заменить Google Apps Script на Yandex Cloud Functions + API Gateway;
-- [x] развернуть защищённые admin actions в версии `admin-v1`, подключить `/v1/admin`, PBKDF2-пароль, YDB-диагностику, приглашения и replay-safe удаление при закрытых pilot gates;
+- [x] опубликовать публичный сайт в Yandex Object Storage по точному 13-file allowlist; сохранить GitHub Pages как rollback до нейтрального домена;
+- [x] переключить candidate/admin/ranking runtime на Yandex Cloud Functions + API Gateway; Apps Script оставить только как legacy rollback/proof boundary до отдельного вывода;
+- [x] развернуть защищённые admin actions в версии `admin-v2`, подключить `/v1/admin`, PBKDF2-пароль, YDB-диагностику, приглашения и replay-safe удаление при закрытых pilot gates;
 - [x] выполнить IAM-only owner-smoke полного candidate path на реальных YDB/private Object Storage: 100% server-verified scoring, проверенный TXT и точечная очистка до 0 invites/sessions/results/ranking profiles/report objects при закрытых gates;
-- [x] исправить live-несовместимость YDB `Datetime`/`Timestamp` и optional `JsonDocument`, развернуть `assessment-v2`, напрямую проверить health/closed gate и переключить `/v1/assessment` с сохранением `assessment-v1` как rollback;
+- [x] исправить live-несовместимость YDB и затем actual-response CORS; развернуть `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`, проверить оба frontend origin и сохранить предыдущие теги как rollback;
 - [x] перенести и повторно проверить пять закрытых банков v4 в private Object Storage; зарегистрировать 5 активных версий в `assessment_banks`, не публикуя answer key или private artifacts в Git/браузере;
-- [ ] заменить Яндекс Диск JSON-хранилище на YDB Serverless и закрытый Object Storage для отчётов/backup;
+- [x] заменить рабочее Яндекс Диск JSON-хранилище на YDB Serverless и закрытый Object Storage для банков, отчётов и retention; legacy Apps Script/Диск не принимает новый candidate traffic;
 - [x] для read-only рейтинга не создавать постоянных ключей: функция получает YDB-доступ через metadata service account; Lockbox и иные платные secret-сервисы не подключать без отдельного решения;
 - [x] определить необходимый legacy operational state: реальных кандидатских записей для переноса нет; 9 известных технических результатов/anti-retake строк не копируются в YDB, рейтинг или pilot analytics по `docs/YANDEX_OPERATIONAL_CUTOVER.md`;
 - [x] создать публичную страницу, YDB-схему, read-only Cloud Function и API Gateway рейтинга отдельно по профессии/тесту и совместимой версии банка;
@@ -433,9 +435,9 @@ Owner marketing goal от 23 июля 2026 года: на этапе 20 отде
 
 ## Ближайшая очередь
 
-1. Переключить candidate frontend write-path с Apps Script на уже проверенный `/v1/assessment`, сохранив явную rollback-константу и закрытые `LEGAL_PILOT_APPROVED`/`ATTEMPT_ISSUANCE_ENABLED`.
-2. Разместить статический frontend в уже созданном public Object Storage без CDN и платного домена; проверить основные страницы, CORS и rollback.
-3. Выполнить финальный российский QA и обновить operator runbook; реальные приглашения не выдавать до SME/legal/owner sign-off, внешние письма и follow-up от имени владельца не отправлять.
+1. Выполнить один финальный desktop/mobile pre-pilot QA и owner checklist; повторно подтвердить health, нулевую базу и закрытые gates.
+2. Получить независимые SME/legal решения без автоматической отправки писем от имени владельца; замечания объединять в одну versioned-ротацию.
+3. Только после SME/legal/owner sign-off открыть малый пилот 10–30 прохождений; не открывать массовый self-service поток.
 
 
 ## Бюджетное ограничение

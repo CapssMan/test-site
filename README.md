@@ -6,11 +6,11 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Минимальный рейтинг уже работает через российские YDB Serverless, Cloud Functions и API Gateway: чтение, добровольная публикация после серверной проверки, отзыв и TTL профиля реализованы; перенос остального runtime остаётся в этапе 18, а расширенный employer discovery — после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
+Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Российский технический MVP уже работает через YDB Serverless, Cloud Functions, API Gateway и Object Storage: тестирование, защищённая админка, чтение рейтинга, добровольная публикация, отзыв и TTL профиля реализованы; расширенный employer discovery начинается после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
 
 ## Текущий статус
 
-Этап 17 и внутреннее pre-pilot hardening завершены с решением **NO-GO для реальных кандидатов**. Опубликованы пять банков v4, server-side scoring/sampling, расширенные отчёты, app-folder-only storage и проверяемое исключение девяти технических кодов. Локальный CI выполняет 33 test suite и 5 infrastructure validators. Runtime: candidate `Build 2026.07.27.16` с Apps Script backend `yandex-disk-mvp-2026-07-27-23` (`@69`); admin `Build 2026.07.28.1` использует защищённую Yandex Function `admin-v1`; API `attempt-v2`. Этап 18B завершён: YDB, раздельные read/write Cloud Function versions, API Gateway, отдельное согласие, публикация, отзыв и TTL профиля развёрнуты. Защищённые admin actions также развёрнуты в Yandex Cloud; страница админки переключена на `/v1/admin` с явным rollback constant. База рейтинга пуста, mock-данных нет; pilot gates не открыты.
+Этап 18 технически завершён с решением **NO-GO для реальных кандидатов** до внешних sign-off. Candidate Build `2026.07.29.2` опубликован в Yandex Object Storage и использует `assessment-v4`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v4`. Ровно 13 публичных файлов сверены по SHA-256, оба точных frontend origin проверены на реальных ответах, YDB пуста, pilot gates закрыты. Локальный CI выполняет 39 test suite и 5 infrastructure validators. GitHub Pages и предыдущие function tags сохранены как rollback.
 
 LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до утверждения полного публичного адреса оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 
@@ -42,11 +42,11 @@ LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реа�
 - выдачу случайного кода результата после сохранения;
 - резервную копию неподтверждённого результата в `sessionStorage` текущей вкладки и восстановление после перезагрузки этой вкладки;
 - ограниченный автоматический retry и безопасную повторную отправку с `requestId`, не создающую второй код;
-- отправку результата в Google Apps Script;
-- хранение отчётов и псевдонимизированной админ-базы без открытых контактов на Яндекс Диске;
+- отправку результата в Yandex Cloud Function `/v1/assessment`;
+- хранение результатов в YDB и отчётов в закрытом Yandex Object Storage без открытых контактов;
 - административный preview и подтверждаемое удаление результата либо всей связанной попытки с crash recovery;
 - до 12 закрытых проверяемых версий каждого operational store и editor-only восстановление при закрытых pilot gates;
-- минимальный немутирующий health endpoint для проверки доступности Apps Script.
+- минимальные немутирующие health endpoints для assessment, admin и ranking в Yandex API Gateway.
 - защищённую POST-диагностику в админке с версиями, временем backend, storage state, размерами/row counts и санитизированной ошибкой.
 
 Телефон в MVP не собирается. Приглашение связывается с email и тестом, а серверная сессия — с закрытыми hash email/fingerprint. Сырые email, fingerprint, invite code и attempt token в invite/session JSON и технических логах не хранятся. Это controlled-pilot access, но не полное подтверждение личности: для более сильной идентификации всё ещё нужны OTP/magic link или аккаунт.

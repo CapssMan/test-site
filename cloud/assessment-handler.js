@@ -32,6 +32,14 @@ const {
   validateSaveRequest,
   verifyAttemptToken
 } = require("./assessment-core");
+const { TECHNICAL_RESULT_CODES } = require("./ranking-core");
+const {
+  RANKING_PROOF_API_VERSION,
+  RANKING_PROOF_MAX_AGE_MS,
+  RANKING_PROOF_VERSION,
+  assertExactKeys
+} = require("./ranking-profile-core");
+const { resolveAllowedOrigin } = require("./cors-origin");
 const { buildTxtReport } = require("./report-core");
 
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
@@ -217,6 +225,29 @@ function tokenMatchesSession(tokenResult, session) {
     Number(claims.exp) === Math.floor(expires.getTime() / 1000);
 }
 
+function validateRankingProofRequest(value) {
+  assertExactKeys(value, ["action", "apiVersion", "attemptId", "attemptToken", "resultCode"], "ranking_proof_request");
+  const attemptId = String(value.attemptId || "");
+  const attemptToken = String(value.attemptToken || "");
+  const resultCode = String(value.resultCode || "").toUpperCase();
+  if (value.action !== "rankingProof" || value.apiVersion !== RANKING_PROOF_API_VERSION ||
+      !/^att_[a-f0-9]{32,64}$/.test(attemptId) || attemptToken.length < 80 || attemptToken.length > 3000 ||
+      attemptToken.split(".").length !== 3 ||
+      !/^(FA|CA|FPA|ACC|BI)-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(resultCode)) {
+    throw new Error("invalid_ranking_proof_request");
+  }
+  return { attemptId, attemptToken, resultCode };
+}
+
+function buildRankingProofUnavailableResponse() {
+  return {
+    ok: false,
+    status: "unavailable",
+    backendVersion: ASSESSMENT_BACKEND_VERSION,
+    apiVersion: RANKING_PROOF_API_VERSION,
+    failureCode: "ranking_proof_unavailable"
+  };
+}
 function recentSessionBlocksRetake(session, now) {
   if (!session) return false;
   if (session.state === "active") {
@@ -286,7 +317,7 @@ function createAssessmentHandler(dependencies) {
   const signingSecret = settings.signingSecret;
   const identitySecret = settings.identitySecret;
   const inviteSecret = settings.inviteSecret;
-  const allowedOrigin = String(settings.allowedOrigin || "https://capssman.github.io");
+  const allowedOrigins = settings.allowedOrigins || settings.allowedOrigin || "https://capssman.github.io";
   const nowProvider = typeof settings.now === "function" ? settings.now : () => new Date();
 
   async function loadBank(testId, bankVersion, context) {
@@ -433,6 +464,43 @@ function createAssessmentHandler(dependencies) {
     }
   }
 
+  async function verifyRankingProof(request) {
+    const now = nowProvider();
+    const tokenResult = verifyAttemptToken(request.attemptToken, signingSecret, { now, allowExpired: true });
+    if (!tokenResult.valid) return buildRankingProofUnavailableResponse();
+    const session = await store.getSessionByAttemptId(request.attemptId);
+    if (!session || session.state !== "completed" || session.resultCode !== request.resultCode ||
+        session.testId === "dev-quick" || TECHNICAL_RESULT_CODES.has(request.resultCode) ||
+        !tokenMatchesSession(tokenResult, session) || !/^[a-f0-9]{64}$/.test(String(session.identityHash || ""))) {
+      return buildRankingProofUnavailableResponse();
+    }
+    const result = await store.getResultByCode(request.resultCode);
+    const completedAt = validDate(result && result.completedAt || session.completedAt);
+    const ageMs = completedAt ? now.getTime() - completedAt.getTime() : NaN;
+    if (!result || result.attemptId !== session.attemptId || result.testId !== session.testId ||
+        result.bankVersion !== session.bankVersion || result.status !== "passed" ||
+        result.scoreVerification !== SCORE_VERIFICATION_SERVER || result.technical === true ||
+        !Number.isFinite(Number(result.percent)) || Number(result.percent) < SUCCESS_THRESHOLD || Number(result.percent) > 100 ||
+        !Number.isFinite(ageMs) || ageMs < -5 * 60 * 1000 || ageMs > RANKING_PROOF_MAX_AGE_MS) {
+      return buildRankingProofUnavailableResponse();
+    }
+    return {
+      ok: true,
+      status: "verified",
+      backendVersion: ASSESSMENT_BACKEND_VERSION,
+      apiVersion: RANKING_PROOF_API_VERSION,
+      proofVersion: RANKING_PROOF_VERSION,
+      testId: session.testId,
+      bankVersion: session.bankVersion,
+      resultCode: request.resultCode,
+      percent: Number(result.percent),
+      completedAt: completedAt.toISOString(),
+      passStatus: "passed",
+      scoreVerification: SCORE_VERIFICATION_SERVER,
+      rankingSubjectHandle: "rsh_" + hmacHex(identitySecret, "ranking-subject-v1|" + session.testId + "|" + session.identityHash),
+      technical: false
+    };
+  }
   async function saveResult(request, context) {
     const now = nowProvider();
     const tokenResult = verifyAttemptToken(request.attemptToken, signingSecret, { now, allowExpired: true });
@@ -534,6 +602,7 @@ function createAssessmentHandler(dependencies) {
   }
 
   return async function assessmentHandler(event, context) {
+    const allowedOrigin = resolveAllowedOrigin(event, allowedOrigins);
     const method = getMethod(event);
     if (method === "OPTIONS") return jsonResponse(204, {}, allowedOrigin);
     if (method === "GET") {
@@ -554,6 +623,7 @@ function createAssessmentHandler(dependencies) {
       let payload;
       if (body.action === "beginAttempt") payload = await beginAttempt(validateBeginRequest(body), context);
       else if (body.action === "saveResult") payload = await saveResult(validateSaveRequest(body), context);
+      else if (body.action === "rankingProof") payload = await verifyRankingProof(validateRankingProofRequest(body));
       else throw publicError("unsupported_action", "Действие не поддерживается.");
       return jsonResponse(200, payload, allowedOrigin);
     } catch (error) {
@@ -568,6 +638,7 @@ module.exports = {
   RETAKE_WINDOW_MS,
   buildBeginResponse,
   buildSavedResponse,
+  buildRankingProofUnavailableResponse,
   canonicalSubmission,
   conflictResponse,
   createAssessmentHandler,

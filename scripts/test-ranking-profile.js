@@ -14,7 +14,7 @@ const {
   validatePublishRequest,
   validateWithdrawRequest
 } = require("../cloud/ranking-profile-core");
-const { createRankingProfileHandler } = require("../cloud/ranking-profile-handler");
+const { ASSESSMENT_AUTHORITY_URL, createRankingProfileHandler, fetchAuthorityProof } = require("../cloud/ranking-profile-handler");
 const { RANKING_CONSENT_VERSION } = require("../cloud/ranking-core");
 
 const root = path.resolve(__dirname, "..");
@@ -74,9 +74,10 @@ let authorityPayload;
 const handler = createRankingProfileHandler({
   store,
   allowedOrigin: "https://capssman.github.io",
-  authorityUrl: "https://script.google.com/macros/s/validDeploymentId_123/exec",
+  authorityUrl: ASSESSMENT_AUTHORITY_URL,
   now: () => now,
-  fetchImpl: async (_url, options) => {
+  fetchImpl: async (url, options) => {
+    assert.equal(url, ASSESSMENT_AUTHORITY_URL);
     authorityPayload = JSON.parse(options.body);
     return { ok: true, async json() { return authorityResponse; } };
   }
@@ -108,29 +109,42 @@ const handler = createRankingProfileHandler({
 
   const rejected = createRankingProfileHandler({
     store,
-    authorityUrl: "https://script.google.com/macros/s/validDeploymentId_123/exec",
+    authorityUrl: ASSESSMENT_AUTHORITY_URL,
     fetchImpl: async () => ({ ok: true, async json() { return { ok: false }; } }),
     now: () => now
   });
   assert.equal((await rejected({ httpMethod: "POST", body: JSON.stringify(publishBody) })).statusCode, 403);
   assert.equal((await handler({ httpMethod: "GET" })).statusCode, 405);
 
-  const backend = fs.readFileSync(path.join(root, "apps-script", "Code.gs"), "utf8");
+  const backend = fs.readFileSync(path.join(root, "cloud", "assessment-handler.js"), "utf8");
+  const writer = fs.readFileSync(path.join(root, "cloud", "ranking-profile-handler.js"), "utf8");
   const testPage = fs.readFileSync(path.join(root, "test.html"), "utf8");
   const consentPage = fs.readFileSync(path.join(root, "ranking-consent.html"), "utf8");
   const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "utf8");
+  const deploy = fs.readFileSync(path.join(__dirname, "deploy-yandex-ranking-proof.ps1"), "utf8");
   assert.match(backend, /action === "rankingProof"/);
-  assert.match(backend, /AUTHORITATIVE_RECOVERY_TTL_MS/);
+  assert.match(backend, /RANKING_PROOF_MAX_AGE_MS/);
   assert.match(backend, /rankingSubjectHandle/);
+  assert.match(writer, /ASSESSMENT_AUTHORITY_URL/);
+  assert.doesNotMatch(writer, /script\.google\.com/);
+  await assert.rejects(() => fetchAuthorityProof("https://script.google.com/macros/s/legacy/exec", request, async () => null), /invalid_authority_url/);
   assert.match(testPage, /id="rankingConsent"/);
   assert.match(testPage, /href="ranking-consent\.html"/);
   assert.match(testPage, /function publishRankingProfile\(/);
   assert.match(testPage, /function withdrawRankingProfile\(/);
   assert.match(consentPage, new RegExp(RANKING_CONSENT_VERSION));
-  assert.match(gateway, /tag: "read-v2"/);
-  assert.match(gateway, /tag: "write-v2"/);
-  assert.match(gateway, /\/v1\/ranking\/profile:/);
-  console.log("Ranking profile checks passed: explicit consent, authoritative proof, private management token, withdrawal and TTL contract.");
+  assert.match(gateway, /tag: "assessment-v4"/);
+  assert.match(gateway, /tag: "read-v3"/);
+  assert.match(gateway, /tag: "write-v4"/);
+assert.match(gateway, /\/v1\/ranking\/profile:/);
+  assert.match(deploy, /SourceTag = "assessment-v3"; TargetTag = "assessment-v4"/);
+  assert.match(deploy, /SourceTag = "write-v3"; TargetTag = "write-v4"/);
+  assert.match(deploy, /RESULT_AUTHORITY_URL=/);
+  assert.match(deploy, /ranking_proof_unavailable/);
+  assert.match(deploy, /publishStatus -ne 403/);
+  assert.doesNotMatch(deploy, /script\.google\.com/);
+  assert.doesNotMatch(deploy, /Write-Host[^\n]*(?:environment|secret|password)/i);
+  console.log("Ranking profile checks passed: explicit consent, YDB assessment proof, private management token, withdrawal and TTL contract.");
 })().catch(error => {
   console.error(error);
   process.exit(1);

@@ -1,14 +1,14 @@
 # SkillCheck — руководство оператора
 
-Обновлено: 23 июля 2026 года, выпуск банков v4.
+Обновлено: 29 июля 2026 года, российский frontend/runtime cutover.
 
 Это главная точка входа для эксплуатации SkillCheck. Она не заменяет тематические runbooks, а задаёт порядок действий и безопасные границы.
 
 ## Текущее состояние
 
-Production runtime: candidate `Build 2026.07.27.16`, admin `Build 2026.07.28.1`, backend `yandex-disk-mvp-2026-07-27-23`, deployment `@69`, API `attempt-v2`, Яндекс storage root `app:/skillcheck`.
+Production runtime: candidate `Build 2026.07.29.2`, admin `Build 2026.07.28.1`, functions `assessment-v4`/`admin-v2`/`read-v3`/`write-v4`, API `attempt-v2`, YDB + private/public Object Storage. Российский сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`.
 
-Сервис технически готов к контролируемому сценарию, включая банки v4 и app-folder-only storage, но не открыт для реальных кандидатов. Legal approval, issuance и автоматический retention закрыты. Главные внешние blockers: реквизиты оператора, legal/retention approval, независимый человеческий SME sign-off v4, очистка smoke-данных и owner sign-off.
+Сервис технически готов к контролируемому пилоту, но не открыт для реальных кандидатов. Legal approval и issuance закрыты, retention automation включён. Главные внешние blockers: legal/privacy решение по реквизитам и регламенту, независимый человеческий SME sign-off v4 и owner sign-off; девять legacy smoke-кодов не удаляются и проверяемо исключены.
 
 ## Карта процедур
 
@@ -30,14 +30,13 @@ Production runtime: candidate `Build 2026.07.27.16`, admin `Build 2026.07.28.1`,
 
 ## Нормальная проверка
 
-1. Проверить публичный health; он подтверждает только доступность Apps Script и backend version.
-2. Войти в admin и запросить защищённый status: версии, store state, row counts, последний timestamp, reports folder.
-3. Сверить неожиданные изменения counts с известными операциями; не открывать raw JSON для обычного мониторинга.
-4. Проверить последние GitHub Actions для `main`.
-5. При наличии warning/error следовать `OBSERVABILITY.md`, сохраняя pilot gates закрытыми.
+1. Открыть российский сайт и проверить public health `/v1/assessment`, `/v1/admin` и `/v1/ranking?testId=fa-junior`; health подтверждает только доступность соответствующего runtime.
+2. Войти в admin и запросить защищённую YDB-диагностику: версии, gates, row counts и private storage state.
+3. Сверить неожиданные counts с известными операциями; не открывать raw storage для обычного мониторинга.
+4. Проверить последний GitHub Actions для `main` как source/rollback validation.
+5. При warning/error следовать `OBSERVABILITY.md`, сохраняя pilot gates закрытыми.
 
-Health `ok:true` не означает, что Яндекс.Диск или private banks исправны. Полный status доступен только после admin-auth.
-
+Health `ok:true` не означает, что YDB, private banks или отчёты исправны. Полная диагностика доступна только после admin-auth.
 ## Уровни реакции
 
 | Уровень | Пример | Действие |

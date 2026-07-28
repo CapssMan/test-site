@@ -20,11 +20,11 @@ const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
 
 [
   "NO-GO для реальных кандидатов",
-  "LEGAL_PILOT_APPROVED=false",
-  "ATTEMPT_ISSUANCE_ENABLED=false",
-  "RETENTION_AUTOMATION_ENABLED=false",
+  "legal_pilot_approved=false",
+  "attempt_issuance_enabled=false",
+  "retention_automation_enabled=true",
   "Исторически раскрытый answer key",
-  "Яндекс credential",
+  "Private storage/retention",
   "Чистая pilot-база",
   "3–5 работодателями/рекрутерами и 10–30 прохождениями"
 ].forEach(fragment => assert.ok(report.includes(fragment), `pilot report missing: ${fragment}`));

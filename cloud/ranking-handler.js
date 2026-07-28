@@ -1,6 +1,7 @@
 "use strict";
 
 const { buildRankingResponse, isSupportedTest, normalizeLimit } = require("./ranking-core");
+const { resolveAllowedOrigin } = require("./cors-origin");
 
 function jsonResponse(statusCode, payload, origin) {
   return {
@@ -25,13 +26,14 @@ function getMethod(event) {
 function createRankingHandler(dependencies) {
   const settings = dependencies || {};
   const store = settings.store;
-  const allowedOrigin = String(settings.allowedOrigin || "https://skillcheck.example");
+  const allowedOrigins = settings.allowedOrigins || settings.allowedOrigin || "https://skillcheck.example";
   const now = typeof settings.now === "function" ? settings.now : () => new Date();
   if (!store || typeof store.getActiveBankVersion !== "function" || typeof store.listRankingCandidates !== "function") {
     throw new Error("ranking_store_required");
   }
 
   return async function rankingHandler(event) {
+    const allowedOrigin = resolveAllowedOrigin(event, allowedOrigins);
     if (getMethod(event) !== "GET") {
       return jsonResponse(405, { ok: false, error: "method_not_allowed" }, allowedOrigin);
     }

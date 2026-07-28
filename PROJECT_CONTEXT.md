@@ -2,144 +2,105 @@
 
 ## Что это за проект
 
-SkillCheck — MVP assessment-platform и будущее ядро двусторонней платформы профессиональных навыков. В текущем controlled-pilot потоке кандидат получает приглашение, проходит тест, backend авторитетно считает результат, сохраняет advisory telemetry и возвращает случайный код. Ближайший этап переносит на российскую инфраструктуру именно кандидатский runtime и базы данных, добавляет opt-in рейтинг и делает source repository приватным без обязательного переезда на GitVerse. North Star и ограничения: `docs/PRODUCT_VISION.md`.
+SkillCheck — временное рабочее название MVP assessment-платформы и будущей двусторонней платформы профессиональных навыков. Кандидат проходит тест, получает проверенный сервером результат и добровольно может появиться в рейтинге; работодатель использует рейтинг как дополнительный сигнал, а не как автоматическое решение о найме. North Star: `docs/PRODUCT_VISION.md`.
 
-Результат тестирования является предварительной оценкой отдельных навыков. Он не является самостоятельным решением о найме, отказе в найме или профессиональной пригодности.
+Оператор на текущем этапе — Кириллов Кирилл Сергеевич, Москва, самозанятый. Публичная почта проекта: `skillcheck.project@yandex.ru`. Реальные кандидаты не допускаются до явного SME, legal и owner sign-off.
 
-## Текущее состояние
+## Текущее production-состояние
 
-Frontend остаётся статическим GitHub Pages сайтом:
+Основной российский frontend:
 
-```text
-candidate: index.html -> test.html?test=<testId>#invite=... -> Google Apps Script attempt-v2 -> Яндекс Диск
-admin: admin.html -> Yandex API Gateway /v1/admin -> Cloud Function admin-v1 -> YDB/private Object Storage
-ranking: ranking.html -> Yandex API Gateway -> read-v2/write-v2 -> YDB
-```
+`https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`
 
-Google Apps Script временно остаётся backend/API только для candidate attempt write-path. Админка и рейтинг уже используют Yandex Cloud Functions, API Gateway и YDB; Google Sheets и Google Drive не используются.
+Резервный frontend:
 
-Backend имеет публичный endpoint `?action=health`, который возвращает только минимальный немутирующий liveness. Он не читает Script Properties/Яндекс Диск, не раскрывает пути и не создаёт файлы. Расширенная read-only диагностика реализована отдельным POST `adminDiagnostics` за админ-паролем и возвращает только безопасные технические агрегаты.
+`https://capssman.github.io/test-site/`
 
-Historical baseline этапа 10 опубликован в deployment @49, 10A — в @51. Candidate runtime: backend yandex-disk-mvp-2026-07-27-23, deployment @69, Build 2026.07.27.16, API attempt-v2, storage root app:/skillcheck. Admin Build 2026.07.28.1 использует активную Yandex Function admin-v1 и YDB/private Object Storage; pilot gates закрыты. Этапы 15–17, банки v4, least-privilege credential и техническое исключение smoke-кодов завершены.
+Текущие версии:
 
-Owner smoke 10A FA-LDUB2 исторически подтвердил server-verified / authoritative-v1 / attempt-v1. Текущий attempt-v2 требует versioned-согласие и остаётся закрыт двумя gate. Ручное удаление, backup/restore, диагностика и CI реализованы; сроки утверждены, а TTL профиля рейтинга включён, но retention остальных категорий ещё требует cutover. Российские read/write API рейтинга работают при закрытых gates. Реальные кандидаты остаются заблокированы до короткого legal/retention/SME/owner checklist; известные smoke-коды сохраняются и системно исключаются из аналитики.
+- candidate `Build 2026.07.29.2`;
+- admin `Build 2026.07.28.1`;
+- API contract `attempt-v2`;
+- Yandex Function tags: `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`;
+- `legal_pilot_approved=false`;
+- `attempt_issuance_enabled=false`;
+- `retention_automation_enabled=true`.
 
-Рабочие тесты:
+~~~text
+candidate: test.html -> Yandex API Gateway /v1/assessment -> assessment-v4 -> YDB/private Object Storage
+admin: admin.html -> /v1/admin -> admin-v2 -> YDB/private Object Storage
+ranking read: ranking.html -> /v1/ranking -> read-v3 -> public allowlist из YDB
+ranking publish/withdraw: test.html -> /v1/ranking/profile -> write-v4 -> assessment-v4 proof -> YDB
+~~~
 
-- Financial Analyst Junior — `data/fa-junior.json`;
-- Credit Analyst Junior — `data/ca-junior.json`, 80 вопросов;
-- FP&A / Budget Analyst Junior — `data/fpa-junior.json`, 40 вопросов;
-- Accounting / Reporting Junior — `data/acc-junior.json`, 40 вопросов;
-- Finance BI / Data Analyst Junior — `data/bi-junior.json`, 40 вопросов.
+Google Apps Script и app-folder Яндекс Диска сохранены только как явный аварийный rollback старого контура. Новые кандидатские данные туда не направляются по умолчанию. Девять известных legacy smoke-результатов не удаляются по решению владельца и системно исключены из обычной аналитики.
 
-## Текущая модель хранения до российского cloud-cutover
+## Данные и границы доверия
 
-Персональные данные и полный TXT-отчёт хранятся только на закрытом Яндекс Диске:
-
-```text
-app:/skillcheck/reports/<code>.txt
-```
-
-TXT-отчёт создаётся только при успешном результате `finalScore >= 80`.
-
-Админка использует псевдонимизированный JSON без открытых контактов:
-
-```text
-app:/skillcheck/admin/results.json
-```
-
-Legacy-compatible anti-retake projection использует приватный JSON с hash:
-
-```text
-app:/skillcheck/private/attempts.json
-```
-
-Authoritative attempt flow дополнительно использует:
-
-```text
-app:/skillcheck/private/invites-v1.json
-app:/skillcheck/private/attempt-sessions-v1.json
-app:/skillcheck/private/banks/<test>/<version>.json
-```
-
-Private banks содержат answer key и проверяются по SHA-256 anchors из Script Properties. Если защищённый storage опубликован/расшарен либо private JSON отсутствует/повреждён, backend завершается fail closed.
-
-## Админка
-
-`admin.html` не хранит статические результаты и не показывает персональные данные. После ввода пароля она получает через Apps Script только:
-
-```text
-code
-date
-testId
-testTitle
-finalScore
-percent
-status
-badge
-tabSwitches
-reportCreated
-bankVersion
-scoreVerification
-scoringAlgorithmVersion
-telemetryVerification
-```
-
-Узнать, кто стоит за кодом, нельзя через публичный список. Полный TXT загружается отдельным защищённым POST-запросом только после входа в админку и не вставляется в DOM.
+- Публичный bucket содержит только 7 HTML и 6 display-only JSON; ключей ответов там нет.
+- Пять private bank v4 и правильные ответы находятся только в закрытом Object Storage.
+- YDB хранит приглашения, сессии, результаты, аудит, runtime settings и добровольные профили рейтинга.
+- Контакты, ответы, полный отчёт, result code и bearer-токены не попадают в публичный рейтинг.
+- Cloud Functions используют service account metadata; постоянных ключей, Lockbox и Cloud Logging нет.
+- CORS разрешает ровно основной Yandex origin и резервный GitHub Pages origin.
 
 ## Как работает прохождение
 
-1. Администратор выпускает email/test-bound одноразовое приглашение; при выключенном issuance операция заблокирована.
-2. Candidate URL передаёт bearer-код только во fragment `#invite=...`; страница сразу переносит его в `sessionStorage` и очищает адресную строку.
-3. `test.html` загружает display-only public bank без `correct` и проверяет `publicDigest`.
-4. После отдельного versioned-согласия и 18+ frontend отправляет `beginAttempt` с `attempt-v2`, invite, email и browser fingerprint.
-5. Backend проверяет invite/retake/private storage и выдаёт 6-часовой HMAC-signed token с точным ordered manifest вопросов.
-6. Frontend сохраняет серверный порядок вопросов и криптографически перемешивает целые option-объекты.
-7. Кандидат отвечает по одному вопросу с таймером; время и tab switches остаются advisory telemetry без штрафа к баллу.
-8. Pending submission хранится только в текущем `sessionStorage`, не дольше token и максимум 6 часов; legacy full payload из `localStorage` удаляется.
-9. `saveResult` отправляет обязательные `questionId`/`optionId`, token/session bindings и telemetry без клиентского score.
-10. Backend сверяет token, session, identity/fingerprint, точный manifest и закрытый versioned bank.
-11. Backend сам рассчитывает raw/final/percent/pass и маркирует результат `server-verified` / `authoritative-v1`.
-12. State machine `active → reserved → completed` резервирует код, создаёт TXT только для passed, обновляет admin/attempt stores и поддерживает recovery.
-13. Exact replay того же request/payload возвращает тот же код; изменённый payload конфликтует.
-14. Frontend показывает результат только при совпадении `attempt-v2`, consent/attempt/test/bank bindings и серверных verification markers.
+1. Администратор создаёт email/test-bound одноразовое приглашение; пока gates закрыты, операция недоступна.
+2. Candidate URL передаёт код во fragment `#invite=...`; страница переносит его в `sessionStorage` и очищает адрес.
+3. Frontend проверяет digest display-only банка и отправляет `beginAttempt`.
+4. Backend проверяет приглашение и выдаёт шестичасовой HMAC-токен с точным набором вопросов.
+5. Браузер отправляет только идентификаторы вариантов и advisory telemetry.
+6. `assessment-v4` считает балл по закрытому банку, сохраняет результат и при проходном балле создаёт TXT-отчёт.
+7. После результата от 80% кандидат отдельно решает, публиковать ли псевдоним в рейтинге.
+8. `write-v4` принимает публикацию только после свежего подтверждения `rankingProof` от `assessment-v4`.
 
-Техническая trust boundary и содержательная ротация v4 реализованы. Старые v3 ключи остаются в истории, но не соответствуют новым вопросам/ID/вариантам. `ATTEMPT_ISSUANCE_ENABLED=false` сохраняется до независимого SME sign-off v4 и остальных условий pilot checklist.
+Попытка не доказывает личность кандидата: invite и browser fingerprint ограничивают поток, но для усиленной идентификации позже потребуются OTP/magic link, прокторинг или контролируемая сессия.
+
+## Рейтинг
+
+- Участие добровольное и выключено по умолчанию.
+- Профиль хранится до 365 дней, затем удаляется TTL; кандидат может отозвать его раньше management token.
+- Публичная позиция не раскрывается, пока в выбранном тесте нет хотя бы пяти подходящих профилей.
+- Технические результаты и результаты ниже порога публикации исключаются.
+- Сейчас в YDB нет профилей реальных кандидатов.
+
+## Администрирование
+
+Админка требует пароль, не сохраняет его и возвращает только нужные поля. Она умеет:
+
+- просматривать результаты и агрегированную диагностику;
+- получать приватный TXT;
+- выпускать и отзывать приглашения после открытия gates;
+- выполнять подписанный preview и подтверждённое удаление;
+- исключать известные технические записи из таблицы, метрик и диаграмм.
+
+## Сроки хранения
+
+- добровольный профиль рейтинга — пока действует согласие, максимум 365 дней на одну публикацию;
+- результат, ответы и полный отчёт — 365 дней;
+- приглашение и техническая сессия — 90 дней;
+- аудит — 365 дней;
+- backup удаления — 30 дней;
+- временные packages/staging — 1 день.
 
 ## Бюджетное правило
 
-- По умолчанию использовать бесплатные тарифы и уже имеющиеся ресурсы.
-- До создания любого ресурса, способного привести к списанию, назвать сервис, ожидаемый диапазон расходов и бесплатную альтернативу.
-- Не подключать billing, платный тариф, домен, VPS или подписку без отдельного явного разрешения владельца.
-- Бесплатный лимит не считать гарантией нулевой стоимости; настраивать уведомления о бюджете до production-нагрузки.
+По умолчанию используются бесплатные квоты и уже созданные ресурсы. До любого платного сервиса нужно сообщить владельцу ожидаемую стоимость и бесплатную альтернативу. Не подключать Lockbox, VM, CDN, домен, provisioned instances или подписку без отдельного разрешения. Бюджет `skillcheck-monthly` только уведомляет и не останавливает расходы автоматически.
 
 ## Что нельзя ломать
 
-- дизайн и карточки `index.html`;
-- display-only JSON и их `publicDigest`;
-- точный server-issued question manifest и перемешивание option-объектов;
-- отправку результата в Apps Script;
-- стабильный Google Script URL до проверенного cutover на Yandex Cloud;
-- authoritative scoring, single-use session и fail-closed private storage;
-- секреты Script Properties;
-- правило: GitHub Pages не хранит результаты, персональные данные, токены или JSON-базы.
-- pilot lock: не включать legal approval/issuance до operator/legal/retention/SME/owner checklist и проверки исключения известных технических кодов.
+- закрытые pilot gates без явного финального решения;
+- серверный расчёт и private answer keys;
+- single-use invite/session и идемпотентность сохранения;
+- отдельное согласие и безопасный отзыв рейтинга;
+- исключение девяти известных smoke-кодов;
+- отсутствие secrets и персональных данных в Git, CI и публичном bucket;
+- явный rollback на GitHub Pages/Apps Script до завершения пилота;
+- временный статус названия SkillCheck.
 
-## Security-границы текущего MVP
+## Проверки и дальнейшая работа
 
-- Публичный Apps Script endpoint остаётся анонимным, потому что кандидат не обязан иметь Google-аккаунт, но начало попытки требует email/test-bound invite.
-- Публичный `checkAttempt` удалён; tokenless/legacy `saveResult` отклоняется как `client_upgrade_required`.
-- `beginAttempt`, token-bound `saveResult`, административные результаты/TXT/invites используют строгие POST-контракты и известные `action`.
-- `CacheService` rate limits — best-effort, не IP-based и не заменяют gateway/WAF.
-- Invite и fingerprint ограничивают поток, но не доказывают личность; для более сильной идентификации нужны OTP/magic link или аккаунт.
-- `questionId`/`optionId` обязательны и сверяются с точным server-issued manifest и private bank.
-- Invite/token/email/fingerprint не хранятся открыто в invite/session JSON и технических логах.
-- Private storage не должен иметь `public_key`, `public_url` или `share`; backend проверяет это перед критическими действиями и fail closed.
-- CSP задана через meta и допускает inline JS/CSS текущих single-file страниц; это полезное ограничение, но не эквивалент полного набора HTTP security headers.
-- Полная pending-копия хранится только в `sessionStorage` максимум 6 часов; `localStorage` содержит только информационную дату завершения.
-- Код 10A подтверждает сохранение авторитетно рассчитанного результата; public/private банки v4 технически ротированы, но их содержательная пригодность остаётся за независимым SME sign-off.
-- Яндекс OAuth переведён на отдельное приложение только с `cloud_api:disk.app_folder`; активный root `app:/skillcheck`, прежнее широкоправное приложение и временные rollback credentials удалены.
-- Удаление требует пароль, подписанный preview и точный код; транзакционная копия закрыта и уничтожается после проверки. Сроки утверждены: TTL рейтинга включён, автоматизация остальных категорий переносится вместе с write-cutover 18C.
-- Operational JSON получают bounded snapshot предыдущей валидной версии; restore editor-only, а удаление вычищает связанные строки из snapshots.
+`npm test` выполняет secret scan, проверку ссылок/синтаксиса, валидацию банков и 39 test-файлов — всего 44 проверки. Production deploy выполняется только owner-run скриптами и не запускается из GitHub Actions.
 
-Подробности: `docs/SECURITY_AUDIT.md`, `docs/BACKEND_SCORING_DECISION.md`, `docs/DATA_DELETION.md` и `docs/BACKUP_AND_RECOVERY.md`.
+Технический этап 18 завершён. Остались продуктовые этапы 19 (закрытый пилот после независимого качества/юридического допуска) и 20 (публичный запуск и работодательский поток). До первой реальной попытки нужен один контрольный QA/sign-off проход; gates открываются отдельным решением.

@@ -18,6 +18,7 @@ const {
   sha256Hex,
   timingSafeEqual
 } = require("./assessment-core");
+const { resolveAllowedOrigin } = require("./cors-origin");
 const { getMethod, jsonResponse, storageErrorResponse } = require("./assessment-handler");
 const {
   MAX_ADMIN_REPORT_CHARS,
@@ -68,7 +69,7 @@ function createAdminHandler(dependencies) {
   const inviteSecret = settings.inviteSecret;
   const identitySecret = settings.identitySecret;
   const deletionSecret = settings.deletionSecret;
-  const allowedOrigin = String(settings.allowedOrigin || "https://capssman.github.io");
+  const allowedOrigins = settings.allowedOrigins || settings.allowedOrigin || "https://capssman.github.io";
   const nowProvider = typeof settings.now === "function" ? settings.now : () => new Date();
   const propertyPresence = Array.isArray(settings.propertyPresence) ? settings.propertyPresence : [];
 
@@ -358,6 +359,7 @@ function createAdminHandler(dependencies) {
   }
 
   return async function adminHandler(event, context) {
+    const allowedOrigin = resolveAllowedOrigin(event, allowedOrigins);
     const method = getMethod(event);
     if (method === "OPTIONS") return jsonResponse(204, {}, allowedOrigin);
     if (method === "GET") return jsonResponse(200, { ok: true, status: "alive", backendVersion: ASSESSMENT_BACKEND_VERSION }, allowedOrigin);

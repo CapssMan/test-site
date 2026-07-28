@@ -8,8 +8,8 @@ const { createRankingProfileHandler, privateJsonResponse } = require("./ranking-
 const { createYdbAssessmentStore } = require("./ydb-assessment-store");
 const { createYdbAdminStore } = require("./ydb-admin-store");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
+const { DEFAULT_ALLOWED_ORIGINS, readAllowedOriginsFromEnvironment, resolveAllowedOrigin } = require("./cors-origin");
 
-const DEFAULT_ALLOWED_ORIGIN = "https://capssman.github.io";
 let runtimePromise;
 
 async function createRuntime() {
@@ -27,13 +27,13 @@ async function createRuntime() {
   await driver.ready();
 
   const sql = query(driver);
-  const allowedOrigin = String(process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN);
+  const allowedOrigins = readAllowedOriginsFromEnvironment(process.env);
   const runtimeMode = String(process.env.RUNTIME_MODE || "read");
-  if (runtimeMode === "read") return createRankingHandler({ store: createYdbRankingStore(sql), allowedOrigin });
+  if (runtimeMode === "read") return createRankingHandler({ store: createYdbRankingStore(sql), allowedOrigins });
   if (runtimeMode === "write") {
     return createRankingProfileHandler({
       store: createYdbRankingStore(sql),
-      allowedOrigin,
+      allowedOrigins,
       authorityUrl: String(process.env.RESULT_AUTHORITY_URL || "")
     });
   }
@@ -43,7 +43,7 @@ async function createRuntime() {
       store: createYdbAssessmentStore(sql),
       bankStorage: privateStorage,
       reportStorage: privateStorage,
-      allowedOrigin,
+      allowedOrigins,
       signingSecret: String(process.env.ATTEMPT_SIGNING_SECRET_V1 || ""),
       identitySecret: String(process.env.IDENTITY_HASH_SECRET_V1 || ""),
       inviteSecret: String(process.env.INVITE_CODE_SECRET_V1 || "")
@@ -56,7 +56,7 @@ async function createRuntime() {
     return createAdminHandler({
       store,
       storage: privateStorage,
-      allowedOrigin,
+      allowedOrigins,
       adminPasswordRecord: String(process.env.ADMIN_PASSWORD_PBKDF2_V1 || ""),
       inviteSecret: String(process.env.INVITE_CODE_SECRET_V1 || ""),
       identitySecret: String(process.env.IDENTITY_HASH_SECRET_V1 || ""),
@@ -74,7 +74,8 @@ async function handler(event, context) {
     return await runtimeHandler(event, context);
   } catch (_error) {
     runtimePromise = null;
-    const allowedOrigin = String(process.env.ALLOWED_ORIGIN || DEFAULT_ALLOWED_ORIGIN);
+    let allowedOrigin = DEFAULT_ALLOWED_ORIGINS[0];
+    try { allowedOrigin = resolveAllowedOrigin(event, readAllowedOriginsFromEnvironment(process.env)); } catch (_corsError) {}
     const runtimeMode = String(process.env.RUNTIME_MODE || "read");
     if (runtimeMode === "write") {
       return privateJsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, allowedOrigin);

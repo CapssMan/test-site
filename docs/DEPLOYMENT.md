@@ -1,26 +1,26 @@
 # SkillCheck — безопасный deployment и rollback
 
-Обновлено: 23 июля 2026 года, выпуск банков v4.
+Обновлено: 29 июля 2026 года, российский frontend/runtime cutover.
 
-Этот runbook описывает публикацию статического frontend через GitHub Pages и обновление Google Apps Script backend. Production deployment обновляется **на месте**: новый Web App URL без отдельного решения не создаётся.
+Этот runbook описывает публикацию статического frontend в Yandex Object Storage и обновление Yandex Cloud Functions/API Gateway. GitHub Pages и Google Apps Script сохраняются только как rollback; новые платные сервисы без отдельного решения не подключаются.
 
 ## Текущий production baseline
 
-- ветка frontend: `main`;
-- Apps Script deployment: `@69`;
-- candidate: `Build 2026.07.27.16`;
+- ветка source/rollback: `main`;
+- российский сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`;
+- GitHub Pages: резервный frontend до нейтрального домена;
+- candidate: `Build 2026.07.29.2`;
 - admin: `Build 2026.07.28.1`;
-- backend: `yandex-disk-mvp-2026-07-27-23`;
-- API: `attempt-v2`;
-- `LEGAL_PILOT_APPROVED=false`;
-- `ATTEMPT_ISSUANCE_ENABLED=false`;
-- `RETENTION_AUTOMATION_ENABLED=false`.
+- functions: `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`;
+- API: `attempt-v2` через Yandex API Gateway;
+- `legal_pilot_approved=false`;
+- `attempt_issuance_enabled=false`;
+- `retention_automation_enabled=true`.
 
-Значения deployment ID, OAuth-токена, паролей, salts, signing secrets и private-bank anchors в Git, issue, CI log или скриншот не записываются.
-
+Значения OAuth/IAM-токенов, паролей, salts, signing secrets и private-bank anchors в Git, issue, CI log или скриншот не записываются.
 ## Роли и условия допуска
 
-Публикацию выполняет владелец Apps Script и Яндекс.Диска либо явно назначенный оператор с минимально необходимым доступом. Перед началом должны быть известны:
+Публикацию выполняет владелец каталога Yandex Cloud либо явно назначенный оператор с минимально необходимым доступом. Перед началом должны быть известны:
 
 1. последний исправный Git commit и Apps Script version;
 2. существующий deployment ID из локального `.clasp.json`/Apps Script console, но не из репозитория;
@@ -48,18 +48,22 @@ git diff --check
 - backup/status исправны, если изменение затрагивает storage;
 - номер build/backend version обновлён, если runtime действительно изменяется.
 
-## Публикация frontend
+## Публикация российского frontend
 
-GitHub Pages публикует содержимое `main` существующим repository workflow. После push:
+Из корня репозитория после зелёного preflight:
 
-1. дождаться зелёного `SkillCheck CI`;
-2. дождаться зелёного `pages build and deployment`;
-3. открыть главную, privacy, consent и admin страницы;
-4. проверить desktop/mobile layout, локальные ссылки и отсутствие публичной ссылки `dev-quick`;
-5. не считать публикацию backend выполненной только потому, что Pages зелёный.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-yandex-runtime-cors.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-yandex-public-site.ps1
+```
 
-## Обновление Apps Script без смены URL
+Первый скрипт создаёт четыре versioned successor и только после их готовности переключает Gateway. Второй загружает ровно 13 allowlisted файлов без `--recursive`, сверяет Content-MD5, live SHA-256, точный список bucket, root page, preflight и фактический CORS assessment/admin/ranking для Yandex и GitHub origin. В конце `beginAttempt` обязан вернуть `attempt_unavailable`.
 
+После публикации вручную проверить desktop/mobile layout главной, пяти test routes, privacy, consent, ranking и admin. Не открывать `legal_pilot_approved` или `attempt_issuance_enabled` одновременно с rollout.
+
+GitHub Pages продолжает публиковать `main` как резерв. Его зелёный workflow не является доказательством работоспособности Yandex runtime. При S1/S2 Gateway возвращается на предыдущие теги, а пользователю даётся GitHub Pages; удалять предыдущие function versions до окончания QA запрещено.
+
+## Legacy Apps Script rollback без смены URL
 Официальная модель Apps Script разделяет immutable version и deployment. Для production используется versioned deployment; существующий deployment переводится на новую version, поэтому URL остаётся прежним.
 
 Перед push сверить локальную привязку и список файлов:

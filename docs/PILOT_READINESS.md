@@ -1,10 +1,10 @@
 # SkillCheck — готовность к контролируемому пилоту
 
-Обновлено: 26 июля 2026 года, после публикации подтверждённых сведений оператора.
+Обновлено: 29 июля 2026 года, после российского frontend/runtime cutover.
 
 ## Решение
 
-**NO-GO для реальных кандидатов.** Техническая проверка этапа 17 и техническая ротация пяти банков v4 завершены, но запуск запрещён до закрытия внешних блокеров. Production gates сохраняются закрытыми: `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=false`.
+**NO-GO для реальных кандидатов.** Техническая проверка этапа 17 и техническая ротация пяти банков v4 завершены, но запуск запрещён до закрытия внешних блокеров. Production gates сохраняются закрытыми: `legal_pilot_approved=false`, `attempt_issuance_enabled=false`; утверждённая автоматизация сроков включена: `retention_automation_enabled=true`.
 
 Этот документ разделяет три разных состояния:
 
@@ -16,14 +16,14 @@
 
 | Проверка | Результат | Статус |
 |---|---|---|
-| Публичный health | четыре публичных поля; runtime — candidate Build 2026.07.27.16, backend yandex-disk-mvp-2026-07-27-23, admin Build 2026.07.28.1 | verified после rollout; gates закрыты |
-| Protected owner diagnostics | `healthy`, четыре operational store, 9 result rows и 9 anti-retake rows | verified |
-| Operational backup | свежий проверяемый snapshot четырёх store создан owner-функцией | verified |
-| Apps Script deployments | существующий versioned deployment обновлён до `@69`; Web App URL не менялся | verified |
-| Яндекс credential/storage | отдельное API-only приложение, только `cloud_api:disk.app_folder`, root `app:/skillcheck`; checksum cutover, write/read backup и реальный rollback drill; старое приложение и rollback credential удалены | verified |
-| Public negative smoke | GET begin → `method_not_allowed`; legacy → `client_upgrade_required`; unknown → `unknown_action`; dev-quick → `test_not_public` | verified |
-| GitHub CI/Pages | commit retirement `2d9254d`: SkillCheck CI #9 и Pages #71 завершены успешно | verified |
-
+| Российский frontend | Candidate Build `2026.07.29.2`; 13 allowlisted объектов, 586 242 байта, live SHA-256; Yandex website root `200` | verified |
+| Functions/Gateway | `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`; точные Yandex/GitHub origin проходят preflight и фактические GET/POST | verified |
+| Public negative smoke | `beginAttempt` → нейтральный `attempt_unavailable`; legal/issuance gates не открывались | verified |
+| Owner-only E2E | private bank → 100% server-verified → TXT read-back → exact cleanup | verified |
+| YDB zero state | 0 invitations, 0 sessions, 0 results, 0 ranking profiles после cutover | verified |
+| Private storage/retention | 5 банков v4 в private bucket; reports 365d, backups 30d, temporary artifacts 1d | verified |
+| Source/rollback | GitHub Pages остаётся рабочим frontend fallback; предыдущие function tags сохранены | verified |
+| CI | 39 test suite + 5 infrastructure validators; 240 production-вопросов, 0 ошибок/предупреждений | verified |
 В production могут оставаться строки из известного набора девяти smoke-кодов. По решению владельца они не удаляются, не являются пилотной выборкой и исключаются из таблицы, метрик и диаграмм Admin Build 2026.07.28.1; контракт и точный перечень зафиксированы в TECHNICAL_DATA_EXCLUSION.md.
 
 ## Техническая матрица
@@ -32,7 +32,7 @@
 |---|---|---|
 | Пять тестов и банки | пять полностью новых банков v4, 240 public questions, 40 вопросов в попытке; 0 ошибок/предупреждений аудита | verified |
 | Техническая ротация | новые question/option ID, формулировки, варианты и ключи; private/public split, trust anchors и atomic cutover | verified |
-| Desktop/mobile | главная, пять test routes, privacy, consent и admin без horizontal overflow; mobile 390×844 проверен | verified |
+| Desktop/mobile | прежний GitHub frontend проверен; для нового Yandex endpoint требуется один финальный ручной desktop/mobile проход перед первым кандидатом | conditional |
 | Candidate flow | invite-only start, consent version, 18+, session-only pending submission, retry/replay | verified |
 | Сохранение и TXT | authoritative save; TXT только для passed; failed не сохраняет открытые контакты | verified |
 | Админка | POST-only auth, safe summary, report access, deletion preview/confirm, protected diagnostics | verified |

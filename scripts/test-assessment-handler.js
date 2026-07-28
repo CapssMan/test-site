@@ -13,6 +13,7 @@ const {
   validatePrivateBank
 } = require("../cloud/assessment-core");
 const { createAssessmentHandler } = require("../cloud/assessment-handler");
+const { RANKING_PROOF_API_VERSION, RANKING_PROOF_VERSION } = require("../cloud/ranking-profile-core");
 
 const root = path.resolve(__dirname, "..");
 const now = new Date("2026-07-27T10:00:00.000Z");
@@ -221,6 +222,30 @@ async function post(handler, body) {
   assert.equal(replay.replayed, true);
   assert.equal(replay.resultCode, recovered.resultCode);
 
+  const rankingProof = await post(handler, {
+    action: "rankingProof",
+    apiVersion: RANKING_PROOF_API_VERSION,
+    attemptId: begin.attemptId,
+    attemptToken: begin.attemptToken,
+    resultCode: recovered.resultCode
+  });
+  assert.equal(rankingProof.ok, true);
+  assert.equal(rankingProof.proofVersion, RANKING_PROOF_VERSION);
+  assert.equal(rankingProof.resultCode, recovered.resultCode);
+  assert.equal(rankingProof.percent, 100);
+  assert.match(rankingProof.rankingSubjectHandle, /^rsh_[a-f0-9]{64}$/);
+  for (const forbidden of ["email", "name", "telegram", "answers", "attemptId", "attemptToken"]) {
+    assert.equal(Object.prototype.hasOwnProperty.call(rankingProof, forbidden), false);
+  }
+  const rejectedProof = await post(handler, {
+    action: "rankingProof",
+    apiVersion: RANKING_PROOF_API_VERSION,
+    attemptId: begin.attemptId,
+    attemptToken: begin.attemptToken.slice(0, -1) + "x",
+    resultCode: recovered.resultCode
+  });
+  assert.equal(rejectedProof.ok, false);
+  assert.equal(rejectedProof.failureCode, "ranking_proof_unavailable");
   const conflict = await post(handler, Object.assign({}, save, { name: "Другой кандидат" }));
   assert.equal(conflict.failureCode, "submission_conflict");
   assert.equal(store.results.size, 1);
@@ -235,7 +260,7 @@ async function post(handler, body) {
   const gated = await post(handler, Object.assign(beginPayload(secondCode), { beginRequestId: "scb_" + "c".repeat(24) }));
   assert.equal(gated.failureCode, "attempt_unavailable");
 
-  console.log("Assessment handler checks passed: gated issuance, deterministic resume, server scoring, create-only reports, interrupted-write recovery and replay safety.");
+  console.log("Assessment handler checks passed: gated issuance, server scoring, recovery, replay safety and YDB-backed ranking proof.");
 })().catch(error => {
   console.error(error);
   process.exit(1);

@@ -1,44 +1,41 @@
-# Voluntary ranking profile management
+# Добровольное управление профилем рейтинга
 
-Updated: 27 July 2026. Stage 18B is deployed while both real-candidate pilot gates remain closed.
+Обновлено: 29 июля 2026 года. Российский production-контур развёрнут, но допуск реальных кандидатов остаётся закрытым.
 
-## Candidate contract
+## Что видит кандидат
 
-- Publication is offered only after a passed `server-verified` result.
-- A second unchecked-by-default consent records the exact version `skillcheck-ranking-public-2026-07-26-v1`.
-- Public data is limited to alias, test, score, completion date, verification level and rank after the minimum cohort is reached.
-- Email, Telegram, answers, report, result code, attempt ID and attempt token are never returned by the public ranking API.
-- The browser keeps the attempt proof only in page memory. After publication it is discarded.
-- The browser stores one random management token locally. The token permits only withdrawal of that public profile; YDB stores only its SHA-256 hash.
+- Публикация предлагается только после результата не ниже 80%, рассчитанного сервером.
+- Отдельное согласие на рейтинг выключено по умолчанию и фиксируется в версии `skillcheck-ranking-public-2026-07-26-v1`.
+- Публичны только псевдоним, тест, балл, дата результата, уровень проверки и позиция после достижения минимальной выборки.
+- Email, Telegram, ответы, отчёт, код результата, ID попытки и токены не попадают в публичный API.
+- После публикации браузер удаляет подтверждение попытки и хранит только случайный токен для добровольного выхода из рейтинга; в YDB находится лишь SHA-256 этого токена.
 
-## Proof boundary
+## Подтверждение результата
 
-The ranking writer has no copy of the Apps Script signing secret. For a publication request it sends the attempt ID, attempt token and result code to the fixed production Apps Script deployment using `rankingProof` / `ranking-proof-v1`.
+`write-v4` принимает публикацию только после онлайн-проверки через фиксированный Yandex endpoint `/v1/assessment`. `assessment-v4` сверяет подписанный токен с завершённой сессией и записью результата в YDB: тест, версию банка, код результата, проходной балл, серверный расчёт и возраст результата не более 24 часов.
 
-Apps Script verifies the signed token against the completed session, current bank version, result code, pass status and server scoring. Proof is limited to 24 hours after completion. The response contains an opaque HMAC-derived ranking subject handle and the minimum verified result fields; it contains no contact or answers.
+Ответ содержит только минимальные проверенные поля и непрозрачный HMAC-псевдоним `rsh_…`. Контакты, ответы и bearer-токены не передаются writer-функции. Технические результаты всегда отклоняются.
 
-## Yandex Cloud isolation
+## Разделение доступа в Yandex Cloud
 
 - Function resource: `assessment-ranking-api` (`d4e1qffg3l40q6jgq0t9`).
-- Read tag: `read-v2`, version `d4et5ggl06s201umuj8k`, execution account `assessment-ranking-reader`, database role `ydb.viewer`.
-- Write tag: `write-v2`, version `d4eo7qcj56pdf6cc5cuv`, execution account `assessment-ranking-writer`, database role `ydb.editor` on this database only.
-- API Gateway invokes both tagged versions through the existing reader/invoker account. The writer account has no static key and no function invocation role.
-- Logging, provisioned instances and Lockbox remain disabled.
+- Assessment: `assessment-v4` (`d4e2q29o2m2tfcveouri`), runtime account `assessment-runtime-writer`.
+- Read: `read-v3` (`d4ec9dhihcfph8kgrce8`), account `assessment-ranking-reader`, роль `ydb.viewer`.
+- Write: `write-v4` (`d4eqk12c542lqi3igki4`), account `assessment-ranking-writer`, роль `ydb.editor` только на этой базе.
+- API Gateway вызывает только закреплённые версии. Постоянных ключей, Lockbox, provisioned instances и Cloud Logging нет.
 
-## Retention and withdrawal
+## Срок и отзыв
 
-Every publication sets `expires_at` to 365 days after consent. YDB TTL is enabled on that column with zero delay after expiry. A newer verified publication replaces the same test/profile row and rotates the management token.
+Профиль действует 365 дней после согласия и удаляется TTL базы. Новый подтверждённый результат заменяет строку того же теста и меняет management token.
 
-Withdrawal performs one atomic conditional delete by `(test_id, public_profile_id, management_token_hash)` and returns a neutral success response whether or not the row existed. If the local token is lost, the candidate may request manual removal through the project email with ownership verification.
+Отзыв выполняет условное удаление по `(test_id, public_profile_id, management_token_hash)` и возвращает нейтральный ответ независимо от наличия строки. При потере локального токена кандидат может запросить ручное удаление через публичную почту проекта с проверкой владения.
 
-## Production evidence
+## Проверено
 
-- Apps Script deployment updated in place to `@69`, backend `yandex-disk-mvp-2026-07-27-23`.
-- Candidate frontend contract: `Build 2026.07.27.16`.
-- Live GET returns `200`, correct CORS and zero profiles.
-- A fabricated publication proof returns `403 result_proof_rejected` and writes nothing.
-- A fabricated withdrawal returns neutral `200 withdrawn` and writes nothing.
-- YDB schema shows the management hash, consent timestamp, expiry timestamp and active TTL; row count remains zero.
-- Local CI: 31/31 checks.
+- Реальный Yandex assessment создаёт подтверждение из данных YDB; модульный happy-path проверяет точный контракт и отсутствие персональных полей.
+- Поддельное подтверждение в живом `write-v4` получает `403 result_proof_rejected` и не создаёт профиль.
+- Публичный read возвращает только allowlist; при выборке меньше пяти подходящих профилей позиция не раскрывается.
+- YDB содержит ноль профилей реальных кандидатов.
+- Оба разрешённых origin — Yandex Object Storage и резервный GitHub Pages — проверены для preflight и фактических ответов.
 
-This stage does not open `LEGAL_PILOT_APPROVED` or `ATTEMPT_ISSUANCE_ENABLED` and does not constitute legal or SME approval.
+Эта готовность не включает юридическое или экспертное одобрение банков и не открывает `legal_pilot_approved` или `attempt_issuance_enabled`.

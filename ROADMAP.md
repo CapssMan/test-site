@@ -77,13 +77,13 @@ SkillCheck развивается в двустороннюю платформу
 | 10 | Безопасность | Завершён |
 | 10A | Authoritative scoring и controlled invitations | Завершён и production-verified; pilot locked до ротации банков |
 | 11 | Юридическая и privacy-подготовка | Технически завершён и опубликован; legal gate закрыт до реквизитов/внешних проверок |
-| 12 | Удаление и срок хранения | Ручное удаление опубликовано; сроки утверждены, TTL рейтинга включён, остальные хранилища — этап 18C |
+| 12 | Удаление и срок хранения | Сроки утверждены; TTL YDB и lifecycle Object Storage развёрнуты и проверены |
 | 13 | Резервные копии | Завершён и production-verified |
 | 14 | Наблюдаемость и диагностика | Завершён и production-verified |
 | 15 | Автоматические тесты и CI | Завершён и включён для main/PR |
 | 16 | Документация | Завершён; поддерживается как living runbook |
 | 17 | Подготовка к пилоту | Технически завершён; NO-GO до внешних sign-off/cleanup |
-| 18 | Российский runtime и рейтинг MVP | В работе: 18A–18B завершены, остался полный candidate/admin cutover |
+| 18 | Российский runtime и рейтинг MVP | В работе: candidate/admin backend и owner-smoke завершены; остались frontend cutover, Object Storage hosting и QA |
 | 19 | Короткий пилот и единая калибровка | Не начат |
 | 20 | Публичный запуск и employer-функции | Не начат |
 
@@ -312,7 +312,7 @@ Production evidence 10A: owner smoke `FA-LDUB2` получил raw/final/percent
 - [x] Постоянный технический журнал не содержит имени, контактов, ответов, отчёта, identity hashes, invite bearer или attempt token.
 - [x] Автоматический retention спроектирован fail closed и остаётся выключенным: `RETENTION_AUTOMATION_ENABLED=false`, срок не выдуман.
 - [x] Добавлены `docs/DATA_DELETION.md` и автоматические сценарии preview, full/result-only, tamper, replay и crash recovery.
-- [ ] Оператор и профильный специалист должны утвердить сроки по категориям, legal hold, форму подтверждения уничтожения и допустимый состав журнала до автоматизации.
+- [x] Оператор утвердил сроки по категориям; TTL новой YDB-схемы и lifecycle приватного Object Storage развёрнуты и проверены. Legal hold и финальная форма подтверждения уничтожения остаются вопросами внешнего legal review, но не блокируют техническую автоматизацию.
 
 Production smoke был немутирующим: health подтвердил `.11`, неверный админ-пароль отклонён; существующие результаты и файлы не удалялись.
 
@@ -398,7 +398,7 @@ Production smoke был немутирующим: health подтвердил `.
 
 Внутреннее pre-pilot product hardening от 26.07.2026 подготовлено локально без открытия gates: backend source `.16` формирует пропорциональный набор вопросов по тематическим блокам и расширяет успешный TXT разделами сильных сторон, зон развития и проверки на интервью. Полная матрица — 29/29. Production: candidate `.16`, admin `2026.07.28.1`, backend `.23`, deployment `@69`; добровольная публикация/отзыв рейтинга и TTL развёрнуты, реальные pilot gates закрыты.
 
-Не приглашать реальных кандидатов и не открывать pilot gates до независимого SME sign-off банков v4, внешнего legal/privacy решения, автоматического применения утверждённых retention-сроков и owner sign-off. Локальную разработку российского runtime и рейтинга выполнять при закрытых gates.
+Не приглашать реальных кандидатов и не открывать pilot gates до независимого SME sign-off банков v4, внешнего legal/privacy решения и owner sign-off. Утверждённые retention-сроки уже применяются в новой YDB/Object Storage схеме. Локальную разработку российского runtime и рейтинга выполнять при закрытых gates.
 
 ## Этап 18. Российский runtime и рейтинг MVP
 
@@ -407,6 +407,8 @@ Production smoke был немутирующим: health подтвердил `.
 - [ ] перенести публичный сайт с GitHub Pages в Yandex Object Storage;
 - [ ] заменить Google Apps Script на Yandex Cloud Functions + API Gateway;
 - [x] развернуть защищённые admin actions в версии `admin-v1`, подключить `/v1/admin`, PBKDF2-пароль, YDB-диагностику, приглашения и replay-safe удаление при закрытых pilot gates;
+- [x] выполнить IAM-only owner-smoke полного candidate path на реальных YDB/private Object Storage: 100% server-verified scoring, проверенный TXT и точечная очистка до 0 invites/sessions/results/ranking profiles/report objects при закрытых gates;
+- [x] исправить live-несовместимость YDB `Datetime`/`Timestamp` и optional `JsonDocument`, развернуть `assessment-v2`, напрямую проверить health/closed gate и переключить `/v1/assessment` с сохранением `assessment-v1` как rollback;
 - [x] перенести и повторно проверить пять закрытых банков v4 в private Object Storage; зарегистрировать 5 активных версий в `assessment_banks`, не публикуя answer key или private artifacts в Git/браузере;
 - [ ] заменить Яндекс Диск JSON-хранилище на YDB Serverless и закрытый Object Storage для отчётов/backup;
 - [x] для read-only рейтинга не создавать постоянных ключей: функция получает YDB-доступ через metadata service account; Lockbox и иные платные secret-сервисы не подключать без отдельного решения;
@@ -431,9 +433,9 @@ Owner marketing goal от 23 июля 2026 года: на этапе 20 отде
 
 ## Ближайшая очередь
 
-1. Выполнить owner-only закрытый end-to-end smoke нового candidate runtime, не открывая общий `LEGAL_PILOT_APPROVED`/`ATTEMPT_ISSUANCE_ENABLED`.
-2. Переключить candidate write-path на `/v1/assessment` с явной rollback-константой.
-3. После полного российского cutover разместить frontend в уже созданном Object Storage без CDN/платного домена; внешние письма и follow-up от имени владельца не отправлять.
+1. Переключить candidate frontend write-path с Apps Script на уже проверенный `/v1/assessment`, сохранив явную rollback-константу и закрытые `LEGAL_PILOT_APPROVED`/`ATTEMPT_ISSUANCE_ENABLED`.
+2. Разместить статический frontend в уже созданном public Object Storage без CDN и платного домена; проверить основные страницы, CORS и rollback.
+3. Выполнить финальный российский QA и обновить operator runbook; реальные приглашения не выдавать до SME/legal/owner sign-off, внешние письма и follow-up от имени владельца не отправлять.
 
 
 ## Бюджетное ограничение

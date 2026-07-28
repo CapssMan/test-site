@@ -5,13 +5,13 @@
 Владелец прекратил попытки удаления известных технических результатов. Сохранившиеся строки из утверждённого набора девяти кодов остаются технической историей, не входят в кандидатскую и пилотную аналитику и показываются в Admin Build 2026.07.28.1 только по явному переключателю. Полный контракт: docs/TECHNICAL_DATA_EXCLUSION.md. Production backend: yandex-disk-mvp-2026-07-27-23. Это решение не отменяет удаление по запросу реального кандидата.
 
 
-Обновлено: 28 июля 2026 года.
+Обновлено: 29 июля 2026 года.
 
 ## Текущий этап
 
 - Технически завершены этап 17 и содержательная ротация пяти production-банков v4; решение для реальных кандидатов остаётся **NO-GO**.
 - Создан отдельный публичный контакт проекта `skillcheck.project@yandex.ru` и внесён в privacy/consent; 24.07.2026 владелец подтвердил входящее/исходящее письмо и двухфакторную защиту аккаунта. В policy/consent опубликованы только ФИО и project email; статус НПД и регион убраны как избыточные. Вопрос адреса остаётся на legal-проверку.
-- Локально пройдены locked install и 41 проверка: 36 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
+- Локально пройдены locked install и 42 проверки: 37 test-файлов, 5 infrastructure validators, 240 production-вопросов без ошибок/предупреждений.
 - Runtime: candidate `Build 2026.07.27.16` использует Apps Script backend `yandex-disk-mvp-2026-07-27-23` (`@69`); admin `Build 2026.07.28.1` переключён на Yandex Function `admin-v1`; workflow не имеет secrets и не выполняет deploy/storage calls.
 - Этапы 18A–18B завершены: в `skillcheck-prod` работают YDB Serverless, раздельные `read-v2`/`write-v2` версии Cloud Function и API Gateway. После успешного server-verified результата кандидат может отдельно согласиться, выбрать псевдоним, опубликовать профиль и отозвать его по локальному management token. В YDB хранится только hash токена, включён TTL 365 дней; контакты, ответы, отчёт, код и attempt token публично не возвращаются. База рейтинга пуста, mock-данных нет.
 - Защищённый admin runtime развёрнут в `admin-v1`: PBKDF2-пароль, результаты, отчёты, безопасные агрегаты, gated invitations и replay-safe удаление работают через YDB/private Object Storage. Live health, CORS и отказ по неверному паролю проверены; LEGAL_PILOT_APPROVED=false, ATTEMPT_ISSUANCE_ENABLED=false.
@@ -19,7 +19,9 @@
 - Владелец успешно вошёл в live-админку с новым паролем и получил YDB diagnostics. Пять закрытых банков v4 (240 вопросов) перенесены в private Object Storage: 5 объектов повторно сверены по размеру/SHA-256, 5 активных записей `assessment_banks` подтверждены, staging пуст; answer keys и private artifacts отсутствуют в Git/браузере.
 - Operational transfer закрыт нулевой миграцией: реальный пилот не начинался, все 9 legacy results/anti-retake строк классифицированы как технические и не копируются; новый YDB до smoke содержит 0 invites, 0 sessions, 0 results и 0 ranking profiles. Контракт: `docs/YANDEX_OPERATIONAL_CUTOVER.md`.
 - Retention приватного Object Storage применён без нового сервиса: `reports/` — 365 дней, `deletion-backups/` — 30 дней, временные `packages/` и `bank-staging/` — 1 день; постоянные `banks/v4/` не затронуты. Точная конфигурация и стоимость описаны в `docs/YANDEX_OBJECT_RETENTION.md`.
-- Следующее техническое действие: выполнить owner-only закрытый end-to-end smoke candidate runtime без открытия общих gates, затем переключить write-path с явным rollback. SME/legal/owner sign-off всё ещё обязательны перед открытием gates.
+- IAM-only owner-smoke нового candidate runtime завершён на реальных YDB/private Object Storage: приглашение, сессия, private bank, 100% server-verified scoring и TXT проверены; затем exact cleanup подтверждён нулём invites, sessions, results, ranking profiles и report objects. Общие gates не открывались.
+- Smoke выявил и устранил реальный контрактный дефект YDB: `Date` из SDK имел тип `Datetime`, а схема требовала `Timestamp`; `JsonDocument` после fallible cast оставался optional. INSERT-запросы теперь используют явные проверенные casts. Создана и напрямую проверена `assessment-v2` (`d4e0ulhj3qtd6fhik2fn`), Gateway `/v1/assessment` переключён на неё, `assessment-v1` сохранена для rollback; публичный begin по-прежнему возвращает `attempt_unavailable`.
+- Следующее техническое действие: переключить candidate frontend с Apps Script на `/v1/assessment` с явной rollback-константой, затем разместить статические страницы в public Object Storage и выполнить финальный QA. SME/legal/owner sign-off всё ещё обязательны перед открытием gates.
 - Для внешнего review подготовлены master-книга на 240 вопросов и пять минимальных role-пакетов FA/CA/FPA/ACC/BI с отдельными checks; файлы хранятся вне Git, а `docs/SME_REVIEW_HANDOFF.md` предписывает передавать reviewer только банк его компетенции. Наличие workbook не считается sign-off.
 - Вне Git подготовлен безбюджетный reviewer recruitment pack: минимальная команда по четырём компетенциям, воронка из 12+ персональных кандидатов, проверка опыта/независимости, безопасная двухшаговая передача, готовые сообщения FA/FPA/CA/ACC/BI и закрытый реестр контактов. Массовая рассылка и передача master-книги запрещены.
 - По актуальным официальным страницам подготовлен закрытый discovery-longlist из 12 потенциальных reviewers: по три FA/FPA, CA, ACC и BI, с evidence и безопасными каналами. 24.07.2026 через защищённый project email отправлена первая адресная волна из четырёх обращений без вложений — по одному на каждый поток; наличие всех четырёх писем проверено в папке «Отправленные».
@@ -284,7 +286,7 @@
 - Яндекс OAuth переведён на отдельное app-folder-only приложение; активный credential ограничен `app:/skillcheck`, а проверенный rotation/rollback runbook находится в `docs/YANDEX_CREDENTIAL_ROTATION.md`.
 - Новые v4 банки прошли внутреннюю техническую вычитку, но независимый профильный эксперт ещё не подписал содержательную пригодность.
 - Четыре банка содержат ровно 40 вопросов; полноценная ротация 40 из 80 есть только у Credit Analyst.
-- Ручное удаление и application-level rotating backup/restore реализованы; нет независимой off-site копии и утверждённого автоматического retention.
+- Ручное удаление и application-level rotating backup/restore реализованы; TTL новой YDB-схемы и lifecycle приватного Object Storage применены. Независимой off-site копии пока нет.
 - В `privacy.html` и `consent.html` опубликованы только ФИО и project email; статус НПД и регион убраны как избыточные, вопрос адреса остаётся на legal-проверку.
 - Не приглашать реальных кандидатов до checklist этапа 17.
 

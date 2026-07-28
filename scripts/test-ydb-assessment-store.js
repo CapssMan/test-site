@@ -98,7 +98,10 @@ function fakeSql(strings, ...values) {
     assert.equal(call.idempotent, true);
     assert.equal(call.timeout, QUERY_TIMEOUT_MS);
   });
-  assert.match(calls[7].text, /INSERT INTO assessment_sessions[\s\S]*CAST\(\?[\s\S]*AS JsonDocument\)/);
+  assert.match(calls[7].text, /INSERT INTO assessment_sessions[\s\S]*Unwrap\(CAST\(\?[\s\S]*AS JsonDocument\)\)/);
+  assert.match(calls[7].text, /Unwrap\(CAST\(\? AS Timestamp\)\)/);
+  assert.match(calls[9].text, /Unwrap\(CAST\(\? AS JsonDocument\)\)/);
+  assert.match(calls[9].text, /Unwrap\(CAST\(\? AS Timestamp\)\)/);
   assert.match(calls[9].text, /INSERT INTO assessment_results/);
 
   const ddl = fs.readFileSync(path.join(__dirname, "..", "cloud", "schema", "005_assessment_runtime.sql"), "utf8");

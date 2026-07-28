@@ -21,13 +21,18 @@ function executeWrite(sql, strings, values) {
     .timeout(QUERY_TIMEOUT_MS);
 }
 
-function valueStrings(prefix, valueCount, jsonIndexes) {
+function valueStrings(prefix, valueCount, jsonIndexes, timestampIndexes, dateIndexes) {
   const json = new Set(jsonIndexes || []);
-  const strings = [prefix + (json.has(0) ? "CAST(" : "")];
+  const timestamp = new Set(timestampIndexes || []);
+  const date = new Set(dateIndexes || []);
+  const castType = index => json.has(index) ? "JsonDocument" : timestamp.has(index) ? "Timestamp" : date.has(index) ? "Date" : "";
+  const open = index => castType(index) ? "Unwrap(CAST(" : "";
+  const close = index => castType(index) ? " AS " + castType(index) + "))" : "";
+  const strings = [prefix + open(0)];
   for (let index = 0; index < valueCount - 1; index += 1) {
-    strings.push((json.has(index) ? " AS JsonDocument)" : "") + ", " + (json.has(index + 1) ? "CAST(" : ""));
+    strings.push(close(index) + ", " + open(index + 1));
   }
-  strings.push((json.has(valueCount - 1) ? " AS JsonDocument)" : "") + ");");
+  strings.push(close(valueCount - 1) + ");");
   return strings;
 }
 
@@ -151,7 +156,7 @@ function createYdbAssessmentStore(sql) {
       const row = record || {};
       await executeWrite(sql, valueStrings(`UPSERT INTO assessment_banks
         (test_id, bank_version, object_key, private_digest, public_digest, active, updated_at)
-        VALUES (`, 7), [row.testId, row.bankVersion, row.objectKey, row.privateDigest, row.publicDigest, row.active === true, row.updatedAt]);
+        VALUES (`, 7, [], [6]), [row.testId, row.bankVersion, row.objectKey, row.privateDigest, row.publicDigest, row.active === true, row.updatedAt]);
     },
 
     async getInviteByCodeHash(codeHash) {
@@ -186,7 +191,7 @@ function createYdbAssessmentStore(sql) {
       await executeWrite(sql, valueStrings(`UPSERT INTO assessment_invites
         (invite_id, request_id, test_id, code_hash, identity_hash, email_masked, purpose,
          allow_retake, valid_for_hours, state, issued_at, expires_at, purge_at)
-        VALUES (`, 13), [row.inviteId, row.requestId, row.testId, row.codeHash, row.identityHash, row.emailMasked,
+        VALUES (`, 13, [], [10, 11, 12]), [row.inviteId, row.requestId, row.testId, row.codeHash, row.identityHash, row.emailMasked,
         row.purpose, row.allowRetake === true, row.validForHours, row.state, row.issuedAt, row.expiresAt, row.purgeAt]);
     },
 
@@ -235,7 +240,7 @@ function createYdbAssessmentStore(sql) {
          public_digest, question_ids, question_set_hash, identity_hash, fingerprint_hash,
          token_jti, token_issued_at, token_expires_at, started_at, privacy_consent_version,
          privacy_consented_at, age_confirmed, purge_at)
-        VALUES (`, 20, [8]), [row.attemptId, row.inviteId, row.beginRequestId, row.state, row.testId, row.testVersion, row.bankVersion,
+        VALUES (`, 20, [8], [13, 14, 15, 17, 19]), [row.attemptId, row.inviteId, row.beginRequestId, row.state, row.testId, row.testVersion, row.bankVersion,
         row.publicDigest, JSON.stringify(row.questionIds), row.questionSetHash, row.identityHash, row.fingerprintHash,
         row.tokenJti, row.tokenIssuedAt, row.tokenExpiresAt, row.startedAt, row.privacyConsentVersion,
         row.privacyConsentedAt, row.ageConfirmed === true, row.purgeAt]);
@@ -283,7 +288,7 @@ function createYdbAssessmentStore(sql) {
          score_verification, scoring_algorithm_version, telemetry_verification,
          privacy_consent_version, privacy_consented_at, age_confirmed, report_created,
          report_object_key, submission_hash, completed_at, technical, purge_at)
-        VALUES (`, 37, [23, 24]), [row.code, row.requestId, row.attemptId, row.testId, row.testTitle, row.bankVersion,
+        VALUES (`, 37, [23, 24], [29, 34, 36]), [row.code, row.requestId, row.attemptId, row.testId, row.testTitle, row.bankVersion,
         row.name, row.email, row.telegram, row.englishLevel, row.candidateSource, row.candidateExperience,
         row.rawScore, row.rawTotal, row.finalScore, row.percent, row.unansweredCount,
         row.tabSwitches, row.advisoryPenalty, row.trustScore, row.status, row.badge, row.recommendation,
@@ -297,7 +302,7 @@ function createYdbAssessmentStore(sql) {
       const row = event || {};
       await executeWrite(sql, valueStrings(`UPSERT INTO assessment_audit_events
         (event_date, event_id, event_type, subject_hash, outcome, created_at, purge_at)
-        VALUES (`, 7), [row.eventDate, row.eventId, row.eventType, row.subjectHash, row.outcome, row.createdAt, row.purgeAt]);
+        VALUES (`, 7, [], [5, 6], [0]), [row.eventDate, row.eventId, row.eventType, row.subjectHash, row.outcome, row.createdAt, row.purgeAt]);
     }
   };
 }

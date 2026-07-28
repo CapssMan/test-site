@@ -21,7 +21,7 @@ The runtime settings currently stored in YDB are:
 - `attempt_issuance_enabled=false`
 - `retention_automation_enabled=true`
 
-The public route can report health, but a valid-shaped `beginAttempt` request receives the same neutral `attempt_unavailable` response as an invalid invitation. No private bank, invitation, candidate result, or report has been migrated to this contour yet.
+The public route can report health, but a valid-shaped `beginAttempt` request receives the same neutral `attempt_unavailable` response as an invalid invitation. The five private v4 banks are present, but no invitation, candidate result, or report has been migrated to this contour yet.
 
 ## Implemented contracts
 
@@ -35,14 +35,21 @@ The public route can report health, but a valid-shaped `beginAttempt` request re
 - Audit-event retention timestamp: 365 days, without raw contact data.
 - Employer sharing remains disabled; ranking publication remains a separate voluntary action.
 
+## Verified private-bank deployment
+
+- All five v4 banks (`fa-junior`, `ca-junior`, `fpa-junior`, `acc-junior`, and `bi-junior`) are stored only under `banks/v4/` in the existing private bucket.
+- The deterministic release verifier passed for 5 banks and 240 questions before upload.
+- New objects are uploaded through a staging prefix, downloaded and checked by exact byte length and SHA-256, promoted, downloaded and checked again, then registered in `assessment_banks`.
+- The successful rerun verified all five existing objects and all five YDB rows without duplicating data. The staging prefix is empty.
+- Answer keys, private digests, and private bank files are not committed to Git or delivered to the browser.
+
 ## Rollback boundary
 
 The public test page still calls the Apps Script authority. Existing ranking routes remain pinned to `read-v2` and `write-v2`. Rolling back this checkpoint only requires removing the assessment Gateway route or repointing it; no candidate traffic has been cut over and no assessment data has been written.
 
 ## Remaining before cutover
 
-1. Point the existing administration page to the deployed protected runtime documented in `YANDEX_ADMIN_RUNTIME.md` and verify a live authenticated diagnostics request.
-2. Transfer and verify the five private v4 banks without putting answer keys in Git or the browser.
-3. Migrate only the required legacy result/invitation state and preserve the 21-day retake boundary.
-4. Configure report/package/backup retention without adding a paid service silently.
-5. Run a protected end-to-end smoke attempt, keep issuance closed, then switch the frontend endpoint with an immediate rollback constant.
+1. Migrate only required legacy operational state and preserve the 21-day retake boundary; do not migrate the nine known technical results into ranking or pilot analytics.
+2. Configure report/package/backup retention without adding a paid service silently.
+3. Run a protected end-to-end smoke attempt with issuance closed before and after the test.
+4. Switch the candidate frontend endpoint with an immediate rollback constant.

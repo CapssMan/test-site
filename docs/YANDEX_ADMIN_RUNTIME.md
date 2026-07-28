@@ -41,7 +41,7 @@ No Lockbox, VM, CDN, custom domain, provisioned function instance, or other fixe
 - `admin-v1` is `ACTIVE` and the API Gateway is `ACTIVE`.
 - `GET /v1/admin` returns healthy runtime metadata.
 - A protected request with a deliberately incorrect password returns `ok=false`, `status=error`, and the neutral message `Доступ запрещён.`
-- The complete correct-password action set is covered by local runtime/store tests. A live correct-password diagnostics call will be performed through the migrated administration page during frontend cutover.
+- The owner completed a live correct-password login through Admin Build `2026.07.28.1`; protected YDB diagnostics loaded successfully through `/v1/admin`.
 
 ## Fail-closed state
 
@@ -55,8 +55,8 @@ No invitation can be issued and no candidate attempt can start from the new cont
 
 ## Remaining before candidate cutover
 
-1. Point the administration page to `/v1/admin` and run the protected live diagnostics check.
-2. Transfer and verify the five private v4 banks without exposing answer keys in Git or the browser.
-3. Migrate only the required legacy operational state and preserve the approved retake boundary.
-4. Run one protected end-to-end smoke attempt with issuance closed before and after the test.
-5. Switch the candidate frontend endpoint with an immediate rollback constant, then review the five banks for content quality before opening the pilot.
+The administration frontend cutover, authenticated live diagnostics, and private-bank migration are complete. Remaining work:
+
+1. Migrate only required legacy operational state and preserve the approved retake boundary; exclude the nine known technical results from ranking and pilot analytics.
+2. Run one protected end-to-end smoke attempt with issuance closed before and after the test.
+3. Switch the candidate frontend endpoint with an immediate rollback constant, then review the five banks for content quality before opening the pilot.

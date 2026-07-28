@@ -407,6 +407,7 @@ Production smoke был немутирующим: health подтвердил `.
 - [ ] перенести публичный сайт с GitHub Pages в Yandex Object Storage;
 - [ ] заменить Google Apps Script на Yandex Cloud Functions + API Gateway;
 - [x] развернуть защищённые admin actions в версии `admin-v1`, подключить `/v1/admin`, PBKDF2-пароль, YDB-диагностику, приглашения и replay-safe удаление при закрытых pilot gates;
+- [x] перенести и повторно проверить пять закрытых банков v4 в private Object Storage; зарегистрировать 5 активных версий в `assessment_banks`, не публикуя answer key или private artifacts в Git/браузере;
 - [ ] заменить Яндекс Диск JSON-хранилище на YDB Serverless и закрытый Object Storage для отчётов/backup;
 - [x] для read-only рейтинга не создавать постоянных ключей: функция получает YDB-доступ через metadata service account; Lockbox и иные платные secret-сервисы не подключать без отдельного решения;
 - [ ] перенести только необходимые production-данные; девять известных технических результатов в рейтинг не переносить;
@@ -430,10 +431,10 @@ Owner marketing goal от 23 июля 2026 года: на этапе 20 отде
 
 ## Ближайшая очередь
 
-1. Опубликовать Admin Build `2026.07.28.1`, выполнить один live-вход новым паролем и подтвердить YDB diagnostics; pilot gates не открывать.
-2. Перенести и проверить пять закрытых банков v4 в private Object Storage без answer key в Git или браузере.
-3. Перенести только необходимое operational state, выполнить закрытый end-to-end smoke и переключить candidate write-path с явным rollback constant.
-4. После полного российского cutover разместить frontend в уже созданном Object Storage без CDN/платного домена, затем провести короткий пилот 10–30 завершений; внешние письма и follow-up от имени владельца не отправлять.
+1. Определить и перенести только необходимое operational state; девять известных технических результатов не переносить в рейтинг или pilot analytics.
+2. Выполнить закрытый end-to-end smoke нового candidate runtime, до и после проверки удерживая `LEGAL_PILOT_APPROVED=false` и `ATTEMPT_ISSUANCE_ENABLED=false`.
+3. Переключить candidate write-path на `/v1/assessment` с явной rollback-константой.
+4. После полного российского cutover разместить frontend в уже созданном Object Storage без CDN/платного домена; внешние письма и follow-up от имени владельца не отправлять.
 
 ## Бюджетное ограничение
 

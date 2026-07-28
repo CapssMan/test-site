@@ -49,7 +49,8 @@ The public test page still calls the Apps Script authority. Existing ranking rou
 
 ## Remaining before cutover
 
-1. Migrate only required legacy operational state and preserve the 21-day retake boundary; do not migrate the nine known technical results into ranking or pilot analytics.
-2. Configure report/package/backup retention without adding a paid service silently.
-3. Run a protected end-to-end smoke attempt with issuance closed before and after the test.
-4. Switch the candidate frontend endpoint with an immediate rollback constant.
+The legacy operational review is complete: there are zero eligible real-candidate records to migrate. The nine known technical results and anti-retake rows remain only in the legacy rollback boundary and are not copied.
+
+Object Storage lifecycle retention is deployed and verified: reports expire after 365 days, deletion backups after 30 days, and temporary packages/staging after 1 day. Permanent banks are excluded.
+1. Run an owner-only protected end-to-end smoke attempt without opening the shared pilot gates.
+2. Switch the candidate frontend endpoint with an immediate rollback constant.

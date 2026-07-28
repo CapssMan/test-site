@@ -1,0 +1,34 @@
+{
+  "lifecycleRules": [
+    {
+      "id": "expire-assessment-reports-365d",
+      "enabled": true,
+      "filter": { "prefix": "reports/" },
+      "expiration": { "days": "365" }
+    },
+    {
+      "id": "expire-deletion-backups-30d",
+      "enabled": true,
+      "filter": { "prefix": "deletion-backups/" },
+      "expiration": { "days": "30" }
+    },
+    {
+      "id": "expire-function-packages-1d",
+      "enabled": true,
+      "filter": { "prefix": "packages/" },
+      "expiration": { "days": "1" }
+    },
+    {
+      "id": "expire-bank-staging-1d",
+      "enabled": true,
+      "filter": { "prefix": "bank-staging/" },
+      "expiration": { "days": "1" }
+    },
+    {
+      "id": "abort-incomplete-multipart-1d",
+      "enabled": true,
+      "filter": { "prefix": "" },
+      "abortIncompleteMultipartUpload": { "daysAfterExpiration": "1" }
+    }
+  ]
+}

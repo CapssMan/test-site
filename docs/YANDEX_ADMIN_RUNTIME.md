@@ -55,8 +55,7 @@ No invitation can be issued and no candidate attempt can start from the new cont
 
 ## Remaining before candidate cutover
 
-The administration frontend cutover, authenticated live diagnostics, and private-bank migration are complete. Remaining work:
+The administration frontend cutover, authenticated live diagnostics, private-bank migration, and zero-record legacy operational review are complete. Remaining work:
 
-1. Migrate only required legacy operational state and preserve the approved retake boundary; exclude the nine known technical results from ranking and pilot analytics.
-2. Run one protected end-to-end smoke attempt with issuance closed before and after the test.
-3. Switch the candidate frontend endpoint with an immediate rollback constant, then review the five banks for content quality before opening the pilot.
+1. Run one protected end-to-end smoke attempt with issuance closed before and after the test.
+2. Switch the candidate frontend endpoint with an immediate rollback constant, then review the five banks for content quality before opening the pilot.

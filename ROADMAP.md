@@ -410,7 +410,7 @@ Production smoke был немутирующим: health подтвердил `.
 - [x] перенести и повторно проверить пять закрытых банков v4 в private Object Storage; зарегистрировать 5 активных версий в `assessment_banks`, не публикуя answer key или private artifacts в Git/браузере;
 - [ ] заменить Яндекс Диск JSON-хранилище на YDB Serverless и закрытый Object Storage для отчётов/backup;
 - [x] для read-only рейтинга не создавать постоянных ключей: функция получает YDB-доступ через metadata service account; Lockbox и иные платные secret-сервисы не подключать без отдельного решения;
-- [ ] перенести только необходимые production-данные; девять известных технических результатов в рейтинг не переносить;
+- [x] определить необходимый legacy operational state: реальных кандидатских записей для переноса нет; 9 известных технических результатов/anti-retake строк не копируются в YDB, рейтинг или pilot analytics по `docs/YANDEX_OPERATIONAL_CUTOVER.md`;
 - [x] создать публичную страницу, YDB-схему, read-only Cloud Function и API Gateway рейтинга отдельно по профессии/тесту и совместимой версии банка;
 - [x] зафиксировать строгий публичный allowlist: выбранный псевдоним, результат, дата/свежесть и уровень проверки; контакты, код результата, ответы и полный TXT не возвращать;
 - [x] реализовать запись профиля только по отдельному явному согласию на распространение; дать кандидату выход из рейтинга по случайному management token; включить YDB TTL 365 дней;
@@ -431,10 +431,10 @@ Owner marketing goal от 23 июля 2026 года: на этапе 20 отде
 
 ## Ближайшая очередь
 
-1. Определить и перенести только необходимое operational state; девять известных технических результатов не переносить в рейтинг или pilot analytics.
-2. Выполнить закрытый end-to-end smoke нового candidate runtime, до и после проверки удерживая `LEGAL_PILOT_APPROVED=false` и `ATTEMPT_ISSUANCE_ENABLED=false`.
-3. Переключить candidate write-path на `/v1/assessment` с явной rollback-константой.
-4. После полного российского cutover разместить frontend в уже созданном Object Storage без CDN/платного домена; внешние письма и follow-up от имени владельца не отправлять.
+1. Выполнить owner-only закрытый end-to-end smoke нового candidate runtime, не открывая общий `LEGAL_PILOT_APPROVED`/`ATTEMPT_ISSUANCE_ENABLED`.
+2. Переключить candidate write-path на `/v1/assessment` с явной rollback-константой.
+3. После полного российского cutover разместить frontend в уже созданном Object Storage без CDN/платного домена; внешние письма и follow-up от имени владельца не отправлять.
+
 
 ## Бюджетное ограничение
 

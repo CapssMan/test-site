@@ -11,9 +11,9 @@
 
 - Этап 18 «Российский runtime и рейтинг MVP» технически завершён. Реальные кандидаты остаются **NO-GO** до независимого SME review, внешнего legal/privacy решения и финального owner sign-off.
 - Candidate Build `2026.07.29.2` опубликован по адресу `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/` и использует российский `/v1/assessment`. GitHub Pages сохранён как рабочий rollback; Apps Script — как legacy backend rollback, а не активный candidate write-path.
-- Публичный bucket содержит ровно 13 разрешённых объектов общим объёмом 586 242 байта: семь HTML и шесть display-only JSON. Все живые объекты совпали с локальными по SHA-256; answer keys, private banks, отчёты и секреты не публикуются.
+- Публичный bucket содержит ровно 13 разрешённых объектов общим объёмом 586 241 байт: семь HTML и шесть display-only JSON. Все живые объекты совпали с локальными по SHA-256; answer keys, private banks, отчёты и секреты не публикуются.
 - После независимой проверки исправлен actual-response CORS: preflight был корректен, но старые функции отвечали GitHub origin. Активны `assessment-v4` (`d4e2q29o2m2tfcveouri`), `admin-v2` (`d4euharntpfhnqc8rotg`), `read-v3` (`d4ec9dhihcfph8kgrce8`) и `write-v4` (`d4eqk12c542lqi3igki4`); оба точных frontend origin проверены на реальных GET/POST, wildcard отсутствует.
-- Локальный locked CI теперь выполняет 44 проверки: 39 test-файлов и 5 infrastructure validators. Пять production-банков содержат 240 вопросов без ошибок и предупреждений; шестой `dev-quick` остаётся закрытой технической fixture.
+- Локальный locked CI теперь выполняет 45 проверок: 40 test-файлов и 5 infrastructure validators. Пять production-банков содержат 240 вопросов без ошибок и предупреждений; шестой `dev-quick` остаётся закрытой технической fixture.
 - IAM-only owner-smoke прошёл полный путь: invitation, session, private bank, 100% server-verified scoring, TXT read-back и точечная очистка. Финальная YDB-проверка: 0 invitations, 0 sessions, 0 results, 0 ranking profiles.
 - Runtime gates подтверждены напрямую: `legal_pilot_approved=false`, `attempt_issuance_enabled=false`, `retention_automation_enabled=true`. Публичный begin возвращает нейтральный `attempt_unavailable`.
 - Защищённая админка через `admin-v2` умеет результаты, отчёты, агрегаты, приглашения, replay-safe удаление и диагностику. Владелец ранее успешно вошёл с новым PBKDF2-паролем; пароль и секреты не попадают в Git или frontend.
@@ -22,7 +22,7 @@
 - Девять известных legacy smoke-кодов остаются только в старом контуре по решению владельца и исключаются из обычной аналитики; попытки массового удаления не повторяются.
 - Публичный контакт `skillcheck.project@yandex.ru` и 2FA подтверждены. В policy/consent опубликованы ФИО оператора и project email; вопрос адреса остаётся на внешнюю legal-проверку.
 - Внешние письма и follow-up от имени владельца по-прежнему запрещены. Reviewer-пакеты и legal brief готовы, но не являются SME/legal sign-off.
-- Следующий технический проход один: финальный desktop/mobile pre-pilot QA и owner checklist после внешних решений. После него этап 19 — контролируемый пилот 10–30 завершений; этап 20 — публичный self-service и employer-функции.
+- Автоматическая часть финального pre-pilot QA завершена: 13/13 файлов совпали на Yandex/GitHub, пять ranking reads и оба origin проверены, gates закрыты. Остался короткий ручной desktop/mobile просмотр и внешние SME/legal/owner решения. После них этап 19 — контролируемый пилот 10–30 завершений; этап 20 — публичный self-service и employer-функции.
 ## Репозиторий и публикация
 
 - Ветка: `main`.
@@ -235,7 +235,7 @@
 ## Оценка до финала roadmap
 
 - Российский этап 18 завершён; осталось 2 продуктовых этапа: короткий пилот и публичный запуск.
-- До первого кандидата нужен один короткий QA/sign-off проход. До финального продукта осталось примерно 17–29 часов, 65–132 тыс. токенов и 1–3 календарные недели пилота.
+- До первого кандидата остались короткий ручной visual QA и один QA/sign-off проход после внешних решений. До финального продукта осталось примерно 16–28 часов, 63–126 тыс. токенов и 1–3 календарные недели пилота.
 - Рейтинг и российский runtime включены в готовый контур; платежи и сложный marketplace в оценку не входят.
 - Повторная шлифовка неизменённых тестов и новые попытки удаления девяти smoke-результатов не планируются.
 - Подробная разбивка и режимы: `docs/REMAINING_ESTIMATE.md`.

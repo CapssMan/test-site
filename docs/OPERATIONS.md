@@ -30,11 +30,12 @@ Production runtime: candidate `Build 2026.07.29.2`, admin `Build 2026.07.28.1`, 
 
 ## Нормальная проверка
 
-1. Открыть российский сайт и проверить public health `/v1/assessment`, `/v1/admin` и `/v1/ranking?testId=fa-junior`; health подтверждает только доступность соответствующего runtime.
-2. Войти в admin и запросить защищённую YDB-диагностику: версии, gates, row counts и private storage state.
-3. Сверить неожиданные counts с известными операциями; не открывать raw storage для обычного мониторинга.
-4. Проверить последний GitHub Actions для `main` как source/rollback validation.
-5. При warning/error следовать `OBSERVABILITY.md`, сохраняя pilot gates закрытыми.
+1. Из корня репозитория выполнить `powershell -ExecutionPolicy Bypass -File .\scripts\check-pre-pilot-live.ps1`: скрипт только читает 13 файлов на Yandex/GitHub, ranking/health/CORS и закрытый assessment gate, не запрашивает пароль и не изменяет данные.
+2. Вручную открыть основной Yandex URL на desktop и mobile, проверить главную, рейтинг, privacy/consent, старт теста без приглашения и отсутствие горизонтальной прокрутки/ошибок.
+3. Войти в admin и запросить защищённую YDB-диагностику: версии, gates, row counts и private storage state.
+4. Сверить неожиданные counts с известными операциями; не открывать raw storage для обычного мониторинга.
+5. Проверить последний GitHub Actions для `main` как source/rollback validation.
+6. При warning/error следовать `OBSERVABILITY.md`, сохраняя pilot gates закрытыми.
 
 Health `ok:true` не означает, что YDB, private banks или отчёты исправны. Полная диагностика доступна только после admin-auth.
 ## Уровни реакции

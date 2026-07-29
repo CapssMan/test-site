@@ -118,7 +118,7 @@
 
 ## Следующий этап
 
-Этап 18 технически завершён: candidate/admin/ranking работают в Yandex Cloud, публичный сайт размещён в Object Storage, GitHub/старые function tags сохранены как rollback, реальные кандидаты остаются NO-GO. Следующий шаг — один финальный desktop/mobile pre-pilot QA и operator/legal/SME/owner checklist. После фактических sign-off начинается этап 19 — пилот 10–30 завершений. Рекомендуемый режим: высокий; очень высокий нужен только для изменения архитектуры или открытия production gates.
+Этап 18 технически завершён: candidate/admin/ranking работают в Yandex Cloud, публичный сайт размещён в Object Storage, GitHub/старые function tags сохранены как rollback, реальные кандидаты остаются NO-GO. Автоматический cross-host/API pre-pilot QA завершён; следующий шаг — короткий ручной desktop/mobile просмотр и operator/legal/SME/owner checklist. После фактических sign-off начинается этап 19 — пилот 10–30 завершений. Рекомендуемый режим: высокий; очень высокий нужен только для изменения архитектуры или открытия production gates.
 
 ## Post-pilot North Star — не начинать до этапа 20
 

@@ -10,7 +10,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 ## Текущий статус
 
-Этап 18 технически завершён с решением **NO-GO для реальных кандидатов** до внешних sign-off. Candidate Build `2026.07.29.2` опубликован в Yandex Object Storage и использует `assessment-v4`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v4`. Ровно 13 публичных файлов сверены по SHA-256, оба точных frontend origin проверены на реальных ответах, YDB пуста, pilot gates закрыты. Локальный CI выполняет 39 test suite и 5 infrastructure validators. GitHub Pages и предыдущие function tags сохранены как rollback.
+Этап 18 технически завершён с решением **NO-GO для реальных кандидатов** до внешних sign-off. Candidate Build `2026.07.29.2` опубликован в Yandex Object Storage и использует `assessment-v4`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v4`. Ровно 13 публичных файлов сверены по SHA-256, оба точных frontend origin проверены на реальных ответах, YDB пуста, pilot gates закрыты. Локальный CI выполняет 40 test suite и 5 infrastructure validators. GitHub Pages и предыдущие function tags сохранены как rollback.
 
 LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до утверждения полного публичного адреса оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 

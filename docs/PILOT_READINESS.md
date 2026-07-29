@@ -16,14 +16,15 @@
 
 | Проверка | Результат | Статус |
 |---|---|---|
-| Российский frontend | Candidate Build `2026.07.29.2`; 13 allowlisted объектов, 586 242 байта, live SHA-256; Yandex website root `200` | verified |
+| Российский frontend | Candidate Build `2026.07.29.2`; 13 allowlisted объектов, 586 241 байт, live SHA-256; Yandex website root `200` | verified |
 | Functions/Gateway | `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`; точные Yandex/GitHub origin проходят preflight и фактические GET/POST | verified |
+| Cross-host live QA | `check-pre-pilot-live.ps1`: 13/13 файлов совпадают с Git на Yandex и GitHub с учётом нормализации строк Pages; пять ranking reads и два origin проверены | verified |
 | Public negative smoke | `beginAttempt` → нейтральный `attempt_unavailable`; legal/issuance gates не открывались | verified |
 | Owner-only E2E | private bank → 100% server-verified → TXT read-back → exact cleanup | verified |
 | YDB zero state | 0 invitations, 0 sessions, 0 results, 0 ranking profiles после cutover | verified |
 | Private storage/retention | 5 банков v4 в private bucket; reports 365d, backups 30d, temporary artifacts 1d | verified |
 | Source/rollback | GitHub Pages остаётся рабочим frontend fallback; предыдущие function tags сохранены | verified |
-| CI | 39 test suite + 5 infrastructure validators; 240 production-вопросов, 0 ошибок/предупреждений | verified |
+| CI | 40 test suite + 5 infrastructure validators; 240 production-вопросов, 0 ошибок/предупреждений | verified |
 В production могут оставаться строки из известного набора девяти smoke-кодов. По решению владельца они не удаляются, не являются пилотной выборкой и исключаются из таблицы, метрик и диаграмм Admin Build 2026.07.28.1; контракт и точный перечень зафиксированы в TECHNICAL_DATA_EXCLUSION.md.
 
 ## Техническая матрица
@@ -55,8 +56,8 @@ CacheService rate limiting является best-effort и не заменяет
 | Блокер | Текущее доказательство | Что закрывает |
 |---|---|---|
 | Реквизиты оператора | ФИО и проверенный `skillcheck.project@yandex.ru` опубликованы только в policy/consent; статус НПД и регион скрыты как избыточные | профильный специалист определяет, нужен ли публичный адрес и в каком допустимом объёме |
-| Legal и retention | нет внешнего заключения, сроков, legal hold, формы подтверждения уничтожения | оператор + профильный специалист подписывают checklist |
-| Исторически раскрытый answer key / SME v4 | техническая ротация выполнена; закрытая review-книга на 240 вопросов и runbook `SME_REVIEW_HANDOFF.md` подготовлены; 24.07.2026 отправлены четыре адресных письма без вложений по потокам FA/FPA, CA, ACC и BI, ответы ожидаются; внешний review ещё не выполнен | профильный эксперт подтверждает банки v4 либо возвращает точечные правки новой версией |
+| Legal и retention | сроки утверждены владельцем и технически применены; отсутствует внешнее решение по адресу, уведомлению, локализации/трансграничности, legal hold и форме подтверждения уничтожения | оператор фиксирует допустимое решение самостоятельно либо с профильной консультацией до открытия gates |
+| Исторически раскрытый answer key / SME v4 | техническая ротация выполнена; закрытая review-книга на 240 вопросов и runbook `SME_REVIEW_HANDOFF.md` подготовлены; подтверждённой рассылки экспертам нет, outbound остановлен по решению владельца; внешний review ещё не выполнен | владелец сам отправляет выбранному эксперту/ВУЗу подготовленный запрос; эксперт подтверждает банки v4 либо возвращает точечные правки новой версией |
 | Чистая pilot-база / техническое исключение | известный набор девяти smoke-кодов сохраняется по решению владельца; Admin Build 2026.07.28.1 исключает фактически присутствующие строки из обычной аналитики | перед открытием gates подтвердить нулевое влияние известных кодов на базовые метрики и сохранить переключатель выключенным |
 | Финальный owner sign-off | нет закрытого go/no-go журнала с ответственными | заполнить `PRIVACY_CHECKLIST.md` и эту финальную секцию после остальных блокеров |
 
@@ -64,10 +65,10 @@ CacheService rate limiting является best-effort и не заменяет
 
 ## Финальная последовательность перед первым кандидатом
 
-1. Закрытая рабочая копия `PRE_PILOT_INPUTS.md` создана, первая адресная волна reviewer outreach отправлена 24.07.2026. Ждать ответы 4–7 дней; после явного согласия по `SME_REVIEW_HANDOFF.md` подтвердить компетенцию/независимость и передать reviewer только его review-книгу. Получить sign-off; замечания исправлять только новой versioned-ротацией.
+1. Закрытая рабочая копия `PRE_PILOT_INPUTS.md` и reviewer-пакеты готовы, но автоматическая отправка запрещена. Владелец сам выбирает эксперта/ВУЗ и отправляет запрос; после явного согласия по `SME_REVIEW_HANDOFF.md` подтверждает компетенцию/независимость и передаёт только соответствующую review-книгу. Замечания исправляются одной versioned-ротацией.
 2. Утвердить полный публичный адрес оператора, получить внешнее legal/retention решение и повторно проверить consent v2; ФИО, project email и 2FA подтверждены; статус НПД и регион хранятся только во внутреннем owner-контуре.
 3. В Admin Build 2026.07.28.1 проверить, что при выключенном техническом переключателе известные smoke-коды отсутствуют в таблице, метриках и диаграммах; не выполнять новые попытки их массового удаления.
-4. Выполнить desktop/mobile QA, CI, health, protected status и readiness.
+4. Автоматические cross-host/API QA, CI, health и readiness выполнены на Build `2026.07.29.2`; завершить короткий ручной desktop/mobile просмотр основного Yandex URL.
 5. В закрытом owner-журнале зафиксировать версии, gates, ответственных, объём и решение `go`.
 6. Сначала включить legal approval с точной consent version, затем отдельным действием issuance. Не менять оба gate одновременно с runtime rollout.
 7. Создать одно owner-smoke приглашение, завершить его, проверить replay/report/status и удалить smoke-данные.

@@ -435,7 +435,7 @@ Owner marketing goal от 23 июля 2026 года: на этапе 20 отде
 
 ## Ближайшая очередь
 
-1. Выполнить один финальный desktop/mobile pre-pilot QA и owner checklist; повторно подтвердить health, нулевую базу и закрытые gates.
+1. Автоматический cross-host/API pre-pilot QA завершён на Build `2026.07.29.2`; выполнить короткий ручной desktop/mobile просмотр и затем owner checklist, повторно подтвердив protected zero-state перед открытием gates.
 2. Получить независимые SME/legal решения без автоматической отправки писем от имени владельца; замечания объединять в одну versioned-ротацию.
 3. Только после SME/legal/owner sign-off открыть малый пилот 10–30 прохождений; не открывать массовый self-service поток.
 

@@ -102,7 +102,7 @@ try {
   }
 
   Write-Host "PASS: 13/13 public files match Git on Yandex and GitHub; five ranking reads work; both origins pass CORS; candidate issuance remains closed."
-  Write-Host "MANUAL REMAINDER: visual desktop/mobile review is still required because browser automation was unavailable."
+  Write-Host "MANUAL QA: owner confirmed the main Yandex site on desktop and mobile on 2026-07-29; no issues reported."
 } finally {
   Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue
 }

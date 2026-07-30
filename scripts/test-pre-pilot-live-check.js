@@ -21,7 +21,7 @@ assert.match(liveCheck, /assessment-b1gafbjd3dlh-web\.website\.yandexcloud\.net/
 assert.match(liveCheck, /capssman\.github\.io\/test-site/);
 assert.match(liveCheck, /Get-FileHash[\s\S]*SHA256/);
 assert.match(liveCheck, /failureCode -ne "attempt_unavailable"/);
-assert.match(liveCheck, /MANUAL REMAINDER: visual desktop\/mobile review is still required/);
+assert.match(liveCheck, /MANUAL QA: owner confirmed the main Yandex site on desktop and mobile on 2026-07-29/);
 assert.doesNotMatch(liveCheck, /adminPassword|ADMIN_PASSWORD|managementToken|storage s3|serverless function|api-gateway update/);
 assert.doesNotMatch(liveCheck, /Method\s+POST[\s\S]{0,120}\/v1\/(?:admin|ranking\/profile)/);
 

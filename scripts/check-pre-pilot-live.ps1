@@ -61,7 +61,7 @@ try {
   Assert-ExactPublicFiles $fallbackOrigin "github"
 
   $localTest = [IO.File]::ReadAllText((Join-Path $repoRoot "test.html"), [Text.Encoding]::UTF8)
-  if ($localTest -notmatch 'Build 2026\.07\.29\.2' -or $localTest -notmatch 'const FRONTEND_BUILD = "2026\.07\.29\.2"') {
+  if ($localTest -notmatch 'Build 2026\.07\.29\.3' -or $localTest -notmatch 'const FRONTEND_BUILD = "2026\.07\.29\.3"') {
     throw "Candidate visible build and runtime build do not match the approved release."
   }
 
@@ -69,7 +69,7 @@ try {
     action = "beginAttempt"; apiVersion = "attempt-v2"; beginRequestId = "scb_" + "a" * 24; testId = "fa-junior";
     inviteCode = "SC1-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA"; email = "closed@example.invalid";
     browserFingerprint = "deadbeef"; clientBuild = "pre-pilot-live-check"; privacyConsent = $true;
-    privacyConsentVersion = "skillcheck-pd-consent-2026-07-27-v3"; ageConfirmed = $true
+    privacyConsentVersion = "skillcheck-pd-consent-2026-07-29-v4"; ageConfirmed = $true
   }
 
   foreach ($origin in @($primaryOrigin, $githubCorsOrigin)) {

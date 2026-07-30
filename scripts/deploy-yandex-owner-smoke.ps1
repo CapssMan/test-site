@@ -60,8 +60,8 @@ try {
   if ($LASTEXITCODE -ne 0 -or [String]::IsNullOrWhiteSpace($env:YDB_TOKEN)) { throw "Temporary YDB token was not created." }
   Assert-ClosedState
 
-  $assessmentRaw = & $yc serverless function version get-by-tag --function-id $functionId --tag assessment-v4 --format json
-  if ($LASTEXITCODE -ne 0) { throw "Current assessment-v4 configuration is unavailable." }
+  $assessmentRaw = & $yc serverless function version get-by-tag --function-id $functionId --tag assessment-v5 --format json
+  if ($LASTEXITCODE -ne 0) { throw "Current assessment-v5 configuration is unavailable." }
   $assessment = $assessmentRaw | ConvertFrom-Json
   foreach ($name in @("ALLOWED_ORIGIN", "YDB_CONNECTION_STRING", "PRIVATE_BUCKET", "ATTEMPT_SIGNING_SECRET_V1", "INVITE_CODE_SECRET_V1", "IDENTITY_HASH_SECRET_V1")) {
     $property = $assessment.environment.PSObject.Properties[$name]
@@ -118,7 +118,7 @@ try {
     action = "beginAttempt"; apiVersion = "attempt-v2"; beginRequestId = "scb_" + "a" * 24; testId = "fa-junior";
     inviteCode = "SC1-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA"; email = "closed@example.invalid";
     browserFingerprint = "deadbeef"; clientBuild = "owner-smoke-negative"; privacyConsent = $true;
-    privacyConsentVersion = "skillcheck-pd-consent-2026-07-27-v3"; ageConfirmed = $true
+    privacyConsentVersion = "skillcheck-pd-consent-2026-07-29-v4"; ageConfirmed = $true
   })
   if ($negative.ok -ne $false -or [string]$negative.failureCode -ne "attempt_unavailable") {
     throw "Public assessment gate is not fail-closed after owner smoke."

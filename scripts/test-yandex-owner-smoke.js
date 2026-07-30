@@ -36,7 +36,7 @@ assert.match(handler, /assertGatesClosed\(await store\.getRuntimeSettings\(\)\)/
 assert.doesNotMatch(handler, /UPDATE assessment_runtime_settings|UPSERT INTO assessment_runtime_settings/);
 
 assert.match(deploy, /entrypoint owner-smoke-handler\.handler/);
-assert.match(deploy, /--tag assessment-v4/);
+assert.match(deploy, /--tag assessment-v5/);
 assert.doesNotMatch(deploy, /--tag assessment-v1/);
 assert.match(deploy, /Unrouted clean successor for owner-smoke cleanup/);
 assert.match(deploy, /entrypoint index\.handler/);

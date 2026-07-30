@@ -162,7 +162,7 @@ $closedBody = [ordered]@{
   action = "beginAttempt"; apiVersion = "attempt-v2"; beginRequestId = "scb_" + "a" * 24; testId = "fa-junior";
   inviteCode = "SC1-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA"; email = "closed@example.invalid";
   browserFingerprint = "deadbeef"; clientBuild = "yandex-public-site-deploy"; privacyConsent = $true;
-  privacyConsentVersion = "skillcheck-pd-consent-2026-07-27-v3"; ageConfirmed = $true
+  privacyConsentVersion = "skillcheck-pd-consent-2026-07-29-v4"; ageConfirmed = $true
 }
 foreach ($origin in @($siteOrigin, $githubOrigin)) {
   $options = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{

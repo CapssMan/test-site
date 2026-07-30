@@ -6,10 +6,10 @@
 
 - YDB Serverless: `assessment-runtime-db` (`etnkl7r9gkk0in6fitmv`), ограничение 10 RU/s и 1 ГБ.
 - Cloud Function: `assessment-ranking-api` (`d4e1qffg3l40q6jgq0t9`).
-- Активная assessment-версия: `assessment-v4` (`d4e2q29o2m2tfcveouri`), Node.js 22, 128 МБ, timeout 15 секунд, concurrency 1, без provisioned instances и логирования.
+- Активная assessment-версия: `assessment-v5` (`d4enrn8gjdqtne9o7mnt`), Node.js 22, 128 МБ, timeout 15 секунд, concurrency 1, без provisioned instances и логирования.
 - Runtime account: `assessment-runtime-writer` (`ajesa9at6fmpd0ukbb25`), только `ydb.editor` для этой базы и доступ к приватному bucket без статического ключа.
 - Private Object Storage: `assessment-b1gafbjd3dlh-private`, 1 ГБ, публичный и static-key доступ отключены.
-- API Gateway: `GET|POST /v1/assessment`, закреплён за `assessment-v4`.
+- API Gateway: `GET|POST /v1/assessment`, закреплён за `assessment-v5`.
 
 Lockbox, VM, CDN, пользовательский домен и другие постоянные платные компоненты не подключены.
 
@@ -33,7 +33,7 @@ Lockbox, VM, CDN, пользовательский домен и другие п
 
 ## Frontend и откат
 
-Candidate Build `2026.07.29.2` по умолчанию обращается к Yandex API Gateway. В коде сохранена явная константа legacy Apps Script только для аварийного отката. Основной frontend опубликован в Yandex Object Storage, GitHub Pages остаётся резервной копией; CORS разрешает ровно эти два origin.
+Candidate Build `2026.07.29.3` по умолчанию обращается к Yandex API Gateway. В коде сохранена явная константа legacy Apps Script только для аварийного отката. Основной frontend опубликован в Yandex Object Storage, GitHub Pages остаётся резервной копией; CORS разрешает ровно эти два origin.
 
 Девять известных legacy smoke-результатов не мигрировались. Они остаются только в прежнем rollback-контуре и исключены из обычной админ-аналитики.
 

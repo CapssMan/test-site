@@ -18,19 +18,19 @@ SkillCheck — временное рабочее название MVP assessment
 
 Текущие версии:
 
-- candidate `Build 2026.07.29.2`;
+- candidate `Build 2026.07.29.3`;
 - admin `Build 2026.07.28.1`;
 - API contract `attempt-v2`;
-- Yandex Function tags: `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`;
+- Yandex Function tags: `assessment-v5`, `admin-v2`, `read-v3`, `write-v5`;
 - `legal_pilot_approved=false`;
 - `attempt_issuance_enabled=false`;
 - `retention_automation_enabled=true`.
 
 ~~~text
-candidate: test.html -> Yandex API Gateway /v1/assessment -> assessment-v4 -> YDB/private Object Storage
+candidate: test.html -> Yandex API Gateway /v1/assessment -> assessment-v5 -> YDB/private Object Storage
 admin: admin.html -> /v1/admin -> admin-v2 -> YDB/private Object Storage
 ranking read: ranking.html -> /v1/ranking -> read-v3 -> public allowlist из YDB
-ranking publish/withdraw: test.html -> /v1/ranking/profile -> write-v4 -> assessment-v4 proof -> YDB
+ranking publish/withdraw: test.html -> /v1/ranking/profile -> write-v5 -> assessment-v5 proof -> YDB
 ~~~
 
 Google Apps Script и app-folder Яндекс Диска сохранены только как явный аварийный rollback старого контура. Новые кандидатские данные туда не направляются по умолчанию. Девять известных legacy smoke-результатов не удаляются по решению владельца и системно исключены из обычной аналитики.
@@ -51,9 +51,9 @@ Google Apps Script и app-folder Яндекс Диска сохранены то
 3. Frontend проверяет digest display-only банка и отправляет `beginAttempt`.
 4. Backend проверяет приглашение и выдаёт шестичасовой HMAC-токен с точным набором вопросов.
 5. Браузер отправляет только идентификаторы вариантов и advisory telemetry.
-6. `assessment-v4` считает балл по закрытому банку, сохраняет результат и при проходном балле создаёт TXT-отчёт.
+6. `assessment-v5` считает балл по закрытому банку, сохраняет результат и при проходном балле создаёт TXT-отчёт.
 7. После результата от 80% кандидат отдельно решает, публиковать ли псевдоним в рейтинге.
-8. `write-v4` принимает публикацию только после свежего подтверждения `rankingProof` от `assessment-v4`.
+8. `write-v5` принимает публикацию только после свежего подтверждения `rankingProof` от `assessment-v5`.
 
 Попытка не доказывает личность кандидата: invite и browser fingerprint ограничивают поток, но для усиленной идентификации позже потребуются OTP/magic link, прокторинг или контролируемая сессия.
 

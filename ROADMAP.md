@@ -396,7 +396,7 @@ Production smoke был немутирующим: health подтвердил `.
 | Технические smoke-данные | девять известных кодов классифицированы; удаление прекращено по решению владельца, Admin Build 2026.07.28.1 исключает сохранившиеся строки из обычной аналитики и помечает их при явном показе | RESOLVED BY VERIFIED EXCLUSION |
 | Финальный owner sign-off | шаблон готов; выполняется после остальных четырёх потоков | `WAITING` |
 
-Внутреннее pre-pilot product hardening и российский технический cutover завершены без открытия gates. Candidate Build `2026.07.29.2` опубликован в Yandex Object Storage и обращается к `assessment-v4`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v4`. Live owner-smoke, dual-origin CORS, 13-file public allowlist и нулевое состояние YDB подтверждены; реальные pilot gates закрыты.
+Внутреннее pre-pilot product hardening и российский технический cutover завершены без открытия gates. Candidate Build `2026.07.29.3` опубликован в Yandex Object Storage и обращается к `assessment-v5`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v5`. Live owner-smoke, dual-origin CORS, 13-file public allowlist и нулевое состояние YDB подтверждены; реальные pilot gates закрыты.
 
 Не приглашать реальных кандидатов и не открывать pilot gates до независимого SME sign-off банков v4, внешнего legal/privacy решения и owner sign-off. Утверждённые retention-сроки уже применяются в новой YDB/Object Storage схеме. Локальную разработку российского runtime и рейтинга выполнять при закрытых gates.
 
@@ -410,7 +410,7 @@ Production smoke был немутирующим: health подтвердил `.
 - [x] переключить candidate/admin/ranking runtime на Yandex Cloud Functions + API Gateway; Apps Script оставить только как legacy rollback/proof boundary до отдельного вывода;
 - [x] развернуть защищённые admin actions в версии `admin-v2`, подключить `/v1/admin`, PBKDF2-пароль, YDB-диагностику, приглашения и replay-safe удаление при закрытых pilot gates;
 - [x] выполнить IAM-only owner-smoke полного candidate path на реальных YDB/private Object Storage: 100% server-verified scoring, проверенный TXT и точечная очистка до 0 invites/sessions/results/ranking profiles/report objects при закрытых gates;
-- [x] исправить live-несовместимость YDB и затем actual-response CORS; развернуть `assessment-v4`, `admin-v2`, `read-v3`, `write-v4`, проверить оба frontend origin и сохранить предыдущие теги как rollback;
+- [x] исправить live-несовместимость YDB и затем actual-response CORS; развернуть `assessment-v5`, `admin-v2`, `read-v3`, `write-v5`, проверить оба frontend origin и сохранить предыдущие теги как rollback;
 - [x] перенести и повторно проверить пять закрытых банков v4 в private Object Storage; зарегистрировать 5 активных версий в `assessment_banks`, не публикуя answer key или private artifacts в Git/браузере;
 - [x] заменить рабочее Яндекс Диск JSON-хранилище на YDB Serverless и закрытый Object Storage для банков, отчётов и retention; legacy Apps Script/Диск не принимает новый candidate traffic;
 - [x] для read-only рейтинга не создавать постоянных ключей: функция получает YDB-доступ через metadata service account; Lockbox и иные платные secret-сервисы не подключать без отдельного решения;
@@ -435,7 +435,7 @@ Owner marketing goal от 23 июля 2026 года: на этапе 20 отде
 
 ## Ближайшая очередь
 
-1. Автоматический cross-host/API pre-pilot QA завершён на Build `2026.07.29.2`; выполнить короткий ручной desktop/mobile просмотр и затем owner checklist, повторно подтвердив protected zero-state перед открытием gates.
+1. Автоматический cross-host/API pre-pilot QA завершён на Build `2026.07.29.3`; выполнить короткий ручной desktop/mobile просмотр и затем owner checklist, повторно подтвердив protected zero-state перед открытием gates.
 2. Получить независимые SME/legal решения без автоматической отправки писем от имени владельца; замечания объединять в одну versioned-ротацию.
 3. Только после SME/legal/owner sign-off открыть малый пилот 10–30 прохождений; не открывать массовый self-service поток.
 

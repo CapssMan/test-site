@@ -17,8 +17,8 @@ $profileUrl = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ra
 $packagePath = Join-Path $env:TEMP ("skillcheck-ranking-proof-" + [Guid]::NewGuid().ToString("N") + ".zip")
 $packageUri = ""
 $releases = @(
-  @{ SourceTag = "assessment-v3"; TargetTag = "assessment-v4"; ExpectedMode = "assessment" },
-  @{ SourceTag = "write-v3"; TargetTag = "write-v4"; ExpectedMode = "write" }
+  @{ SourceTag = "assessment-v4"; TargetTag = "assessment-v5"; ExpectedMode = "assessment" },
+  @{ SourceTag = "write-v4"; TargetTag = "write-v5"; ExpectedMode = "write" }
 )
 
 function Get-Version([string]$tag) {
@@ -101,7 +101,7 @@ try {
   }
   $publishBody = [ordered]@{
     action = "publish"; apiVersion = "ranking-profile-v1"; publicAlias = "Technical Check";
-    publicConsent = $true; publicConsentVersion = "skillcheck-ranking-public-2026-07-26-v1";
+    publicConsent = $true; publicConsentVersion = "skillcheck-ranking-public-2026-07-29-v2";
     resultProof = [ordered]@{ attemptId = "att_" + "a" * 32; attemptToken = $dummyToken; resultCode = "FA-ABCDE" }
   }
   $publishJson = $publishBody | ConvertTo-Json -Compress -Depth 4
@@ -123,7 +123,7 @@ try {
   if ($publishStatus -ne 403 -or [string]$publishResult.error -ne "result_proof_rejected") {
     throw "Invalid profile publication did not fail closed."
   }
-  Write-Host "DONE: ranking proof is served by assessment-v4 from YDB; write-v4 rejects fabricated publication."
+  Write-Host "DONE: current consent contracts are served by assessment-v5; write-v5 rejects fabricated publication."
 } finally {
   if (-not [String]::IsNullOrWhiteSpace($packageUri)) { & $yc storage s3 rm $packageUri --only-show-errors | Out-Null }
   Remove-Item -LiteralPath $packagePath -Force -ErrorAction SilentlyContinue

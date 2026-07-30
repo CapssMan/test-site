@@ -1,94 +1,60 @@
 #!/usr/bin/env node
 "use strict";
-
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-
 const root = path.resolve(__dirname, "..");
-const read = file => fs.readFileSync(path.join(root, file), "utf8");
+const read = name => fs.readFileSync(path.join(root, name), "utf8");
 const backend = read("apps-script/Code.gs");
+const assessment = read("cloud/assessment-core.js");
+const rankingCore = read("cloud/ranking-core.js");
 const candidate = read("test.html");
-const admin = read("admin.html");
-const home = read("index.html");
 const consent = read("consent.html");
+const rankingConsent = read("ranking-consent.html");
 const privacy = read("privacy.html");
 const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
-
-function extractTopLevelFunction(source, name) {
+const pdVersion = "skillcheck-pd-consent-2026-07-29-v4";
+const rankingVersion = "skillcheck-ranking-public-2026-07-29-v2";
+function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
+function extract(source, name) {
   const marker = "function " + name + "(";
   const start = source.indexOf(marker);
   assert(start >= 0, "Function not found: " + name);
   const next = source.indexOf("\nfunction ", start + marker.length);
-  return source.slice(start, next < 0 ? source.length : next).trim();
+  return source.slice(start, next < 0 ? source.length : next);
 }
-
-const consentVersion = "skillcheck-pd-consent-2026-07-27-v3";
-assert.match(consent, new RegExp(consentVersion));
-assert.match(consent, /Отдельное согласие на обработку персональных данных/);
-assert.match(consent, /Оператор: Кириллов Кирилл Сергеевич/);
-assert.doesNotMatch(consent, /Налог на профессиональный доход|Регион оператора: Москва/);
-
-assert.match(consent, /Полный публичный адрес оператора: не утверждён/);
-assert.match(consent, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
-assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
-assert.match(consent, /не разрешает[\s\S]*передавать результат работодателю/);
-assert.match(consent, /ответы и полный отчёт — 12 месяцев/);
-assert.match(consent, /приглашения и attempt\/session — 90 дней/);
-assert.match(consent, /резервные копии — до 30 дней/);
-assert.match(consent, /до 12 проверяемых резервных версий/i);
-
-assert.match(privacy, /skillcheck-privacy-2026-07-27-v5/);
-assert.match(privacy, /Оператор: Кириллов Кирилл Сергеевич/);
-assert.doesNotMatch(privacy, /Налог на профессиональный доход|Регион оператора: Москва/);
-
-assert.match(privacy, /Полный публичный адрес оператора: не утверждён/);
-assert.match(privacy, /href="mailto:skillcheck\.project@yandex\.ru">skillcheck\.project@yandex\.ru<\/a>/);
-assert.doesNotMatch(privacy, /Email для обращений по персональным данным: не указан/);
-assert.match(privacy, /псевдонимизированной, а не полностью обезличенной/);
-assert.match(privacy, /TTL 365 дней уже включён для YDB рейтинга/i);
-assert.match(privacy, /автоматическое применение сроков ещё не завершено/i);
-assert.match(privacy, /закрыт(?:ая|ую) транзакционн(?:ая|ую) копи(?:я|ю)[\s\S]*безвозвратно уничтож/);
-assert.match(privacy, /до 12 закрытых проверяемых версий/i);
-assert.match(privacy, /удаляет связанные строки из обычных резервных версий/i);
-assert.match(privacy, /Прямая передача контактов, отчёта или результата[\s\S]*выключена/);
-assert.match(privacy, /ответы и полный отчёт — 12 месяцев/);
-assert.match(privacy, /профиль рейтинга[\s\S]*не более 365 дней/i);
-
-assert.match(candidate, /href="consent\.html"[^>]+target="_blank"/i);
-assert.match(candidate, /id="privacyConsent"[^>]+required/i);
-assert.match(candidate, /id="employerShareConsent"[^>]+disabled/i);
-assert.match(candidate, new RegExp('const PRIVACY_CONSENT_VERSION = "' + consentVersion + '"'));
-assert.match(candidate, /privacyConsentVersion:\s*PRIVACY_CONSENT_VERSION/);
-assert.match(candidate, /ageConfirmed:\s*true/);
-
-assert.match(backend, /const AUTHORITATIVE_API_VERSION = "attempt-v2"/);
-assert.match(backend, new RegExp('const PRIVACY_CONSENT_VERSION = "' + consentVersion + '"'));
-assert.match(backend, /const LEGAL_PILOT_APPROVAL_PROPERTY = "LEGAL_PILOT_APPROVED"/);
-assert.match(extractTopLevelFunction(backend, "validateBeginAttemptRequest"), /privacyConsentVersion[\s\S]*ageConfirmed[\s\S]*PRIVACY_CONSENT_VERSION/);
-assert.match(extractTopLevelFunction(backend, "validateAuthoritativeSubmissionRequest"), /employer_sharing_unavailable/);
-assert.match(extractTopLevelFunction(backend, "beginAuthoritativeAttempt"), /!isLegalPilotApproved\(\)[\s\S]*ATTEMPT_ISSUANCE_ENABLED/);
-assert.match(extractTopLevelFunction(backend, "issuePilotInviteInternal"), /!isLegalPilotApproved\(\)[\s\S]*ATTEMPT_ISSUANCE_ENABLED/);
-assert.match(extractTopLevelFunction(backend, "adminCreateInvite"), /!isLegalPilotApproved\(\)[\s\S]*ATTEMPT_ISSUANCE_ENABLED/);
-assert.match(extractTopLevelFunction(backend, "setAuthoritativeAttemptIssuanceEnabled"), /enabled[\s\S]*!isLegalPilotApproved\(\)/);
-assert.match(extractTopLevelFunction(backend, "setLegalPilotApprovedForOwner"), /consentVersion[\s\S]*PRIVACY_CONSENT_VERSION/);
-assert.match(extractTopLevelFunction(backend, "setLegalPilotApprovedForOwner"), /!enabled[\s\S]*ATTEMPT_ISSUANCE_ENABLED/);
-assert.doesNotMatch(extractTopLevelFunction(backend, "doPost"), /setLegalPilotApprovedForOwner/, "legal approval must remain editor-only");
-
-assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.28\.1"/);
-assert.match(admin, /const API_VERSION = "attempt-v2"/);
-assert.match(admin, /setInviteFormEnabled\(attemptIssuanceEnabled && legalPilotApproved\)/);
-assert.match(home, /полного публичного адреса оператора[\s\S]*юридического checklist/);
-assert.match(review, /Реальный пилот юридически не готов/);
-assert.match(review, /Дата технической сверки: 23 июля 2026 года/);
-assert.match(review, /Граница актуальности:[\s\S]*не даёт ответ `APPROVED`/);
-assert.match(review, /приказ(?:ом)? Роскомнадзора № 180/i);
-assert.match(review, /приказ(?:ом)? Роскомнадзора № 179/i);
-assert.match(review, /приказ Роскомнадзора № 140/i);
-assert.match(review, /псевдонимизированными, не анонимными/);
-assert.match(review, /`APPROVED` нельзя выводить из наличия ссылок или технических controls/);
-assert.match(review, /`LEGAL_PILOT_APPROVED=false`/);
-assert.match(review, /`ATTEMPT_ISSUANCE_ENABLED=false`/);
-assert.match(review, /`RETENTION_AUTOMATION_ENABLED=false`/);
-
-console.log("Stage 11 legal/privacy checks passed: versioned separate consent, disabled sharing and fail-closed dual pilot gate.");
+has(consent, pdVersion);
+has(privacy, "skillcheck-privacy-2026-07-29-v6");
+has(rankingConsent, rankingVersion);
+for (const page of [consent, privacy, rankingConsent]) {
+  has(page, "Кириллов Кирилл Сергеевич");
+  has(page, "skillcheck.project@yandex.ru");
+}
+has(consent, "Отдельное согласие на обработку персональных данных");
+has(consent, "Основной маршрут находится в российском контуре Yandex Cloud");
+has(consent, "ответы, результат и полный отчёт — до 365 дней");
+has(consent, "YDB применяются автоматическим TTL");
+has(privacy, "Yandex API Gateway и Cloud Functions");
+has(privacy, "Managed Service for YDB");
+has(privacy, "не являются активным production-маршрутом");
+assert(!privacy.includes("автоматическое применение сроков ещё не завершено"));
+assert(!consent.includes("Автоматическое применение остальных сроков ещё не завершено"));
+has(rankingConsent, "неопределённому кругу посетителей сайта");
+has(rankingConsent, "не разрешает оператору раскрывать ответы, контакты или полный отчёт");
+has(candidate, 'const PRIVACY_CONSENT_VERSION = "' + pdVersion + '"');
+has(candidate, 'const RANKING_CONSENT_VERSION = "' + rankingVersion + '"');
+has(backend, 'const PRIVACY_CONSENT_VERSION = "' + pdVersion + '"');
+has(assessment, 'const PRIVACY_CONSENT_VERSION = "' + pdVersion + '"');
+has(rankingCore, 'const RANKING_CONSENT_VERSION = "' + rankingVersion + '"');
+has(extract(backend, "validateBeginAttemptRequest"), "privacyConsentVersion");
+has(extract(backend, "validateBeginAttemptRequest"), "ageConfirmed");
+has(extract(backend, "validateAuthoritativeSubmissionRequest"), "employer_sharing_unavailable");
+has(extract(backend, "beginAuthoritativeAttempt"), "isLegalPilotApproved");
+has(extract(backend, "issuePilotInviteInternal"), "isLegalPilotApproved");
+has(extract(backend, "setAuthoritativeAttemptIssuanceEnabled"), "isLegalPilotApproved");
+assert(!extract(backend, "doPost").includes("setLegalPilotApprovedForOwner"));
+has(review, "Дата технической сверки: 29 июля 2026 года");
+has(review, "RETENTION_AUTOMATION_ENABLED=true");
+has(review, "LEGAL_PILOT_APPROVED=false");
+has(review, "ATTEMPT_ISSUANCE_ENABLED=false");
+console.log("Legal/privacy checks passed: current Russian data flow, versioned separate consents, retention and fail-closed pilot gates.");

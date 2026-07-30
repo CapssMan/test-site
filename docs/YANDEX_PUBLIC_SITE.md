@@ -6,7 +6,7 @@
 
 - Основной российский адрес без платного домена: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`.
 - GitHub Pages остаётся рабочим резервным адресом до выбора нейтрального домена и закрытия исходного репозитория.
-- Candidate Build `2026.07.29.2` использует российский `/v1/assessment`; переключение `ASSESSMENT_API_MODE` на `legacy-google` остаётся аварийным откатом backend.
+- Candidate Build `2026.07.29.3` использует российский `/v1/assessment`; переключение `ASSESSMENT_API_MODE` на `legacy-google` остаётся аварийным откатом backend.
 
 ## Граница публикации
 
@@ -24,10 +24,10 @@
 
 Активные версии после исправления CORS:
 
-- `assessment-v4` — `d4e2q29o2m2tfcveouri`;
+- `assessment-v5` — `d4enrn8gjdqtne9o7mnt`;
 - `admin-v2` — `d4euharntpfhnqc8rotg`;
 - `read-v3` — `d4ec9dhihcfph8kgrce8`;
-- `write-v4` — `d4eqk12c542lqi3igki4`.
+- `write-v5` — `d4ern801i6976qila1mo`.
 
 Предыдущие версии сохранены и не маршрутизируются. Gateway можно вернуть на предыдущие теги без изменения YDB. Публичная база после cutover содержит 0 invitations, 0 sessions, 0 results и 0 ranking profiles; `legal_pilot_approved=false`, `attempt_issuance_enabled=false`, `retention_automation_enabled=true`.
 

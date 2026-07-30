@@ -32,7 +32,7 @@ vm.createContext(validationContext);
 const validationConstants = `
   const BACKEND_VERSION = "test";
   const AUTHORITATIVE_API_VERSION = "attempt-v2";
-  const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-27-v3";
+  const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-29-v4";
   const MAX_ANSWERS_PER_RESULT = 40;
   const PUBLIC_DEV_TEST_ENABLED = false;
   const TEST_TITLES_BY_ID = { "fa-junior": "FA", "ca-junior": "CA", "dev-quick": "DEV" };
@@ -70,7 +70,7 @@ const validRequest = {
   candidateSource: "career",
   candidateExperience: "junior",
   employerShareConsent: false,
-  privacyConsentVersion: "skillcheck-pd-consent-2026-07-27-v3",
+  privacyConsentVersion: "skillcheck-pd-consent-2026-07-29-v4",
   ageConfirmed: true,
   browserFingerprint: "deadbeef",
   tabSwitches: 0,

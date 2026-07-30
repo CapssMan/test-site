@@ -8,7 +8,7 @@
 Кандидат
   -> Yandex Object Storage: HTML + display-only банки
   -> API Gateway /v1/assessment
-  -> assessment-v4
+  -> assessment-v5
   -> YDB: invitation/session/result/audit
   -> private Object Storage: bank answer keys + TXT reports
 
@@ -20,17 +20,17 @@
 
 Рейтинг
   -> GET /v1/ranking -> read-v3 (ydb.viewer) -> публичный allowlist
-  -> POST /v1/ranking/profile -> write-v4 (ydb.editor)
-  -> online rankingProof у assessment-v4 -> YDB TTL
+  -> POST /v1/ranking/profile -> write-v5 (ydb.editor)
+  -> online rankingProof у assessment-v5 -> YDB TTL
 ~~~
 
-Основной сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`. Резервный frontend: GitHub Pages. Candidate Build `2026.07.29.2`, admin Build `2026.07.28.1`.
+Основной сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`. Резервный frontend: GitHub Pages. Candidate Build `2026.07.29.3`, admin Build `2026.07.28.1`.
 
 ## Разделение доступа
 
-- `assessment-v4` и `admin-v2` работают под runtime account с edit-доступом только к assessment YDB и закрытому bucket.
+- `assessment-v5` и `admin-v2` работают под runtime account с edit-доступом только к assessment YDB и закрытому bucket.
 - `read-v3` работает под отдельным `ydb.viewer` и не может менять профили.
-- `write-v4` работает под отдельным `ydb.editor` и принимает только публикацию/отзыв профиля.
+- `write-v5` работает под отдельным `ydb.editor` и принимает только публикацию/отзыв профиля.
 - API Gateway вызывает только закреплённые tagged versions.
 - В публичном bucket ровно 13 allowlisted файлов; рекурсивная публикация запрещена.
 - Постоянных IAM-ключей, Lockbox, VM, CDN, provisioned instances и Cloud Logging нет.
@@ -61,7 +61,7 @@
 
 ## Рейтинг
 
-Публикация доступна только после отдельного opt-in и результата от 80%. `assessment-v4` возвращает writer-функции минимальный proof и непрозрачный `rankingSubjectHandle`, но не контакты, ответы, result token или attempt token.
+Публикация доступна только после отдельного opt-in и результата от 80%. `assessment-v5` возвращает writer-функции минимальный proof и непрозрачный `rankingSubjectHandle`, но не контакты, ответы, result token или attempt token.
 
 YDB хранит public allowlist и SHA-256 management token. Профиль имеет TTL 365 дней; кандидат может удалить его раньше. Рейтинг не показывает позицию при выборке меньше пяти профилей. Технические строки исключаются.
 

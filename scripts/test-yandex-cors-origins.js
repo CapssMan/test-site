@@ -30,7 +30,7 @@ const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "u
 for (const [source, target] of [["assessment-v2", "assessment-v3"], ["admin-v1", "admin-v2"], ["read-v2", "read-v3"], ["write-v2", "write-v3"]]) {
   assert(runtimeDeploy.includes(`SourceTag = "${source}"; TargetTag = "${target}"`));
 }
-for (const activeTag of ["assessment-v4", "admin-v2", "read-v3", "write-v4"]) {
+for (const activeTag of ["assessment-v5", "admin-v2", "read-v3", "write-v5"]) {
   assert(gateway.includes(`tag: "${activeTag}"`));
 }
 for (const file of ["assessment-handler.js", "admin-handler.js", "ranking-handler.js", "ranking-profile-handler.js"]) {

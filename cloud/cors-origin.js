@@ -1,7 +1,6 @@
 "use strict";
 
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
-  "https://capssman.github.io",
   "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 ]);
 

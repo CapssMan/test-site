@@ -10,7 +10,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 ## Текущий статус
 
-Этап 18 технически завершён с решением **NO-GO для реальных кандидатов** до внешних sign-off. Candidate Build `2026.07.29.3` опубликован в Yandex Object Storage и использует `assessment-v5`; admin работает через `admin-v2`, рейтинг — через `read-v3`/`write-v5`. Ровно 13 публичных файлов сверены по SHA-256, оба точных frontend origin проверены на реальных ответах, YDB пуста, pilot gates закрыты. Локальный CI выполняет 40 test suite и 5 infrastructure validators. GitHub Pages и предыдущие function tags сохранены как rollback.
+Этап 18 технически завершён с решением **NO-GO для реальных кандидатов** до внешних sign-off. Candidate Build `2026.07.31.1` опубликован в Yandex Object Storage и использует `assessment-v6`; admin работает через `admin-v3`, рейтинг — через `read-v4`/`write-v6`. Ровно 13 публичных файлов сверены по SHA-256, основной Yandex-origin проверен на реальных ответах, а GitHub-origin запрещён API, YDB пуста, pilot gates закрыты. Локальный CI выполняет 40 test suite и 5 infrastructure validators. GitHub Pages сохранён как статический rollback с переводом интерактивных страниц на Yandex; предыдущие function tags сохранены.
 
 LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED остаются false. Реальные кандидаты не допускаются до утверждения полного публичного адреса оператора, внешнего legal/retention checklist, независимого человеческого SME sign-off банков v4, проверки системного исключения известных smoke-кодов и owner sign-off.
 
@@ -97,6 +97,7 @@ docs/PILOT_READINESS.md Техническое evidence, NO-GO блокеры и
 docs/PRE_PILOT_INPUTS.md Безопасный шаблон входных решений SME/operator/legal/cleanup/owner
 docs/PILOT_RUNBOOK.md    Допуск, метрики, feedback и stop conditions первой волны
 docs/PRODUCT_VISION.md   North Star кандидатов, рейтинга и employer discovery
+docs/OWNER_ACTIONS.md     Три оставшихся действия владельца до первого пилота
 docs/EXTERNAL_REVIEW_BRIEF.md Готовые задания независимому SME и legal/retention специалисту
 docs/FIVE_BANK_QUALITY_PLAN.md Повторная проверка качества всех пяти банков после MVP
 docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md План private-репозитория, нейтрального домена и границы защиты от копирования

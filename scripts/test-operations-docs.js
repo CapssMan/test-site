@@ -60,7 +60,7 @@ const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
 [
   "LEGAL_PILOT_APPROVED=false",
   "ATTEMPT_ISSUANCE_ENABLED=false",
-  "RETENTION_AUTOMATION_ENABLED=false",
+  "RETENTION_AUTOMATION_ENABLED=true",
   "Не выполнять новые попытки массового удаления известных девяти кодов",
   "READY FOR OWNER DECISION",
   "LIMITED GO"

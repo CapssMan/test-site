@@ -29,11 +29,14 @@ new vm.Script(backend, { filename: "Code.gs" });
 
 assert.match(testPage, /const API_VERSION = "attempt-v2"/);
 assert.match(testPage, /const ASSESSMENT_API_MODE = "yandex"/);
+assert.match(testPage, /window\.location\.origin === GITHUB_FALLBACK_ORIGIN[\s\S]*window\.location\.replace\(PRIMARY_SITE_ORIGIN/);
+assert.match(testPage, /версии <b>29\.07\.2026-v4<\/b>/);
+assert.match(testPage, /версии <b>29\.07\.2026-v2<\/b>/);
 assert.match(testPage, /const YANDEX_ASSESSMENT_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/assessment"/);
 assert.match(testPage, /const LEGACY_GOOGLE_SCRIPT_URL = "https:\/\/script\.google\.com\/macros\/s\//);
 assert.match(testPage, /const ASSESSMENT_API_URL = ASSESSMENT_API_MODE === "legacy-google" \? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ASSESSMENT_API_URL/);
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.29\.3"/, "candidate build must be current");
-assert.match(testPage, />Build 2026\.07\.29\.3<\//, "visible candidate build must match submitted build");
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.07\.31\.1"/, "candidate build must be current");
+assert.match(testPage, />Build 2026\.07\.31\.1<\//, "visible candidate build must match submitted build");
 assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-29-v4"/);
 assert.match(testPage, /<label for="inviteCode">[\s\S]*?<input[^>]+id="inviteCode"[^>]+required/i, "invite code must be required");
 assert.match(testPage, /<label for="name">[\s\S]*?<input[^>]+id="name"[^>]+required/i);

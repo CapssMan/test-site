@@ -7,8 +7,8 @@ The resource names in this directory are deliberately neutral and temporary. `Sk
 - Folder: `skillcheck-prod` (`b1gafbjd3dlhjhge8qoc`).
 - YDB Serverless: `assessment-runtime-db`, throttled to 10 RU/s, 1 GB hard storage limit, deletion protection enabled.
 - Cloud Function: `assessment-ranking-api`, Node.js 22, 128 MB, read timeout 8 seconds, write timeout 15 seconds, concurrency 1, no provisioned instances, logging disabled.
-- Read version: `read-v3` (`d4ec9dhihcfph8kgrce8`) under `assessment-ranking-reader` with database-specific `ydb.viewer`.
-- Write version: `write-v5` (`d4ern801i6976qila1mo`) under `assessment-ranking-writer` with database-specific `ydb.editor` and no static key.
+- Read version: `read-v4` (`d4eophije7v42s47s0fp`) under `assessment-ranking-reader` with database-specific `ydb.viewer`.
+- Write version: `write-v6` (`d4e5hbn8pmd19vqn20pt`) under `assessment-ranking-writer` with database-specific `ydb.editor` and no static key.
 - API Gateway: `assessment-public-api`, logging disabled, public `GET /v1/ranking` and `POST /v1/ranking/profile` operations pinned to explicit function tags.
 - Public Object Storage bucket: `assessment-b1gafbjd3dlh-web`, 100 MB hard limit.
 - Private Object Storage bucket: `assessment-b1gafbjd3dlh-private`, 1 GB hard limit.
@@ -20,7 +20,7 @@ Lockbox, Compute Cloud, CDN, a custom domain, provisioned function instances, an
 
 The ranking GET selects only the public allowlist. It does not select email, Telegram, answers, reports, invitations, result codes, management hashes or attempt tokens. A profile is returned only after exact separate consent, only for the current bank version, and only for a passed server-verified result. Technical results are excluded again in the application layer.
 
-The profile POST accepts publication only after online proof from the fixed Yandex assessment endpoint. `assessment-v5` verifies the signed attempt against the completed YDB session and result; the writer receives an opaque subject handle, not contact data. A random management token is returned once to the browser; YDB stores only its SHA-256 hash. Withdrawal is an atomic token-bound delete with a neutral response.
+The profile POST accepts publication only after online proof from the fixed Yandex assessment endpoint. `assessment-v6` verifies the signed attempt against the completed YDB session and result; the writer receives an opaque subject handle, not contact data. A random management token is returned once to the browser; YDB stores only its SHA-256 hash. Withdrawal is an atomic token-bound delete with a neutral response.
 
 ## Migrations
 

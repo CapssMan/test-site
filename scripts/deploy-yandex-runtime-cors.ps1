@@ -10,15 +10,15 @@ $functionId = "d4e1qffg3l40q6jgq0t9"
 $gatewayId = "d5d0v6g7vmk9ku6kofjm"
 $packageBucket = "assessment-b1gafbjd3dlh-private"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
-$allowedOrigins = "https://capssman.github.io;https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
+$allowedOrigins = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $packagePath = Join-Path $env:TEMP ("skillcheck-runtime-cors-" + [Guid]::NewGuid().ToString("N") + ".zip")
 $packageUri = ""
 
 $versions = @(
-  @{ SourceTag = "assessment-v2"; TargetTag = "assessment-v3"; ExpectedMode = "assessment" },
-  @{ SourceTag = "admin-v1"; TargetTag = "admin-v2"; ExpectedMode = "admin" },
-  @{ SourceTag = "read-v2"; TargetTag = "read-v3"; ExpectedMode = "read" },
-  @{ SourceTag = "write-v2"; TargetTag = "write-v3"; ExpectedMode = "write" }
+  @{ SourceTag = "assessment-v5"; TargetTag = "assessment-v6"; ExpectedMode = "assessment" },
+  @{ SourceTag = "admin-v2"; TargetTag = "admin-v3"; ExpectedMode = "admin" },
+  @{ SourceTag = "read-v3"; TargetTag = "read-v4"; ExpectedMode = "read" },
+  @{ SourceTag = "write-v5"; TargetTag = "write-v6"; ExpectedMode = "write" }
 )
 
 function Get-Version([string]$tag) {
@@ -74,7 +74,7 @@ try {
       --entrypoint ([string]$source.entrypoint) --memory ($memoryMb.ToString() + "MB") `
       --execution-timeout ($timeoutSeconds.ToString() + "s") --service-account-id ([string]$source.service_account_id) `
       --package-bucket-name $packageBucket --package-object-name $packageObject --package-sha256 $packageSha `
-      --description ("Exact dual-origin CORS successor of " + $item.SourceTag) --environment $environment `
+      --description ("Yandex-only production CORS successor of " + $item.SourceTag) --environment $environment `
       --tags $item.TargetTag --concurrency ([int]$source.concurrency) --no-logging --format json
     if ($LASTEXITCODE -ne 0) { throw "Runtime successor creation failed." }
     $created = $createdRaw | ConvertFrom-Json
@@ -84,7 +84,7 @@ try {
 
   $null = & $yc serverless api-gateway update --id $gatewayId --spec $gatewaySpec --no-logging --format json | ConvertFrom-Json
   if ($LASTEXITCODE -ne 0) { throw "API Gateway cutover failed." }
-  Write-Host "DONE: four runtime successors are deployed; Gateway uses exact dual-origin CORS versions."
+  Write-Host "DONE: four runtime successors are deployed; Gateway accepts browser API traffic only from the primary Yandex website."
 } finally {
   if (-not [String]::IsNullOrWhiteSpace($packageUri)) {
     & $yc storage s3 rm $packageUri --only-show-errors | Out-Null

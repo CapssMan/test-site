@@ -1,6 +1,6 @@
 # SkillCheck — готовность к контролируемому пилоту
 
-Обновлено: 29 июля 2026 года, после российского frontend/runtime cutover.
+Обновлено: 31 июля 2026 года, после ограничения production-origin российским Yandex-сайтом.
 
 ## Решение
 
@@ -16,14 +16,14 @@
 
 | Проверка | Результат | Статус |
 |---|---|---|
-| Российский frontend | Candidate Build `2026.07.29.3`; 13 allowlisted объектов, 587 243 байт, live SHA-256; Yandex website root `200` | verified |
-| Functions/Gateway | `assessment-v5`, `admin-v2`, `read-v3`, `write-v5`; точные Yandex/GitHub origin проходят preflight и фактические GET/POST | verified |
-| Cross-host live QA | `check-pre-pilot-live.ps1`: 13/13 файлов совпадают с Git на Yandex и GitHub с учётом нормализации строк Pages; пять ranking reads и два origin проверены | verified |
+| Российский frontend | Candidate Build `2026.07.31.1`; 13 allowlisted объектов, 584 890 байт, live SHA-256; Yandex website root `200` | verified |
+| Functions/Gateway | `assessment-v6`, `admin-v3`, `read-v4`, `write-v6`; API разрешает browser-доступ только основному Yandex-origin | verified |
+| Cross-host live QA | `check-pre-pilot-live.ps1`: 13/13 файлов совпадают с Git на Yandex и GitHub; пять ranking reads работают на Yandex, а GitHub-origin получает отказ CORS | verified |
 | Public negative smoke | `beginAttempt` → нейтральный `attempt_unavailable`; legal/issuance gates не открывались | verified |
 | Owner-only E2E | private bank → 100% server-verified → TXT read-back → exact cleanup | verified |
 | YDB zero state | 0 invitations, 0 sessions, 0 results, 0 ranking profiles после cutover | verified |
 | Private storage/retention | 5 банков v4 в private bucket; reports 365d, backups 30d, temporary artifacts 1d | verified |
-| Source/rollback | GitHub Pages остаётся рабочим frontend fallback; предыдущие function tags сохранены | verified |
+| Source/rollback | GitHub Pages остаётся статическим rollback и перенаправляет интерактивные страницы на Yandex; предыдущие function tags сохранены | verified |
 | CI | 40 test suite + 5 infrastructure validators; 240 production-вопросов, 0 ошибок/предупреждений | verified |
 В production могут оставаться строки из известного набора девяти smoke-кодов. По решению владельца они не удаляются, не являются пилотной выборкой и исключаются из таблицы, метрик и диаграмм Admin Build 2026.07.28.1; контракт и точный перечень зафиксированы в TECHNICAL_DATA_EXCLUSION.md.
 
@@ -66,9 +66,9 @@ CacheService rate limiting является best-effort и не заменяет
 ## Финальная последовательность перед первым кандидатом
 
 1. Закрытая рабочая копия `PRE_PILOT_INPUTS.md` и reviewer-пакеты готовы, но автоматическая отправка запрещена. Владелец сам выбирает эксперта/ВУЗ и отправляет запрос; после явного согласия по `SME_REVIEW_HANDOFF.md` подтверждает компетенцию/независимость и передаёт только соответствующую review-книгу. Замечания исправляются одной versioned-ротацией.
-2. Утвердить полный публичный адрес оператора, получить внешнее legal/retention решение и повторно проверить consent v2; ФИО, project email и 2FA подтверждены; статус НПД и регион хранятся только во внутреннем owner-контуре.
+2. Утвердить полный публичный адрес оператора, принять решение по уведомлению/публичным реквизитам и при возможности проверить его профильной консультацией и повторно проверить consent v2; ФИО, project email и 2FA подтверждены; статус НПД и регион хранятся только во внутреннем owner-контуре.
 3. В Admin Build 2026.07.28.1 проверить, что при выключенном техническом переключателе известные smoke-коды отсутствуют в таблице, метриках и диаграммах; не выполнять новые попытки их массового удаления.
-4. Автоматические cross-host/API QA, CI, health и readiness выполнены на Build `2026.07.29.3`; ручной desktop/mobile просмотр основного Yandex URL подтверждён владельцем 29 июля 2026 года.
+4. Автоматические cross-host/API QA, CI, health и readiness выполнены на Build `2026.07.31.1`; ручной desktop/mobile просмотр основного Yandex URL подтверждён владельцем 29 июля 2026 года.
 5. В закрытом owner-журнале зафиксировать версии, gates, ответственных, объём и решение `go`.
 6. Сначала включить legal approval с точной consent version, затем отдельным действием issuance. Не менять оба gate одновременно с runtime rollout.
 7. Создать одно owner-smoke приглашение, завершить его, проверить replay/report/status и удалить smoke-данные.

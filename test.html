@@ -276,7 +276,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.29.3</div>
+      <div class="build-number">Build 2026.07.31.1</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
@@ -357,7 +357,7 @@
 
       <label class="consent-row">
         <input id="privacyConsent" type="checkbox" required />
-        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>27.07.2026-v3</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
+        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>29.07.2026-v4</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
       </label>
 
       <label class="consent-row">
@@ -405,7 +405,7 @@
         </div>
         <label class="consent-row">
           <input id="rankingConsent" type="checkbox" />
-          <span>Я добровольно соглашаюсь на публичное размещение результата по условиям <a href="ranking-consent.html" target="_blank" rel="noopener">согласия на участие в рейтинге</a> версии <b>26.07.2026-v1</b>. Отозвать согласие можно кнопкой управления на этом устройстве или через email проекта.</span>
+          <span>Я добровольно соглашаюсь на публичное размещение результата по условиям <a href="ranking-consent.html" target="_blank" rel="noopener">согласия на участие в рейтинге</a> версии <b>29.07.2026-v2</b>. Отозвать согласие можно кнопкой управления на этом устройстве или через email проекта.</span>
         </label>
         <button id="publishRankingButton" type="button">Опубликовать в рейтинге</button>
         <div id="rankingPublishStatus" class="form-status" role="status" aria-live="polite"></div>
@@ -415,6 +415,13 @@
 
 
   <script>
+    const PRIMARY_SITE_ORIGIN = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net";
+    const GITHUB_FALLBACK_ORIGIN = "https://capssman.github.io";
+    if (window.location.origin === GITHUB_FALLBACK_ORIGIN) {
+      var primaryPath = window.location.pathname.replace(/^\/test-site(?=\/|$)/, "") || "/";
+      window.location.replace(PRIMARY_SITE_ORIGIN + primaryPath + window.location.search + window.location.hash);
+    }
+
     // ===== КОНФИГУРАЦИЯ AUTHORITATIVE BACKEND SCORING =====
     const ASSESSMENT_API_MODE = "yandex";
     const YANDEX_ASSESSMENT_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/assessment";
@@ -424,7 +431,7 @@
     const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-29-v2";
-    const FRONTEND_BUILD = "2026.07.29.3";
+    const FRONTEND_BUILD = "2026.07.31.1";
     const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-29-v4";
     const NETWORK_TIMEOUT_MS = 20000;
     const MAX_AUTOMATIC_RETRIES = 2;

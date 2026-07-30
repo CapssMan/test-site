@@ -61,7 +61,7 @@ try {
   Assert-ExactPublicFiles $fallbackOrigin "github"
 
   $localTest = [IO.File]::ReadAllText((Join-Path $repoRoot "test.html"), [Text.Encoding]::UTF8)
-  if ($localTest -notmatch 'Build 2026\.07\.29\.3' -or $localTest -notmatch 'const FRONTEND_BUILD = "2026\.07\.29\.3"') {
+  if ($localTest -notmatch 'Build 2026\.07\.31\.1' -or $localTest -notmatch 'const FRONTEND_BUILD = "2026\.07\.31\.1"') {
     throw "Candidate visible build and runtime build do not match the approved release."
   }
 
@@ -72,7 +72,7 @@ try {
     privacyConsentVersion = "skillcheck-pd-consent-2026-07-29-v4"; ageConfirmed = $true
   }
 
-  foreach ($origin in @($primaryOrigin, $githubCorsOrigin)) {
+  foreach ($origin in @($primaryOrigin)) {
     $options = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
       Origin = $origin
       "Access-Control-Request-Method" = "POST"
@@ -101,7 +101,15 @@ try {
     }
   }
 
-  Write-Host "PASS: 13/13 public files match Git on Yandex and GitHub; five ranking reads work; both origins pass CORS; candidate issuance remains closed."
+  $deniedOptions = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
+    Origin = $githubCorsOrigin
+    "Access-Control-Request-Method" = "POST"
+    "Access-Control-Request-Headers" = "content-type"
+  } -UseBasicParsing -TimeoutSec 30
+  if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubCorsOrigin) {
+    throw "GitHub fallback still receives candidate API CORS."
+  }
+  Write-Host "PASS: 13/13 public files match Git on Yandex and GitHub; five ranking reads work on Yandex; GitHub API CORS is denied; candidate issuance remains closed."
   Write-Host "MANUAL QA: owner confirmed the main Yandex site on desktop and mobile on 2026-07-29; no issues reported."
 } finally {
   Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue

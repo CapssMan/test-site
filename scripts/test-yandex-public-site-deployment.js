@@ -33,13 +33,12 @@ assert.match(deploy, /failureCode -ne "attempt_unavailable"/);
 assert.doesNotMatch(deploy, /storage\s+.*\s+rm|delete-object|delete-objects|--recursive/);
 assert.doesNotMatch(deploy, /private-bucket|private\/|private\\|apps-script\/|apps-script\\/);
 
-const originBlock = gateway.match(/origin:\s*\n((?:\s+-\s+"[^"]+"\s*\n){2})/);
-assert(originBlock, "gateway must allow exactly two explicit frontend origins");
-const origins = Array.from(originBlock[1].matchAll(/"([^"]+)"/g), match => match[1]);
-assert.deepEqual(origins, [
-  "https://capssman.github.io",
+const originBlock = gateway.match(/origin:\s*\n((?:\s+-\s+"[^"]+"\s*\n){1})/);
+assert(originBlock, "gateway must allow exactly one explicit frontend origin");
+assert.deepEqual(Array.from(originBlock[1].matchAll(/"([^"]+)"/g), match => match[1]), [
   "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 ]);
 assert.doesNotMatch(originBlock[1], /\*/);
+assert.match(deploy, /GitHub fallback unexpectedly received candidate API CORS/);
 
-console.log("Yandex public-site deployment checks passed: exact 13-file boundary, verified upload and dual-origin CORS.");
+console.log("Yandex public-site deployment checks passed: exact 13-file boundary, verified upload and Yandex-only candidate CORS.");

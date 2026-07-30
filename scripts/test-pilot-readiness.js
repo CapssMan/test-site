@@ -52,7 +52,7 @@ const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
   "подготовлен, пилот не начат",
   "LEGAL_PILOT_APPROVED=false",
   "ATTEMPT_ISSUANCE_ENABLED=false",
-  "RETENTION_AUTOMATION_ENABLED=false",
+  "RETENTION_AUTOMATION_ENABLED=true",
   "3–5 работодателей или рекрутеров",
   "10–30 завершённых прохождений",
   "L1 — непубличное персональное приглашение без подтверждения юридической личности",
@@ -93,7 +93,7 @@ assert.match(read("docs/PROJECT_STRUCTURE.md"), /PRODUCT_VISION\.md/);
   "Пустая строка, устное мнение или отправленный без ответа файл не закрывают blocker",
   "LEGAL_PILOT_APPROVED=false",
   "ATTEMPT_ISSUANCE_ENABLED=false",
-  "RETENTION_AUTOMATION_ENABLED=false"
+  "RETENTION_AUTOMATION_ENABLED=true"
 ].forEach(fragment => assert.ok(externalReviewBrief.includes(fragment), `external review brief missing: ${fragment}`));
 
 assert.match(read("README.md"), /EXTERNAL_REVIEW_BRIEF\.md/);

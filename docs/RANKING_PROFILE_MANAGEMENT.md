@@ -12,16 +12,16 @@
 
 ## Подтверждение результата
 
-`write-v5` принимает публикацию только после онлайн-проверки через фиксированный Yandex endpoint `/v1/assessment`. `assessment-v5` сверяет подписанный токен с завершённой сессией и записью результата в YDB: тест, версию банка, код результата, проходной балл, серверный расчёт и возраст результата не более 24 часов.
+`write-v6` принимает публикацию только после онлайн-проверки через фиксированный Yandex endpoint `/v1/assessment`. `assessment-v6` сверяет подписанный токен с завершённой сессией и записью результата в YDB: тест, версию банка, код результата, проходной балл, серверный расчёт и возраст результата не более 24 часов.
 
 Ответ содержит только минимальные проверенные поля и непрозрачный HMAC-псевдоним `rsh_…`. Контакты, ответы и bearer-токены не передаются writer-функции. Технические результаты всегда отклоняются.
 
 ## Разделение доступа в Yandex Cloud
 
 - Function resource: `assessment-ranking-api` (`d4e1qffg3l40q6jgq0t9`).
-- Assessment: `assessment-v5` (`d4enrn8gjdqtne9o7mnt`), runtime account `assessment-runtime-writer`.
-- Read: `read-v3` (`d4ec9dhihcfph8kgrce8`), account `assessment-ranking-reader`, роль `ydb.viewer`.
-- Write: `write-v5` (`d4ern801i6976qila1mo`), account `assessment-ranking-writer`, роль `ydb.editor` только на этой базе.
+- Assessment: `assessment-v6` (`d4ev36locmu9lsjohtf0`), runtime account `assessment-runtime-writer`.
+- Read: `read-v4` (`d4eophije7v42s47s0fp`), account `assessment-ranking-reader`, роль `ydb.viewer`.
+- Write: `write-v6` (`d4e5hbn8pmd19vqn20pt`), account `assessment-ranking-writer`, роль `ydb.editor` только на этой базе.
 - API Gateway вызывает только закреплённые версии. Постоянных ключей, Lockbox, provisioned instances и Cloud Logging нет.
 
 ## Срок и отзыв
@@ -33,7 +33,7 @@
 ## Проверено
 
 - Реальный Yandex assessment создаёт подтверждение из данных YDB; модульный happy-path проверяет точный контракт и отсутствие персональных полей.
-- Поддельное подтверждение в живом `write-v5` получает `403 result_proof_rejected` и не создаёт профиль.
+- Поддельное подтверждение в живом `write-v6` получает `403 result_proof_rejected` и не создаёт профиль.
 - Публичный read возвращает только allowlist; при выборке меньше пяти подходящих профилей позиция не раскрывается.
 - YDB содержит ноль профилей реальных кандидатов.
 - Оба разрешённых origin — Yandex Object Storage и резервный GitHub Pages — проверены для preflight и фактических ответов.

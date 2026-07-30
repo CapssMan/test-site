@@ -6,7 +6,7 @@
 
 - Основной российский адрес без платного домена: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`.
 - GitHub Pages остаётся рабочим резервным адресом до выбора нейтрального домена и закрытия исходного репозитория.
-- Candidate Build `2026.07.29.3` использует российский `/v1/assessment`; переключение `ASSESSMENT_API_MODE` на `legacy-google` остаётся аварийным откатом backend.
+- Candidate Build `2026.07.31.1` использует российский `/v1/assessment`; переключение `ASSESSMENT_API_MODE` на `legacy-google` остаётся аварийным откатом backend.
 
 ## Граница публикации
 
@@ -24,10 +24,10 @@
 
 Активные версии после исправления CORS:
 
-- `assessment-v5` — `d4enrn8gjdqtne9o7mnt`;
-- `admin-v2` — `d4euharntpfhnqc8rotg`;
-- `read-v3` — `d4ec9dhihcfph8kgrce8`;
-- `write-v5` — `d4ern801i6976qila1mo`.
+- `assessment-v6` — `d4ev36locmu9lsjohtf0`;
+- `admin-v3` — `d4etr5b695k94tmua9l3`;
+- `read-v4` — `d4eophije7v42s47s0fp`;
+- `write-v6` — `d4e5hbn8pmd19vqn20pt`.
 
 Предыдущие версии сохранены и не маршрутизируются. Gateway можно вернуть на предыдущие теги без изменения YDB. Публичная база после cutover содержит 0 invitations, 0 sessions, 0 results и 0 ranking profiles; `legal_pilot_approved=false`, `attempt_issuance_enabled=false`, `retention_automation_enabled=true`.
 
@@ -37,6 +37,6 @@
 
 ## Повторная публикация
 
-Из корня репозитория запускается `scripts/deploy-yandex-public-site.ps1`. Скрипт сначала проверяет allowlist и локальные контракты, обновляет gateway из `cloud/api-gateway.yaml`, загружает ровно 13 объектов, проверяет bucket и живые контрольные суммы, затем подтверждает dual-origin CORS и закрытый pilot gate.
+Из корня репозитория запускается `scripts/deploy-yandex-public-site.ps1`. Скрипт сначала проверяет allowlist и локальные контракты, обновляет gateway из `cloud/api-gateway.yaml`, загружает ровно 13 объектов, проверяет bucket и живые контрольные суммы, затем подтверждает Yandex-only browser CORS, отказ GitHub-origin и закрытый pilot gate.
 
 При ошибке публикации нельзя вручную загружать каталог целиком. GitHub Pages остаётся пользовательским резервом, а предыдущие function tags — серверным rollback. После исправления причины безопасный скрипт запускается повторно.

@@ -164,7 +164,7 @@ $closedBody = [ordered]@{
   browserFingerprint = "deadbeef"; clientBuild = "yandex-public-site-deploy"; privacyConsent = $true;
   privacyConsentVersion = "skillcheck-pd-consent-2026-07-29-v4"; ageConfirmed = $true
 }
-foreach ($origin in @($siteOrigin, $githubOrigin)) {
+foreach ($origin in @($siteOrigin)) {
   $options = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
     Origin = $origin
     "Access-Control-Request-Method" = "POST"
@@ -189,5 +189,13 @@ foreach ($origin in @($siteOrigin, $githubOrigin)) {
   }
 }
 
-Write-Host "DONE: 13 public files are live in Yandex Object Storage; both frontend origins pass preflight and actual-response CORS; pilot gate remains closed."
+$deniedOptions = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
+  Origin = $githubOrigin
+  "Access-Control-Request-Method" = "POST"
+  "Access-Control-Request-Headers" = "content-type"
+} -UseBasicParsing -TimeoutSec 30
+if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubOrigin) {
+  throw "GitHub fallback unexpectedly received candidate API CORS."
+}
+Write-Host "DONE: 13 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; pilot gate remains closed."
 Write-Host $siteOrigin

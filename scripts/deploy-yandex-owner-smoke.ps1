@@ -60,8 +60,8 @@ try {
   if ($LASTEXITCODE -ne 0 -or [String]::IsNullOrWhiteSpace($env:YDB_TOKEN)) { throw "Temporary YDB token was not created." }
   Assert-ClosedState
 
-  $assessmentRaw = & $yc serverless function version get-by-tag --function-id $functionId --tag assessment-v5 --format json
-  if ($LASTEXITCODE -ne 0) { throw "Current assessment-v5 configuration is unavailable." }
+  $assessmentRaw = & $yc serverless function version get-by-tag --function-id $functionId --tag assessment-v6 --format json
+  if ($LASTEXITCODE -ne 0) { throw "Current assessment-v6 configuration is unavailable." }
   $assessment = $assessmentRaw | ConvertFrom-Json
   foreach ($name in @("ALLOWED_ORIGIN", "YDB_CONNECTION_STRING", "PRIVATE_BUCKET", "ATTEMPT_SIGNING_SECRET_V1", "INVITE_CODE_SECRET_V1", "IDENTITY_HASH_SECRET_V1")) {
     $property = $assessment.environment.PSObject.Properties[$name]

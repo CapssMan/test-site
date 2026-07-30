@@ -64,6 +64,13 @@
 
   <script>
     "use strict";
+    const PRIMARY_SITE_ORIGIN = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net";
+    const GITHUB_FALLBACK_ORIGIN = "https://capssman.github.io";
+    if (window.location.origin === GITHUB_FALLBACK_ORIGIN) {
+      var primaryPath = window.location.pathname.replace(/^\/test-site(?=\/|$)/, "") || "/";
+      window.location.replace(PRIMARY_SITE_ORIGIN + primaryPath + window.location.search + window.location.hash);
+    }
+
     const RANKING_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking";
     const RANKING_BUILD = "2026.07.26.2";
     const testSelect = document.getElementById("rankingTest");

@@ -9,9 +9,9 @@
 - ветка source/rollback: `main`;
 - российский сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`;
 - GitHub Pages: резервный frontend до нейтрального домена;
-- candidate: `Build 2026.07.29.3`;
+- candidate: `Build 2026.07.31.1`;
 - admin: `Build 2026.07.28.1`;
-- functions: `assessment-v5`, `admin-v2`, `read-v3`, `write-v5`;
+- functions: `assessment-v6`, `admin-v3`, `read-v4`, `write-v6`;
 - API: `attempt-v2` через Yandex API Gateway;
 - `legal_pilot_approved=false`;
 - `attempt_issuance_enabled=false`;

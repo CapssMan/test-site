@@ -6,7 +6,7 @@
 
 ## Текущее состояние
 
-Production runtime: candidate `Build 2026.07.29.3`, admin `Build 2026.07.28.1`, functions `assessment-v5`/`admin-v2`/`read-v3`/`write-v5`, API `attempt-v2`, YDB + private/public Object Storage. Российский сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`.
+Production runtime: candidate `Build 2026.07.31.1`, admin `Build 2026.07.28.1`, functions `assessment-v6`/`admin-v3`/`read-v4`/`write-v6`, API `attempt-v2`, YDB + private/public Object Storage. Российский сайт: `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/`.
 
 Сервис технически готов к контролируемому пилоту, но не открыт для реальных кандидатов. Legal approval и issuance закрыты, retention automation включён. Главные внешние blockers: legal/privacy решение по реквизитам и регламенту, независимый человеческий SME sign-off v4 и owner sign-off; девять legacy smoke-кодов не удаляются и проверяемо исключены.
 

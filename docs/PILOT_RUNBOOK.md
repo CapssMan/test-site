@@ -1,8 +1,8 @@
 # SkillCheck — runbook контролируемого пилота
 
-Обновлено: 23 июля 2026 года.
+Обновлено: 31 июля 2026 года.
 
-Статус: **подготовлен, пилот не начат**. Этот документ не открывает production gates и не заменяет `PILOT_READINESS.md`. До закрытия всех pre-pilot блокеров сохраняются `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false` и `RETENTION_AUTOMATION_ENABLED=false`.
+Статус: **подготовлен, пилот не начат**. Этот документ не открывает production gates и не заменяет `PILOT_READINESS.md`. До закрытия всех pre-pilot блокеров сохраняются `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false` и `RETENTION_AUTOMATION_ENABLED=true`.
 
 ## Цель и предел первой волны
 

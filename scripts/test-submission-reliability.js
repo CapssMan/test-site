@@ -19,7 +19,7 @@ function extractTopLevelFunction(source, name) {
   return source.slice(start, ends.length ? Math.min(...ends) : source.length).trim();
 }
 
-assert.match(frontend, /const FRONTEND_BUILD = "2026\.07\.31\.1"/);
+assert.match(frontend, /const FRONTEND_BUILD = "2026\.07\.31\.2"/);
 assert.match(backend, /const BACKEND_VERSION = "yandex-disk-mvp-2026-07-27-23"/);
 assert.match(frontend, /const MAX_AUTOMATIC_RETRIES = 2/);
 assert.match(frontend, /const AUTOMATIC_RETRY_DELAYS_MS = \[1500, 4000\]/);

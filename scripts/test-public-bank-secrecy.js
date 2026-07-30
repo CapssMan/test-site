@@ -73,11 +73,11 @@ function extractFunction(name) {
 }
 
 const specs = {
-  "fa-junior": { version: "FA Junior v4.0", count: 40, prefix: "fa4" },
-  "ca-junior": { version: "CA Junior v4.0", count: 80, prefix: "ca4" },
-  "fpa-junior": { version: "FP&A Junior v4.0", count: 40, prefix: "fpa4" },
-  "acc-junior": { version: "ACC Junior v4.0", count: 40, prefix: "acc4" },
-  "bi-junior": { version: "BI Junior v4.0", count: 40, prefix: "bi4" },
+  "fa-junior": { version: "FA Junior v5.0", count: 40, prefix: "fa5" },
+  "ca-junior": { version: "CA Junior v5.0", count: 80, prefix: "ca5" },
+  "fpa-junior": { version: "FP&A Junior v5.0", count: 40, prefix: "fpa5" },
+  "acc-junior": { version: "ACC Junior v5.0", count: 40, prefix: "acc5" },
+  "bi-junior": { version: "BI Junior v5.0", count: 40, prefix: "bi5" },
   "dev-quick": { version: "DEV Quick v2.0", count: 1, prefix: "dev_quick" }
 };
 const bankFiles = fs.readdirSync(dataDirectory).filter(name => name.endsWith(".json")).sort();

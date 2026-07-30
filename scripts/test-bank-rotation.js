@@ -17,6 +17,13 @@ const dataDirectory = path.join(root, "data");
 const backend = fs.readFileSync(path.join(root, "apps-script", "Code.gs"), "utf8");
 const builder = fs.readFileSync(path.join(root, "scripts", "build-rotated-banks.js"), "utf8");
 const promoter = fs.readFileSync(path.join(root, "scripts", "promote-rotated-public-banks.js"), "utf8");
+const CURRENT_SPECS = Object.freeze({
+  "fa-junior": { version: "FA Junior v5.0", count: 40, attempt: 40, idPrefix: "fa5" },
+  "ca-junior": { version: "CA Junior v5.0", count: 80, attempt: 40, idPrefix: "ca5" },
+  "fpa-junior": { version: "FP&A Junior v5.0", count: 40, attempt: 40, idPrefix: "fpa5" },
+  "acc-junior": { version: "ACC Junior v5.0", count: 40, attempt: 40, idPrefix: "acc5" },
+  "bi-junior": { version: "BI Junior v5.0", count: 40, attempt: 40, idPrefix: "bi5" }
+});
 
 function sha256Hex(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -49,7 +56,7 @@ assert.equal(ROTATION_BASELINE_COMMIT, "14b914ff32570218c95ae2a2f03e96a64a60e5a1
 execFileSync("git", ["cat-file", "-e", `${ROTATION_BASELINE_COMMIT}^{commit}`], { cwd: root, windowsHide: true });
 
 let rotatedQuestionCount = 0;
-Object.entries(SPECS).forEach(([testId, spec]) => {
+Object.entries(CURRENT_SPECS).forEach(([testId, spec]) => {
   const fileName = `${testId}.json`;
   const current = JSON.parse(fs.readFileSync(path.join(dataDirectory, fileName), "utf8"));
   const baseline = gitJson(ROTATION_BASELINE_COMMIT, fileName);
@@ -266,4 +273,4 @@ assert.equal(fs.existsSync(privateOut), false, "failed validation must not creat
 assert.equal(fs.existsSync(publicStage), false, "failed validation must not create public staging");
 fs.rmSync(temporaryRoot, { recursive: true, force: true });
 
-console.log("Content rotation tests passed: five v4 banks, 240 new questions, frozen dev fixture.");
+console.log("Content rotation tests passed: frozen v4 mechanism, five current v5 banks, 240 questions and frozen dev fixture.");

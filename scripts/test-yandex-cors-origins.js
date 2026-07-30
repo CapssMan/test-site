@@ -13,10 +13,10 @@ assert.equal(resolveAllowedOrigin({ headers: { Origin: github } }, [yandex]), ya
 assert.throws(() => parseAllowedOrigins("*"), /invalid_allowed_origin/);
 assert.throws(() => parseAllowedOrigins("http://capssman.github.io"), /invalid_allowed_origin/);
 const root = path.resolve(__dirname, "..");
-const deploy = fs.readFileSync(path.join(__dirname, "deploy-yandex-runtime-cors.ps1"), "utf8");
+const deploy = fs.readFileSync(path.join(__dirname, "deploy-yandex-runtime-v5.ps1"), "utf8");
 const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "utf8");
-for (const [source, target] of [["assessment-v5", "assessment-v6"], ["admin-v2", "admin-v3"], ["read-v3", "read-v4"], ["write-v5", "write-v6"]]) assert(deploy.includes('SourceTag = "' + source + '"; TargetTag = "' + target + '"'));
-for (const tag of ["assessment-v6", "admin-v3", "read-v4", "write-v6"]) assert(gateway.includes('tag: "' + tag + '"'));
+for (const [source, target] of [["assessment-v6", "assessment-v7"], ["admin-v3", "admin-v4"], ["read-v4", "read-v5"], ["write-v6", "write-v7"]]) assert(deploy.includes('SourceTag = "' + source + '"; TargetTag = "' + target + '"'));
+for (const tag of ["assessment-v7", "admin-v4", "read-v5", "write-v7"]) assert(gateway.includes('tag: "' + tag + '"'));
 assert(deploy.includes('$allowedOrigins = "' + yandex + '"'));
 assert(!deploy.includes('https://capssman.github.io;'));
 assert(!gateway.includes('https://capssman.github.io'));

@@ -1,3 +1,8 @@
+## Current release addendum — 31 July 2026
+
+Five reviewed v5 banks replace v4 as the current content release: 240/240 questions reviewed, 80 improved (16 medium and 64 low findings), zero wrong keys or arithmetic defects found. Content status is PASS for a small controlled pilot under the limitations in `docs/QUESTION_BANK_REVIEW_V5.md`. This is an AI-assisted internal research review, not independent human SME certification.
+
+Candidate/admin Build `2026.07.31.2` is live. Active runtime tags are `assessment-v7` (`d4ekkde8q2spsi3eh1hp`), `admin-v4` (`d4ee17bj1jr19mpm44eq`), `read-v5` (`d4e2ln4rrpabia9rqtg2`), and `write-v7` (`d4ej8qqg4j7a26fmr4iu`). Pilot gates remain fail-closed until the owner resolves the Roskomnadzor step and explicitly signs off. Historical sections below document earlier releases and are not the current deployment baseline.
 # SkillCheck — текущее состояние
 
 ## Решение по историческим smoke-данным от 26.07.2026

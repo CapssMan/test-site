@@ -61,7 +61,7 @@ try {
   Assert-ExactPublicFiles $fallbackOrigin "github"
 
   $localTest = [IO.File]::ReadAllText((Join-Path $repoRoot "test.html"), [Text.Encoding]::UTF8)
-  if ($localTest -notmatch 'Build 2026\.07\.31\.1' -or $localTest -notmatch 'const FRONTEND_BUILD = "2026\.07\.31\.1"') {
+  if ($localTest -notmatch 'Build 2026\.07\.31\.2' -or $localTest -notmatch 'const FRONTEND_BUILD = "2026\.07\.31\.2"') {
     throw "Candidate visible build and runtime build do not match the approved release."
   }
 

@@ -2,7 +2,7 @@
 
 Five reviewed v5 banks replace v4 as the current content release: 240/240 questions reviewed, 80 improved (16 medium and 64 low findings), zero wrong keys or arithmetic defects found. Content status is PASS for a small controlled pilot under the limitations in `docs/QUESTION_BANK_REVIEW_V5.md`. This is an AI-assisted internal research review, not independent human SME certification.
 
-Candidate/admin Build `2026.07.31.2` is live. Active runtime tags are `assessment-v7` (`d4ekkde8q2spsi3eh1hp`), `admin-v4` (`d4ee17bj1jr19mpm44eq`), `read-v5` (`d4e2ln4rrpabia9rqtg2`), and `write-v7` (`d4ej8qqg4j7a26fmr4iu`). Pilot gates remain fail-closed until the owner resolves the Roskomnadzor step and explicitly signs off. Historical sections below document earlier releases and are not the current deployment baseline.
+Candidate/admin Build `2026.07.31.3` is live. Active runtime tags are `assessment-v8` (`d4eedo2t2kmp4oeg2lhr`), `admin-v5` (`d4ent2k8djh6ebs7rebm`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`). On 31 July 2026 the owner recorded the Roskomnadzor submission, approved UZ-4/type-3 threats, published the operator details and opened both pilot gates. Status: LIMITED GO for an invite-only cohort of 10–30 completions. Historical sections below document earlier releases and are not the current deployment baseline.
 # SkillCheck — текущее состояние
 
 ## Решение по историческим smoke-данным от 26.07.2026
@@ -14,13 +14,13 @@ Candidate/admin Build `2026.07.31.2` is live. Active runtime tags are `assessmen
 
 ## Текущий этап
 
-- Этап 18 «Российский runtime и рейтинг MVP» технически завершён. Реальные кандидаты остаются **NO-GO** до независимого SME review, внешнего legal/privacy решения и финального owner sign-off.
+- Этап 18 «Российский runtime и рейтинг MVP» завершён. С 31 июля 2026 года действует **LIMITED GO** для малой invite-only волны; независимый SME review остаётся условием масштабирования, но не блокером этой исследовательской когорты.
 - Candidate Build `2026.07.31.1` опубликован по адресу `https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net/` и использует российский `/v1/assessment`. GitHub Pages сохранён как рабочий rollback; Apps Script — как legacy backend rollback, а не активный candidate write-path.
 - Публичный bucket содержит ровно 13 разрешённых объектов общим объёмом 584 890 байт: семь HTML и шесть display-only JSON. Все живые объекты совпали с локальными по SHA-256; answer keys, private banks, отчёты и секреты не публикуются.
 - Production browser-origin ограничен основным Yandex-сайтом; GitHub-origin больше не получает разрешение candidate API. Активны `assessment-v6` (`d4ev36locmu9lsjohtf0`), `admin-v3` (`d4etr5b695k94tmua9l3`), `read-v4` (`d4eophije7v42s47s0fp`) и `write-v6` (`d4e5hbn8pmd19vqn20pt`); Yandex-origin проверен на реальных GET/POST, GitHub-origin получает CORS-отказ, wildcard отсутствует.
 - Локальный locked CI теперь выполняет 45 проверок: 40 test-файлов и 5 infrastructure validators. Пять production-банков содержат 240 вопросов без ошибок и предупреждений; шестой `dev-quick` остаётся закрытой технической fixture.
 - IAM-only owner-smoke прошёл полный путь: invitation, session, private bank, 100% server-verified scoring, TXT read-back и точечная очистка. Финальная YDB-проверка: 0 invitations, 0 sessions, 0 results, 0 ranking profiles.
-- Runtime gates подтверждены напрямую: `legal_pilot_approved=false`, `attempt_issuance_enabled=false`, `retention_automation_enabled=true`. Публичный begin возвращает нейтральный `attempt_unavailable`.
+- Runtime gates подтверждены напрямую после отдельного двухшагового открытия: `legal_pilot_approved=true`, `attempt_issuance_enabled=true`, `retention_automation_enabled=true`. Неверное приглашение по-прежнему возвращает нейтральный `attempt_unavailable` без записи данных.
 - Защищённая админка через `admin-v3` умеет результаты, отчёты, агрегаты, приглашения, replay-safe удаление и диагностику. Владелец ранее успешно вошёл с новым PBKDF2-паролем; пароль и секреты не попадают в Git или frontend.
 - Пять закрытых банков v4 размещены в private Object Storage и зарегистрированы в YDB; отчёты и backups имеют утверждённые сроки хранения. Постоянных ключей, Lockbox, VM, CDN и платного домена нет.
 - Рейтинг умеет отдельное opt-in согласие, псевдоним, version-aware публикацию, российскую proof-проверку результата через `assessment-v6`/YDB, хранение только hash management token, отзыв и TTL 365 дней. Публичная база пуста, mock-профилей нет.

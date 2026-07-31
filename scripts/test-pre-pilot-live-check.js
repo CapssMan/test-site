@@ -30,4 +30,4 @@ assert.match(readiness, /подтверждённой рассылки эксп�
 assert.doesNotMatch(readiness, /отправлены четыре адресных письма|reviewer outreach отправлена/);
 assert.match(readiness, /check-pre-pilot-live\.ps1/);
 
-console.log("Pre-pilot live-check safety passed: read-only cross-host/API evidence, closed issuance and truthful outbound status.");
+console.log("Pre-pilot live-check safety passed: read-only cross-host/API evidence and truthful outbound history.");

@@ -21,8 +21,8 @@ for (const version of versions) {
   assert(admin.includes(version), `admin page missing ${version}`);
   assert(migration.includes(version), `ranking pointer migration missing ${version}`);
 }
-assert.match(candidate, /Build 2026\.07\.31\.2/);
-assert.match(admin, /Build 2026\.07\.31\.2/);
+assert.match(candidate, /Build 2026\.07\.31\.3/);
+assert.match(admin, /Build 2026\.07\.31\.3/);
 
 assert.match(bankDeploy, /skillcheck-private-v5-ai-r1/);
 assert.match(bankDeploy, /skillcheck-private-v4-r3/);
@@ -42,10 +42,10 @@ assert.match(bankDeploy, /Download-And-Verify \$finalUri/);
 assert.doesNotMatch(bankDeploy, /privateFileSha256\s*=\s*"[a-f0-9]{64}"/i);
 assert.doesNotMatch(bankDeploy, /(?:OAuth|IAM|YDB)_?(?:TOKEN|KEY)\s*=\s*"[^"\s]+"/i);
 
-for (const [source, target] of [["assessment-v6", "assessment-v7"], ["admin-v3", "admin-v4"], ["read-v4", "read-v5"], ["write-v6", "write-v7"]]) {
+for (const [source, target] of [["assessment-v7", "assessment-v8"], ["admin-v4", "admin-v5"], ["read-v5", "read-v6"], ["write-v7", "write-v8"]]) {
   assert(runtimeDeploy.includes(`SourceTag = "${source}"; TargetTag = "${target}"`));
 }
-for (const tag of ["assessment-v7", "admin-v4", "read-v5", "write-v7"]) {
+for (const tag of ["assessment-v8", "admin-v5", "read-v6", "write-v8"]) {
   assert(gateway.includes(`tag: "${tag}"`));
 }
 assert.match(runtimeDeploy, /--no-logging/);

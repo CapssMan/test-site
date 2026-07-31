@@ -19,7 +19,7 @@ const sessionRow = {
   public_digest: "7".repeat(64), question_ids: JSON.stringify(["fa_001"]), question_set_hash: "8".repeat(64),
   identity_hash: inviteRow.identity_hash, fingerprint_hash: "9".repeat(64), token_jti: "a".repeat(32),
   token_issued_at: now, token_expires_at: later, started_at: now,
-  privacy_consent_version: "skillcheck-pd-consent-2026-07-29-v4", privacy_consented_at: now,
+  privacy_consent_version: "skillcheck-pd-consent-2026-07-31-v5", privacy_consented_at: now,
   age_confirmed: true, purge_at: purge
 };
 const resultRow = {
@@ -32,7 +32,7 @@ const resultRow = {
   result_status: "passed", badge: "Junior Strong", recommendation: "Рекомендуется к интервью",
   block_results: JSON.stringify({ finance: { percent: 100 } }), answer_details: JSON.stringify([{ questionId: "fa_001" }]),
   score_verification: "server-verified", scoring_algorithm_version: "authoritative-v1",
-  telemetry_verification: "client-reported-unverified", privacy_consent_version: "skillcheck-pd-consent-2026-07-29-v4",
+  telemetry_verification: "client-reported-unverified", privacy_consent_version: "skillcheck-pd-consent-2026-07-31-v5",
   privacy_consented_at: now, age_confirmed: true, report_created: true, report_object_key: "reports/FA-ABCDE.txt",
   submission_hash: "c".repeat(64), completed_at: now, technical: false, purge_at: purge
 };

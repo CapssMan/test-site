@@ -10,6 +10,9 @@ $bucket = "assessment-b1gafbjd3dlh-web"
 $gatewayId = "d5d0v6g7vmk9ku6kofjm"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $websiteSettings = Join-Path $repoRoot "cloud\public-website-settings.json"
+$operatorAddressInput = Join-Path $repoRoot "operator-private\roskomnadzor-2026-07-31\10_PUBLIC_OPERATOR_ADDRESS_INPUT.txt"
+$operatorAddressPlaceholder = "[Адрес оператора опубликован на основном сайте Yandex Cloud]"
+$operatorAddressFiles = @("privacy.html", "consent.html", "ranking-consent.html")
 $siteOrigin = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $githubOrigin = "https://capssman.github.io"
 $publicFiles = @(
@@ -80,6 +83,31 @@ function Get-CacheControl([string]$relativePath) {
   return "public, max-age=300, must-revalidate"
 }
 
+function Read-OperatorPublicAddress() {
+  if (-not (Test-Path -LiteralPath $operatorAddressInput -PathType Leaf)) {
+    throw "Local operator address input is missing."
+  }
+  $record = [IO.File]::ReadAllLines($operatorAddressInput) |
+    Where-Object { $_ -match '^PUBLIC_OPERATOR_ADDRESS=' } |
+    Select-Object -First 1
+  if ([String]::IsNullOrWhiteSpace($record)) { throw "Local operator address field is missing." }
+  $address = $record.Substring($record.IndexOf('=') + 1).Trim().TrimEnd('.')
+  if ($address.Length -lt 20 -or $address.Length -gt 300 -or $address -match '[<>]') {
+    throw "Local operator address value is invalid."
+  }
+  return $address
+}
+
+function Get-PublicBytes([string]$source, [string]$relativePath, [string]$operatorAddress) {
+  if ($operatorAddressFiles -notcontains $relativePath) { return ,([IO.File]::ReadAllBytes($source)) }
+  $template = [IO.File]::ReadAllText($source)
+  if (([regex]::Matches($template, [regex]::Escape($operatorAddressPlaceholder))).Count -ne 1) {
+    throw "Operator address placeholder count is invalid: $relativePath"
+  }
+  $rendered = $template.Replace($operatorAddressPlaceholder, [Net.WebUtility]::HtmlEncode($operatorAddress))
+  return ,([Text.UTF8Encoding]::new($false).GetBytes($rendered))
+}
+
 if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is missing." }
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
@@ -100,6 +128,8 @@ foreach ($validator in @("check-static-links.js", "test-public-bank-secrecy.js",
   if ($LASTEXITCODE -ne 0) { throw "Public deployment validator failed." }
 }
 
+$operatorAddress = Read-OperatorPublicAddress
+$expectedSha256 = @{}
 $existingKeys = @(Get-ObjectKeys)
 $unexpectedBefore = @($existingKeys | Where-Object { $publicFiles -notcontains $_ })
 if ($unexpectedBefore.Count -gt 0) { throw "Public bucket contains an object outside the approved allowlist." }
@@ -108,16 +138,32 @@ $null = Invoke-YcJson @("serverless", "api-gateway", "update", "--id", $gatewayI
 
 foreach ($relativePath in $publicFiles) {
   $source = Join-Path $repoRoot ($relativePath -replace "/", "\")
-  $bytes = [IO.File]::ReadAllBytes($source)
+  $bytes = Get-PublicBytes $source $relativePath $operatorAddress
   $md5Algorithm = [Security.Cryptography.MD5]::Create()
   try { $md5 = [Convert]::ToBase64String($md5Algorithm.ComputeHash($bytes)) }
   finally { $md5Algorithm.Dispose() }
+  $shaAlgorithm = [Security.Cryptography.SHA256]::Create()
+  try { $expectedSha256[$relativePath] = ([BitConverter]::ToString($shaAlgorithm.ComputeHash($bytes))).Replace("-", "").ToLowerInvariant() }
+  finally { $shaAlgorithm.Dispose() }
   $contentType = Get-ContentType $relativePath
   $cacheControl = Get-CacheControl $relativePath
-  $null = Invoke-YcJson @(
-    "storage", "s3api", "put-object", "--bucket", $bucket, "--key", $relativePath, "--body", $source,
-    "--content-md5", $md5, "--content-type", $contentType, "--cache-control", $cacheControl
-  )
+  $uploadSource = $source
+  $renderedPath = ""
+  if ($operatorAddressFiles -contains $relativePath) {
+    $renderedPath = Join-Path $env:TEMP ("skillcheck-public-render-" + [Guid]::NewGuid().ToString("N") + ".html")
+    [IO.File]::WriteAllBytes($renderedPath, $bytes)
+    $uploadSource = $renderedPath
+  }
+  try {
+    $null = Invoke-YcJson @(
+      "storage", "s3api", "put-object", "--bucket", $bucket, "--key", $relativePath, "--body", $uploadSource,
+      "--content-md5", $md5, "--content-type", $contentType, "--cache-control", $cacheControl
+    )
+  } finally {
+    if (-not [String]::IsNullOrWhiteSpace($renderedPath)) {
+      Remove-Item -LiteralPath $renderedPath -Force -ErrorAction SilentlyContinue
+    }
+  }
   $head = Invoke-YcJson @("storage", "s3api", "head-object", "--bucket", $bucket, "--key", $relativePath)
   $contentLength = [long](Read-Property $head @("content_length", "contentLength"))
   if ($contentLength -ne $bytes.LongLength) { throw "Uploaded byte length mismatch: $relativePath" }
@@ -142,14 +188,13 @@ try {
   foreach ($relativePath in $publicFiles) {
     $target = Join-Path $temporary ([IO.Path]::GetFileName($relativePath))
     Invoke-WebRequest -Uri ($siteOrigin + "/" + $relativePath) -UseBasicParsing -TimeoutSec 30 -OutFile $target
-    $source = Join-Path $repoRoot ($relativePath -replace "/", "\")
-    if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash) {
+    if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant() -ne [string]$expectedSha256[$relativePath]) {
       throw "Live website checksum mismatch: $relativePath"
     }
   }
   $rootTarget = Join-Path $temporary "root-index.html"
   Invoke-WebRequest -Uri ($siteOrigin + "/") -UseBasicParsing -TimeoutSec 30 -OutFile $rootTarget
-  if ((Get-FileHash -LiteralPath $rootTarget -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath (Join-Path $repoRoot "index.html") -Algorithm SHA256).Hash) {
+  if ((Get-FileHash -LiteralPath $rootTarget -Algorithm SHA256).Hash.ToLowerInvariant() -ne [string]$expectedSha256["index.html"]) {
     throw "Website root does not serve index.html."
   }
 } finally {
@@ -158,11 +203,11 @@ try {
 
 $apiBase = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net"
 $assessmentUrl = $apiBase + "/v1/assessment"
-$closedBody = [ordered]@{
+$invalidInviteBody = [ordered]@{
   action = "beginAttempt"; apiVersion = "attempt-v2"; beginRequestId = "scb_" + "a" * 24; testId = "fa-junior";
   inviteCode = "SC1-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA"; email = "closed@example.invalid";
   browserFingerprint = "deadbeef"; clientBuild = "yandex-public-site-deploy"; privacyConsent = $true;
-  privacyConsentVersion = "skillcheck-pd-consent-2026-07-29-v4"; ageConfirmed = $true
+  privacyConsentVersion = "skillcheck-pd-consent-2026-07-31-v5"; ageConfirmed = $true
 }
 foreach ($origin in @($siteOrigin)) {
   $options = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
@@ -180,12 +225,12 @@ foreach ($origin in @($siteOrigin)) {
       throw "Actual API response CORS failed for an approved frontend origin."
     }
   }
-  $closedResponse = Invoke-WebRequest -Method POST -Uri $assessmentUrl -Headers @{ Origin = $origin } `
-    -ContentType "application/json; charset=utf-8" -Body ($closedBody | ConvertTo-Json -Compress) -UseBasicParsing -TimeoutSec 30
-  $closed = $closedResponse.Content | ConvertFrom-Json
-  if ([string]$closedResponse.Headers["Access-Control-Allow-Origin"] -ne $origin -or
-      $closed.ok -ne $false -or [string]$closed.failureCode -ne "attempt_unavailable") {
-    throw "Actual assessment response CORS or fail-closed pilot gate verification failed."
+  $invalidInviteResponse = Invoke-WebRequest -Method POST -Uri $assessmentUrl -Headers @{ Origin = $origin } `
+    -ContentType "application/json; charset=utf-8" -Body ($invalidInviteBody | ConvertTo-Json -Compress) -UseBasicParsing -TimeoutSec 30
+  $invalidInvite = $invalidInviteResponse.Content | ConvertFrom-Json
+  if ([string]$invalidInviteResponse.Headers["Access-Control-Allow-Origin"] -ne $origin -or
+      $invalidInvite.ok -ne $false -or [string]$invalidInvite.failureCode -ne "attempt_unavailable") {
+    throw "Actual assessment response CORS or invalid-invite privacy check failed."
   }
 }
 
@@ -197,5 +242,5 @@ $deniedOptions = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers 
 if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubOrigin) {
   throw "GitHub fallback unexpectedly received candidate API CORS."
 }
-Write-Host "DONE: 13 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; pilot gate remains closed."
+Write-Host "DONE: 13 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt."
 Write-Host $siteOrigin

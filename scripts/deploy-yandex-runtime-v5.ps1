@@ -11,16 +11,16 @@ $gatewayId = "d5d0v6g7vmk9ku6kofjm"
 $packageBucket = "assessment-b1gafbjd3dlh-private"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $allowedOrigins = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
-$packagePath = Join-Path $env:TEMP ("skillcheck-runtime-v5-" + [Guid]::NewGuid().ToString("N") + ".zip")
+$packagePath = Join-Path $env:TEMP ("skillcheck-runtime-v6-" + [Guid]::NewGuid().ToString("N") + ".zip")
 $packageUri = ""
 
 $versions = @(
-  @{ SourceTag = "assessment-v6"; TargetTag = "assessment-v7"; ExpectedMode = "assessment" },
-  @{ SourceTag = "admin-v3"; TargetTag = "admin-v4"; ExpectedMode = "admin" },
-  @{ SourceTag = "read-v4"; TargetTag = "read-v5"; ExpectedMode = "read" },
-  @{ SourceTag = "write-v6"; TargetTag = "write-v7"; ExpectedMode = "write" }
+  @{ SourceTag = "assessment-v7"; TargetTag = "assessment-v8"; ExpectedMode = "assessment" },
+  @{ SourceTag = "admin-v4"; TargetTag = "admin-v5"; ExpectedMode = "admin" },
+  @{ SourceTag = "read-v5"; TargetTag = "read-v6"; ExpectedMode = "read" },
+  @{ SourceTag = "write-v7"; TargetTag = "write-v8"; ExpectedMode = "write" }
 )
-$retiredTags = @("assessment-v4", "admin-v2", "read-v3", "write-v4")
+$retiredTags = @()
 
 function Get-Version([string]$tag) {
   $raw = & $yc serverless function version get-by-tag --function-id $functionId --tag $tag --format json
@@ -70,7 +70,7 @@ try {
     throw "Runtime package boundary is invalid."
   }
   $packageSha = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()
-  $packageObject = "packages/runtime-v5-$packageSha.zip"
+  $packageObject = "packages/runtime-v6-$packageSha.zip"
   $packageUri = "s3://$packageBucket/$packageObject"
   & $yc storage s3 cp $packagePath $packageUri --only-show-errors
   if ($LASTEXITCODE -ne 0) { throw "Runtime package upload failed." }

@@ -1,6 +1,6 @@
 "use strict";
 
-const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-29-v2";
+const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-31-v3";
 const MIN_RANKED_PARTICIPANTS = 5;
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;

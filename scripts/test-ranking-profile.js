@@ -133,9 +133,9 @@ const handler = createRankingProfileHandler({
   assert.match(testPage, /function publishRankingProfile\(/);
   assert.match(testPage, /function withdrawRankingProfile\(/);
   assert.match(consentPage, new RegExp(RANKING_CONSENT_VERSION));
-  assert.match(gateway, /tag: "assessment-v7"/);
-  assert.match(gateway, /tag: "read-v5"/);
-  assert.match(gateway, /tag: "write-v7"/);
+  assert.match(gateway, /tag: "assessment-v8"/);
+  assert.match(gateway, /tag: "read-v6"/);
+  assert.match(gateway, /tag: "write-v8"/);
 assert.match(gateway, /\/v1\/ranking\/profile:/);
   assert.match(deploy, /SourceTag = "assessment-v4"; TargetTag = "assessment-v5"/);
   assert.match(deploy, /SourceTag = "write-v4"; TargetTag = "write-v5"/);

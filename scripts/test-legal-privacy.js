@@ -13,8 +13,8 @@ const consent = read("consent.html");
 const rankingConsent = read("ranking-consent.html");
 const privacy = read("privacy.html");
 const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
-const pdVersion = "skillcheck-pd-consent-2026-07-29-v4";
-const rankingVersion = "skillcheck-ranking-public-2026-07-29-v2";
+const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
+const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
 function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
 function extract(source, name) {
   const marker = "function " + name + "(";
@@ -24,14 +24,14 @@ function extract(source, name) {
   return source.slice(start, next < 0 ? source.length : next);
 }
 has(consent, pdVersion);
-has(privacy, "skillcheck-privacy-2026-07-29-v6");
+has(privacy, "skillcheck-privacy-2026-07-31-v7");
 has(rankingConsent, rankingVersion);
 for (const page of [consent, privacy, rankingConsent]) {
   has(page, "Кириллов Кирилл Сергеевич");
   has(page, "skillcheck.project@yandex.ru");
 }
 has(consent, "Отдельное согласие на обработку персональных данных");
-has(consent, "Основной маршрут находится в российском контуре Yandex Cloud");
+has(consent, "российском контуре ООО «ЯНДЕКС.ОБЛАКО»");
 has(consent, "ответы, результат и полный отчёт — до 365 дней");
 has(consent, "YDB применяются автоматическим TTL");
 has(privacy, "Yandex API Gateway и Cloud Functions");
@@ -53,8 +53,8 @@ has(extract(backend, "beginAuthoritativeAttempt"), "isLegalPilotApproved");
 has(extract(backend, "issuePilotInviteInternal"), "isLegalPilotApproved");
 has(extract(backend, "setAuthoritativeAttemptIssuanceEnabled"), "isLegalPilotApproved");
 assert(!extract(backend, "doPost").includes("setLegalPilotApprovedForOwner"));
-has(review, "Дата технической сверки: 29 июля 2026 года");
+has(review, "Дата технической сверки и owner-решения: 31 июля 2026 года.");
 has(review, "RETENTION_AUTOMATION_ENABLED=true");
-has(review, "LEGAL_PILOT_APPROVED=false");
-has(review, "ATTEMPT_ISSUANCE_ENABLED=false");
+has(review, "LEGAL_PILOT_APPROVED=true");
+has(review, "ATTEMPT_ISSUANCE_ENABLED=true");
 console.log("Legal/privacy checks passed: current Russian data flow, versioned separate consents, retention and fail-closed pilot gates.");

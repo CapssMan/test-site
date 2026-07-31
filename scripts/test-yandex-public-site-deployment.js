@@ -31,7 +31,16 @@ assert.match(deploy, /--disable-statickey-auth=true/);
 assert.match(deploy, /test-public-bank-secrecy\.js/);
 assert.match(deploy, /failureCode -ne "attempt_unavailable"/);
 assert.doesNotMatch(deploy, /storage\s+.*\s+rm|delete-object|delete-objects|--recursive/);
-assert.doesNotMatch(deploy, /private-bucket|private\/|private\\|apps-script\/|apps-script\\/);
+assert.doesNotMatch(deploy, /private-bucket|apps-script\/|apps-script\\/);
+assert.match(deploy, /operator-private\\roskomnadzor-2026-07-31\\10_PUBLIC_OPERATOR_ADDRESS_INPUT\.txt/);
+assert.match(deploy, /HtmlEncode\(\$operatorAddress\)/);
+assert.match(deploy, /\$expectedSha256/);
+assert.match(deploy, /Remove-Item -LiteralPath \$renderedPath/);
+for (const file of ["privacy.html", "consent.html", "ranking-consent.html"]) {
+  const template = fs.readFileSync(path.join(root, file), "utf8");
+  assert.equal(template.split("[Адрес оператора опубликован на основном сайте Yandex Cloud]").length - 1, 1);
+  assert(!template.includes("PUBLIC_OPERATOR_ADDRESS="));
+}
 
 const originBlock = gateway.match(/origin:\s*\n((?:\s+-\s+"[^"]+"\s*\n){1})/);
 assert(originBlock, "gateway must allow exactly one explicit frontend origin");

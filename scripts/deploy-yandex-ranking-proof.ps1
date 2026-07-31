@@ -101,7 +101,7 @@ try {
   }
   $publishBody = [ordered]@{
     action = "publish"; apiVersion = "ranking-profile-v1"; publicAlias = "Technical Check";
-    publicConsent = $true; publicConsentVersion = "skillcheck-ranking-public-2026-07-29-v2";
+    publicConsent = $true; publicConsentVersion = "skillcheck-ranking-public-2026-07-31-v3";
     resultProof = [ordered]@{ attemptId = "att_" + "a" * 32; attemptToken = $dummyToken; resultCode = "FA-ABCDE" }
   }
   $publishJson = $publishBody | ConvertTo-Json -Compress -Depth 4

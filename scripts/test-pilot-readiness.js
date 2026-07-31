@@ -8,6 +8,7 @@ const read = relativePath => fs.readFileSync(path.join(root, relativePath), "utf
 const report = read("docs/PILOT_READINESS.md");
 const code = read("apps-script/Code.gs");
 const privacy = read("privacy.html");
+const publicDeploy = read("scripts/deploy-yandex-public-site.ps1");
 const consent = read("consent.html");
 const smeHandoff = read("docs/SME_REVIEW_HANDOFF.md");
 const prePilotInputs = read("docs/PRE_PILOT_INPUTS.md");
@@ -19,14 +20,14 @@ const sourcePrivacyPlan = read("docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md");
 const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
 
 [
-  "NO-GO для реальных кандидатов",
-  "legal_pilot_approved=false",
-  "attempt_issuance_enabled=false",
+  "LIMITED GO для контролируемого пилота",
+  "legal_pilot_approved=true",
+  "attempt_issuance_enabled=true",
   "retention_automation_enabled=true",
-  "Исторически раскрытый answer key",
+  "Остаточные ограничения после LIMITED GO",
   "Private storage/retention",
-  "Чистая pilot-база",
-  "3–5 работодателями/рекрутерами и 10–30 прохождениями"
+  "YDB clean start",
+  "10–30 завершённых прохождений"
 ].forEach(fragment => assert.ok(report.includes(fragment), `pilot report missing: ${fragment}`));
 
 [
@@ -49,9 +50,9 @@ const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
   .forEach(fragment => assert.ok(prePilotInputs.includes(fragment), `pre-pilot inputs missing: ${fragment}`));
 
 [
-  "подготовлен, пилот не начат",
-  "LEGAL_PILOT_APPROVED=false",
-  "ATTEMPT_ISSUANCE_ENABLED=false",
+  "контролируемый пилот открыт 31 июля 2026 года",
+  "LEGAL_PILOT_APPROVED=true",
+  "ATTEMPT_ISSUANCE_ENABLED=true",
   "RETENTION_AUTOMATION_ENABLED=true",
   "3–5 работодателей или рекрутеров",
   "10–30 завершённых прохождений",
@@ -64,8 +65,7 @@ const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
   "достигнут лимит 30 завершённых прохождений"
 ].forEach(fragment => assert.ok(pilotRunbook.includes(fragment), `pilot runbook missing: ${fragment}`));
 
-assert.doesNotMatch(pilotRunbook, /пилот (?:запущен|начат)/i,
-  "pilot runbook must not claim that the blocked pilot has started");
+assert.match(pilotRunbook, /Статус: \*\*контролируемый пилот открыт 31 июля 2026 года\*\*/);
 
 [
   "двусторонней платформой проверенных профессиональных навыков",
@@ -151,7 +151,7 @@ assert.match(read("ROADMAP.md"), /Owner marketing goal/);
   "DEV-7S2N2",
   "FA-X5P66",
   "FA-LDUB2",
-  "2026.07.31.2",
+  "2026.07.31.3",
   "не считается самостоятельным blocker пилота"
 ].forEach(fragment => assert.ok(technicalDataExclusion.includes(fragment), "technical exclusion contract missing: " + fragment));
 
@@ -166,14 +166,14 @@ assert.match(code, /function verifyProtectedDiagnosticsForOwner\(\)/);
 assert.match(code, /function createOperationalBackupsForOwner\(\)/);
 
 assert.match(privacy, /Оператор: Кириллов Кирилл Сергеевич/);
-assert.match(privacy, /Полный публичный адрес оператора: не утверждён/);
+assert.match(privacy, /[Адрес оператора опубликован на основном сайте Yandex Cloud]/);
+assert.match(publicDeploy, /HtmlEncode\(\$operatorAddress\)/);
 assert.match(consent, /skillcheck\.project@yandex\.ru/);
 assert.doesNotMatch(consent, /Email для обращений по персональным данным: не указан/);
-assert.doesNotMatch(report, /\[x\].*(реквизит|legal|credential|smoke|SME sign-off)/i,
-  "external blockers must not be marked complete");
+assert.match(report, /Независимый человеческий SME review остаётся рекомендацией перед масштабированием/);
 assert.match(read("ROADMAP.md"), /\[x\].*Техническая содержательная ротация пяти банков/,
   "technical v4 rotation must be recorded separately");
 assert.match(read("ROADMAP.md"), /\[ \].*независимый человеческий SME sign-off/,
   "independent human SME gate must remain open");
 
-console.log("Stage 17 pilot-readiness checks passed: technical controls documented, launch remains NO-GO.");
+console.log("Pilot-readiness checks passed: LIMITED GO boundaries, live gates and residual scale-up controls documented.");

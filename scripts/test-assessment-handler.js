@@ -10,6 +10,7 @@ const {
   buildDeterministicInviteCode,
   hashIdentity,
   hashInviteCode,
+  hmacHex,
   validatePrivateBank
 } = require("../cloud/assessment-core");
 const { createAssessmentHandler } = require("../cloud/assessment-handler");
@@ -38,6 +39,8 @@ class MemoryStore {
     this.bank = bank;
     this.digest = digest;
     this.invites = new Map();
+    this.inviteGroups = new Map();
+    this.groupClaims = new Map();
     this.sessions = new Map();
     this.results = new Map();
     this.audit = [];
@@ -52,6 +55,19 @@ class MemoryStore {
   }
   async getInviteByCodeHash(codeHash) { return Array.from(this.invites.values()).find(invite => invite.codeHash === codeHash) || null; }
   async getInviteById(inviteId) { return this.invites.get(inviteId) || null; }
+  async getInviteGroupByCodeHash(codeHash) { return Array.from(this.inviteGroups.values()).find(group => group.codeHash === codeHash) || null; }
+  async getInviteGroupClaim(groupId, identityHash) { return this.groupClaims.get(groupId + "|" + identityHash) || null; }
+  async claimInviteGroupSeat(claim) {
+    const key = claim.groupId + "|" + claim.identityHash;
+    if (this.groupClaims.has(key)) return this.groupClaims.get(key);
+    const group = this.inviteGroups.get(claim.groupId);
+    if (!group || group.state !== "issued" || group.usedCount >= group.maxUses) return null;
+    const stored = Object.assign({}, claim);
+    this.groupClaims.set(key, stored);
+    group.usedCount += 1;
+    return stored;
+  }
+  async upsertInvite(invite) { this.invites.set(invite.inviteId, Object.assign({}, invite)); }
   async getSessionByInviteId(inviteId) { return Array.from(this.sessions.values()).find(session => session.inviteId === inviteId) || null; }
   async getSessionByAttemptId(attemptId) { return this.sessions.get(attemptId) || null; }
   async listRecentSessions(requestTestId, identityHash) {
@@ -249,6 +265,33 @@ async function post(handler, body) {
   const conflict = await post(handler, Object.assign({}, save, { name: "Другой кандидат" }));
   assert.equal(conflict.failureCode, "submission_conflict");
   assert.equal(store.results.size, 1);
+
+  const groupId = "grp_" + "3".repeat(32);
+  const groupIdentity = hmacHex(inviteSecret, "group-code-identity-v1|" + groupId);
+  const groupCode = buildDeterministicInviteCode(inviteSecret, groupId, testId, groupIdentity);
+  store.inviteGroups.set(groupId, {
+    groupId,
+    testId,
+    codeHash: hashInviteCode(inviteSecret, groupCode),
+    purpose: "University pilot",
+    maxUses: 1,
+    usedCount: 0,
+    validForHours: 24,
+    state: "issued",
+    issuedAt: now,
+    expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+    purgeAt: new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
+  });
+  const groupBegin = await post(handler, Object.assign(beginPayload(groupCode), {
+    beginRequestId: "scb_" + "d".repeat(24), email: "student-one@example.ru"
+  }));
+  assert.equal(groupBegin.ok, true);
+  assert.equal(store.inviteGroups.get(groupId).usedCount, 1);
+  const groupFull = await post(handler, Object.assign(beginPayload(groupCode), {
+    beginRequestId: "scb_" + "e".repeat(24), email: "student-two@example.ru"
+  }));
+  assert.equal(groupFull.failureCode, "attempt_unavailable");
+  assert.equal(store.inviteGroups.get(groupId).usedCount, 1);
 
   store.settings.attempt_issuance_enabled = "false";
   const secondInviteId = "inv_" + "2".repeat(32);

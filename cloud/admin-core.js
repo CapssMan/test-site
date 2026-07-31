@@ -80,6 +80,30 @@ function validateCreateInviteRequest(value) {
   return { requestId, testId, email: validateAdminEmail(value.email), validForHours: hours, purpose: boundedText(value.purpose, 120, false, "Назначение приглашения") };
 }
 
+function validateCreateInviteGroupRequest(value) {
+  assertExactKeys(value, ["action", "apiVersion", "password", "requestId", "testId", "maxUses", "validForHours", "purpose"], "adminCreateInviteGroup");
+  if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
+  const requestId = String(value.requestId || "").trim();
+  const testId = String(value.testId || "");
+  const maxUses = Number(value.maxUses);
+  const hours = Number(value.validForHours);
+  if (!/^scg_[a-z0-9]{24,40}$/.test(requestId)) throw publicError("invalid_request_id", "Некорректный идентификатор операции.");
+  if (!Object.prototype.hasOwnProperty.call(TESTS, testId)) throw publicError("unsupported_test", "Тест недоступен.");
+  if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100) throw publicError("invalid_field", "Проверьте лимит участников.");
+  if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw publicError("invalid_field", "Проверьте срок приглашения.");
+  return { requestId, testId, maxUses, validForHours: hours, purpose: boundedText(value.purpose, 120, false, "Назначение приглашения") };
+}
+
+function validateRevokeInviteGroupRequest(value) {
+  assertExactKeys(value, ["action", "apiVersion", "password", "requestId", "groupId"], "adminRevokeInviteGroup");
+  if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
+  const requestId = String(value.requestId || "").trim();
+  const groupId = String(value.groupId || "").trim();
+  if (!/^sgr_[a-z0-9]{24,40}$/.test(requestId)) throw publicError("invalid_request_id", "Некорректный идентификатор операции.");
+  if (!/^grp_[a-f0-9]{32}$/.test(groupId)) throw publicError("invalid_invite", "Некорректное групповое приглашение.");
+  return { requestId, groupId };
+}
+
 function validateRevokeInviteRequest(value) {
   assertExactKeys(value, ["action", "apiVersion", "password", "requestId", "inviteId"], "adminRevokeInvite");
   if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
@@ -141,6 +165,23 @@ function sanitizeAdminInvite(invite) {
     expiresAt: String(source.expiresAt || ""),
     activatedAt: String(source.activatedAt || ""),
     completedAt: String(source.completedAt || "")
+  };
+}
+
+function sanitizeAdminInviteGroup(group) {
+  const source = isPlainObject(group) ? group : {};
+  const maxUses = Number(source.maxUses);
+  const usedCount = Number(source.usedCount);
+  return {
+    groupId: /^grp_[a-f0-9]{32}$/.test(String(source.groupId || "")) ? String(source.groupId) : "INVALID",
+    testId: Object.prototype.hasOwnProperty.call(TESTS, source.testId) ? String(source.testId) : "unknown",
+    purpose: boundedText(source.purpose, 120, false, "Назначение приглашения"),
+    maxUses: Number.isInteger(maxUses) && maxUses >= 1 && maxUses <= 100 ? maxUses : 0,
+    usedCount: Number.isInteger(usedCount) && usedCount >= 0 ? Math.min(usedCount, maxUses) : 0,
+    state: ["issued", "revoked", "expired", "full"].includes(source.state) ? source.state : "unknown",
+    issuedAt: String(source.issuedAt || ""),
+    expiresAt: String(source.expiresAt || ""),
+    revokedAt: String(source.revokedAt || "")
   };
 }
 
@@ -208,11 +249,14 @@ module.exports = {
   createAdminPasswordRecord,
   deletionStateDigest,
   normalizeResultCode,
+  sanitizeAdminInviteGroup,
   sanitizeAdminInvite,
   sanitizeAdminResult,
   signDeletionPreview,
+  validateCreateInviteGroupRequest,
   validateCreateInviteRequest,
   validateDeletionScope,
+  validateRevokeInviteGroupRequest,
   validateRevokeInviteRequest,
   verifyAdminPassword,
   verifyDeletionPreview

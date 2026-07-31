@@ -46,6 +46,7 @@ class MemoryAdminStore {
       inviteId, requestId: "sci_" + "5".repeat(24), testId: "fa-junior", identityHash: "6".repeat(64), emailMasked: "c***@example.ru",
       purpose: "Pilot", state: "completed", issuedAt: now.toISOString(), expiresAt: "2026-07-29T09:00:00.000Z", attemptId, completedAt: now.toISOString()
     }]]);
+    this.inviteGroups = new Map();
     this.rankings = [{ testId: "fa-junior", publicProfileId: "pub_1", resultCode: code, publicAlias: "Кандидат" }];
     this.operations = new Map();
     this.audit = [];
@@ -57,6 +58,11 @@ class MemoryAdminStore {
   async listInvites() { return Array.from(this.invites.values()); }
   async upsertInvite(invite) { this.invites.set(invite.inviteId, Object.assign({}, invite)); }
   async revokeInvite(id, requestId, revokedAt, purgeAt) { Object.assign(this.invites.get(id), { state: "revoked", revokeRequestId: requestId, revokedAt, purgeAt }); }
+  async getInviteGroupByRequestId(requestId) { return Array.from(this.inviteGroups.values()).find(group => group.requestId === requestId) || null; }
+  async getInviteGroupById(groupId) { return this.inviteGroups.get(groupId) || null; }
+  async listInviteGroups() { return Array.from(this.inviteGroups.values()); }
+  async upsertInviteGroup(group) { this.inviteGroups.set(group.groupId, Object.assign({}, group)); }
+  async revokeInviteGroup(groupId, requestId, revokedAt, purgeAt) { Object.assign(this.inviteGroups.get(groupId), { state: "revoked", revokeRequestId: requestId, revokedAt, purgeAt }); }
   async getSessionByAttemptId(id) { return this.sessions.get(id) || null; }
   async getResultByCode(resultCode) { return this.results.get(resultCode) || null; }
   async listResults() { return Array.from(this.results.values()); }
@@ -138,6 +144,19 @@ async function post(handler, action, requestPassword, fields) {
   const revoke = await post(handler, "adminRevokeInvite", password, { requestId: "scr_" + "8".repeat(24), inviteId: issued.inviteId });
   assert.equal(revoke.status, "revoked");
   assert.match(hashIdentity(identitySecret, "fa-junior", "new@example.ru"), /^[a-f0-9]{64}$/);
+  const groupRequest = {
+    requestId: "scg_" + "a".repeat(24), testId: "fa-junior", maxUses: 30, validForHours: 168, purpose: "University pilot"
+  };
+  const issuedGroup = await post(handler, "adminCreateInviteGroup", password, groupRequest);
+  assert.match(issuedGroup.groupId, /^grp_[a-f0-9]{32}$/);
+  assert.match(issuedGroup.inviteCode, /^SC1(?:-[A-F0-9]{4}){8}$/);
+  assert.equal(issuedGroup.maxUses, 30);
+  const replayedGroup = await post(handler, "adminCreateInviteGroup", password, groupRequest);
+  assert.equal(replayedGroup.replayed, true);
+  const listed = await post(handler, "adminInvites", password, {});
+  assert.equal(listed.inviteGroups.length, 1);
+  const revokedGroup = await post(handler, "adminRevokeInviteGroup", password, { requestId: "sgr_" + "b".repeat(24), groupId: issuedGroup.groupId });
+  assert.equal(revokedGroup.status, "revoked");
 
   const preview = await post(handler, "adminDeletionPreview", password, { code, scope: "full_attempt" });
   assert.equal(preview.found, true);

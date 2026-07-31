@@ -300,7 +300,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.31.3</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.07.31.4</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -382,6 +382,43 @@
             <button id="confirmDeletionButton" class="danger-btn" type="submit">Удалить безвозвратно</button>
           </form>
         </div>
+      </section>
+
+      <section class="card invite-panel" aria-labelledby="inviteGroupHeading">
+        <h2 id="inviteGroupHeading">Групповые ссылки для вузов и потоков</h2>
+        <p>Одна ссылка выдаёт отдельную персональную попытку каждому новому email, пока не исчерпан лимит. Преподавателю достаточно переслать ссылку группе; правильные ответы и данные других участников ему не раскрываются.</p>
+        <form id="inviteGroupForm" class="invite-grid">
+          <div class="field">
+            <label for="inviteGroupTest">Тест</label>
+            <select id="inviteGroupTest" required>
+              <option value="fa-junior">Financial Analyst</option>
+              <option value="ca-junior">Credit Analyst</option>
+              <option value="fpa-junior">FP&amp;A / Budget</option>
+              <option value="acc-junior">Accounting</option>
+              <option value="bi-junior">Finance BI</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="inviteGroupLimit">Лимит участников</label>
+            <input id="inviteGroupLimit" type="number" min="1" max="100" step="1" value="30" required>
+          </div>
+          <div class="field">
+            <label for="inviteGroupHours">Срок, часов</label>
+            <input id="inviteGroupHours" type="number" min="1" max="720" step="1" value="720" required>
+          </div>
+          <div class="field">
+            <label for="inviteGroupPurpose">Название потока</label>
+            <input id="inviteGroupPurpose" type="text" maxlength="120" autocomplete="off" placeholder="Например, пилот вуза">
+          </div>
+          <button id="createInviteGroupButton" class="primary-btn" type="submit">Создать групповую ссылку</button>
+        </form>
+        <div id="inviteGroupStatus" class="status" role="status" aria-live="polite"></div>
+        <div id="inviteGroupOutput" class="invite-output hidden">
+          <p id="inviteGroupOutputMeta"></p>
+          <input id="inviteGroupLink" type="text" readonly aria-label="Групповая ссылка-приглашение">
+          <button id="copyInviteGroupButton" class="secondary-btn" type="button">Копировать ссылку</button>
+        </div>
+        <div id="inviteGroupList" class="invite-list" aria-live="polite"></div>
       </section>
 
       <section class="card invite-panel" aria-labelledby="inviteHeading">
@@ -503,7 +540,7 @@
     const YANDEX_ADMIN_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/admin";
     const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const ADMIN_API_URL = ADMIN_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ADMIN_API_URL;
-    const FRONTEND_BUILD = "2026.07.31.3";
+    const FRONTEND_BUILD = "2026.07.31.4";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze([
@@ -529,10 +566,13 @@
 
     let adminResults = [];
     let adminInvites = [];
+    let adminInviteGroups = [];
     let activePassword = "";
     let isLoading = false;
     let pendingInviteCreation = null;
+    let pendingInviteGroupCreation = null;
     let pendingInviteRevocations = Object.create(null);
+    let pendingInviteGroupRevocations = Object.create(null);
     let attemptIssuanceEnabled = false;
     let legalPilotApproved = false;
     let pendingDeletionPreview = null;
@@ -556,9 +596,16 @@
     document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
     document.getElementById("clearFiltersButton").addEventListener("click", clearFilters);
     document.getElementById("inviteForm").addEventListener("submit", createAdminInvite);
+    document.getElementById("inviteGroupForm").addEventListener("submit", createAdminInviteGroup);
     document.getElementById("deletionPreviewForm").addEventListener("submit", previewAdminDeletion);
     document.getElementById("deletionConfirmForm").addEventListener("submit", confirmAdminDeletion);
     document.getElementById("copyInviteButton").addEventListener("click", copyInviteLink);
+    document.getElementById("copyInviteGroupButton").addEventListener("click", copyInviteGroupLink);
+    document.getElementById("inviteGroupList").addEventListener("click", function(event) {
+      const button = event.target.closest("[data-revoke-invite-group]");
+      if (!button || !document.getElementById("inviteGroupList").contains(button)) return;
+      revokeAdminInviteGroup(button.getAttribute("data-revoke-invite-group"), button);
+    });
     document.getElementById("inviteList").addEventListener("click", function(event) {
       const button = event.target.closest("[data-revoke-invite]");
       if (!button || !document.getElementById("inviteList").contains(button)) return;
@@ -658,16 +705,27 @@
     async function loadAdminInvites() {
       if (!activePassword) return;
       setInviteStatus("Загружаем приглашения…", "");
+      setInviteGroupStatus("Загружаем групповые ссылки…", "");
       try {
         const data = await requestAdminInvites(activePassword);
-        if (data.ok !== true || data.status !== "ok" || !Array.isArray(data.invites)) {
+        if (data.ok !== true || data.status !== "ok" || !Array.isArray(data.invites) || !Array.isArray(data.inviteGroups)) {
           throw new Error(data.message || "Не удалось загрузить приглашения.");
         }
         adminInvites = data.invites.map(normalizeAdminInvite);
+        adminInviteGroups = data.inviteGroups.map(normalizeAdminInviteGroup);
         attemptIssuanceEnabled = data.issuanceEnabled === true;
         legalPilotApproved = data.legalPilotApproved === true;
         setInviteFormEnabled(attemptIssuanceEnabled && legalPilotApproved);
+        renderAdminInviteGroups();
         renderAdminInvites();
+        setInviteGroupStatus(
+          !legalPilotApproved
+            ? "Юридический gate закрыт: выпуск групповых ссылок недоступен."
+            : (attemptIssuanceEnabled
+              ? "Групповые ссылки обновлены. Лимит считается по уникальным email, занявшим место."
+              : "Выпуск групповых ссылок временно заблокирован."),
+          attemptIssuanceEnabled && legalPilotApproved ? "success" : "error"
+        );
         setInviteStatus(
           !legalPilotApproved
             ? "Юридический gate закрыт: укажите реквизиты оператора и контакт, завершите обязательные уведомления/проверки и отдельно подтвердите актуальную версию согласия."
@@ -678,6 +736,7 @@
         );
       } catch (error) {
         setInviteStatus(error && error.message ? error.message : "Не удалось загрузить приглашения.", "error");
+        setInviteGroupStatus(error && error.message ? error.message : "Не удалось загрузить групповые ссылки.", "error");
       }
     }
 
@@ -777,6 +836,129 @@
 
     function formatOptionalDate(value) {
       return value && Number.isFinite(new Date(value).getTime()) ? formatDate(value) : "—";
+    }
+
+    async function createAdminInviteGroup(event) {
+      event.preventDefault();
+      if (!activePassword || !attemptIssuanceEnabled || !legalPilotApproved) {
+        setInviteGroupStatus("Выпуск групповых ссылок сейчас заблокирован pilot gate.", "error");
+        return;
+      }
+      const button = document.getElementById("createInviteGroupButton");
+      const testId = document.getElementById("inviteGroupTest").value;
+      const maxUses = Number(document.getElementById("inviteGroupLimit").value);
+      const validForHours = Number(document.getElementById("inviteGroupHours").value);
+      const purpose = document.getElementById("inviteGroupPurpose").value.trim();
+      if (!TEST_LABELS[testId] || testId === TECHNICAL_TEST_ID || !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100 ||
+          !Number.isInteger(validForHours) || validForHours < 1 || validForHours > 720 || purpose.length > 120) {
+        setInviteGroupStatus("Проверьте тест, лимит, срок и название потока.", "error");
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "Создаём…";
+      setInviteGroupStatus("Выпускаем групповую ссылку…", "");
+      document.getElementById("inviteGroupOutput").classList.add("hidden");
+      document.getElementById("inviteGroupLink").value = "";
+      try {
+        const fingerprint = JSON.stringify({ testId, maxUses, validForHours, purpose });
+        if (!pendingInviteGroupCreation || pendingInviteGroupCreation.fingerprint !== fingerprint) {
+          pendingInviteGroupCreation = { fingerprint, requestId: generateApiRequestId("scg_") };
+        }
+        const data = await requestAdminAction("adminCreateInviteGroup", activePassword, {
+          requestId: pendingInviteGroupCreation.requestId, testId, maxUses, validForHours, purpose
+        });
+        const inviteCode = String(data.inviteCode || "").trim();
+        if (data.ok !== true || data.apiVersion !== API_VERSION || data.testId !== testId ||
+            !/^SC1(?:-[A-F0-9]{4}){8}$/.test(inviteCode) || !/^grp_[a-f0-9]{32}$/.test(String(data.groupId || "")) ||
+            Number(data.maxUses) !== maxUses) throw new Error(data.message || "Backend не выпустил групповую ссылку.");
+        const inviteUrl = buildInviteUrl(testId, inviteCode);
+        document.getElementById("inviteGroupLink").value = inviteUrl;
+        document.getElementById("inviteGroupOutputMeta").textContent =
+          testLabel(testId) + " · лимит " + maxUses + " участников · действует до " + formatDate(data.expiresAt) +
+          (data.replayed ? " · подтверждён повтор запроса" : "") + ".";
+        document.getElementById("inviteGroupOutput").classList.remove("hidden");
+        document.getElementById("inviteGroupPurpose").value = "";
+        pendingInviteGroupCreation = null;
+        setInviteGroupStatus("Групповая ссылка создана. Её можно передать преподавателю для рассылки группе.", "success");
+        await loadAdminInvites();
+      } catch (error) {
+        setInviteGroupStatus(error && error.message ? error.message : "Не удалось создать групповую ссылку.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Создать групповую ссылку";
+      }
+    }
+
+    async function revokeAdminInviteGroup(groupId, button) {
+      if (!activePassword || !/^grp_[a-f0-9]{32}$/.test(String(groupId || "")) || button.disabled) return;
+      button.disabled = true;
+      button.textContent = "Отзываем…";
+      setInviteGroupStatus("Отзываем групповую ссылку…", "");
+      try {
+        if (!pendingInviteGroupRevocations[groupId]) pendingInviteGroupRevocations[groupId] = generateApiRequestId("sgr_");
+        const data = await requestAdminAction("adminRevokeInviteGroup", activePassword, {
+          requestId: pendingInviteGroupRevocations[groupId], groupId
+        });
+        if (data.ok !== true) throw new Error(data.message || "Не удалось отозвать групповую ссылку.");
+        delete pendingInviteGroupRevocations[groupId];
+        setInviteGroupStatus("Групповая ссылка отозвана.", "success");
+        await loadAdminInvites();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "Отозвать";
+        setInviteGroupStatus(error && error.message ? error.message : "Не удалось отозвать групповую ссылку.", "error");
+      }
+    }
+
+    function normalizeAdminInviteGroup(group) {
+      group = group && typeof group === "object" ? group : {};
+      const testId = Object.prototype.hasOwnProperty.call(TEST_LABELS, group.testId) ? String(group.testId) : "unknown";
+      const state = ["issued", "revoked", "expired", "full"].indexOf(String(group.state || "")) >= 0 ? String(group.state) : "unknown";
+      const maxUses = Number(group.maxUses);
+      const usedCount = Number(group.usedCount);
+      return {
+        groupId: /^grp_[a-f0-9]{32}$/.test(String(group.groupId || "")) ? String(group.groupId) : "INVALID",
+        testId, purpose: boundedText(group.purpose, 120),
+        maxUses: Number.isInteger(maxUses) && maxUses >= 1 ? maxUses : 0,
+        usedCount: Number.isInteger(usedCount) && usedCount >= 0 ? usedCount : 0,
+        state, issuedAt: String(group.issuedAt || ""), expiresAt: String(group.expiresAt || "")
+      };
+    }
+
+    function renderAdminInviteGroups() {
+      const rows = adminInviteGroups.slice().sort(function(a, b) { return dateValue(b.issuedAt) - dateValue(a.issuedAt); });
+      document.getElementById("inviteGroupList").innerHTML = rows.length ? rows.map(function(group) {
+        const canRevoke = group.groupId !== "INVALID" && group.state === "issued";
+        return '<div class="invite-row">' +
+          '<div><strong>' + escapeHtml(testLabel(group.testId)) + '</strong><br>' + escapeHtml(group.purpose || "Без пометки") + '</div>' +
+          '<div><strong>' + group.usedCount + ' / ' + group.maxUses + '</strong><br><span class="badge ' + inviteGroupStateClass(group.state) + '">' + escapeHtml(inviteGroupStateLabel(group.state)) + '</span></div>' +
+          '<div>Создано: ' + escapeHtml(formatDate(group.issuedAt)) + '<br>До: ' + escapeHtml(formatDate(group.expiresAt)) + '</div>' +
+          '<div>' + (canRevoke ? '<button class="ghost-btn" type="button" data-revoke-invite-group="' + escapeHtml(group.groupId) + '">Отозвать</button>' : "—") + '</div>' +
+          '</div>';
+      }).join("") : '<div class="empty-state"><strong>Групповых ссылок пока нет</strong>Создайте одну ссылку с заданным лимитом участников.</div>';
+    }
+
+    async function copyInviteGroupLink() {
+      const input = document.getElementById("inviteGroupLink");
+      if (!input.value) return;
+      try {
+        if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(input.value);
+        else { input.focus(); input.select(); document.execCommand("copy"); }
+        setInviteGroupStatus("Ссылка скопирована.", "success");
+      } catch (error) {
+        input.focus(); input.select();
+        setInviteGroupStatus("Автокопирование недоступно. Ссылка выделена — скопируйте её вручную.", "error");
+      }
+    }
+
+    function inviteGroupStateLabel(state) {
+      return ({ issued: "Доступно", full: "Лимит исчерпан", revoked: "Отозвано", expired: "Истекло" })[state] || "Неизвестно";
+    }
+
+    function inviteGroupStateClass(state) {
+      if (state === "issued") return "badge-pass";
+      if (state === "full") return "badge-warn";
+      return "badge-fail";
     }
 
     async function createAdminInvite(event) {
@@ -1260,8 +1442,11 @@
       activePassword = "";
       adminResults = [];
       adminInvites = [];
+      adminInviteGroups = [];
       pendingInviteCreation = null;
+      pendingInviteGroupCreation = null;
       pendingInviteRevocations = Object.create(null);
+      pendingInviteGroupRevocations = Object.create(null);
       attemptIssuanceEnabled = false;
       legalPilotApproved = false;
       adminDiagnostics = null;
@@ -1276,11 +1461,15 @@
       setReportStatus("", "");
       setDeletionStatus("", "");
       setInviteStatus("", "");
+      setInviteGroupStatus("", "");
       setDiagnosticsStatus("", "");
       document.getElementById("diagnosticsContent").classList.add("hidden");
       document.getElementById("diagnosticsContent").innerHTML = "";
       document.getElementById("inviteOutput").classList.add("hidden");
       document.getElementById("inviteLink").value = "";
+      document.getElementById("inviteGroupOutput").classList.add("hidden");
+      document.getElementById("inviteGroupLink").value = "";
+      document.getElementById("inviteGroupList").innerHTML = "";
       document.getElementById("inviteList").innerHTML = "";
       document.getElementById("adminPassword").focus();
     }
@@ -1325,6 +1514,12 @@
       node.className = "status" + (type ? " " + type : "");
     }
 
+    function setInviteGroupStatus(message, type) {
+      const node = document.getElementById("inviteGroupStatus");
+      node.textContent = message;
+      node.className = "status" + (type ? " " + type : "");
+    }
+
     function setDiagnosticsStatus(message, type) {
       const node = document.getElementById("diagnosticsStatus");
       node.textContent = message;
@@ -1332,7 +1527,7 @@
     }
 
     function setInviteFormEnabled(enabled) {
-      Array.prototype.forEach.call(document.querySelectorAll("#inviteForm input, #inviteForm select, #inviteForm button"), function(control) {
+      Array.prototype.forEach.call(document.querySelectorAll("#inviteForm input, #inviteForm select, #inviteForm button, #inviteGroupForm input, #inviteGroupForm select, #inviteGroupForm button"), function(control) {
         control.disabled = !enabled;
       });
     }

@@ -11,7 +11,7 @@ $gatewayId = "d5d0v6g7vmk9ku6kofjm"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $websiteSettings = Join-Path $repoRoot "cloud\public-website-settings.json"
 $operatorAddressInput = Join-Path $repoRoot "operator-private\roskomnadzor-2026-07-31\10_PUBLIC_OPERATOR_ADDRESS_INPUT.txt"
-$operatorAddressPlaceholder = "[Адрес оператора опубликован на основном сайте Yandex Cloud]"
+$operatorAddressPlaceholder = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("W9CQ0LTRgNC10YEg0L7Qv9C10YDQsNGC0L7RgNCwINC+0L/Rg9Cx0LvQuNC60L7QstCw0L0g0L3QsCDQvtGB0L3QvtCy0L3QvtC8INGB0LDQudGC0LUgWWFuZGV4IENsb3VkXQ=="))
 $operatorAddressFiles = @("privacy.html", "consent.html", "ranking-consent.html")
 $siteOrigin = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $githubOrigin = "https://capssman.github.io"

@@ -12,6 +12,7 @@ const {
   SCORE_VERIFICATION_SERVER,
   SUCCESS_THRESHOLD,
   TELEMETRY_VERIFICATION_CLIENT_REPORTED,
+  buildDeterministicInviteCode,
   TESTS,
   calculateScore,
   generateResultCode,
@@ -21,6 +22,7 @@ const {
   hmacHex,
   parseBody,
   publicError,
+  maskEmail,
   questionSetHash,
   randomHex,
   selectQuestionIds,
@@ -294,9 +296,10 @@ function assertDependencies(settings) {
   const reportStorage = settings.reportStorage;
   const requiredStoreMethods = [
     "getRuntimeSettings", "getBankMetadata", "getInviteByCodeHash", "getInviteById",
+    "getInviteGroupByCodeHash", "getInviteGroupClaim", "claimInviteGroupSeat", "upsertInvite",
     "getSessionByInviteId", "getSessionByAttemptId", "listRecentSessions", "insertSession",
-    "markInviteActive", "reserveSession", "completeSession", "completeInvite",
-    "getResultByCode", "getResultByRequestId", "insertResult", "appendAudit"
+    "markInviteActive", "reserveSession", "completeSession", "completeInvite", "getResultByCode",
+    "getResultByRequestId", "insertResult", "appendAudit"
   ];
   if (!store || requiredStoreMethods.some(method => typeof store[method] !== "function")) throw new Error("assessment_store_required");
   if (!bankStorage || typeof bankStorage.readJson !== "function") throw new Error("bank_storage_required");
@@ -357,6 +360,53 @@ function createAssessmentHandler(dependencies) {
     }
   }
 
+  async function resolveGroupInvite(request, codeHash, identityHash, now) {
+    const group = await store.getInviteGroupByCodeHash(codeHash);
+    const expiry = group && validDate(group.expiresAt);
+    if (!group || group.testId !== request.testId || group.state !== "issued" ||
+        !expiry || now >= expiry || !Number.isInteger(group.maxUses) || group.maxUses < 1) return null;
+
+    let claim = await store.getInviteGroupClaim(group.groupId, identityHash);
+    if (!claim) {
+      const recent = await store.listRecentSessions(request.testId, identityHash, plusMs(now, -RETAKE_WINDOW_MS));
+      if (recent.some(session => recentSessionBlocksRetake(session, now))) return null;
+      const inviteId = "inv_" + hmacHex(inviteSecret, "group-child-v1|" + group.groupId + "|" + identityHash).slice(0, 32);
+      claim = await store.claimInviteGroupSeat({
+        groupId: group.groupId,
+        identityHash,
+        inviteId,
+        claimedAt: now,
+        purgeAt: validDate(group.purgeAt) || plusMs(expiry, INVITE_AND_SESSION_RETENTION_MS)
+      });
+      if (!claim || claim.inviteId !== inviteId) return null;
+      await audit("group_invite_claimed", identityHash, "ok", now);
+    }
+
+    let invite = await store.getInviteById(claim.inviteId);
+    if (!invite) {
+      const childCode = buildDeterministicInviteCode(inviteSecret, claim.inviteId, request.testId, identityHash);
+      invite = {
+        inviteId: claim.inviteId,
+        requestId: "scg_" + hmacHex(inviteSecret, "group-child-request-v1|" + group.groupId + "|" + identityHash).slice(0, 32),
+        testId: request.testId,
+        codeHash: hashInviteCode(inviteSecret, childCode),
+        identityHash,
+        emailMasked: maskEmail(request.email),
+        purpose: group.purpose,
+        allowRetake: false,
+        validForHours: Number(group.validForHours || 0),
+        state: "issued",
+        issuedAt: validDate(claim.claimedAt) || now,
+        expiresAt: expiry,
+        purgeAt: validDate(group.purgeAt) || plusMs(expiry, INVITE_AND_SESSION_RETENTION_MS)
+      };
+      await store.upsertInvite(invite);
+      invite = await store.getInviteById(claim.inviteId);
+    }
+    if (!invite || invite.testId !== request.testId || !timingSafeEqual(invite.identityHash, identityHash)) return null;
+    return invite;
+  }
+
   async function beginAttempt(request, context) {
     const now = nowProvider();
     const runtimeSettings = await store.getRuntimeSettings();
@@ -366,7 +416,8 @@ function createAssessmentHandler(dependencies) {
     const codeHash = hashInviteCode(inviteSecret, request.inviteCode);
     const identityHash = hashIdentity(identitySecret, request.testId, request.email);
     const fingerprintHash = hashFingerprint(identitySecret, request.testId, request.browserFingerprint);
-    const invite = await store.getInviteByCodeHash(codeHash);
+    let invite = await store.getInviteByCodeHash(codeHash);
+    if (!invite) invite = await resolveGroupInvite(request, codeHash, identityHash, now);
     const inviteExpiry = invite && validDate(invite.expiresAt);
     if (!invite || invite.testId !== request.testId || !timingSafeEqual(invite.identityHash, identityHash) ||
         !["issued", "active"].includes(invite.state) || !inviteExpiry || now >= inviteExpiry) return unavailableResponse();

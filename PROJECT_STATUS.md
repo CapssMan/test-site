@@ -1,8 +1,15 @@
+## Group invitation release - 31 July 2026
+
+Candidate/admin Build `2026.07.31.4` is live. Active runtime tags are `assessment-v9` (`d4eod8m5pb234o5a0f7v`), `admin-v6` (`d4e97duo0mvk9o4k7llo`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`).
+
+Capped group invitations are live: one teacher-facing link atomically grants one personal attempt per unique normalized email, preserves the existing retake controls, and closes when its configured seat limit is reached. Five first-cohort links were issued with 30 seats each and zero initial claims; bearer links remain only in the ignored local operator record and are never committed to Git.
+
+
 ## Current release addendum — 31 July 2026
 
 Five reviewed v5 banks replace v4 as the current content release: 240/240 questions reviewed, 80 improved (16 medium and 64 low findings), zero wrong keys or arithmetic defects found. Content status is PASS for a small controlled pilot under the limitations in `docs/QUESTION_BANK_REVIEW_V5.md`. This is an AI-assisted internal research review, not independent human SME certification.
 
-Candidate/admin Build `2026.07.31.3` is live. Active runtime tags are `assessment-v8` (`d4eedo2t2kmp4oeg2lhr`), `admin-v5` (`d4ent2k8djh6ebs7rebm`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`). On 31 July 2026 the owner recorded the Roskomnadzor submission, approved UZ-4/type-3 threats, published the operator details and opened both pilot gates. Status: LIMITED GO for an invite-only cohort of 10–30 completions. Historical sections below document earlier releases and are not the current deployment baseline.
+Previous production baseline: candidate/admin Build `2026.07.31.3` with runtime tags `assessment-v8` and `admin-v5`. On 31 July 2026 the owner recorded the Roskomnadzor submission, approved UZ-4/type-3 threats, published the operator details and opened both pilot gates. Historical sections below document earlier releases and are not the current deployment baseline.
 # SkillCheck — текущее состояние
 
 ## Решение по историческим smoke-данным от 26.07.2026

@@ -26,11 +26,14 @@ const {
   adminValidationResponse,
   deletionStateDigest,
   normalizeResultCode,
+  sanitizeAdminInviteGroup,
   sanitizeAdminInvite,
   sanitizeAdminResult,
   signDeletionPreview,
+  validateCreateInviteGroupRequest,
   validateCreateInviteRequest,
   validateDeletionScope,
+  validateRevokeInviteGroupRequest,
   validateRevokeInviteRequest,
   verifyAdminPassword,
   verifyDeletionPreview
@@ -53,6 +56,7 @@ function createAdminHandler(dependencies) {
   const storage = settings.storage;
   const requiredMethods = [
     "getRuntimeSettings", "getBankMetadata", "getInviteByRequestId", "getInviteById", "listInvites", "upsertInvite", "revokeInvite",
+    "getInviteGroupByRequestId", "getInviteGroupById", "listInviteGroups", "upsertInviteGroup", "revokeInviteGroup",
     "getSessionByAttemptId", "getResultByCode", "listResults", "getDiagnostics", "listRankingProfilesByResultCode",
     "deleteRankingProfile", "getDeletionOperation", "upsertDeletionOperation", "deleteAssessmentData", "appendAudit"
   ];
@@ -114,6 +118,12 @@ function createAdminHandler(dependencies) {
       const state = invite.state === "issued" && Number.isFinite(expiry) && now.getTime() >= expiry ? "expired" : invite.state;
       return sanitizeAdminInvite(Object.assign({}, invite, { state }));
     });
+    const inviteGroups = (await store.listInviteGroups(1000)).map(group => {
+      const expiry = new Date(group.expiresAt || "").getTime();
+      let state = group.state === "issued" && Number.isFinite(expiry) && now.getTime() >= expiry ? "expired" : group.state;
+      if (state === "issued" && Number(group.usedCount) >= Number(group.maxUses)) state = "full";
+      return sanitizeAdminInviteGroup(Object.assign({}, group, { state }));
+    });
     return {
       ok: true,
       status: "ok",
@@ -122,7 +132,8 @@ function createAdminHandler(dependencies) {
       issuanceEnabled: runtime.attempt_issuance_enabled === "true",
       legalPilotApproved: runtime.legal_pilot_approved === "true",
       privacyConsentVersion: PRIVACY_CONSENT_VERSION,
-      invites
+      invites,
+      inviteGroups
     };
   }
 
@@ -180,6 +191,66 @@ function createAdminHandler(dependencies) {
     };
   }
 
+  function groupCodeIdentity(group) {
+    return hmacHex(inviteSecret, "group-code-identity-v1|" + group.groupId);
+  }
+
+  function buildInviteGroupResponse(group, replayed) {
+    return {
+      ok: true,
+      status: "issued",
+      backendVersion: ASSESSMENT_BACKEND_VERSION,
+      apiVersion: ASSESSMENT_API_VERSION,
+      groupId: group.groupId,
+      inviteCode: buildDeterministicInviteCode(inviteSecret, group.groupId, group.testId, groupCodeIdentity(group)),
+      testId: group.testId,
+      purpose: group.purpose,
+      maxUses: Number(group.maxUses),
+      usedCount: Number(group.usedCount || 0),
+      expiresAt: String(group.expiresAt instanceof Date ? group.expiresAt.toISOString() : group.expiresAt),
+      replayed: Boolean(replayed)
+    };
+  }
+
+  async function adminCreateInviteGroup(body) {
+    const request = validateCreateInviteGroupRequest(body);
+    const runtime = await store.getRuntimeSettings();
+    if (runtime.legal_pilot_approved !== "true" || runtime.attempt_issuance_enabled !== "true") {
+      return { ok: false, status: "pilot_locked", retryable: false, failureCode: "pilot_locked", backendVersion: ASSESSMENT_BACKEND_VERSION, message: "Выпуск приглашений заблокирован до готовности пилота." };
+    }
+    const bank = await store.getBankMetadata(request.testId, TESTS[request.testId].bankVersion);
+    if (!bank || bank.active !== true) return storageErrorResponse();
+    const groupId = "grp_" + hmacHex(inviteSecret, "invite-group-id-v1|" + request.requestId).slice(0, 32);
+    let group = await store.getInviteGroupByRequestId(request.requestId) || await store.getInviteGroupById(groupId);
+    if (group) {
+      if (group.testId !== request.testId || group.purpose !== request.purpose ||
+          Number(group.maxUses) !== request.maxUses || Number(group.validForHours) !== request.validForHours) {
+        return { ok: false, status: "error", retryable: false, failureCode: "submission_conflict", message: "Повторный запрос не совпадает с исходным." };
+      }
+      return buildInviteGroupResponse(group, true);
+    }
+    const now = nowProvider();
+    const expiresAt = plusMs(now, request.validForHours * 60 * 60 * 1000);
+    group = {
+      groupId,
+      requestId: request.requestId,
+      testId: request.testId,
+      codeHash: "",
+      purpose: request.purpose,
+      maxUses: request.maxUses,
+      usedCount: 0,
+      validForHours: request.validForHours,
+      state: "issued",
+      issuedAt: now,
+      expiresAt,
+      purgeAt: plusMs(now, INVITE_AND_SESSION_RETENTION_MS)
+    };
+    group.codeHash = hashInviteCode(inviteSecret, buildDeterministicInviteCode(inviteSecret, group.groupId, group.testId, groupCodeIdentity(group)));
+    await store.upsertInviteGroup(group);
+    await audit("invite_group_issued", hmacHex(identitySecret, group.groupId), "ok", now);
+    return buildInviteGroupResponse(group, false);
+  }
+
   async function adminRevokeInvite(body) {
     const request = validateRevokeInviteRequest(body);
     const invite = await store.getInviteById(request.inviteId);
@@ -194,6 +265,21 @@ function createAdminHandler(dependencies) {
     await store.revokeInvite(invite.inviteId, request.requestId, now, plusMs(now, INVITE_AND_SESSION_RETENTION_MS));
     await audit("invite_revoked", hmacHex(identitySecret, invite.inviteId), "ok", now);
     return { ok: true, status: "revoked", inviteId: invite.inviteId, requestId: request.requestId, replayed: false, backendVersion: ASSESSMENT_BACKEND_VERSION };
+  }
+
+  async function adminRevokeInviteGroup(body) {
+    const request = validateRevokeInviteGroupRequest(body);
+    const group = await store.getInviteGroupById(request.groupId);
+    if (!group) return { ok: false, status: "not_found", failureCode: "invite_group_not_found", message: "Групповое приглашение не найдено." };
+    if (group.state === "revoked") {
+      return group.revokeRequestId === request.requestId
+        ? { ok: true, status: "revoked", groupId: request.groupId, requestId: request.requestId, replayed: true, backendVersion: ASSESSMENT_BACKEND_VERSION }
+        : { ok: false, status: "error", retryable: false, failureCode: "submission_conflict", message: "Повторный запрос не совпадает с исходным." };
+    }
+    const now = nowProvider();
+    await store.revokeInviteGroup(group.groupId, request.requestId, now, plusMs(now, INVITE_AND_SESSION_RETENTION_MS));
+    await audit("invite_group_revoked", hmacHex(identitySecret, group.groupId), "ok", now);
+    return { ok: true, status: "revoked", groupId: group.groupId, requestId: request.requestId, replayed: false, backendVersion: ASSESSMENT_BACKEND_VERSION };
   }
 
   async function adminDiagnostics() {
@@ -373,7 +459,9 @@ function createAdminHandler(dependencies) {
       else if (body.action === "adminInvites") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminInvites(); }
       else if (body.action === "adminDiagnostics") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminDiagnostics(); }
       else if (body.action === "adminCreateInvite") response = await adminCreateInvite(body);
+      else if (body.action === "adminCreateInviteGroup") response = await adminCreateInviteGroup(body);
       else if (body.action === "adminRevokeInvite") response = await adminRevokeInvite(body);
+      else if (body.action === "adminRevokeInviteGroup") response = await adminRevokeInviteGroup(body);
       else if (body.action === "adminDeletionPreview") response = await adminDeletionPreview(body, context);
       else if (body.action === "adminDeleteResult") response = await adminDeleteResult(body, context);
       else throw publicError("unsupported_action", "Действие не поддерживается.");

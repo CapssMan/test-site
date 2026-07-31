@@ -165,7 +165,7 @@ assert.match(doPost, /assertAllowedObjectKeys\(data, \["action", "apiVersion", "
 
 assert.match(admin, /requestAdminAction\("adminDiagnostics", password, \{\}, 45000\)/);
 assert.match(admin, /Значения properties, пути, идентификаторы и персональные данные не возвращаются/);
-assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.31\.3"/);
+assert.match(admin, /const FRONTEND_BUILD = "2026\.07\.31\.4"/);
 assert.doesNotMatch(admin, /[?&]password=/i, "admin password must never be placed in a URL");
 assert.doesNotMatch(admin, /(?:localStorage|sessionStorage)\.(?:setItem|getItem)/, "admin password and diagnostics must not be persisted in browser storage");
 

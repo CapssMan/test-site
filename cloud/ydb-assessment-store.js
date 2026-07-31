@@ -75,6 +75,37 @@ function mapInvite(row) {
   };
 }
 
+function mapInviteGroup(row) {
+  if (!row) return null;
+  return {
+    groupId: String(row.group_id || ""),
+    requestId: String(row.request_id || ""),
+    testId: String(row.test_id || ""),
+    codeHash: String(row.code_hash || ""),
+    purpose: String(row.purpose || ""),
+    maxUses: Number(row.max_uses || 0),
+    usedCount: Number(row.used_count || 0),
+    validForHours: Number(row.valid_for_hours || 0),
+    state: String(row.state || ""),
+    issuedAt: iso(row.issued_at),
+    expiresAt: iso(row.expires_at),
+    revokedAt: iso(row.revoked_at),
+    revokeRequestId: String(row.revoke_request_id || ""),
+    purgeAt: iso(row.purge_at)
+  };
+}
+
+function mapInviteGroupClaim(row) {
+  if (!row) return null;
+  return {
+    groupId: String(row.group_id || ""),
+    identityHash: String(row.identity_hash || ""),
+    inviteId: String(row.invite_id || ""),
+    claimedAt: iso(row.claimed_at),
+    purgeAt: iso(row.purge_at)
+  };
+}
+
 function mapSession(row) {
   if (!row) return null;
   return {
@@ -164,6 +195,79 @@ function createYdbAssessmentStore(sql) {
         "SELECT * FROM assessment_invites VIEW invite_code WHERE code_hash = ", " LIMIT 1;"
       ], [String(codeHash || "")]);
       return mapInvite(rowsFrom(resultSets)[0]);
+    },
+
+    async getInviteGroupByCodeHash(codeHash) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM assessment_invite_groups VIEW invite_group_code WHERE code_hash = ", " LIMIT 1;"
+      ], [String(codeHash || "")]);
+      return mapInviteGroup(rowsFrom(resultSets)[0]);
+    },
+
+    async getInviteGroupByRequestId(requestId) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM assessment_invite_groups VIEW invite_group_request WHERE request_id = ", " LIMIT 1;"
+      ], [String(requestId || "")]);
+      return mapInviteGroup(rowsFrom(resultSets)[0]);
+    },
+
+    async getInviteGroupById(groupId) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM assessment_invite_groups WHERE group_id = ", ";"
+      ], [String(groupId || "")]);
+      return mapInviteGroup(rowsFrom(resultSets)[0]);
+    },
+
+    async listInviteGroups(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 500, 1000));
+      const resultSets = await executeRead(sql, [
+        `SELECT * FROM assessment_invite_groups ORDER BY issued_at DESC LIMIT ${safeLimit};`
+      ], []);
+      return rowsFrom(resultSets).map(mapInviteGroup);
+    },
+
+    async upsertInviteGroup(group) {
+      const row = group || {};
+      await executeWrite(sql, valueStrings(`UPSERT INTO assessment_invite_groups
+        (group_id, request_id, test_id, code_hash, purpose, max_uses, used_count,
+         valid_for_hours, state, issued_at, expires_at, purge_at)
+        VALUES (`, 12, [], [9, 10, 11]), [row.groupId, row.requestId, row.testId, row.codeHash, row.purpose,
+        row.maxUses, row.usedCount, row.validForHours, row.state, row.issuedAt, row.expiresAt, row.purgeAt]);
+    },
+
+    async getInviteGroupClaim(groupId, identityHash) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM assessment_invite_group_claims WHERE group_id = ", " AND identity_hash = ", ";"
+      ], [String(groupId || ""), String(identityHash || "")]);
+      return mapInviteGroupClaim(rowsFrom(resultSets)[0]);
+    },
+
+    async claimInviteGroupSeat(claim) {
+      const row = claim || {};
+      const existing = await this.getInviteGroupClaim(row.groupId, row.identityHash);
+      if (existing) return existing;
+      await executeWrite(sql, [
+        `$existing = SELECT group_id FROM assessment_invite_group_claims
+          WHERE group_id = `, " AND identity_hash = ", `;
+        $eligible = SELECT group_id FROM assessment_invite_groups
+          WHERE group_id = `, " AND state = ", " AND expires_at > ", `
+            AND used_count < max_uses
+            AND NOT EXISTS (SELECT * FROM $existing);
+        UPSERT INTO assessment_invite_group_claims
+          (group_id, identity_hash, invite_id, claimed_at, purge_at)
+          SELECT group_id, `, " AS identity_hash, ", " AS invite_id, ", " AS claimed_at, ", ` AS purge_at FROM $eligible;
+        UPDATE assessment_invite_groups SET used_count = used_count + 1
+          WHERE group_id IN (SELECT group_id FROM $eligible);`
+      ], [row.groupId, row.identityHash, row.groupId, "issued", row.claimedAt,
+        row.identityHash, row.inviteId, row.claimedAt, row.purgeAt]);
+      return this.getInviteGroupClaim(row.groupId, row.identityHash);
+    },
+
+    async revokeInviteGroup(groupId, requestId, revokedAt, purgeAt) {
+      await executeWrite(sql, [
+        "UPDATE assessment_invite_groups SET state = ", ", revoke_request_id = ", ", revoked_at = ", ", purge_at = ",
+        " WHERE group_id = ", " AND state = ", ";"
+      ], ["revoked", String(requestId), revokedAt, purgeAt, String(groupId), "issued"]);
     },
 
     async getInviteByRequestId(requestId) {
@@ -312,6 +416,8 @@ module.exports = {
   createYdbAssessmentStore,
   executeRead,
   executeWrite,
+  mapInviteGroup,
+  mapInviteGroupClaim,
   mapInvite,
   mapResult,
   mapSession,

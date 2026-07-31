@@ -3,7 +3,7 @@
 const crypto = require("node:crypto");
 
 const ASSESSMENT_API_VERSION = "attempt-v2";
-const ASSESSMENT_BACKEND_VERSION = "yandex-cloud-assessment-2026-07-31-v5-review1";
+const ASSESSMENT_BACKEND_VERSION = "yandex-cloud-assessment-2026-07-31-group-invites1";
 const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
 const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const SCORE_VERIFICATION_SERVER = "server-verified";

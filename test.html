@@ -276,7 +276,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.31.3</div>
+      <div class="build-number">Build 2026.07.31.4</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
@@ -285,14 +285,14 @@
       </p>
 
       <div class="warning">
-        <b>Контролируемый пилот открыт по персональным приглашениям.</b>
-        В пилоте используются пять банков v5 и одна попытка по одноразовому приглашению. Результат является исследовательской оценкой навыков, не официальной сертификацией и не единственным основанием кадрового решения.
+        <b>Контролируемый пилот открыт по персональным и групповым приглашениям.</b>
+        В пилоте используются пять банков v5 и одна персональная попытка на участника. Результат является исследовательской оценкой навыков, не официальной сертификацией и не единственным основанием кадрового решения.
       </div>
 
       <div class="field-group">
         <label for="inviteCode">Код приглашения <span class="required-mark">*</span></label>
         <input id="inviteCode" type="text" placeholder="Введите код из приглашения" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="160" required>
-        <p class="field-help">Код нужен для персональной попытки и после начала теста будет удалён из формы.</p>
+        <p class="field-help">Подойдёт персональная ссылка или общая ссылка преподавателя. После начала код будет удалён из формы.</p>
       </div>
 
       <div class="field-group">
@@ -431,7 +431,7 @@
     const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-31-v3";
-    const FRONTEND_BUILD = "2026.07.31.3";
+    const FRONTEND_BUILD = "2026.07.31.4";
     const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
     const NETWORK_TIMEOUT_MS = 20000;
     const MAX_AUTOMATIC_RETRIES = 2;
@@ -674,7 +674,7 @@
           startButton.textContent = "Начать тест (" + loadedQuestionBank.questionsPerAttempt + " " +
             pluralizeRu(loadedQuestionBank.questionsPerAttempt, "вопрос", "вопроса", "вопросов") + ")";
           setAttemptStatus(
-            "Вопросы готовы. Для начала нужна действующая персональная ссылка или код приглашения.",
+            "Вопросы готовы. Для начала нужна действующая персональная или групповая ссылка-приглашение.",
             "success"
           );
         })

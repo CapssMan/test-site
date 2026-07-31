@@ -20,3 +20,4 @@ rotation-manifest.private.json
 private-banks/
 rotation-source/
 secrets.*
+/operator-private/

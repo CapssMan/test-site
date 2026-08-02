@@ -16,7 +16,7 @@ const root = path.resolve(__dirname, "..");
 const deploy = fs.readFileSync(path.join(__dirname, "deploy-yandex-runtime-v5.ps1"), "utf8");
 const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "utf8");
 for (const [source, target] of [["assessment-v7", "assessment-v8"], ["admin-v4", "admin-v5"], ["read-v5", "read-v6"], ["write-v7", "write-v8"]]) assert(deploy.includes('SourceTag = "' + source + '"; TargetTag = "' + target + '"'));
-for (const tag of ["assessment-v10", "admin-v6", "read-v6", "write-v8"]) assert(gateway.includes('tag: "' + tag + '"'));
+for (const tag of ["assessment-v10", "admin-v7", "read-v6", "write-v8"]) assert(gateway.includes('tag: "' + tag + '"'));
 assert(deploy.includes('$allowedOrigins = "' + yandex + '"'));
 assert(!deploy.includes('https://capssman.github.io;'));
 assert(!gateway.includes('https://capssman.github.io'));

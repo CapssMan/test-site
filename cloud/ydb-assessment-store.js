@@ -268,6 +268,12 @@ function createYdbAssessmentStore(sql) {
       ], ["revoked", String(requestId), revokedAt, purgeAt, String(groupId), "issued"]);
     },
 
+    async updateInviteGroupDescription(groupId, purpose) {
+      await executeWrite(sql, [
+        "UPDATE assessment_invite_groups SET purpose = ", " WHERE group_id = ", ";"
+      ], [String(purpose || ""), String(groupId || "")]);
+    },
+
     async getInviteByRequestId(requestId) {
       const resultSets = await executeRead(sql, [
         "SELECT * FROM assessment_invites VIEW invite_request WHERE request_id = ", " LIMIT 1;"

@@ -63,6 +63,7 @@ class MemoryAdminStore {
   async listInviteGroups() { return Array.from(this.inviteGroups.values()); }
   async upsertInviteGroup(group) { this.inviteGroups.set(group.groupId, Object.assign({}, group)); }
   async revokeInviteGroup(groupId, requestId, revokedAt, purgeAt) { Object.assign(this.inviteGroups.get(groupId), { state: "revoked", revokeRequestId: requestId, revokedAt, purgeAt }); }
+  async updateInviteGroupDescription(groupId, purpose) { Object.assign(this.inviteGroups.get(groupId), { purpose }); }
   async getSessionByAttemptId(id) { return this.sessions.get(id) || null; }
   async getResultByCode(resultCode) { return this.results.get(resultCode) || null; }
   async listResults() { return Array.from(this.results.values()); }
@@ -155,6 +156,25 @@ async function post(handler, action, requestPassword, fields) {
   assert.equal(replayedGroup.replayed, true);
   const listed = await post(handler, "adminInvites", password, {});
   assert.equal(listed.inviteGroups.length, 1);
+  const groupBeforeEdit = Object.assign({}, store.inviteGroups.get(issuedGroup.groupId));
+  const editedGroup = await post(handler, "adminUpdateInviteGroupDescription", password, {
+    requestId: "sge_" + "c".repeat(24), groupId: issuedGroup.groupId, purpose: "Экономический факультет, поток 1"
+  });
+  assert.equal(editedGroup.status, "updated");
+  assert.equal(editedGroup.purpose, "Экономический факультет, поток 1");
+  assert.equal(editedGroup.replayed, false);
+  const groupAfterEdit = store.inviteGroups.get(issuedGroup.groupId);
+  for (const field of ["testId", "maxUses", "usedCount", "validForHours", "state", "issuedAt", "expiresAt", "purgeAt", "codeHash"]) {
+    assert.deepEqual(groupAfterEdit[field], groupBeforeEdit[field], field + " must not change during description edit");
+  }
+  const replayedEdit = await post(handler, "adminUpdateInviteGroupDescription", password, {
+    requestId: "sge_" + "c".repeat(24), groupId: issuedGroup.groupId, purpose: "Экономический факультет, поток 1"
+  });
+  assert.equal(replayedEdit.replayed, true);
+  const rejectedScopeExpansion = await post(handler, "adminUpdateInviteGroupDescription", password, {
+    requestId: "sge_" + "d".repeat(24), groupId: issuedGroup.groupId, purpose: "Попытка", maxUses: 100
+  });
+  assert.equal(rejectedScopeExpansion.ok, false);
   const revokedGroup = await post(handler, "adminRevokeInviteGroup", password, { requestId: "sgr_" + "b".repeat(24), groupId: issuedGroup.groupId });
   assert.equal(revokedGroup.status, "revoked");
 
@@ -176,7 +196,7 @@ async function post(handler, action, requestPassword, fields) {
   });
   assert.equal(deletionReplay.replayed, true);
 
-  console.log("Yandex admin runtime checks passed: PBKDF2 auth, results, reports, diagnostics, gated invites, replay-safe revocation and verified deletion.");
+  console.log("Yandex admin runtime checks passed: PBKDF2 auth, results, reports, diagnostics, description-only group edits, replay-safe revocation and verified deletion.");
 })().catch(error => {
   console.error(error);
   process.exit(1);

@@ -25,7 +25,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "admin-v6"
+        tag: "admin-v7"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
     post:
@@ -45,7 +45,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "admin-v6"
+        tag: "admin-v7"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
   /v1/assessment:

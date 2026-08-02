@@ -1,6 +1,8 @@
-## Table and first-start reliability release - 2 August 2026
+## Group-link description editing release - 2 August 2026
 
-Candidate Build `2026.07.31.5` and admin Build `2026.07.31.4` are live. Active runtime tags are `assessment-v10` (`d4ear9l5kemg3e41gn9d`), `admin-v6` (`d4e97duo0mvk9o4k7llo`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`).
+Candidate Build `2026.07.31.5` and admin Build `2026.07.31.5` are live. Active runtime tags are `assessment-v10` (`d4ear9l5kemg3e41gn9d`), `admin-v7` (`d4e7aa90un3jfkkbqdra`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`).
+
+An administrator can now edit only the description of an existing group invitation. The dedicated API accepts exactly the operation ID, group ID and description; its YDB update touches only `purpose`, leaving the test, link code, limit, used seats, lifetime and state unchanged. The live frontend and admin route passed HTTPS health, CORS, wrong-password denial and exact-file checksum verification.
 
 All 92 Markdown tables in the five current banks now render as semantic, mobile-scrollable HTML tables with escaped cell content. Group-link first start now retries the same idempotent request automatically, the cold path uses two fewer YDB reads, and the assessment runtime timeout is 30 seconds instead of 15 seconds.
 

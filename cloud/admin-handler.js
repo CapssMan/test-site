@@ -35,6 +35,7 @@ const {
   validateDeletionScope,
   validateRevokeInviteGroupRequest,
   validateRevokeInviteRequest,
+  validateUpdateInviteGroupDescriptionRequest,
   verifyAdminPassword,
   verifyDeletionPreview
 } = require("./admin-core");
@@ -56,7 +57,7 @@ function createAdminHandler(dependencies) {
   const storage = settings.storage;
   const requiredMethods = [
     "getRuntimeSettings", "getBankMetadata", "getInviteByRequestId", "getInviteById", "listInvites", "upsertInvite", "revokeInvite",
-    "getInviteGroupByRequestId", "getInviteGroupById", "listInviteGroups", "upsertInviteGroup", "revokeInviteGroup",
+    "getInviteGroupByRequestId", "getInviteGroupById", "listInviteGroups", "upsertInviteGroup", "revokeInviteGroup", "updateInviteGroupDescription",
     "getSessionByAttemptId", "getResultByCode", "listResults", "getDiagnostics", "listRankingProfilesByResultCode",
     "deleteRankingProfile", "getDeletionOperation", "upsertDeletionOperation", "deleteAssessmentData", "appendAudit"
   ];
@@ -282,6 +283,27 @@ function createAdminHandler(dependencies) {
     return { ok: true, status: "revoked", groupId: group.groupId, requestId: request.requestId, replayed: false, backendVersion: ASSESSMENT_BACKEND_VERSION };
   }
 
+  async function adminUpdateInviteGroupDescription(body) {
+    const request = validateUpdateInviteGroupDescriptionRequest(body);
+    const group = await store.getInviteGroupById(request.groupId);
+    if (!group) {
+      return { ok: false, status: "not_found", failureCode: "invite_group_not_found", message: "Групповое приглашение не найдено." };
+    }
+    if (String(group.purpose || "") === request.purpose) {
+      return {
+        ok: true, status: "updated", groupId: group.groupId, requestId: request.requestId,
+        purpose: request.purpose, replayed: true, backendVersion: ASSESSMENT_BACKEND_VERSION
+      };
+    }
+    const now = nowProvider();
+    await store.updateInviteGroupDescription(group.groupId, request.purpose);
+    await audit("invite_group_description_updated", hmacHex(identitySecret, group.groupId), "ok", now);
+    return {
+      ok: true, status: "updated", groupId: group.groupId, requestId: request.requestId,
+      purpose: request.purpose, replayed: false, backendVersion: ASSESSMENT_BACKEND_VERSION
+    };
+  }
+
   async function adminDiagnostics() {
     const now = nowProvider();
     const [runtime, diagnostics] = await Promise.all([store.getRuntimeSettings(), store.getDiagnostics()]);
@@ -462,6 +484,7 @@ function createAdminHandler(dependencies) {
       else if (body.action === "adminCreateInviteGroup") response = await adminCreateInviteGroup(body);
       else if (body.action === "adminRevokeInvite") response = await adminRevokeInvite(body);
       else if (body.action === "adminRevokeInviteGroup") response = await adminRevokeInviteGroup(body);
+      else if (body.action === "adminUpdateInviteGroupDescription") response = await adminUpdateInviteGroupDescription(body);
       else if (body.action === "adminDeletionPreview") response = await adminDeletionPreview(body, context);
       else if (body.action === "adminDeleteResult") response = await adminDeleteResult(body, context);
       else throw publicError("unsupported_action", "Действие не поддерживается.");

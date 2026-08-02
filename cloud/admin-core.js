@@ -104,6 +104,16 @@ function validateRevokeInviteGroupRequest(value) {
   return { requestId, groupId };
 }
 
+function validateUpdateInviteGroupDescriptionRequest(value) {
+  assertExactKeys(value, ["action", "apiVersion", "password", "requestId", "groupId", "purpose"], "adminUpdateInviteGroupDescription");
+  if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
+  const requestId = String(value.requestId || "").trim();
+  const groupId = String(value.groupId || "").trim();
+  if (!/^sge_[a-z0-9]{24,40}$/.test(requestId)) throw publicError("invalid_request_id", "Некорректный идентификатор операции.");
+  if (!/^grp_[a-f0-9]{32}$/.test(groupId)) throw publicError("invalid_invite", "Некорректное групповое приглашение.");
+  return { requestId, groupId, purpose: boundedText(value.purpose, 120, false, "Описание групповой ссылки") };
+}
+
 function validateRevokeInviteRequest(value) {
   assertExactKeys(value, ["action", "apiVersion", "password", "requestId", "inviteId"], "adminRevokeInvite");
   if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
@@ -258,6 +268,7 @@ module.exports = {
   validateDeletionScope,
   validateRevokeInviteGroupRequest,
   validateRevokeInviteRequest,
+  validateUpdateInviteGroupDescriptionRequest,
   verifyAdminPassword,
   verifyDeletionPreview
 };

@@ -158,6 +158,22 @@
     .property-chip.missing { color: #991b1b; background: #fee2e2; }
     .property-chip.defaulted { color: #475569; background: #e2e8f0; }
     .diagnostic-error { margin-top: 12px; padding: 10px 12px; border-radius: 9px; color: #991b1b; background: #fef2f2; font-size: 13px; }
+    .calibration-panel { margin-bottom: 18px; padding: 18px; }
+    .calibration-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+    .calibration-heading h2 { margin: 0 0 6px; font-size: 18px; }
+    .calibration-heading p { margin: 0; max-width: 760px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .calibration-controls { display: flex; align-items: flex-end; gap: 8px; }
+    .calibration-controls .field { min-width: 210px; }
+    .calibration-summary { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; margin: 14px 0; }
+    .calibration-table { overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+    .calibration-table table { min-width: 920px; font-size: 12px; }
+    .calibration-question { min-width: 280px; max-width: 460px; line-height: 1.45; }
+    .calibration-question strong { display: block; margin-bottom: 3px; color: #0f172a; }
+    .signal-list { display: flex; flex-wrap: wrap; gap: 4px; min-width: 150px; }
+    .signal-chip { display: inline-block; padding: 4px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+    .signal-balanced { color: #166534; background: #dcfce7; }
+    .signal-insufficient { color: #475569; background: #e2e8f0; }
+    .signal-review { color: #9a3412; background: #ffedd5; }
     .invite-panel { margin-bottom: 18px; padding: 18px; }
     .invite-panel h2 { margin: 0 0 8px; font-size: 18px; }
     .invite-panel > p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
@@ -277,7 +293,11 @@
       .toolbar-actions button { flex: 1; }
       .login-card { margin: 34px auto; padding: 22px; }
       .filters, .stats-grid, .dashboard { grid-template-columns: 1fr; }
-      .diagnostics-summary { grid-template-columns: 1fr 1fr; }
+      .diagnostics-summary, .calibration-summary { grid-template-columns: 1fr 1fr; }
+      .calibration-heading, .calibration-controls { flex-direction: column; align-items: stretch; }
+      .calibration-controls .field { min-width: 0; }
+      .calibration-table table { min-width: 0; }
+      .calibration-question { min-width: 0; max-width: none; text-align: left; }
       .invite-grid, .invite-row, .invite-output { grid-template-columns: 1fr; }
       .deletion-grid, .deletion-confirm-grid { grid-template-columns: 1fr; }
       .invite-output p { grid-column: auto; }
@@ -306,7 +326,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.02.1</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.03.1</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -352,6 +372,30 @@
         </div>
         <div id="diagnosticsStatus" class="status" role="status" aria-live="polite"></div>
         <div id="diagnosticsContent" class="hidden"></div>
+      </section>
+
+      <section class="card calibration-panel" aria-labelledby="calibrationHeading">
+        <div class="calibration-heading">
+          <div>
+            <h2 id="calibrationHeading">Калибровка вопросов по пилоту</h2>
+            <p>Обезличенная статистика текущей версии банка: правильность, тайм-ауты и среднее время. Первичный сигнал появляется от 10 ответов на вопрос, устойчивый — от 20; выводы не принимаются автоматически.</p>
+          </div>
+          <div class="calibration-controls">
+            <div class="field">
+              <label for="calibrationTest">Тест</label>
+              <select id="calibrationTest">
+                <option value="fa-junior">Financial Analyst</option>
+                <option value="ca-junior">Credit Analyst</option>
+                <option value="fpa-junior">FP&amp;A / Budget</option>
+                <option value="acc-junior">Accounting</option>
+                <option value="bi-junior">Finance BI</option>
+              </select>
+            </div>
+            <button id="refreshCalibrationButton" class="secondary-btn" type="button">Обновить</button>
+          </div>
+        </div>
+        <div id="calibrationStatus" class="status" role="status" aria-live="polite"></div>
+        <div id="calibrationContent" class="hidden"></div>
       </section>
 
       <div class="card report-policy">
@@ -546,7 +590,7 @@
     const YANDEX_ADMIN_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/admin";
     const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const ADMIN_API_URL = ADMIN_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ADMIN_API_URL;
-    const FRONTEND_BUILD = "2026.08.02.1";
+    const FRONTEND_BUILD = "2026.08.03.1";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze([
@@ -587,6 +631,8 @@
     let pendingDeletionRequestId = "";
     let adminDiagnostics = null;
     let diagnosticsLoading = false;
+    let adminQuestionAnalytics = [];
+    let calibrationLoading = false;
 
     document.getElementById("frontendVersion").textContent = "Build " + FRONTEND_BUILD;
     document.getElementById("loginForm").addEventListener("submit", function(event) {
@@ -601,6 +647,8 @@
     });
     document.getElementById("refreshButton").addEventListener("click", function() { loadAdminResults(true); });
     document.getElementById("refreshDiagnosticsButton").addEventListener("click", loadAdminDiagnostics);
+    document.getElementById("refreshCalibrationButton").addEventListener("click", loadAdminQuestionAnalytics);
+    document.getElementById("calibrationTest").addEventListener("change", renderAdminQuestionAnalytics);
     document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
     document.getElementById("clearFiltersButton").addEventListener("click", clearFilters);
     document.getElementById("inviteForm").addEventListener("submit", createAdminInvite);
@@ -660,6 +708,7 @@
         renderAdmin();
         loadAdminInvites();
         loadAdminDiagnostics();
+        loadAdminQuestionAnalytics();
       } catch (error) {
         const message = error && error.message ? error.message : "Не удалось загрузить данные.";
         if (isRefresh && !document.getElementById("adminBlock").classList.contains("hidden")) {
@@ -696,6 +745,10 @@
 
     async function requestAdminDiagnostics(password) {
       return requestAdminAction("adminDiagnostics", password, {}, 45000);
+    }
+
+    async function requestAdminQuestionAnalytics(password) {
+      return requestAdminAction("adminQuestionAnalytics", password, {}, 45000);
     }
 
     async function requestAdminAction(action, password, payload, timeoutMs) {
@@ -836,6 +889,124 @@
         '<h3 class="diagnostic-section-title">Script Properties — только наличие</h3>' +
         '<div class="property-presence">' + properties + "</div>" + error;
       document.getElementById("diagnosticsContent").classList.remove("hidden");
+    }
+
+    async function loadAdminQuestionAnalytics() {
+      if (!activePassword || calibrationLoading) return;
+      calibrationLoading = true;
+      const button = document.getElementById("refreshCalibrationButton");
+      button.disabled = true;
+      button.textContent = "Считаем…";
+      setCalibrationStatus("Собираем обезличенные метрики текущих банков…", "");
+      try {
+        const data = await requestAdminQuestionAnalytics(activePassword);
+        if (!data || data.ok !== true || data.status !== "ok" || data.privacy !== "aggregate-no-candidate-data" ||
+            !Array.isArray(data.tests) || Number(data.minimumInitialSample) !== 10 || Number(data.minimumStableSample) !== 20) {
+          throw new Error(data && data.message ? data.message : "Backend вернул некорректную сводку калибровки.");
+        }
+        adminQuestionAnalytics = normalizeQuestionAnalytics(data.tests);
+        renderAdminQuestionAnalytics();
+        setCalibrationStatus("Сводка обновлена. Персональные данные и ответы отдельных кандидатов не возвращаются.", "success");
+      } catch (error) {
+        setCalibrationStatus(error && error.message ? error.message : "Калибровка временно недоступна.", "error");
+      } finally {
+        calibrationLoading = false;
+        button.disabled = false;
+        button.textContent = "Обновить";
+      }
+    }
+
+    function normalizeQuestionAnalytics(tests) {
+      return tests.filter(function(test) {
+        return test && typeof test === "object" && Object.prototype.hasOwnProperty.call(BANK_VERSIONS, String(test.testId || "")) &&
+          String(test.bankVersion || "") === BANK_VERSIONS[String(test.testId || "")] && Array.isArray(test.questions);
+      }).map(function(test) {
+        const questions = test.questions.filter(function(item) {
+          return item && typeof item === "object" && /^[A-Za-z0-9_-]{1,64}$/.test(String(item.questionId || "")) &&
+            Number.isFinite(Number(item.sampleSize)) && Number(item.sampleSize) >= 1 && Array.isArray(item.signals);
+        }).map(function(item) {
+          const sampleSize = Math.max(1, Math.round(Number(item.sampleSize)));
+          return {
+            questionId: String(item.questionId),
+            topic: boundedText(item.topic, 120),
+            difficulty: ["easy", "medium", "calc", "case", "hard"].indexOf(String(item.difficulty || "")) >= 0 ? String(item.difficulty) : "medium",
+            question: boundedText(item.question, 500),
+            sampleSize: sampleSize,
+            correctRate: Math.max(0, Math.min(100, finiteNumber(item.correctRate))),
+            timeoutRate: Math.max(0, Math.min(100, finiteNumber(item.timeoutRate))),
+            unansweredRate: Math.max(0, Math.min(100, finiteNumber(item.unansweredRate))),
+            averageTimeSpent: Math.max(0, Math.min(3600, finiteNumber(item.averageTimeSpent))),
+            averageTimeLimit: Math.max(1, Math.min(3600, finiteNumber(item.averageTimeLimit))),
+            sampleStatus: ["insufficient", "initial", "stable"].indexOf(String(item.sampleStatus || "")) >= 0 ? String(item.sampleStatus) : "insufficient",
+            signals: item.signals.map(String).filter(function(signal) {
+              return ["insufficient_sample", "too_hard", "too_easy", "time_pressure", "high_skip_rate", "balanced"].indexOf(signal) >= 0;
+            }).slice(0, 4)
+          };
+        });
+        return {
+          testId: String(test.testId),
+          bankVersion: String(test.bankVersion),
+          completedAttempts: Math.max(0, Math.round(finiteNumber(test.completedAttempts))),
+          itemResponses: Math.max(0, Math.round(finiteNumber(test.itemResponses))),
+          observedQuestions: questions.length,
+          questions: questions
+        };
+      });
+    }
+
+    function renderAdminQuestionAnalytics() {
+      const testId = document.getElementById("calibrationTest").value;
+      const test = adminQuestionAnalytics.find(function(item) { return item.testId === testId; });
+      const content = document.getElementById("calibrationContent");
+      if (!test || !test.questions.length) {
+        content.innerHTML = '<div class="empty-state"><strong>По текущей версии этого банка пока нет данных</strong>Метрики появятся после завершённых нетехнических попыток. Первичный вывод — не раньше 10 ответов на конкретный вопрос.</div>';
+        content.classList.remove("hidden");
+        return;
+      }
+      const signalPriority = { too_hard: 0, time_pressure: 1, high_skip_rate: 2, too_easy: 3, insufficient_sample: 4, balanced: 5 };
+      const rows = test.questions.slice().sort(function(left, right) {
+        const leftPriority = Math.min.apply(null, left.signals.map(function(signal) { return signalPriority[signal] === undefined ? 9 : signalPriority[signal]; }).concat([9]));
+        const rightPriority = Math.min.apply(null, right.signals.map(function(signal) { return signalPriority[signal] === undefined ? 9 : signalPriority[signal]; }).concat([9]));
+        return leftPriority - rightPriority || left.correctRate - right.correctRate || left.questionId.localeCompare(right.questionId);
+      });
+      const initialCount = rows.filter(function(item) { return item.sampleSize >= 10; }).length;
+      const stableCount = rows.filter(function(item) { return item.sampleSize >= 20; }).length;
+      const reviewCount = rows.filter(function(item) { return item.sampleSize >= 10 && item.signals.some(function(signal) { return signal !== "balanced"; }); }).length;
+      const body = rows.map(function(item) {
+        return "<tr>" +
+          cell("Вопрос", '<div class="calibration-question"><strong>' + escapeHtml(item.questionId) + " · " + escapeHtml(item.topic || "Без темы") + "</strong>" + escapeHtml(item.question || "Текст недоступен") + "</div>") +
+          cell("Сложность", escapeHtml(difficultyLabel(item.difficulty))) +
+          cell("Ответов", String(item.sampleSize) + '<br><span class="badge ' + (item.sampleStatus === "stable" ? "badge-pass" : "badge-warn") + '">' + escapeHtml(sampleStatusLabel(item.sampleStatus)) + "</span>") +
+          cell("Верно", formatNumber(item.correctRate) + "%") +
+          cell("Тайм-аут", formatNumber(item.timeoutRate) + "%") +
+          cell("Без ответа", formatNumber(item.unansweredRate) + "%") +
+          cell("Время", formatNumber(item.averageTimeSpent) + " / " + formatNumber(item.averageTimeLimit) + " сек.") +
+          cell("Сигнал", '<div class="signal-list">' + item.signals.map(signalChipHtml).join("") + "</div>") +
+          "</tr>";
+      }).join("");
+      content.innerHTML =
+        '<div class="calibration-summary">' +
+          diagnosticItemHtml("Завершённых попыток", test.completedAttempts) +
+          diagnosticItemHtml("Увидено вопросов", test.observedQuestions) +
+          diagnosticItemHtml("Первичная выборка ≥10", initialCount) +
+          diagnosticItemHtml("Устойчивая ≥20 / на проверку", stableCount + " / " + reviewCount) +
+        "</div>" +
+        '<div class="calibration-table"><table><thead><tr><th>Вопрос</th><th>Сложность</th><th>Ответов</th><th>Верно</th><th>Тайм-аут</th><th>Без ответа</th><th>Время</th><th>Сигнал</th></tr></thead><tbody>' + body + "</tbody></table></div>";
+      content.classList.remove("hidden");
+    }
+
+    function signalChipHtml(signal) {
+      const labels = { insufficient_sample: "мало данных", too_hard: "слишком сложный?", too_easy: "слишком лёгкий?", time_pressure: "не хватает времени?", high_skip_rate: "много пропусков", balanced: "в балансе" };
+      const className = signal === "balanced" ? "signal-balanced" : (signal === "insufficient_sample" ? "signal-insufficient" : "signal-review");
+      return '<span class="signal-chip ' + className + '">' + escapeHtml(labels[signal] || signal) + "</span>";
+    }
+
+    function difficultyLabel(value) {
+      return { easy: "Лёгкий", medium: "Средний", calc: "Расчётный", case: "Кейс", hard: "Сложный" }[value] || "Средний";
+    }
+
+    function sampleStatusLabel(value) {
+      return { insufficient: "мало данных", initial: "первично", stable: "устойчиво" }[value] || "мало данных";
     }
 
     function diagnosticItemHtml(label, value) {
@@ -1528,6 +1699,8 @@
       editingInviteGroupId = "";
       adminDiagnostics = null;
       diagnosticsLoading = false;
+      adminQuestionAnalytics = [];
+      calibrationLoading = false;
       resetDeletionPreview(true);
       setInviteFormEnabled(false);
       clearFilters();
@@ -1540,7 +1713,10 @@
       setInviteStatus("", "");
       setInviteGroupStatus("", "");
       setDiagnosticsStatus("", "");
+      setCalibrationStatus("", "");
       document.getElementById("diagnosticsContent").classList.add("hidden");
+      document.getElementById("calibrationContent").classList.add("hidden");
+      document.getElementById("calibrationContent").innerHTML = "";
       document.getElementById("diagnosticsContent").innerHTML = "";
       document.getElementById("inviteOutput").classList.add("hidden");
       document.getElementById("inviteLink").value = "";
@@ -1599,6 +1775,12 @@
 
     function setDiagnosticsStatus(message, type) {
       const node = document.getElementById("diagnosticsStatus");
+      node.textContent = message;
+      node.className = "status" + (type ? " " + type : "");
+    }
+
+    function setCalibrationStatus(message, type) {
+      const node = document.getElementById("calibrationStatus");
       node.textContent = message;
       node.className = "status" + (type ? " " + type : "");
     }

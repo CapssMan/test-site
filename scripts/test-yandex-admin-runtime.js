@@ -35,7 +35,9 @@ class MemoryAdminStore {
       rawScore: 40, rawTotal: 40, unansweredCount: 0, finalScore: 100, percent: 100, tabSwitches: 0,
       advisoryPenalty: 0, trustScore: 100, status: "passed", badge: "Junior Strong", recommendation: "Рекомендуется к интервью",
       blockResults: { finance: { name: "Finance", earned: 40, total: 40, percent: 100, weight: 1 } },
-      answerDetails: [{ questionId: "fa_001" }], scoreVerification: SCORE_VERIFICATION_SERVER,
+      answerDetails: [{ questionId: "fa_001", topic: "Reporting", block: "reporting", difficulty: "medium",
+        question: "Какой показатель нужен?", isCorrect: true, timedOut: false, status: "Верно", timeSpent: 30, timeLimit: 60 }],
+      scoreVerification: SCORE_VERIFICATION_SERVER,
       scoringAlgorithmVersion: AUTHORITATIVE_SCORING_VERSION, telemetryVerification: "client-reported-unverified",
       privacyConsentVersion: PRIVACY_CONSENT_VERSION, privacyConsentedAt: now.toISOString(), ageConfirmed: true,
       reportCreated: true, reportObjectKey: "reports/" + code + ".txt", submissionHash: "4".repeat(64),
@@ -124,6 +126,17 @@ async function post(handler, action, requestPassword, fields) {
   const results = await post(handler, "adminResults", password, {});
   assert.equal(results.results.length, 1);
   assert.equal(results.results[0].scoreVerification, "server-verified");
+  const analytics = await post(handler, "adminQuestionAnalytics", password, {});
+  assert.equal(analytics.privacy, "aggregate-no-candidate-data");
+  assert.equal(analytics.minimumInitialSample, 10);
+  assert.equal(analytics.minimumStableSample, 20);
+  assert.equal(analytics.tests.length, 5);
+  const financialAnalytics = analytics.tests.find(test => test.testId === "fa-junior");
+  assert.equal(financialAnalytics.completedAttempts, 1);
+  assert.equal(financialAnalytics.questions[0].questionId, "fa_001");
+  assert.equal(financialAnalytics.questions[0].correctRate, 100);
+  assert.equal(JSON.stringify(analytics).includes("candidate@example.ru"), false);
+  assert.equal(JSON.stringify(analytics).includes("@candidate_test"), false);
   const report = await post(handler, "adminReport", password, { code });
   assert.equal(report.reportText, "PRIVATE REPORT");
   const diagnostics = await post(handler, "adminDiagnostics", password, {});
@@ -196,7 +209,7 @@ async function post(handler, action, requestPassword, fields) {
   });
   assert.equal(deletionReplay.replayed, true);
 
-  console.log("Yandex admin runtime checks passed: PBKDF2 auth, results, reports, diagnostics, description-only group edits, replay-safe revocation and verified deletion.");
+  console.log("Yandex admin runtime checks passed: PBKDF2 auth, aggregate question analytics, results, reports, diagnostics, description-only group edits, replay-safe revocation and verified deletion.");
 })().catch(error => {
   console.error(error);
   process.exit(1);

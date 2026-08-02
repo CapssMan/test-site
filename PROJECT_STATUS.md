@@ -1,3 +1,13 @@
+## Pilot question analytics release — 3 August 2026
+
+Admin Build `2026.08.03.1` and protected runtime `admin-v9` (`d4e65tmuhh5oa568jjkn`) are live; `admin-v8` remains the immediate rollback. Candidate Build `2026.08.02.1`, assessment `assessment-v11`, ranking `read-v6`/`write-v8`, active v6 banks and pilot gates were not changed.
+
+The protected admin panel now aggregates current-bank item evidence already stored with each result: sample size, correct rate, timeout rate, unanswered rate and average client-reported time versus the limit. Known technical codes, technical rows, historical bank versions and unverified scores are excluded. The endpoint returns no candidate identity, contacts or individual selected/correct answers.
+
+The UI labels fewer than 10 observations per question as insufficient, 10–19 as an initial signal and 20 or more as a stable pilot sample. Possible difficulty/time signals are review prompts only and never change questions, points, thresholds or candidate results automatically. No new database table, paid Yandex service or personal-data category was introduced; the aggregates inherit the existing 12-month result retention and deletion workflow.
+
+Full CI passed 53/53 checks. Production verification confirmed active `admin-v9`, the new backend version, exact SHA-256 parity for live `admin.html`, mobile rules, no-cache HTML and wrong-password denial.
+
 ## Market-calibrated v6 release — 2 August 2026
 
 Candidate Build `2026.08.02.1` and admin Build `2026.08.02.1` are live. Active runtime tags are `assessment-v11` (`d4e1hbljjctoa19a1iq0`), `admin-v8` (`d4ebpumfp2vje98gms08`), `read-v6` (`d4eofca9eo8t29nq5thb`) and `write-v8` (`d4ekl01h3tlr7693sf54`).

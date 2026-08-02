@@ -20,6 +20,7 @@ const {
 } = require("./assessment-core");
 const { resolveAllowedOrigin } = require("./cors-origin");
 const { getMethod, jsonResponse, storageErrorResponse } = require("./assessment-handler");
+const { buildQuestionAnalytics } = require("./question-analytics");
 const {
   MAX_ADMIN_REPORT_CHARS,
   accessDeniedResponse,
@@ -95,6 +96,20 @@ function createAdminHandler(dependencies) {
   async function adminResults() {
     const results = await store.listResults(MAX_ADMIN_RESULTS);
     return { ok: true, status: "ok", backendVersion: ASSESSMENT_BACKEND_VERSION, loadedAt: nowProvider().toISOString(), results: results.map(sanitizeAdminResult) };
+  }
+
+  async function adminQuestionAnalytics() {
+    const results = await store.listResults(MAX_ADMIN_RESULTS);
+    return {
+      ok: true,
+      status: "ok",
+      backendVersion: ASSESSMENT_BACKEND_VERSION,
+      generatedAt: nowProvider().toISOString(),
+      privacy: "aggregate-no-candidate-data",
+      minimumInitialSample: 10,
+      minimumStableSample: 20,
+      tests: buildQuestionAnalytics(results)
+    };
   }
 
   async function adminReport(body, context) {
@@ -477,6 +492,7 @@ function createAdminHandler(dependencies) {
       if (!verifyAdminPassword(body.password, adminPasswordRecord)) return jsonResponse(200, accessDeniedResponse(), allowedOrigin);
       let response;
       if (body.action === "adminResults") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminResults(); }
+      else if (body.action === "adminQuestionAnalytics") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminQuestionAnalytics(); }
       else if (body.action === "adminReport") { exactAction(body, ["action", "apiVersion", "password", "code"]); response = await adminReport(body, context); }
       else if (body.action === "adminInvites") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminInvites(); }
       else if (body.action === "adminDiagnostics") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminDiagnostics(); }

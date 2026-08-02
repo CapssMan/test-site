@@ -35,7 +35,7 @@ for (const [source, targetTag] of [["assessment-v10", "assessment-v11"], ["admin
   assert(runtimeDeploy.includes(`SourceTag = "${source}"; TargetTag = "${targetTag}"`));
 }
 for (const retired of ["assessment-v8", "admin-v5"]) assert(runtimeDeploy.includes(`"${retired}"`));
-for (const tag of ["assessment-v11", "admin-v8", "read-v6", "write-v8"]) {
+for (const tag of ["assessment-v11", "admin-v9", "read-v6", "write-v8"]) {
   assert(gateway.includes(`tag: "${tag}"`));
 }
 assert.match(runtimeDeploy, /--no-logging/);

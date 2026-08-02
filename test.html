@@ -276,7 +276,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.07.31.4</div>
+      <div class="build-number">Build 2026.07.31.5</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
@@ -431,9 +431,10 @@
     const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-31-v3";
-    const FRONTEND_BUILD = "2026.07.31.4";
+    const FRONTEND_BUILD = "2026.07.31.5";
     const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
     const NETWORK_TIMEOUT_MS = 20000;
+    const BEGIN_NETWORK_TIMEOUT_MS = 30000;
     const MAX_AUTOMATIC_RETRIES = 2;
     const AUTOMATIC_RETRY_DELAYS_MS = [1500, 4000];
     const MAX_PENDING_RESULT_TTL_MS = 6 * 60 * 60 * 1000;
@@ -904,7 +905,7 @@
       startButton.textContent = "Проверяем приглашение...";
       setAttemptStatus("Сервер создаёт персональную попытку…", "");
 
-      postJsonOnce(payload)
+      postBeginAttemptWithRetry(payload, 0)
         .then(function(result) {
           var attempt = validateBeginAttemptResponse(result);
           currentAttempt = attempt;
@@ -1691,11 +1692,43 @@
       sendResult(pendingResultData, { reason: "manual" });
     }
 
-    function postJsonOnce(payload) {
+    function postBeginAttemptWithRetry(payload, retryIndex) {
+      return postJsonOnce(payload, BEGIN_NETWORK_TIMEOUT_MS)
+        .then(function(result) {
+          if (!isPlainObject(result) || result.ok !== true) {
+            throw createSubmissionError(
+              String(result && result.message || "Приглашение недоступно или уже использовано."),
+              Boolean(result && result.retryable === true),
+              String(result && result.failureCode || "begin_rejected"),
+              Number(result && result.retryAfterSeconds || 0)
+            );
+          }
+          return result;
+        })
+        .catch(function(error) {
+          if (!isRetryableSubmissionError(error) || retryIndex >= MAX_AUTOMATIC_RETRIES) throw error;
+          var delay = getSubmissionRetryDelay(retryIndex, error);
+          var startButton = document.getElementById("startButton");
+          startButton.textContent = "Сервер запускается — повторяем автоматически…";
+          setAttemptStatus(
+            "Первый ответ задержался. Повторяем тот же безопасный запрос; новое место не расходуется.",
+            ""
+          );
+          return waitForSubmissionRetry(delay).then(function() {
+            return postBeginAttemptWithRetry(payload, retryIndex + 1);
+          });
+        });
+    }
+
+    function postJsonOnce(payload, timeoutMs) {
       var controller = new AbortController();
+      var safeTimeout = Number(timeoutMs);
+      if (!Number.isFinite(safeTimeout) || safeTimeout < 1000 || safeTimeout > 60000) {
+        safeTimeout = NETWORK_TIMEOUT_MS;
+      }
       var timeout = window.setTimeout(function() {
         controller.abort();
-      }, NETWORK_TIMEOUT_MS);
+      }, safeTimeout);
       var requestOptions = {
         method: "POST",
         body: JSON.stringify(payload),
@@ -2333,10 +2366,74 @@
       return "@" + normalized;
     }
 
+    function splitMarkdownTableRow(line) {
+      var trimmed = String(line || "").trim();
+      if (trimmed.charAt(0) !== "|" || trimmed.charAt(trimmed.length - 1) !== "|") return [];
+      return trimmed.slice(1, -1).split("|").map(function(cell) { return cell.trim(); });
+    }
+
+    function isMarkdownTableSeparator(line, expectedCells) {
+      var cells = splitMarkdownTableRow(line);
+      return cells.length === expectedCells && cells.length > 0 && cells.every(function(cell) {
+        return /^:?-{3,}:?$/.test(cell.replace(/\s+/g, ""));
+      });
+    }
+
+    function renderMarkdownQuestionContext(value) {
+      var lines = String(value || "").replace(/\r\n?/g, "\n").split("\n");
+      var html = [];
+      var paragraph = [];
+
+      function flushParagraph() {
+        while (paragraph.length && !paragraph[0].trim()) paragraph.shift();
+        while (paragraph.length && !paragraph[paragraph.length - 1].trim()) paragraph.pop();
+        if (!paragraph.length) return;
+        html.push("<p>" + paragraph.map(function(line) {
+          return escapeHtml(line.trim());
+        }).join("<br>") + "</p>");
+        paragraph = [];
+      }
+
+      for (var index = 0; index < lines.length; index++) {
+        var header = splitMarkdownTableRow(lines[index]);
+        if (header.length > 0 && header.length <= 20 && index + 1 < lines.length &&
+            isMarkdownTableSeparator(lines[index + 1], header.length)) {
+          var rows = [];
+          var cursor = index + 2;
+          while (cursor < lines.length && rows.length < 50) {
+            var row = splitMarkdownTableRow(lines[cursor]);
+            if (row.length !== header.length) break;
+            rows.push(row);
+            cursor += 1;
+          }
+          flushParagraph();
+          html.push('<table class="context-table"><thead><tr>' + header.map(function(cell) {
+            return "<th>" + escapeHtml(cell) + "</th>";
+          }).join("") + "</tr></thead><tbody>" + rows.map(function(row) {
+            return "<tr>" + row.map(function(cell) {
+              return "<td>" + escapeHtml(cell) + "</td>";
+            }).join("") + "</tr>";
+          }).join("") + "</tbody></table>");
+          index = cursor - 1;
+          continue;
+        }
+        paragraph.push(lines[index]);
+      }
+      flushParagraph();
+      return html.join("");
+    }
+
     function sanitizeQuestionContext(value) {
       var source = String(value || "");
       if (!source) return "";
       if (source.length > 5000) source = source.slice(0, 5000);
+      var contextLines = source.replace(/\r\n?/g, "\n").split("\n");
+      var hasMarkdownTable = contextLines.some(function(line, index) {
+        var cells = splitMarkdownTableRow(line);
+        return cells.length > 0 && index + 1 < contextLines.length &&
+          isMarkdownTableSeparator(contextLines[index + 1], cells.length);
+      });
+      if (hasMarkdownTable) source = renderMarkdownQuestionContext(source);
       var template = document.createElement("template");
       if (!template.content) return escapeHtml(source);
       template.innerHTML = source;

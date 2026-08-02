@@ -244,8 +244,6 @@ function createYdbAssessmentStore(sql) {
 
     async claimInviteGroupSeat(claim) {
       const row = claim || {};
-      const existing = await this.getInviteGroupClaim(row.groupId, row.identityHash);
-      if (existing) return existing;
       await executeWrite(sql, [
         `$existing = SELECT group_id FROM assessment_invite_group_claims
           WHERE group_id = `, " AND identity_hash = ", `;

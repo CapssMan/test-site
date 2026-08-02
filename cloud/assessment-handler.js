@@ -401,7 +401,6 @@ function createAssessmentHandler(dependencies) {
         purgeAt: validDate(group.purgeAt) || plusMs(expiry, INVITE_AND_SESSION_RETENTION_MS)
       };
       await store.upsertInvite(invite);
-      invite = await store.getInviteById(claim.inviteId);
     }
     if (!invite || invite.testId !== request.testId || !timingSafeEqual(invite.identityHash, identityHash)) return null;
     return invite;

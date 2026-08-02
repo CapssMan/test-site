@@ -1,6 +1,8 @@
-## Group invitation release - 31 July 2026
+## Table and first-start reliability release - 2 August 2026
 
-Candidate/admin Build `2026.07.31.4` is live. Active runtime tags are `assessment-v9` (`d4eod8m5pb234o5a0f7v`), `admin-v6` (`d4e97duo0mvk9o4k7llo`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`).
+Candidate Build `2026.07.31.5` and admin Build `2026.07.31.4` are live. Active runtime tags are `assessment-v10` (`d4ear9l5kemg3e41gn9d`), `admin-v6` (`d4e97duo0mvk9o4k7llo`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`).
+
+All 92 Markdown tables in the five current banks now render as semantic, mobile-scrollable HTML tables with escaped cell content. Group-link first start now retries the same idempotent request automatically, the cold path uses two fewer YDB reads, and the assessment runtime timeout is 30 seconds instead of 15 seconds.
 
 Capped group invitations are live: one teacher-facing link atomically grants one personal attempt per unique normalized email, preserves the existing retake controls, and closes when its configured seat limit is reached. Five first-cohort links were issued with 30 seats each and zero initial claims; bearer links remain only in the ignored local operator record and are never committed to Git.
 

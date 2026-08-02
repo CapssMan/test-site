@@ -21,7 +21,7 @@ for (const version of versions) {
   assert(admin.includes(version), `admin page missing ${version}`);
   assert(migration.includes(version), `ranking pointer migration missing ${version}`);
 }
-assert.match(candidate, /Build 2026\.07\.31\.4/);
+assert.match(candidate, /Build 2026\.07\.31\.5/);
 assert.match(admin, /Build 2026\.07\.31\.4/);
 
 assert.match(bankDeploy, /skillcheck-private-v5-ai-r1/);
@@ -45,7 +45,7 @@ assert.doesNotMatch(bankDeploy, /(?:OAuth|IAM|YDB)_?(?:TOKEN|KEY)\s*=\s*"[^"\s]+
 for (const [source, target] of [["assessment-v7", "assessment-v8"], ["admin-v4", "admin-v5"], ["read-v5", "read-v6"], ["write-v7", "write-v8"]]) {
   assert(runtimeDeploy.includes(`SourceTag = "${source}"; TargetTag = "${target}"`));
 }
-for (const tag of ["assessment-v9", "admin-v6", "read-v6", "write-v8"]) {
+for (const tag of ["assessment-v10", "admin-v6", "read-v6", "write-v8"]) {
   assert(gateway.includes(`tag: "${tag}"`));
 }
 assert.match(runtimeDeploy, /--no-logging/);

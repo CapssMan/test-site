@@ -19,11 +19,11 @@ const MAX_ANSWERS = 40;
 const RESULT_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 const TESTS = Object.freeze({
-  "fa-junior": Object.freeze({ title: "Financial Analyst Junior", testVersion: "FA Junior v5.0", bankVersion: "FA Junior v5.0", questions: 40, attempt: 40, prefix: "FA" }),
-  "ca-junior": Object.freeze({ title: "Credit Analyst Junior", testVersion: "CA Junior v5.0", bankVersion: "CA Junior v5.0", questions: 80, attempt: 40, prefix: "CA" }),
-  "fpa-junior": Object.freeze({ title: "FP&A / Budget Analyst Junior", testVersion: "FP&A Junior v5.0", bankVersion: "FP&A Junior v5.0", questions: 40, attempt: 40, prefix: "FPA" }),
-  "acc-junior": Object.freeze({ title: "Accounting / Reporting Junior", testVersion: "ACC Junior v5.0", bankVersion: "ACC Junior v5.0", questions: 40, attempt: 40, prefix: "ACC" }),
-  "bi-junior": Object.freeze({ title: "Finance BI / Data Analyst Junior", testVersion: "BI Junior v5.0", bankVersion: "BI Junior v5.0", questions: 40, attempt: 40, prefix: "BI" })
+  "fa-junior": Object.freeze({ title: "Financial Analyst Junior", testVersion: "FA Junior v6.0", bankVersion: "FA Junior v6.0", questions: 40, attempt: 40, prefix: "FA" }),
+  "ca-junior": Object.freeze({ title: "Credit Analyst Junior", testVersion: "CA Junior v6.0", bankVersion: "CA Junior v6.0", questions: 80, attempt: 40, prefix: "CA" }),
+  "fpa-junior": Object.freeze({ title: "FP&A / Budget Analyst Junior", testVersion: "FP&A Junior v6.0", bankVersion: "FP&A Junior v6.0", questions: 40, attempt: 40, prefix: "FPA" }),
+  "acc-junior": Object.freeze({ title: "Accounting / Reporting Junior", testVersion: "ACC Junior v6.0", bankVersion: "ACC Junior v6.0", questions: 40, attempt: 40, prefix: "ACC" }),
+  "bi-junior": Object.freeze({ title: "Finance BI / Data Analyst Junior", testVersion: "BI Junior v6.0", bankVersion: "BI Junior v6.0", questions: 40, attempt: 40, prefix: "BI" })
 });
 
 const ALLOWED_ENGLISH_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);

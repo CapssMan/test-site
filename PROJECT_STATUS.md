@@ -1,3 +1,13 @@
+## Market-calibrated v6 release — 2 August 2026
+
+Candidate Build `2026.08.02.1` and admin Build `2026.08.02.1` are live. Active runtime tags are `assessment-v11` (`d4e1hbljjctoa19a1iq0`), `admin-v8` (`d4ebpumfp2vje98gms08`), `read-v6` (`d4eofca9eo8t29nq5thb`) and `write-v8` (`d4ekl01h3tlr7693sf54`).
+
+Five market-calibrated v6 banks are active in private Object Storage and YDB. All 240 answer meanings and option sets retain parity with the reviewed v5 release; 35 dense prompts were simplified. The distribution is now 62 easy, 88 medium, 55 calculation, 29 case and 6 hard questions. Hard questions contribute only 3.6–3.7% of available points and serve as a ranking differentiator rather than a junior-pass prerequisite.
+
+The calibration is aligned with current junior vacancy skill patterns and established assessment-library scope without copying third-party questions. It is suitable for the controlled pilot as an AI-assisted internal assessment, not a psychometrically validated certification. The next content decision must use pilot item statistics after 10–30 completions per test.
+
+Production cutover was performed with issuance temporarily paused. Only two terminal `completed` sessions existed; no active attempt was interrupted. Private artifact checksums, five YDB version pointers, 13/13 public object checksums, Yandex-only CORS and both runtime health endpoints passed, after which `attempt_issuance_enabled=true` was restored. Prior v5 objects and immediate runtime predecessors remain available for rollback.
+
 ## Group-link description editing release - 2 August 2026
 
 Candidate Build `2026.07.31.5` and admin Build `2026.07.31.5` are live. Active runtime tags are `assessment-v10` (`d4ear9l5kemg3e41gn9d`), `admin-v7` (`d4e7aa90un3jfkkbqdra`), `read-v6` (`d4eofca9eo8t29nq5thb`), and `write-v8` (`d4ekl01h3tlr7693sf54`).

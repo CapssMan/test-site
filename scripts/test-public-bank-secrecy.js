@@ -36,8 +36,8 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function optionId(testId, questionId, text) {
-  return "opt_" + sha256Hex(`skillcheck-option-v1|${testId}|${questionId}|${text}`).slice(0, 20);
+function optionId(namespace, testId, questionId, text) {
+  return "opt_" + sha256Hex(`${namespace}|${testId}|${questionId}|${text}`).slice(0, 20);
 }
 
 function exactKeys(value, expected, location) {
@@ -72,13 +72,14 @@ function extractFunction(name) {
   return backend.slice(start, next < 0 ? backend.length : next).trim();
 }
 
+const marketNamespace = "skillcheck-option-v6-market-calibrated";
 const specs = {
-  "fa-junior": { version: "FA Junior v5.0", count: 40, prefix: "fa5" },
-  "ca-junior": { version: "CA Junior v5.0", count: 80, prefix: "ca5" },
-  "fpa-junior": { version: "FP&A Junior v5.0", count: 40, prefix: "fpa5" },
-  "acc-junior": { version: "ACC Junior v5.0", count: 40, prefix: "acc5" },
-  "bi-junior": { version: "BI Junior v5.0", count: 40, prefix: "bi5" },
-  "dev-quick": { version: "DEV Quick v2.0", count: 1, prefix: "dev_quick" }
+  "fa-junior": { version: "FA Junior v6.0", count: 40, prefix: "fa6", namespace: marketNamespace },
+  "ca-junior": { version: "CA Junior v6.0", count: 80, prefix: "ca6", namespace: marketNamespace },
+  "fpa-junior": { version: "FP&A Junior v6.0", count: 40, prefix: "fpa6", namespace: marketNamespace },
+  "acc-junior": { version: "ACC Junior v6.0", count: 40, prefix: "acc6", namespace: marketNamespace },
+  "bi-junior": { version: "BI Junior v6.0", count: 40, prefix: "bi6", namespace: marketNamespace },
+  "dev-quick": { version: "DEV Quick v2.0", count: 1, prefix: "dev_quick", namespace: "skillcheck-option-v1" }
 };
 const bankFiles = fs.readdirSync(dataDirectory).filter(name => name.endsWith(".json")).sort();
 assert.deepEqual(bankFiles,
@@ -110,7 +111,7 @@ banks.forEach(({ fileName, bank }) => {
     assert.deepEqual(ids, ids.slice().sort());
     question.options.forEach(option => {
       exactKeys(option, OPTION_KEYS, `${fileName}/${question.id}/${option.id}`);
-      assert.equal(option.id, optionId(bank.testId, question.id, option.text));
+      assert.equal(option.id, optionId(spec.namespace, bank.testId, question.id, option.text));
       assert(!seenOptions.has(option.id));
       seenOptions.add(option.id);
     });
@@ -144,7 +145,7 @@ const migrated = migrationContext.__migration.migrateLegacyBank(
 );
 assertNoForbiddenKeys(migrated.publicBank, "synthetic.publicBank");
 assert.equal(migrated.privateBank.questions[0].comment, "private rationale");
-assert.equal(migrated.privateBank.questions[0].correctOptionId, optionId("dev-quick", "dev_quick_001", "Mike"));
+assert.equal(migrated.privateBank.questions[0].correctOptionId, optionId("skillcheck-option-v1", "dev-quick", "dev_quick_001", "Mike"));
 assert.deepEqual(migrated.publicBank.questions[0].options, migrated.privateBank.questions[0].options);
 
 const privateAnchorState = { source: null };

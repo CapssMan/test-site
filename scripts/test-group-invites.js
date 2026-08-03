@@ -37,11 +37,14 @@ assert.match(assessment, /if \(!invite\) invite = await resolveGroupInvite/);
 
 assert.match(adminCore, /validateCreateInviteGroupRequest/);
 assert.match(adminCore, /validateUpdateInviteGroupDescriptionRequest/);
+assert.match(adminCore, /validateRevealInviteGroupRequest/);
 assert.match(adminCore, /assertExactKeys\(value, \["action", "apiVersion", "password", "requestId", "groupId", "purpose"\], "adminUpdateInviteGroupDescription"\)/);
 assert.match(adminCore, /maxUses < 1 \|\| maxUses > 100/);
 assert.match(adminHandler, /adminCreateInviteGroup/);
 assert.match(adminHandler, /adminRevokeInviteGroup/);
 assert.match(adminHandler, /adminUpdateInviteGroupDescription/);
+assert.match(adminHandler, /adminRevealInviteGroup/);
+assert.match(adminHandler, /invite_group_code_integrity_failed/);
 assert.match(adminHandler, /inviteGroups/);
 
 for (const id of [
@@ -50,10 +53,13 @@ for (const id of [
 ]) assert.match(admin, new RegExp('id="' + id + '"'));
 assert.match(admin, /value="30"/);
 assert.match(admin, /url\.hash = "invite="/);
+assert.match(admin, /data-copy-invite-group/);
+assert.match(admin, /requestAdminAction\("adminRevealInviteGroup"/);
+assert.match(admin, /Копировать ссылку/);
 assert.match(admin, /data-edit-invite-group-description/);
 assert.match(admin, /data-save-invite-group-description/);
 assert.match(admin, /Описание групповой ссылки сохранено\. Остальные параметры не изменены\./);
 assert.match(candidate, /персональным и групповым приглашениям/);
 assert.match(candidate, /общая ссылка преподавателя/);
 
-console.log("Group invite checks passed: capped cohort schema, atomic unique claims, description-only editing, admin controls and candidate flow.");
+console.log("Group invite checks passed: capped cohort schema, atomic unique claims, description-only editing, protected link recovery, admin controls and candidate flow.");

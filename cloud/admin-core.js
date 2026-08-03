@@ -94,6 +94,14 @@ function validateCreateInviteGroupRequest(value) {
   return { requestId, testId, maxUses, validForHours: hours, purpose: boundedText(value.purpose, 120, false, "Назначение приглашения") };
 }
 
+function validateRevealInviteGroupRequest(value) {
+  assertExactKeys(value, ["action", "apiVersion", "password", "groupId"], "adminRevealInviteGroup");
+  if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
+  const groupId = String(value.groupId || "").trim();
+  if (!/^grp_[a-f0-9]{32}$/.test(groupId)) throw publicError("invalid_invite", "Некорректное групповое приглашение.");
+  return { groupId };
+}
+
 function validateRevokeInviteGroupRequest(value) {
   assertExactKeys(value, ["action", "apiVersion", "password", "requestId", "groupId"], "adminRevokeInviteGroup");
   if (value.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
@@ -266,6 +274,7 @@ module.exports = {
   validateCreateInviteGroupRequest,
   validateCreateInviteRequest,
   validateDeletionScope,
+  validateRevealInviteGroupRequest,
   validateRevokeInviteGroupRequest,
   validateRevokeInviteRequest,
   validateUpdateInviteGroupDescriptionRequest,

@@ -169,6 +169,11 @@ async function post(handler, action, requestPassword, fields) {
   assert.equal(replayedGroup.replayed, true);
   const listed = await post(handler, "adminInvites", password, {});
   assert.equal(listed.inviteGroups.length, 1);
+  assert.equal(listed.inviteGroups[0].inviteCode, undefined);
+  const revealedGroup = await post(handler, "adminRevealInviteGroup", password, { groupId: issuedGroup.groupId });
+  assert.equal(revealedGroup.status, "available");
+  assert.equal(revealedGroup.inviteCode, issuedGroup.inviteCode);
+  assert.equal(revealedGroup.testId, issuedGroup.testId);
   const groupBeforeEdit = Object.assign({}, store.inviteGroups.get(issuedGroup.groupId));
   const editedGroup = await post(handler, "adminUpdateInviteGroupDescription", password, {
     requestId: "sge_" + "c".repeat(24), groupId: issuedGroup.groupId, purpose: "Экономический факультет, поток 1"
@@ -190,6 +195,9 @@ async function post(handler, action, requestPassword, fields) {
   assert.equal(rejectedScopeExpansion.ok, false);
   const revokedGroup = await post(handler, "adminRevokeInviteGroup", password, { requestId: "sgr_" + "b".repeat(24), groupId: issuedGroup.groupId });
   assert.equal(revokedGroup.status, "revoked");
+  const unavailableGroup = await post(handler, "adminRevealInviteGroup", password, { groupId: issuedGroup.groupId });
+  assert.equal(unavailableGroup.status, "unavailable");
+  assert.equal(unavailableGroup.inviteCode, undefined);
 
   const preview = await post(handler, "adminDeletionPreview", password, { code, scope: "full_attempt" });
   assert.equal(preview.found, true);
@@ -209,7 +217,7 @@ async function post(handler, action, requestPassword, fields) {
   });
   assert.equal(deletionReplay.replayed, true);
 
-  console.log("Yandex admin runtime checks passed: PBKDF2 auth, aggregate question analytics, results, reports, diagnostics, description-only group edits, replay-safe revocation and verified deletion.");
+  console.log("Yandex admin runtime checks passed: PBKDF2 auth, aggregate question analytics, protected group-link recovery, results, reports, diagnostics, description-only group edits, replay-safe revocation and verified deletion.");
 })().catch(error => {
   console.error(error);
   process.exit(1);

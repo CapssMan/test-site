@@ -1,3 +1,11 @@
+## Group-link copy release — 3 August 2026
+
+Admin Build `2026.08.03.2` and protected runtime `admin-v10` (`d4eta4npbkr8vonrcv82`) are live; `admin-v9` remains the immediate rollback. Every currently usable group-invitation row now has a «Копировать ссылку» button. The bearer code is re-derived only after an authenticated admin action, verified against the stored hash and never added to the group-list response or database. Revoked, expired and full links cannot be revealed.
+
+The candidate runtime, v6 question banks, group limits, used-seat counters, gates and data model were not changed. Local and production checks cover exact-request validation, wrong-password denial, code-hash integrity, revoked-link denial, clipboard fallback and current Yandex-only routing.
+
+Full CI passed 54/54 checks. Production verification confirmed exact SHA-256 parity for live `admin.html`, Build `2026.08.03.2`, the copy control and protected reveal action, active `admin-v10`, retained `admin-v9`, and no `inviteCode` disclosure on a wrong-password request.
+
 ## Pilot question analytics release — 3 August 2026
 
 Admin Build `2026.08.03.1` and protected runtime `admin-v9` (`d4e65tmuhh5oa568jjkn`) are live; `admin-v8` remains the immediate rollback. Candidate Build `2026.08.02.1`, assessment `assessment-v11`, ranking `read-v6`/`write-v8`, active v6 banks and pilot gates were not changed.

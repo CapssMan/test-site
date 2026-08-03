@@ -34,6 +34,7 @@ const {
   validateCreateInviteGroupRequest,
   validateCreateInviteRequest,
   validateDeletionScope,
+  validateRevealInviteGroupRequest,
   validateRevokeInviteGroupRequest,
   validateRevokeInviteRequest,
   validateUpdateInviteGroupDescriptionRequest,
@@ -225,6 +226,24 @@ function createAdminHandler(dependencies) {
       usedCount: Number(group.usedCount || 0),
       expiresAt: String(group.expiresAt instanceof Date ? group.expiresAt.toISOString() : group.expiresAt),
       replayed: Boolean(replayed)
+    };
+  }
+
+  async function adminRevealInviteGroup(body) {
+    const request = validateRevealInviteGroupRequest(body);
+    const group = await store.getInviteGroupById(request.groupId);
+    const now = nowProvider();
+    const expiresAt = group && new Date(group.expiresAt || "");
+    if (!group || group.state !== "issued" || !Number.isFinite(expiresAt.getTime()) || now >= expiresAt ||
+        !Number.isInteger(Number(group.maxUses)) || Number(group.usedCount) >= Number(group.maxUses)) {
+      return { ok: false, status: "unavailable", retryable: false, failureCode: "invite_group_unavailable", backendVersion: ASSESSMENT_BACKEND_VERSION, message: "Действующая групповая ссылка недоступна." };
+    }
+    const inviteCode = buildDeterministicInviteCode(inviteSecret, group.groupId, group.testId, groupCodeIdentity(group));
+    if (!timingSafeEqual(String(group.codeHash || ""), hashInviteCode(inviteSecret, inviteCode))) throw new Error("invite_group_code_integrity_failed");
+    await audit("invite_group_link_revealed", hmacHex(identitySecret, group.groupId), "ok", now);
+    return {
+      ok: true, status: "available", backendVersion: ASSESSMENT_BACKEND_VERSION, apiVersion: ASSESSMENT_API_VERSION,
+      groupId: group.groupId, testId: group.testId, inviteCode, expiresAt: expiresAt.toISOString()
     };
   }
 
@@ -498,6 +517,7 @@ function createAdminHandler(dependencies) {
       else if (body.action === "adminDiagnostics") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminDiagnostics(); }
       else if (body.action === "adminCreateInvite") response = await adminCreateInvite(body);
       else if (body.action === "adminCreateInviteGroup") response = await adminCreateInviteGroup(body);
+      else if (body.action === "adminRevealInviteGroup") response = await adminRevealInviteGroup(body);
       else if (body.action === "adminRevokeInvite") response = await adminRevokeInvite(body);
       else if (body.action === "adminRevokeInviteGroup") response = await adminRevokeInviteGroup(body);
       else if (body.action === "adminUpdateInviteGroupDescription") response = await adminUpdateInviteGroupDescription(body);

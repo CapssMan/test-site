@@ -326,7 +326,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.03.1</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.03.2</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -590,7 +590,7 @@
     const YANDEX_ADMIN_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/admin";
     const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const ADMIN_API_URL = ADMIN_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ADMIN_API_URL;
-    const FRONTEND_BUILD = "2026.08.03.1";
+    const FRONTEND_BUILD = "2026.08.03.2";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze([
@@ -661,7 +661,9 @@
       const list = document.getElementById("inviteGroupList");
       const button = event.target.closest("button");
       if (!button || !list.contains(button)) return;
-      if (button.hasAttribute("data-edit-invite-group-description")) {
+      if (button.hasAttribute("data-copy-invite-group")) {
+        copyListedInviteGroupLink(button.getAttribute("data-copy-invite-group"), button);
+      } else if (button.hasAttribute("data-edit-invite-group-description")) {
         editingInviteGroupId = button.getAttribute("data-edit-invite-group-description");
         renderAdminInviteGroups();
         const input = document.getElementById("invite-group-description-" + editingInviteGroupId);
@@ -1081,6 +1083,42 @@
       }
     }
 
+    async function copyListedInviteGroupLink(groupId, button) {
+      if (!activePassword || !/^grp_[a-f0-9]{32}$/.test(String(groupId || "")) || button.disabled) return;
+      const group = adminInviteGroups.find(function(item) { return item.groupId === groupId; });
+      if (!group || group.state !== "issued") return;
+      button.disabled = true;
+      button.textContent = "Получаем…";
+      setInviteGroupStatus("Получаем защищённую групповую ссылку…", "");
+      try {
+        const data = await requestAdminAction("adminRevealInviteGroup", activePassword, { groupId: groupId });
+        const inviteCode = String(data.inviteCode || "").trim();
+        if (data.ok !== true || data.status !== "available" || data.apiVersion !== API_VERSION || data.groupId !== groupId ||
+            data.testId !== group.testId || !/^SC1(?:-[A-F0-9]{4}){8}$/.test(inviteCode)) {
+          throw new Error(data.message || "Не удалось получить групповую ссылку.");
+        }
+        const inviteUrl = buildInviteUrl(group.testId, inviteCode);
+        try {
+          if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(inviteUrl);
+          else throw new Error("clipboard_unavailable");
+          setInviteGroupStatus("Групповая ссылка скопирована.", "success");
+        } catch (_clipboardError) {
+          document.getElementById("inviteGroupLink").value = inviteUrl;
+          document.getElementById("inviteGroupOutputMeta").textContent = testLabel(group.testId) + " · действующая ссылка";
+          document.getElementById("inviteGroupOutput").classList.remove("hidden");
+          const input = document.getElementById("inviteGroupLink");
+          input.focus();
+          input.select();
+          setInviteGroupStatus("Автокопирование недоступно. Ссылка показана и выделена ниже.", "error");
+        }
+      } catch (error) {
+        setInviteGroupStatus(error && error.message ? error.message : "Не удалось получить групповую ссылку.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Копировать ссылку";
+      }
+    }
+
     async function revokeAdminInviteGroup(groupId, button) {
       if (!activePassword || !/^grp_[a-f0-9]{32}$/.test(String(groupId || "")) || button.disabled) return;
       button.disabled = true;
@@ -1163,6 +1201,7 @@
       const rows = adminInviteGroups.slice().sort(function(a, b) { return dateValue(b.issuedAt) - dateValue(a.issuedAt); });
       document.getElementById("inviteGroupList").innerHTML = rows.length ? rows.map(function(group) {
         const canRevoke = group.groupId !== "INVALID" && group.state === "issued";
+        const canCopy = canRevoke;
         const canEdit = group.groupId !== "INVALID";
         const isEditing = canEdit && editingInviteGroupId === group.groupId;
         const description = isEditing
@@ -1173,7 +1212,8 @@
         const actions = isEditing
           ? '<button class="primary-btn" type="button" data-save-invite-group-description="' + escapeHtml(group.groupId) + '">Сохранить</button>' +
             '<button class="ghost-btn" type="button" data-cancel-invite-group-description="' + escapeHtml(group.groupId) + '">Отмена</button>'
-          : (canEdit ? '<button class="ghost-btn" type="button" data-edit-invite-group-description="' + escapeHtml(group.groupId) + '">Изменить описание</button>' : '') +
+          : (canCopy ? '<button class="primary-btn" type="button" data-copy-invite-group="' + escapeHtml(group.groupId) + '">Копировать ссылку</button>' : '') +
+            (canEdit ? '<button class="ghost-btn" type="button" data-edit-invite-group-description="' + escapeHtml(group.groupId) + '">Изменить описание</button>' : '') +
             (canRevoke ? '<button class="ghost-btn" type="button" data-revoke-invite-group="' + escapeHtml(group.groupId) + '">Отозвать</button>' : '');
         return '<div class="invite-row">' +
           '<div>' + description + '</div>' +

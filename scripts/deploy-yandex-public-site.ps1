@@ -125,7 +125,7 @@ foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
 if ($publicFiles.Count -ne 21 -or @($publicFiles | Sort-Object -Unique).Count -ne 21) {
-  throw "Public deployment allowlist must contain exactly 19 unique files."
+  throw "Public deployment allowlist must contain exactly 21 unique files."
 }
 foreach ($relativePath in $publicFiles) {
   if ($relativePath -match "(^|/)(?:cloud|docs|scripts|apps-script|private)(/|$)" -or $relativePath -match "\.\.") {
@@ -230,7 +230,7 @@ foreach ($origin in @($siteOrigin)) {
   if ([int]$options.StatusCode -ne 204 -or [string]$options.Headers["Access-Control-Allow-Origin"] -ne $origin) {
     throw "CORS preflight failed for an approved frontend origin."
   }
-  foreach ($apiPath in @("/v1/assessment", "/v1/admin", "/v1/ranking?testId=fa-junior")) {
+  foreach ($apiPath in @("/v1/assessment", "/v1/admin", "/v1/account", "/v1/ranking?testId=fa-junior")) {
     $getResponse = Invoke-WebRequest -Method GET -Uri ($apiBase + $apiPath) -Headers @{ Origin = $origin } `
       -UseBasicParsing -TimeoutSec 30
     if ([int]$getResponse.StatusCode -ne 200 -or [string]$getResponse.Headers["Access-Control-Allow-Origin"] -ne $origin) {

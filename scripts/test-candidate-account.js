@@ -92,6 +92,7 @@ function fakeFetch(url, options) {
   assert.throws(() => validateUpdate({ action: "updateProfile", apiVersion: ACCOUNT_API_VERSION, publicAlias: "x", visibility: "discoverable", jobStatus: "active", region: "", workFormat: "", experienceBand: "", publicConsent: "" }));
 
   const accountPage = fs.readFileSync(path.join(root, "account.html"), "utf8");
+  const indexPage = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const consent = fs.readFileSync(path.join(root, "account-consent.html"), "utf8");
   const assessment = fs.readFileSync(path.join(root, "cloud", "assessment-handler.js"), "utf8");
   const schema = fs.readFileSync(path.join(root, "cloud", "schema", "011_candidate_accounts.sql"), "utf8");
@@ -100,6 +101,7 @@ function fakeFetch(url, options) {
   assert.match(accountPage, /code_challenge_method","S256"/);
   assert.match(accountPage, /sessionStorage/);
   assert.match(accountPage, /id="accountConsent"/);
+  assert.match(indexPage, /href="account\.html">Личный кабинет<\/a>/);
   assert.doesNotMatch(accountPage, /value="link"/);
   assert.doesNotMatch(accountPage, /localStorage|client_secret|login:phone|login:birthday|login:avatar/);
   assert.match(consent, new RegExp(ACCOUNT_CONSENT_VERSION));

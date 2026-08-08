@@ -25,6 +25,8 @@ $accountTag = "account-v1"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $schema = Join-Path $repoRoot "cloud\schema\011_candidate_accounts.sql"
 $packagePath = Join-Path $env:TEMP ("skillcheck-candidate-account-" + [Guid]::NewGuid().ToString("N") + ".zip")
+$schemaTempPath = Join-Path $env:TEMP ("skillcheck-account-schema-" + [Guid]::NewGuid().ToString("N") + ".sql")
+$defaultsTempPath = Join-Path $env:TEMP ("skillcheck-account-defaults-" + [Guid]::NewGuid().ToString("N") + ".sql")
 $packageUri = ""
 
 function Get-Version([string]$tag) {
@@ -34,13 +36,21 @@ function Get-Version([string]$tag) {
 }
 
 function Assert-Tag-Missing([string]$tag) {
-  $null = & $yc serverless function version get-by-tag --function-id $functionId --tag $tag --format json 2>$null
-  if ($LASTEXITCODE -eq 0) { throw "Target runtime tag already exists: $tag" }
+  $previousPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = "Continue"
+    $null = & $yc serverless function version get-by-tag --function-id $functionId --tag $tag --format json 2>$null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  if ($exitCode -eq 0) { throw "Target runtime tag already exists: $tag" }
 }
 
 function New-SessionSecret() {
   $bytes = New-Object byte[] 48
-  [Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+  $generator = [Security.Cryptography.RandomNumberGenerator]::Create()
+  try { $generator.GetBytes($bytes) } finally { $generator.Dispose() }
   return [Convert]::ToBase64String($bytes).TrimEnd("=").Replace("+", "-").Replace("/", "_")
 }
 
@@ -83,13 +93,14 @@ function Account-Environment([object]$source, [string]$sessionSecret) {
 }
 
 function Assert-Account-Gates-Closed() {
-  $query = 'SELECT setting_key, setting_value FROM assessment_runtime_settings WHERE setting_key IN ("account_registration_enabled", "profile_publication_enabled", "employer_contact_enabled") ORDER BY setting_key;'
+  $query = "SELECT setting_key, setting_value FROM assessment_runtime_settings ORDER BY setting_key;"
   $raw = & $ydb -e $endpoint -d $database sql -s $query --format json-unicode-array
   if ($LASTEXITCODE -ne 0) { throw "Candidate account gate verification failed." }
-  $rows = @($raw | ConvertFrom-Json)
-  if ($rows.Count -ne 3) { throw "Candidate account gates are incomplete." }
-  foreach ($row in $rows) {
-    if ([string]$row.setting_value -ne "false") { throw "Candidate account gate is unexpectedly open." }
+  $parsedRows = $raw | ConvertFrom-Json
+  $settings = @{}
+  foreach ($row in $parsedRows) { $settings[[string]$row.setting_key] = [string]$row.setting_value }
+  foreach ($key in @("account_registration_enabled", "profile_publication_enabled", "employer_contact_enabled")) {
+    if (-not $settings.ContainsKey($key) -or $settings[$key] -ne "false") { throw "Candidate account gate is missing or unexpectedly open." }
   }
 }
 
@@ -126,8 +137,15 @@ try {
 
   $env:YDB_TOKEN = & $yc iam create-token
   if ($LASTEXITCODE -ne 0 -or [String]::IsNullOrWhiteSpace($env:YDB_TOKEN)) { throw "Temporary YDB token was not created." }
-  $null = & $ydb -e $endpoint -d $database sql -f $schema --format json-unicode-array
+  $migrationText = [IO.File]::ReadAllText($schema)
+  $defaultsIndex = $migrationText.IndexOf("UPSERT INTO", [StringComparison]::Ordinal)
+  if ($defaultsIndex -lt 1) { throw "Candidate-account migration boundary is missing." }
+  [IO.File]::WriteAllText($schemaTempPath, $migrationText.Substring(0, $defaultsIndex), [Text.UTF8Encoding]::new($false))
+  [IO.File]::WriteAllText($defaultsTempPath, $migrationText.Substring($defaultsIndex), [Text.UTF8Encoding]::new($false))
+  $null = & $ydb -e $endpoint -d $database sql -f $schemaTempPath --format json-unicode-array
   if ($LASTEXITCODE -ne 0) { throw "Candidate-account schema migration failed." }
+  $null = & $ydb -e $endpoint -d $database sql -f $defaultsTempPath --format json-unicode-array
+  if ($LASTEXITCODE -ne 0) { throw "Candidate-account gate defaults failed." }
   Assert-Account-Gates-Closed
 
   $cloudPath = Join-Path $repoRoot "cloud"
@@ -166,5 +184,7 @@ try {
 } finally {
   if (-not [String]::IsNullOrWhiteSpace($packageUri)) { & $yc storage s3 rm $packageUri --only-show-errors | Out-Null }
   Remove-Item -LiteralPath $packagePath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $schemaTempPath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $defaultsTempPath -Force -ErrorAction SilentlyContinue
   Remove-Item Env:\YDB_TOKEN -ErrorAction SilentlyContinue
 }

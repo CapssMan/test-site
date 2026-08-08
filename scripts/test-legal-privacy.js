@@ -11,10 +11,13 @@ const rankingCore = read("cloud/ranking-core.js");
 const candidate = read("test.html");
 const consent = read("consent.html");
 const rankingConsent = read("ranking-consent.html");
+const accountConsent = read("account-consent.html");
 const privacy = read("privacy.html");
 const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
 const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
 const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
+const accountVersion = "skillcheck-account-2026-08-08-v1";
+const privacyVersion = "skillcheck-privacy-2026-08-08-v8";
 function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
 function extract(source, name) {
   const marker = "function " + name + "(";
@@ -24,9 +27,10 @@ function extract(source, name) {
   return source.slice(start, next < 0 ? source.length : next);
 }
 has(consent, pdVersion);
-has(privacy, "skillcheck-privacy-2026-07-31-v7");
+has(privacy, privacyVersion);
 has(rankingConsent, rankingVersion);
-for (const page of [consent, privacy, rankingConsent]) {
+has(accountConsent, accountVersion);
+for (const page of [consent, privacy, rankingConsent, accountConsent]) {
   has(page, "Кириллов Кирилл Сергеевич");
   has(page, "skillcheck.project@yandex.ru");
 }
@@ -37,6 +41,10 @@ has(consent, "YDB применяются автоматическим TTL");
 has(privacy, "Yandex API Gateway и Cloud Functions");
 has(privacy, "Managed Service for YDB");
 has(privacy, "не являются активным production-маршрутом");
+has(privacy, "регистрация закрыта серверной настройкой");
+has(privacy, "не более 12 месяцев без активности");
+has(accountConsent, "логин, основной email и список email");
+has(accountConsent, "OAuth-токен используется сервером один раз и не сохраняется");
 assert(!privacy.includes("автоматическое применение сроков ещё не завершено"));
 assert(!consent.includes("Автоматическое применение остальных сроков ещё не завершено"));
 has(rankingConsent, "неопределённому кругу посетителей сайта");

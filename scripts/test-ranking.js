@@ -94,8 +94,13 @@ const handler = createRankingHandler({ store, allowedOrigin: "https://skillcheck
   assert.match(indexPage, /href="ranking\.html"/);
   assert.match(rankingPage, /const RANKING_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/ranking"/);
   assert.match(rankingPage, /connect-src 'self' https:\/\/[^"\s]+\.apigw\.yandexcloud\.net/);
-  assert.match(rankingPage, /Участие только добровольное/);
-  assert.match(rankingPage, /Позиции появятся после пяти добровольных участников/);
+  assert.match(rankingPage, /id="filtersPanel"/);
+  assert.match(rankingPage, /id="candidateSearch"/);
+  assert.match(rankingPage, /id="scoreMin"/);
+  assert.match(rankingPage, /id="freshness"/);
+  assert.match(rankingPage, /id="rankingSort"/);
+  assert.match(rankingPage, /Контакты кандидатов не публикуются и не продаются/);
+  assert.doesNotMatch(rankingPage, /возраст|age filter/i);
   assert.doesNotMatch(rankingPage, /mock|demo candidate|пример участника/i);
   console.log("Ranking MVP checks passed: opt-in, version isolation, technical exclusion, privacy allowlist and fail-closed UI.");
 })().catch(error => {

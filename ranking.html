@@ -3,150 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Добровольный рейтинг специалистов по подтверждённым результатам финансовых тестов SkillCheck.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <title>Рейтинг специалистов — SkillCheck</title>
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 24px; min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif; color: #e2e8f0; background: linear-gradient(135deg, #0f172a, #1e293b); }
-    .container { width: min(980px, 100%); margin: 0 auto; }
-    .back { display: inline-block; margin-bottom: 20px; color: #93c5fd; text-decoration: none; }
-    .card { padding: 28px; border: 1px solid rgba(148,163,184,.18); border-radius: 18px; background: rgba(30,41,59,.88); box-shadow: 0 20px 45px rgba(0,0,0,.22); }
-    h1 { margin: 0 0 10px; font-size: clamp(30px, 6vw, 46px); }
-    .lead { max-width: 760px; margin: 0; color: #94a3b8; line-height: 1.6; }
-    .privacy-note { margin: 20px 0; padding: 14px 16px; border: 1px solid rgba(96,165,250,.3); border-radius: 12px; background: rgba(59,130,246,.1); color: #bfdbfe; line-height: 1.5; }
-    label { display: block; margin: 24px 0 8px; color: #cbd5e1; font-weight: 700; }
-    select { width: 100%; padding: 13px 14px; color: #e2e8f0; background: #0f172a; border: 1px solid #475569; border-radius: 10px; font-size: 16px; }
-    .status { margin-top: 22px; padding: 20px; border: 1px dashed #475569; border-radius: 12px; text-align: center; color: #cbd5e1; }
-    .status strong { display: block; margin-bottom: 8px; color: #f8fafc; font-size: 18px; }
-    .summary { display: none; justify-content: space-between; gap: 16px; margin: 22px 0 12px; color: #94a3b8; }
-    .table-wrap { display: none; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 620px; }
-    th, td { padding: 13px 12px; border-bottom: 1px solid rgba(148,163,184,.16); text-align: left; }
-    th { color: #94a3b8; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
-    .score { color: #86efac; font-weight: 800; }
-    .build { margin-top: 18px; color: #64748b; font-size: 12px; }
-    @media (max-width: 600px) { body { padding: 12px; } .card { padding: 20px; } .summary { flex-direction: column; } }
+    :root{--ink:#111827;--muted:#667085;--line:#e6e9f0;--surface:#fff;--soft:#f5f7fb;--blue:#2f6df6;--violet:#7b57f6;--green:#159a68;--shadow:0 24px 70px rgba(23,35,61,.10)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:radial-gradient(circle at 82% 0,rgba(123,87,246,.12),transparent 34rem),radial-gradient(circle at 8% 22%,rgba(47,109,246,.10),transparent 30rem),#f7f8fb}
+    button,input,select{font:inherit}.shell{width:min(1220px,calc(100% - 40px));margin:auto}.site-header{position:sticky;top:0;z-index:30;border-bottom:1px solid rgba(230,233,240,.8);background:rgba(247,248,251,.82);backdrop-filter:blur(18px)}.nav{height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:800}.brand-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;color:#fff;background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 8px 24px rgba(47,109,246,.25)}.nav-links{display:flex;align-items:center;gap:10px}.nav-links a{padding:10px 14px;border-radius:12px;color:#475467;text-decoration:none;font-weight:650}.nav-links a:hover{background:#fff;color:var(--ink)}
+    .hero{padding:70px 0 44px}.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:40px;align-items:end}.eyebrow{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;color:#5c45d7;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 0 6px rgba(86,92,239,.10)}h1{max-width:760px;margin:0;font-size:clamp(42px,6.6vw,78px);line-height:.98;letter-spacing:-.055em}h1 em{font-family:Georgia,serif;font-weight:500;color:#6151dc}.lead{max-width:720px;margin:24px 0 0;color:var(--muted);font-size:18px;line-height:1.65}.trust-card{padding:22px;border:1px solid rgba(255,255,255,.8);border-radius:24px;background:rgba(255,255,255,.7);box-shadow:var(--shadow);backdrop-filter:blur(16px)}.trust-card strong{display:block;margin-bottom:8px;font-size:16px}.trust-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}.trust-line{display:flex;align-items:center;gap:8px;margin-top:16px;color:var(--green);font-size:13px;font-weight:800}.trust-line span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#e8f7f1}
+    .workspace{display:grid;grid-template-columns:280px minmax(0,1fr);gap:24px;padding-bottom:80px}.filters,.results-panel{border:1px solid rgba(230,233,240,.95);background:rgba(255,255,255,.88);box-shadow:var(--shadow);backdrop-filter:blur(14px)}.filters{position:sticky;top:96px;align-self:start;padding:22px;border-radius:24px}.filter-head,.results-head,.summary-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.filter-head h2,.results-head h2{margin:0;font-size:20px}.filter-close{display:none}.field{margin-top:22px}.field label{display:block;margin-bottom:8px;font-size:13px;font-weight:800;color:#344054}.field input[type="search"],.field select{width:100%;height:46px;padding:0 13px;border:1px solid #d8dde8;border-radius:13px;outline:none;background:#fff;color:var(--ink)}.field input:focus,.field select:focus{border-color:#7a91f7;box-shadow:0 0 0 4px rgba(47,109,246,.09)}.range-row{display:flex;justify-content:space-between;margin-bottom:7px;color:#344054;font-size:13px}.range-row output{font-weight:850;color:var(--blue)}input[type="range"]{width:100%;accent-color:var(--blue)}.reset{width:100%;margin-top:24px;padding:12px;border:1px solid #d8dde8;border-radius:13px;background:#fff;color:#475467;font-weight:750;cursor:pointer}.reset:hover{border-color:#aeb7c7;color:var(--ink)}
+    .results-panel{min-width:0;padding:26px;border-radius:28px}.results-head{align-items:flex-start}.results-head p{margin:7px 0 0;color:var(--muted);font-size:14px}.filter-open{display:none;padding:10px 13px;border:1px solid #d8dde8;border-radius:12px;background:#fff;font-weight:750}.active-filters{display:flex;flex-wrap:wrap;gap:8px;min-height:34px;margin:20px 0 14px}.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:#eef2ff;color:#4052b5;font-size:12px;font-weight:750}.chip button{padding:0;border:0;background:none;color:inherit;cursor:pointer;font-weight:900}.summary-row{padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}.summary-row strong{color:var(--ink)}.status{margin-top:20px;padding:42px 24px;border:1px dashed #cbd2df;border-radius:18px;text-align:center;color:var(--muted);background:linear-gradient(135deg,#fafbff,#f7f8fc)}.status strong{display:block;margin-bottom:8px;color:var(--ink);font-size:19px}.ranking-list{display:grid;gap:12px;margin-top:18px}.ranking-row{display:grid;grid-template-columns:54px minmax(170px,1.2fr) minmax(120px,.7fr) 100px 140px;gap:14px;align-items:center;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease;animation:rowIn .42s both}.ranking-row:hover{transform:translateY(-2px);border-color:#ccd5f6;box-shadow:0 14px 28px rgba(32,49,84,.08)}.rank{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#f2f4f8;font-weight:900}.ranking-row:nth-child(1) .rank{background:linear-gradient(135deg,#fff1bd,#ffd761);color:#765400}.ranking-row:nth-child(2) .rank{background:linear-gradient(135deg,#f1f4f8,#d7dde7);color:#536071}.ranking-row:nth-child(3) .rank{background:linear-gradient(135deg,#ffe1ca,#eeb17d);color:#75401f}.candidate strong,.score strong{display:block}.candidate small,.meta small,.score small{display:block;margin-top:4px;color:var(--muted);font-size:12px}.verified{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-size:12px;font-weight:800}.verified:before{content:"✓";display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#e7f7f0}.score strong{font-size:21px}.empty-chips{color:var(--muted);font-size:12px}.privacy-foot{margin:22px 0 0;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.6}.privacy-foot a{color:#465bd4}.build{margin-top:10px;color:#98a2b3;font-size:11px}.mobile-backdrop{display:none}
+    @keyframes rowIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@media(max-width:900px){.hero-grid{grid-template-columns:1fr}.trust-card{max-width:600px}.workspace{grid-template-columns:1fr}.filters{position:fixed;inset:auto 0 0;z-index:60;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;transform:translateY(110%);transition:transform .28s ease}.filters.open{transform:none}.filter-close,.filter-open{display:inline-flex}.filter-close{border:0;background:#f2f4f7;width:38px;height:38px;border-radius:12px;align-items:center;justify-content:center}.mobile-backdrop.open{display:block;position:fixed;inset:0;z-index:50;background:rgba(15,23,42,.38);backdrop-filter:blur(3px)}.ranking-row{grid-template-columns:48px 1fr 80px}.ranking-row .meta,.ranking-row .verified{display:none}}
+    @media(max-width:620px){.shell{width:min(100% - 24px,1220px)}.nav{height:64px}.nav-links a:not(.home-link){display:none}.hero{padding:44px 0 30px}h1{font-size:44px}.lead{font-size:16px}.results-panel{padding:18px;border-radius:22px}.results-head{align-items:center}.results-head p{display:none}.ranking-row{padding:13px 11px;gap:8px}.rank{width:38px;height:38px}.score{text-align:right}.score strong{font-size:18px}.summary-row{align-items:flex-start;flex-direction:column}.trust-card{padding:18px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
   </style>
 </head>
 <body>
-  <main class="container">
-    <a class="back" href="index.html">&larr; На главную</a>
-    <section class="card">
-      <h1>Рейтинг специалистов</h1>
-      <p class="lead">Сравнение server-verified результатов отдельно по каждой финансовой профессии и совместимой версии теста.</p>
-      <div class="privacy-note">Участие только добровольное. Публично показываются псевдоним, балл, дата и уровень проверки. Имя, контакты, ответы и полный отчёт не публикуются.</div>
-
-      <label for="rankingTest">Профессия</label>
-      <select id="rankingTest">
-        <option value="fa-junior">Financial Analyst Junior</option>
-        <option value="ca-junior">Credit Analyst Junior</option>
-        <option value="fpa-junior">FP&amp;A / Budget Analyst Junior</option>
-        <option value="acc-junior">Accounting / Reporting Junior</option>
-        <option value="bi-junior">Finance BI / Data Analyst Junior</option>
-      </select>
-
-      <div id="rankingStatus" class="status" role="status" aria-live="polite">
-        <strong>Загрузка рейтинга</strong>
-        Получаем актуальные добровольно опубликованные результаты.
-      </div>
-
-      <div id="rankingSummary" class="summary"></div>
-      <div id="rankingTableWrap" class="table-wrap">
-        <table>
-          <thead><tr><th>Место</th><th>Псевдоним</th><th>Балл</th><th>Дата</th><th>Проверка</th></tr></thead>
-          <tbody id="rankingRows"></tbody>
-        </table>
-      </div>
-      <div class="build">Ranking Build 2026.07.26.2</div>
+  <header class="site-header"><div class="shell nav"><a class="brand" href="index.html"><span class="brand-mark">✓</span><span>SkillCheck</span></a><nav class="nav-links" aria-label="Навигация"><a class="home-link" href="index.html">На главную</a><a href="privacy.html">Приватность</a></nav></div></header>
+  <main>
+    <section class="hero"><div class="shell hero-grid"><div><div class="eyebrow">Проверенные результаты</div><h1>Рейтинг <em>специалистов.</em></h1><p class="lead">Сравнивайте результаты внутри одной финансовой специализации. В рейтинге участвуют только кандидаты, которые добровольно открыли подтверждённый результат.</p></div><aside class="trust-card"><strong>Навык — впереди анкеты</strong><p>Мы не публикуем контакты, ответы и полный отчёт. Рейтинг показывает профессиональный сигнал, а не обещание успешного найма.</p><div class="trust-line"><span>✓</span> Серверная проверка результата</div></aside></div></section>
+    <section class="shell workspace" aria-label="Рейтинг и фильтры">
+      <aside class="filters" id="filtersPanel" aria-label="Фильтры рейтинга"><div class="filter-head"><h2>Фильтры</h2><button class="filter-close" id="filterClose" type="button" aria-label="Закрыть фильтры">×</button></div>
+        <div class="field"><label for="rankingTest">Направление теста</label><select id="rankingTest"><option value="fa-junior">Financial Analyst Junior</option><option value="ca-junior">Credit Analyst Junior</option><option value="fpa-junior">FP&amp;A / Budget Analyst</option><option value="acc-junior">Accounting / Reporting</option><option value="bi-junior">Finance BI / Data Analyst</option></select></div>
+        <div class="field"><label for="candidateSearch">Поиск по псевдониму</label><input id="candidateSearch" type="search" maxlength="40" autocomplete="off" placeholder="Например, Алексей"></div>
+        <div class="field"><div class="range-row"><label for="scoreMin">Минимальный балл</label><output id="scoreOutput" for="scoreMin">0%</output></div><input id="scoreMin" type="range" min="0" max="100" step="5" value="0"></div>
+        <div class="field"><label for="freshness">Свежесть результата</label><select id="freshness"><option value="0">За всё время</option><option value="90">Последние 90 дней</option><option value="180">Последние 6 месяцев</option><option value="365">Последний год</option></select></div>
+        <div class="field"><label for="rankingSort">Сортировка</label><select id="rankingSort"><option value="rank">По месту в рейтинге</option><option value="score">По баллу</option><option value="newest">Сначала свежие</option></select></div>
+        <button class="reset" id="resetFilters" type="button">Сбросить фильтры</button>
+      </aside>
+      <div class="mobile-backdrop" id="filterBackdrop"></div>
+      <section class="results-panel" aria-live="polite"><div class="results-head"><div><h2>Участники</h2><p>Результаты сопоставимы только внутри выбранного направления.</p></div><button class="filter-open" id="filterOpen" type="button">Фильтры</button></div>
+        <div class="active-filters" id="activeFilters"><span class="empty-chips">Дополнительные фильтры не выбраны</span></div>
+        <div class="summary-row" id="rankingSummary"><span><strong>—</strong> участников найдено</span><span>Рейтинг обновляется после подтверждённых попыток</span></div>
+        <div id="rankingStatus" class="status" role="status"><strong>Загрузка рейтинга</strong>Получаем актуальные добровольно опубликованные результаты.</div>
+        <div id="rankingList" class="ranking-list" hidden></div>
+        <p class="privacy-foot">Контакты кандидатов не публикуются и не продаются. Участник может выйти из рейтинга. Подробнее — в <a href="ranking-consent.html">условиях участия</a>.</p><div class="build">Ranking Build 2026.08.08.3</div>
+      </section>
     </section>
   </main>
-
   <script>
     "use strict";
-    const PRIMARY_SITE_ORIGIN = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net";
-    const GITHUB_FALLBACK_ORIGIN = "https://capssman.github.io";
-    if (window.location.origin === GITHUB_FALLBACK_ORIGIN) {
-      var primaryPath = window.location.pathname.replace(/^\/test-site(?=\/|$)/, "") || "/";
-      window.location.replace(PRIMARY_SITE_ORIGIN + primaryPath + window.location.search + window.location.hash);
-    }
-
+    const PRIMARY_SITE_ORIGIN="https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net",GITHUB_FALLBACK_ORIGIN="https://capssman.github.io";
+    if(window.location.origin===GITHUB_FALLBACK_ORIGIN){var primaryPath=window.location.pathname.replace(/^\/test-site(?=\/|$)/,"")||"/";window.location.replace(PRIMARY_SITE_ORIGIN+primaryPath+window.location.search+window.location.hash)}
     const RANKING_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking";
-    const RANKING_BUILD = "2026.07.26.2";
-    const testSelect = document.getElementById("rankingTest");
-    const statusBlock = document.getElementById("rankingStatus");
-    const summaryBlock = document.getElementById("rankingSummary");
-    const tableWrap = document.getElementById("rankingTableWrap");
-    const rows = document.getElementById("rankingRows");
-
-    function setStatus(title, message) {
-      statusBlock.hidden = false;
-      statusBlock.replaceChildren();
-      const heading = document.createElement("strong");
-      heading.textContent = title;
-      statusBlock.append(heading, document.createTextNode(message));
-      summaryBlock.style.display = "none";
-      tableWrap.style.display = "none";
-      rows.replaceChildren();
-    }
-
-    function safeEntry(entry) {
-      if (!entry || typeof entry !== "object") return null;
-      const alias = String(entry.alias || "").trim();
-      const score = Number(entry.score);
-      const date = new Date(String(entry.completedAt || ""));
-      if (!alias || alias.length > 40 || !Number.isFinite(score) || score < 0 || score > 100 || Number.isNaN(date.getTime())) return null;
-      return { rank: Number.isInteger(entry.rank) && entry.rank > 0 ? entry.rank : null, alias, score, date, verificationLevel: String(entry.verificationLevel || "") };
-    }
-
-    function renderRanking(payload) {
-      const entries = Array.isArray(payload && payload.entries) ? payload.entries.map(safeEntry).filter(Boolean) : [];
-      if (!payload || payload.ok !== true || !["active", "collecting"].includes(payload.state)) {
-        setStatus("Рейтинг временно недоступен", "Попробуйте открыть страницу позже.");
-        return;
-      }
-      if (payload.state === "collecting") {
-        setStatus("Набираем первые результаты", "Позиции появятся после пяти добровольных участников. Сейчас участников: " + String(payload.participantsCount || 0) + ".");
-        return;
-      }
-      statusBlock.hidden = true;
-      summaryBlock.textContent = "";
-      const left = document.createElement("span");
-      left.textContent = String(payload.testTitle || "Рейтинг");
-      const right = document.createElement("span");
-      right.textContent = "Участников: " + String(payload.participantsCount || entries.length);
-      summaryBlock.append(left, right);
-      summaryBlock.style.display = "flex";
-      rows.replaceChildren();
-      entries.forEach(entry => {
-        const row = document.createElement("tr");
-        [entry.rank == null ? "—" : String(entry.rank), entry.alias, entry.score.toFixed(1) + "%", entry.date.toLocaleDateString("ru-RU"), entry.verificationLevel]
-          .forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = value; if (index === 2) cell.className = "score"; row.append(cell); });
-        rows.append(row);
-      });
-      tableWrap.style.display = "block";
-    }
-
-    async function loadRanking() {
-      if (!RANKING_API_URL) {
-        setStatus("Рейтинг готовится", "Получаем актуальные добровольно опубликованные результаты.");
-        return;
-      }
-      setStatus("Загрузка", "Получаем актуальный рейтинг…");
-      try {
-        const url = new URL(RANKING_API_URL);
-        url.searchParams.set("testId", testSelect.value);
-        url.searchParams.set("limit", "50");
-        const response = await fetch(url.toString(), { method: "GET", cache: "no-store", referrerPolicy: "no-referrer" });
-        if (!response.ok) throw new Error("ranking_http_error");
-        renderRanking(await response.json());
-      } catch (_error) {
-        setStatus("Рейтинг временно недоступен", "Попробуйте открыть страницу позже.");
-      }
-    }
-
-    testSelect.addEventListener("change", loadRanking);
-    loadRanking();
+    const RANKING_BUILD="2026.08.08.3",testSelect=document.getElementById("rankingTest"),searchInput=document.getElementById("candidateSearch"),scoreInput=document.getElementById("scoreMin"),scoreOutput=document.getElementById("scoreOutput"),freshnessSelect=document.getElementById("freshness"),sortSelect=document.getElementById("rankingSort"),statusBlock=document.getElementById("rankingStatus"),summaryBlock=document.getElementById("rankingSummary"),list=document.getElementById("rankingList"),chips=document.getElementById("activeFilters"),filtersPanel=document.getElementById("filtersPanel"),backdrop=document.getElementById("filterBackdrop");
+    let currentPayload=null;
+    function safeEntry(entry){if(!entry||typeof entry!=="object")return null;const alias=String(entry.alias||"").trim(),score=Number(entry.score),date=new Date(String(entry.completedAt||""));if(!alias||alias.length>40||!Number.isFinite(score)||score<0||score>100||Number.isNaN(date.getTime()))return null;return{rank:Number.isInteger(entry.rank)&&entry.rank>0?entry.rank:null,alias,score,date,verificationLevel:String(entry.verificationLevel||"Серверная проверка")}}
+    function setStatus(title,message){statusBlock.hidden=false;statusBlock.replaceChildren();const heading=document.createElement("strong");heading.textContent=title;statusBlock.append(heading,document.createTextNode(message));list.hidden=true;list.replaceChildren()}
+    function make(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=text;return node}
+    function updateChips(){chips.replaceChildren();const values=[];if(searchInput.value.trim())values.push(["search","Псевдоним: "+searchInput.value.trim()]);if(Number(scoreInput.value)>0)values.push(["score","От "+scoreInput.value+" баллов"]);if(Number(freshnessSelect.value)>0)values.push(["freshness",freshnessSelect.options[freshnessSelect.selectedIndex].text]);if(sortSelect.value!=="rank")values.push(["sort","Сортировка: "+sortSelect.options[sortSelect.selectedIndex].text]);if(!values.length){chips.append(make("span","empty-chips","Дополнительные фильтры не выбраны"));return}values.forEach(([key,label])=>{const chip=make("span","chip",label);const remove=make("button","","×");remove.type="button";remove.setAttribute("aria-label","Убрать фильтр: "+label);remove.addEventListener("click",()=>{if(key==="search")searchInput.value="";if(key==="score")scoreInput.value="0";if(key==="freshness")freshnessSelect.value="0";if(key==="sort")sortSelect.value="rank";applyFilters()});chip.append(remove);chips.append(chip)})}
+    function applyFilters(){scoreOutput.value=scoreInput.value+"%";updateChips();if(!currentPayload)return;const now=Date.now(),query=searchInput.value.trim().toLocaleLowerCase("ru-RU"),min=Number(scoreInput.value),days=Number(freshnessSelect.value);let entries=currentPayload.entries.filter(entry=>entry.score>=min&&(!query||entry.alias.toLocaleLowerCase("ru-RU").includes(query))&&(!days||now-entry.date.getTime()<=days*86400000));if(sortSelect.value==="score")entries.sort((a,b)=>b.score-a.score||a.rank-b.rank);if(sortSelect.value==="newest")entries.sort((a,b)=>b.date-a.date);renderEntries(entries,currentPayload)}
+    function renderEntries(entries,payload){summaryBlock.replaceChildren();const found=make("span","","");found.append(make("strong","",String(entries.length)),document.createTextNode(" участников найдено"));summaryBlock.append(found,make("span","",String(payload.testTitle||testSelect.options[testSelect.selectedIndex].text)));if(!entries.length){setStatus("Ничего не найдено","Попробуйте уменьшить минимальный балл или сбросить дополнительные фильтры.");return}statusBlock.hidden=true;list.hidden=false;list.replaceChildren();entries.forEach((entry,index)=>{const row=make("article","ranking-row");row.style.animationDelay=Math.min(index*35,280)+"ms";row.append(make("div","rank",entry.rank==null?"—":"#"+entry.rank));const candidate=make("div","candidate");candidate.append(make("strong","",entry.alias),make("small","",payload.testTitle||testSelect.options[testSelect.selectedIndex].text));const score=make("div","score");score.append(make("strong","",entry.score.toFixed(1)+"%"),make("small","","итоговый балл"));const verified=make("div","verified",entry.verificationLevel||"Проверено");const meta=make("div","meta");meta.append(make("strong","",entry.date.toLocaleDateString("ru-RU")),make("small","","дата результата"));row.append(candidate,score,verified,meta);list.append(row)})}
+    function renderRanking(payload){const entries=Array.isArray(payload&&payload.entries)?payload.entries.map(safeEntry).filter(Boolean):[];if(!payload||payload.ok!==true||!["active","collecting"].includes(payload.state)){currentPayload=null;setStatus("Рейтинг временно недоступен","Попробуйте открыть страницу позже.");return}if(payload.state==="collecting"){currentPayload=null;summaryBlock.innerHTML="<span><strong>"+String(payload.participantsCount||0)+"</strong> участников уже присоединились</span><span>Нужно минимум пять</span>";setStatus("Набираем первые результаты","Позиции появятся после пяти добровольных участников.");return}currentPayload={...payload,entries};applyFilters()}
+    async function loadRanking(){currentPayload=null;setStatus("Загрузка рейтинга","Получаем актуальные добровольно опубликованные результаты.");try{const url=new URL(RANKING_API_URL);url.searchParams.set("testId",testSelect.value);url.searchParams.set("limit","50");const response=await fetch(url.toString(),{method:"GET",cache:"no-store",referrerPolicy:"no-referrer"});if(!response.ok)throw new Error("ranking_http_error");renderRanking(await response.json())}catch(_error){setStatus("Рейтинг временно недоступен","Попробуйте открыть страницу позже.")}}
+    [searchInput,scoreInput,freshnessSelect,sortSelect].forEach(control=>control.addEventListener(control===searchInput?"input":"change",applyFilters));testSelect.addEventListener("change",loadRanking);document.getElementById("resetFilters").addEventListener("click",()=>{searchInput.value="";scoreInput.value="0";freshnessSelect.value="0";sortSelect.value="rank";applyFilters()});
+    function toggleFilters(open){filtersPanel.classList.toggle("open",open);backdrop.classList.toggle("open",open);document.body.style.overflow=open?"hidden":""}document.getElementById("filterOpen").addEventListener("click",()=>toggleFilters(true));document.getElementById("filterClose").addEventListener("click",()=>toggleFilters(false));backdrop.addEventListener("click",()=>toggleFilters(false));loadRanking();
   </script>
 </body>
 </html>

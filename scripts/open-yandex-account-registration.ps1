@@ -67,7 +67,7 @@ function Assert-LiveDocuments() {
   $privacy = (Invoke-WebRequest -Uri ($siteOrigin + "/privacy.html") -UseBasicParsing -TimeoutSec 30).Content
   $consent = (Invoke-WebRequest -Uri ($siteOrigin + "/account-consent.html") -UseBasicParsing -TimeoutSec 30).Content
   if ($index -notmatch 'href="account\.html"' -or
-      $privacy -notmatch 'skillcheck-privacy-2026-08-08-v8' -or
+      $privacy -notmatch 'skillcheck-privacy-2026-08-08-v10' -or
       $privacy -match '\[Адрес оператора опубликован на основном сайте Yandex Cloud\]' -or
       $consent -notmatch 'skillcheck-account-2026-08-08-v1') {
     throw "Live account entry or legal documents are not ready for registration."

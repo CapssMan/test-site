@@ -2,7 +2,7 @@
 
 Обновлено: 3 августа 2026 года.
 
-Статус на 8 августа 2026 года: **пилот временно закрыт до подтверждения первичного уведомления Роскомнадзору**. Production gates: `LEGAL_PILOT_APPROVED=false`, `ATTEMPT_ISSUANCE_ENABLED=false`, `RETENTION_AUTOMATION_ENABLED=true`. После подтверждения подачи требуется отдельное решение о возобновлении invite-only волны до 10–30 завершённых прохождений.
+Статус на 8 августа 2026 года: **контролируемый пилот открыт после направления первичного уведомления Роскомнадзору**. Production gates: `LEGAL_PILOT_APPROVED=true`, `ATTEMPT_ISSUANCE_ENABLED=true`, `ACCOUNT_REGISTRATION_ENABLED=true`, `RETENTION_AUTOMATION_ENABLED=true`; расширенная публикация профилей и employer-контакты закрыты. Первая волна ограничена 10–30 завершёнными прохождениями.
 
 ## Цель и предел первой волны
 

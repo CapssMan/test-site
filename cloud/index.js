@@ -1,5 +1,6 @@
 "use strict";
 
+const { createAccountHandler } = require("./account-handler");
 const { createAdminHandler } = require("./admin-handler");
 const { createAssessmentHandler, jsonResponse: assessmentJsonResponse, storageErrorResponse } = require("./assessment-handler");
 const { createObjectStorageClient } = require("./object-storage-client");
@@ -7,6 +8,7 @@ const { createRankingHandler, jsonResponse } = require("./ranking-handler");
 const { createRankingProfileHandler, privateJsonResponse } = require("./ranking-profile-handler");
 const { createYdbAssessmentStore } = require("./ydb-assessment-store");
 const { createYdbAdminStore } = require("./ydb-admin-store");
+const { createYdbAccountStore } = require("./ydb-account-store");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
 const { DEFAULT_ALLOWED_ORIGINS, readAllowedOriginsFromEnvironment, resolveAllowedOrigin } = require("./cors-origin");
 
@@ -30,6 +32,16 @@ async function createRuntime() {
   const allowedOrigins = readAllowedOriginsFromEnvironment(process.env);
   const runtimeMode = String(process.env.RUNTIME_MODE || "read");
   if (runtimeMode === "read") return createRankingHandler({ store: createYdbRankingStore(sql), allowedOrigins });
+  if (runtimeMode === "account") {
+    return createAccountHandler({
+      store: createYdbAccountStore(sql),
+      allowedOrigins,
+      clientId: String(process.env.YANDEX_ID_CLIENT_ID || ""),
+      redirectUri: String(process.env.YANDEX_ID_REDIRECT_URI || ""),
+      identitySecret: String(process.env.IDENTITY_HASH_SECRET_V1 || ""),
+      sessionSecret: String(process.env.ACCOUNT_SESSION_SECRET_V1 || "")
+    });
+  }
   if (runtimeMode === "write") {
     return createRankingProfileHandler({
       store: createYdbRankingStore(sql),
@@ -39,14 +51,16 @@ async function createRuntime() {
   }
   if (runtimeMode === "assessment") {
     const privateStorage = createObjectStorageClient({ bucket: String(process.env.PRIVATE_BUCKET || "") });
+    const assessmentStore = Object.assign(createYdbAssessmentStore(sql), createYdbAccountStore(sql));
     return createAssessmentHandler({
-      store: createYdbAssessmentStore(sql),
+      store: assessmentStore,
       bankStorage: privateStorage,
       reportStorage: privateStorage,
       allowedOrigins,
       signingSecret: String(process.env.ATTEMPT_SIGNING_SECRET_V1 || ""),
       identitySecret: String(process.env.IDENTITY_HASH_SECRET_V1 || ""),
-      inviteSecret: String(process.env.INVITE_CODE_SECRET_V1 || "")
+      inviteSecret: String(process.env.INVITE_CODE_SECRET_V1 || ""),
+      accountSessionSecret: String(process.env.ACCOUNT_SESSION_SECRET_V1 || "")
     });
   }
   if (runtimeMode === "admin") {
@@ -79,6 +93,9 @@ async function handler(event, context) {
     const runtimeMode = String(process.env.RUNTIME_MODE || "read");
     if (runtimeMode === "write") {
       return privateJsonResponse(503, { ok: false, error: "ranking_temporarily_unavailable" }, allowedOrigin);
+    }
+    if (runtimeMode === "account") {
+      return assessmentJsonResponse(503, { ok: false, error: "account_temporarily_unavailable" }, allowedOrigin);
     }
     if (runtimeMode === "assessment" || runtimeMode === "admin") {
       return assessmentJsonResponse(503, storageErrorResponse(), allowedOrigin);

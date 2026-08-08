@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
+const root=path.resolve(__dirname,"..");
+const deploy=fs.readFileSync(path.join(__dirname,"deploy-yandex-candidate-account.ps1"),"utf8");
+const gateway=fs.readFileSync(path.join(root,"cloud","api-gateway.yaml"),"utf8");
+const schema=fs.readFileSync(path.join(root,"cloud","schema","011_candidate_accounts.sql"),"utf8");
+assert.match(deploy,/\$sourceTag = "assessment-v11"/);
+assert.match(deploy,/\$assessmentTag = "assessment-v12"/);
+assert.match(deploy,/\$accountTag = "account-v1"/);
+assert.match(deploy,/011_candidate_accounts\.sql/);
+assert.match(deploy,/Assert-Account-Gates-Closed/);
+assert.match(deploy,/ACCOUNT_SESSION_SECRET_V1/);
+assert.match(deploy,/YANDEX_ID_CLIENT_ID/);
+assert.match(deploy,/YANDEX_ID_REDIRECT_URI/);
+assert.match(deploy,/--no-logging/);
+assert.match(deploy,/api-gateway update/);
+assert.doesNotMatch(deploy,/client_secret|Lockbox|lockbox/);
+assert.doesNotMatch(deploy,/Write-Host[^\n]*(?:environment|secret|password)/i);
+assert.equal((gateway.match(/tag: "assessment-v12"/g)||[]).length,2);
+assert.equal((gateway.match(/tag: "account-v1"/g)||[]).length,2);
+assert.match(schema,/"account_registration_enabled", "false"/);
+assert.match(schema,/"profile_publication_enabled", "false"/);
+assert.match(schema,/"employer_contact_enabled", "false"/);
+console.log("Candidate-account deployment checks passed: additive schema, PKCE runtime, closed gates and no paid secret service.");

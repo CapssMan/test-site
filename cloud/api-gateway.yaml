@@ -11,6 +11,7 @@ x-yc-apigateway:
       - POST
     allowedHeaders:
       - Content-Type
+      - Authorization
     maxAge: 600
 paths:
   /v1/admin:
@@ -60,7 +61,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "assessment-v11"
+        tag: "assessment-v12"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
     post:
@@ -80,7 +81,44 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "assessment-v11"
+        tag: "assessment-v12"
+        service_account_id: ajerg3btsr8m7va4gi2m
+        payload_format_version: "0.1"
+  /v1/account:
+    get:
+      operationId: getCandidateAccountConfig
+      summary: Read the gated candidate account configuration
+      responses:
+        "200":
+          description: Candidate account configuration
+        "503":
+          description: Candidate account service is temporarily unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1qffg3l40q6jgq0t9
+        tag: "account-v1"
+        service_account_id: ajerg3btsr8m7va4gi2m
+        payload_format_version: "0.1"
+    post:
+      operationId: manageCandidateAccount
+      summary: Exchange Yandex ID PKCE code and manage the candidate profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Candidate account action accepted
+        "401":
+          description: Candidate session is missing or expired
+        "503":
+          description: Candidate account service is temporarily unavailable
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1qffg3l40q6jgq0t9
+        tag: "account-v1"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
   /v1/ranking:

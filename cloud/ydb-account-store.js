@@ -1,0 +1,214 @@
+"use strict";
+
+const QUERY_TIMEOUT_MS = 5000;
+
+function rowsFrom(resultSets) {
+  return Array.isArray(resultSets) && Array.isArray(resultSets[0]) ? resultSets[0] : [];
+}
+
+function executeRead(sql, strings, values) {
+  return sql(strings, ...values)
+    .isolation("onlineReadOnly", { allowInconsistentReads: false })
+    .idempotent(true)
+    .timeout(QUERY_TIMEOUT_MS);
+}
+
+function executeWrite(sql, strings, values) {
+  return sql(strings, ...values)
+    .isolation("serializableReadWrite")
+    .idempotent(true)
+    .timeout(QUERY_TIMEOUT_MS);
+}
+
+function iso(value) {
+  return value instanceof Date ? value.toISOString() : value ? String(value) : "";
+}
+
+function mapAccount(row) {
+  if (!row) return null;
+  return {
+    profileId: String(row.profile_id || ""),
+    status: String(row.account_status || ""),
+    provider: String(row.provider || ""),
+    providerSubjectHash: String(row.provider_subject_hash || ""),
+    emailHash: String(row.email_hash || ""),
+    emailMasked: String(row.email_masked || ""),
+    publicAlias: String(row.public_alias || ""),
+    visibility: String(row.visibility || "private"),
+    jobStatus: String(row.job_status || "hidden"),
+    region: String(row.region || ""),
+    workFormat: String(row.work_format || ""),
+    experienceBand: String(row.experience_band || ""),
+    accountConsentVersion: String(row.account_consent_version || ""),
+    accountConsentedAt: iso(row.account_consented_at),
+    publicConsentVersion: String(row.public_consent_version || ""),
+    publicConsentedAt: iso(row.public_consented_at),
+    createdAt: iso(row.created_at),
+    lastLoginAt: iso(row.last_login_at),
+    updatedAt: iso(row.updated_at),
+    purgeAt: iso(row.purge_at)
+  };
+}
+
+function mapSession(row) {
+  if (!row) return null;
+  return {
+    profileId: String(row.profile_id || ""),
+    tokenHash: String(row.session_token_hash || ""),
+    issuedAt: iso(row.issued_at),
+    expiresAt: iso(row.expires_at),
+    lastSeenAt: iso(row.last_seen_at),
+    purgeAt: iso(row.purge_at)
+  };
+}
+
+function mapAttempt(row) {
+  if (!row) return null;
+  return {
+    profileId: String(row.profile_id || ""),
+    testId: String(row.test_id || ""),
+    attemptId: String(row.attempt_id || ""),
+    state: String(row.attempt_state || ""),
+    resultCode: String(row.result_code || ""),
+    percent: Number(row.percent || 0),
+    bankVersion: String(row.bank_version || ""),
+    startedAt: iso(row.started_at),
+    completedAt: iso(row.completed_at),
+    purgeAt: iso(row.purge_at)
+  };
+}
+
+function createYdbAccountStore(sql) {
+  if (typeof sql !== "function") throw new Error("ydb_query_client_required");
+  return {
+    async getRuntimeSettings() {
+      const resultSets = await executeRead(sql, ["SELECT setting_key, setting_value FROM assessment_runtime_settings;"], []);
+      return Object.fromEntries(rowsFrom(resultSets).map(row => [String(row.setting_key || ""), String(row.setting_value || "")]));
+    },
+
+    async getAccountByProviderSubject(provider, subjectHash) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_accounts VIEW candidate_provider_subject WHERE provider = ",
+        " AND provider_subject_hash = ",
+        " LIMIT 1;"
+      ], [provider, subjectHash]);
+      return mapAccount(rowsFrom(resultSets)[0]);
+    },
+
+    async getAccountByEmailHash(emailHash) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_accounts VIEW candidate_email WHERE email_hash = ",
+        " LIMIT 1;"
+      ], [emailHash]);
+      return mapAccount(rowsFrom(resultSets)[0]);
+    },
+
+    async getAccountByProfileId(profileId) {
+      const resultSets = await executeRead(sql, ["SELECT * FROM candidate_accounts WHERE profile_id = ", ";"], [profileId]);
+      return mapAccount(rowsFrom(resultSets)[0]);
+    },
+
+    async upsertAccount(row) {
+      await executeWrite(sql, [
+        "UPSERT INTO candidate_accounts (profile_id, account_status, provider, provider_subject_hash, email_hash, email_masked, public_alias, visibility, job_status, region, work_format, experience_band, account_consent_version, account_consented_at, public_consent_version, public_consented_at, created_at, last_login_at, updated_at, purge_at) VALUES (",
+        ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", CAST(", " AS Timestamp), ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
+      ], [row.profileId, row.status, row.provider, row.providerSubjectHash, row.emailHash, row.emailMasked,
+        row.publicAlias, row.visibility, row.jobStatus, row.region, row.workFormat, row.experienceBand,
+        row.accountConsentVersion, row.accountConsentedAt, row.publicConsentVersion, row.publicConsentedAt,
+        row.createdAt, row.lastLoginAt, row.updatedAt, row.purgeAt]);
+    },
+
+    async insertSession(row) {
+      await executeWrite(sql, [
+        "UPSERT INTO candidate_account_sessions (profile_id, session_token_hash, issued_at, expires_at, last_seen_at, purge_at) VALUES (",
+        ", ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
+      ], [row.profileId, row.tokenHash, row.issuedAt, row.expiresAt, row.lastSeenAt, row.purgeAt]);
+    },
+
+    async getSessionByTokenHash(tokenHash) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_account_sessions VIEW candidate_session_token WHERE session_token_hash = ",
+        " LIMIT 1;"
+      ], [tokenHash]);
+      return mapSession(rowsFrom(resultSets)[0]);
+    },
+
+    async deleteSession(profileId, tokenHash) {
+      await executeWrite(sql, [
+        "DELETE FROM candidate_account_sessions WHERE profile_id = ",
+        " AND session_token_hash = ",
+        ";"
+      ], [profileId, tokenHash]);
+    },
+
+    async updateProfile(profileId, changes) {
+      await executeWrite(sql, [
+        "UPDATE candidate_accounts SET public_alias = ", ", visibility = ", ", job_status = ",
+        ", region = ", ", work_format = ", ", experience_band = ", ", public_consent_version = ",
+        ", public_consented_at = CAST(", " AS Timestamp), updated_at = CAST(", " AS Timestamp), purge_at = CAST(",
+        " AS Timestamp) WHERE profile_id = ", " AND account_status = ", ";"
+      ], [changes.publicAlias, changes.visibility, changes.jobStatus, changes.region, changes.workFormat,
+        changes.experienceBand, changes.publicConsentVersion, changes.publicConsentedAt, changes.updatedAt,
+        changes.purgeAt, profileId, "active"]);
+    },
+
+    async listProfileAttempts(profileId) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_attempt_links WHERE profile_id = ",
+        " ORDER BY started_at DESC LIMIT 100;"
+      ], [profileId]);
+      return rowsFrom(resultSets).map(mapAttempt);
+    },
+
+    async listRecentProfileAttempts(profileId, testId, since) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_attempt_links WHERE profile_id = ",
+        " AND test_id = ",
+        " AND started_at >= CAST(",
+        " AS Timestamp);"
+      ], [profileId, testId, since]);
+      return rowsFrom(resultSets).map(mapAttempt);
+    },
+
+    async getProfileAttemptByAttemptId(attemptId) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_attempt_links VIEW candidate_attempt WHERE attempt_id = ",
+        " LIMIT 1;"
+      ], [attemptId]);
+      return mapAttempt(rowsFrom(resultSets)[0]);
+    },
+
+    async upsertProfileAttempt(row) {
+      await executeWrite(sql, [
+        "UPSERT INTO candidate_attempt_links (profile_id, test_id, attempt_id, attempt_state, result_code, percent, bank_version, started_at, completed_at, purge_at) VALUES (",
+        ", ", ", ", ", ", ", ", ", ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
+      ], [row.profileId, row.testId, row.attemptId, row.state, row.resultCode, row.percent, row.bankVersion, row.startedAt, row.completedAt, row.purgeAt]);
+    },
+
+    async completeProfileAttempt(row) {
+      await executeWrite(sql, [
+        "UPDATE candidate_attempt_links SET attempt_state = ",
+        ", result_code = ",
+        ", percent = ",
+        ", bank_version = ",
+        ", completed_at = CAST(",
+        " AS Timestamp), purge_at = CAST(",
+        " AS Timestamp) WHERE profile_id = ",
+        " AND test_id = ",
+        " AND attempt_id = ",
+        ";"
+      ], ["completed", row.resultCode, row.percent, row.bankVersion, row.completedAt, row.purgeAt, row.profileId, row.testId, row.attemptId]);
+    },
+
+    async deleteAccount(profileId) {
+      await executeWrite(sql, [
+        "DELETE FROM candidate_account_sessions WHERE profile_id = ",
+        "; DELETE FROM candidate_attempt_links WHERE profile_id = ",
+        "; DELETE FROM candidate_accounts WHERE profile_id = ",
+        ";"
+      ], [profileId, profileId, profileId]);
+    }
+  };
+}
+
+module.exports = { QUERY_TIMEOUT_MS, createYdbAccountStore, mapAccount, mapSession, mapAttempt, rowsFrom };

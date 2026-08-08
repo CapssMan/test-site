@@ -11,7 +11,7 @@ const website = JSON.parse(fs.readFileSync(path.join(root, "cloud", "public-webs
 
 const expected = [
   "index.html", "preview-v2.html", "preview-v3.html", "assets/preview-v3.css", "assets/preview-v3.js", "social-preview.png", "social-preview.svg", "test.html", "admin.html", "privacy.html", "consent.html", "ranking.html",
-  "ranking-consent.html", "data/acc-junior.json", "data/bi-junior.json", "data/ca-junior.json",
+  "ranking-consent.html", "account.html", "account-consent.html", "data/acc-junior.json", "data/bi-junior.json", "data/ca-junior.json",
   "data/dev-quick.json", "data/fa-junior.json", "data/fpa-junior.json"
 ];
 const allowlistMatch = deploy.match(/\$publicFiles\s*=\s*@\(([\s\S]*?)\n\)/);
@@ -50,4 +50,4 @@ assert.deepEqual(Array.from(originBlock[1].matchAll(/"([^"]+)"/g), match => matc
 assert.doesNotMatch(originBlock[1], /\*/);
 assert.match(deploy, /GitHub fallback unexpectedly received candidate API CORS/);
 
-console.log("Yandex public-site deployment checks passed: exact 19-file boundary, verified upload and Yandex-only candidate CORS.");
+console.log("Yandex public-site deployment checks passed: exact 21-file boundary, verified upload and Yandex-only candidate CORS.");

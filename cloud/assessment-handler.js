@@ -35,6 +35,7 @@ const {
   verifyAttemptToken
 } = require("./assessment-core");
 const { TECHNICAL_RESULT_CODES } = require("./ranking-core");
+const { extractBearerToken, hashSessionToken, hashAccountEmail } = require("./account-core");
 const {
   RANKING_PROOF_API_VERSION,
   RANKING_PROOF_MAX_AGE_MS,
@@ -61,7 +62,7 @@ function jsonResponse(statusCode, payload, origin) {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type,Authorization",
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
       "X-Content-Type-Options": "nosniff"
     },
@@ -302,6 +303,12 @@ function assertDependencies(settings) {
     "getResultByRequestId", "insertResult", "appendAudit"
   ];
   if (!store || requiredStoreMethods.some(method => typeof store[method] !== "function")) throw new Error("assessment_store_required");
+  const accountSecret = String(settings.accountSessionSecret || "");
+  if (accountSecret && accountSecret.length < 32) throw new Error("account_session_secret_invalid");
+  if (accountSecret) {
+    const accountMethods = ["getSessionByTokenHash", "getAccountByProfileId", "listRecentProfileAttempts", "getProfileAttemptByAttemptId", "upsertProfileAttempt", "completeProfileAttempt"];
+    if (accountMethods.some(method => typeof store[method] !== "function")) throw new Error("assessment_account_store_required");
+  }
   if (!bankStorage || typeof bankStorage.readJson !== "function") throw new Error("bank_storage_required");
   if (!reportStorage || typeof reportStorage.readText !== "function" || typeof reportStorage.writeText !== "function") {
     throw new Error("report_storage_required");
@@ -321,7 +328,55 @@ function createAssessmentHandler(dependencies) {
   const identitySecret = settings.identitySecret;
   const inviteSecret = settings.inviteSecret;
   const allowedOrigins = settings.allowedOrigins || settings.allowedOrigin || "https://capssman.github.io";
+  const accountSessionSecret = String(settings.accountSessionSecret || "");
+  const accountIntegrationEnabled = Boolean(accountSessionSecret);
   const nowProvider = typeof settings.now === "function" ? settings.now : () => new Date();
+
+  async function resolveAccountContext(event, request, now) {
+    const headers = event && event.headers || {};
+    const authorization = String(headers.Authorization || headers.authorization || "");
+    if (!authorization) return { provided: false, valid: false };
+    const token = extractBearerToken(event);
+    if (!accountIntegrationEnabled || !token) return { provided: true, valid: false };
+    const session = await store.getSessionByTokenHash(hashSessionToken(accountSessionSecret, token));
+    const expiry = validDate(session && session.expiresAt);
+    if (!session || !expiry || now >= expiry) return { provided: true, valid: false };
+    const account = await store.getAccountByProfileId(session.profileId);
+    const expectedEmailHash = hashAccountEmail(identitySecret, request.email);
+    if (!account || account.status !== "active" || !timingSafeEqual(account.emailHash, expectedEmailHash)) return { provided: true, valid: false };
+    return { provided: true, valid: true, profileId: account.profileId };
+  }
+
+  function profileAttemptBlocksRetake(link, now) {
+    if (!link) return false;
+    const started = validDate(link.startedAt);
+    const completed = validDate(link.completedAt);
+    if (link.state === "active") return Boolean(started && now >= started && now.getTime() - started.getTime() < ATTEMPT_ACTIVE_TTL_MS);
+    return link.state === "completed" && Boolean(completed && now >= completed && now.getTime() - completed.getTime() < RETAKE_WINDOW_MS);
+  }
+
+  async function ensureProfileAttemptLink(accountContext, session, now) {
+    if (!accountContext.valid) return null;
+    const existing = await store.getProfileAttemptByAttemptId(session.attemptId);
+    if (existing && existing.profileId !== accountContext.profileId) throw new Error("attempt_account_mismatch");
+    if (existing) return existing;
+    const started = validDate(session.startedAt) || now;
+    const link = { profileId: accountContext.profileId, testId: session.testId, attemptId: session.attemptId,
+      state: session.state === "completed" ? "completed" : "active", resultCode: String(session.resultCode || ""),
+      percent: Number(session.result && session.result.percent || 0), bankVersion: session.bankVersion, startedAt: started,
+      completedAt: validDate(session.completedAt) || started, purgeAt: plusMs(started, RESULT_RETENTION_MS) };
+    await store.upsertProfileAttempt(link);
+    return link;
+  }
+
+  async function completeProfileAttemptIfLinked(session, result, completedAt) {
+    if (!accountIntegrationEnabled) return;
+    const link = await store.getProfileAttemptByAttemptId(session.attemptId);
+    if (!link) return;
+    await store.completeProfileAttempt({ profileId: link.profileId, testId: session.testId, attemptId: session.attemptId,
+      resultCode: String(session.resultCode || result.code || ""), percent: Number(result.percent || 0),
+      bankVersion: session.bankVersion, completedAt, purgeAt: plusMs(completedAt, RESULT_RETENTION_MS) });
+  }
 
   async function loadBank(testId, bankVersion, context) {
     const metadata = await store.getBankMetadata(testId, bankVersion);
@@ -406,8 +461,10 @@ function createAssessmentHandler(dependencies) {
     return invite;
   }
 
-  async function beginAttempt(request, context) {
+  async function beginAttempt(request, context, event) {
     const now = nowProvider();
+    const accountContext = await resolveAccountContext(event, request, now);
+    if (accountContext.provided && !accountContext.valid) return unavailableResponse();
     const runtimeSettings = await store.getRuntimeSettings();
     if (runtimeSettings.legal_pilot_approved !== "true" || runtimeSettings.attempt_issuance_enabled !== "true") {
       return unavailableResponse();
@@ -431,6 +488,7 @@ function createAssessmentHandler(dependencies) {
       }
       const bank = await loadBank(existing.testId, existing.bankVersion, context);
       await ensureInviteActive(invite, existing, now);
+      await ensureProfileAttemptLink(accountContext, existing, now);
       await audit("attempt_resumed", identityHash, "ok", now);
       return buildBeginResponse(existing, bank, signingSecret, true);
     }
@@ -438,6 +496,10 @@ function createAssessmentHandler(dependencies) {
     if (!invite.allowRetake) {
       const recent = await store.listRecentSessions(request.testId, identityHash, plusMs(now, -RETAKE_WINDOW_MS));
       if (recent.some(session => recentSessionBlocksRetake(session, now))) return unavailableResponse();
+      if (accountContext.valid) {
+        const profileRecent = await store.listRecentProfileAttempts(accountContext.profileId, request.testId, plusMs(now, -RETAKE_WINDOW_MS));
+        if (profileRecent.some(link => profileAttemptBlocksRetake(link, now))) return unavailableResponse();
+      }
     }
 
     const config = TESTS[request.testId];
@@ -475,6 +537,7 @@ function createAssessmentHandler(dependencies) {
     }
     const confirmedSession = existing || session;
     await ensureInviteActive(invite, confirmedSession, now);
+    await ensureProfileAttemptLink(accountContext, confirmedSession, now);
     await audit("attempt_started", identityHash, "ok", now);
     return buildBeginResponse(confirmedSession, bank, signingSecret, Boolean(existing));
   }
@@ -551,8 +614,10 @@ function createAssessmentHandler(dependencies) {
       technical: false
     };
   }
-  async function saveResult(request, context) {
+  async function saveResult(request, context, event) {
     const now = nowProvider();
+    const accountContext = await resolveAccountContext(event, request, now);
+    if (accountContext.provided && !accountContext.valid) return unavailableResponse();
     const tokenResult = verifyAttemptToken(request.attemptToken, signingSecret, { now, allowExpired: true });
     if (!tokenResult.valid) return unavailableResponse();
     let session = await store.getSessionByAttemptId(request.attemptId);
@@ -562,6 +627,9 @@ function createAssessmentHandler(dependencies) {
         session.privacyConsentVersion !== request.privacyConsentVersion || session.ageConfirmed !== true ||
         !tokenMatchesSession(tokenResult, session) || !timingSafeEqual(session.identityHash, identityHash) ||
         !timingSafeEqual(session.fingerprintHash, fingerprintHash)) return unavailableResponse();
+    const linkedAttempt = accountIntegrationEnabled ? await store.getProfileAttemptByAttemptId(session.attemptId) : null;
+    if (linkedAttempt && (!accountContext.valid || linkedAttempt.profileId !== accountContext.profileId)) return unavailableResponse();
+    if (!linkedAttempt && accountContext.valid) await ensureProfileAttemptLink(accountContext, session, now);
 
     const hash = submissionHash(request, signingSecret);
     if (session.state === "completed") {
@@ -569,6 +637,7 @@ function createAssessmentHandler(dependencies) {
       const completed = validDate(session.completedAt || session.reservedAt);
       if (!completed || now.getTime() - completed.getTime() > RECOVERY_TTL_MS) return unavailableResponse();
       await store.completeInvite(session.inviteId, session.attemptId, completed, plusMs(completed, INVITE_AND_SESSION_RETENTION_MS));
+      await completeProfileAttemptIfLinked(session, session.result, completed);
       return buildSavedResponse(session, session.result, true);
     }
     if (!["active", "reserved"].includes(session.state)) return unavailableResponse();
@@ -612,7 +681,10 @@ function createAssessmentHandler(dependencies) {
     }
 
     const recovered = await recoverStoredResult(session, request, hash, now);
-    if (recovered) return recovered;
+    if (recovered) {
+      await completeProfileAttemptIfLinked(session, recovered, validDate(session.completedAt || session.reservedAt) || now);
+      return recovered;
+    }
     const reportObjectKey = result.passStatus === "passed" ? "reports/" + session.resultCode + ".txt" : "";
     if (reportObjectKey) {
       const report = buildTxtReport(Object.assign({}, request, result, {
@@ -646,6 +718,7 @@ function createAssessmentHandler(dependencies) {
     }
     await store.completeSession(session.attemptId, result, completedAt, plusMs(completedAt, INVITE_AND_SESSION_RETENTION_MS));
     await store.completeInvite(session.inviteId, session.attemptId, completedAt, plusMs(completedAt, INVITE_AND_SESSION_RETENTION_MS));
+    await completeProfileAttemptIfLinked(session, result, completedAt);
     const completedSession = Object.assign({}, session, { state: "completed", result, completedAt: completedAt.toISOString() });
     await audit("result_saved", identityHash, result.passStatus, completedAt);
     return buildSavedResponse(completedSession, result, false);
@@ -671,8 +744,8 @@ function createAssessmentHandler(dependencies) {
     try {
       body = parseBody(event);
       let payload;
-      if (body.action === "beginAttempt") payload = await beginAttempt(validateBeginRequest(body), context);
-      else if (body.action === "saveResult") payload = await saveResult(validateSaveRequest(body), context);
+      if (body.action === "beginAttempt") payload = await beginAttempt(validateBeginRequest(body), context, event);
+      else if (body.action === "saveResult") payload = await saveResult(validateSaveRequest(body), context, event);
       else if (body.action === "rankingProof") payload = await verifyRankingProof(validateRankingProofRequest(body));
       else throw publicError("unsupported_action", "Действие не поддерживается.");
       return jsonResponse(200, payload, allowedOrigin);

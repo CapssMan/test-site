@@ -430,6 +430,7 @@
     const API_VERSION = "attempt-v2";
     const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
+    const ACCOUNT_SESSION_STORAGE_KEY = "skillcheck_candidate_account_v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-31-v3";
     const FRONTEND_BUILD = "2026.08.02.1";
     const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
@@ -584,6 +585,7 @@
       }
 
       document.getElementById("testTitle").textContent = currentTestConfig.title;
+      prefillVerifiedAccountEmail();
       restoreInviteInput();
       cleanupExpiredAttemptSession();
       scheduleAllPendingResultExpirations();
@@ -851,6 +853,37 @@
         result[key] = String(name || key).slice(0, 160);
       });
       return result;
+    }
+
+    function readCandidateAccountSession() {
+      try {
+        var raw = sessionStorage.getItem(ACCOUNT_SESSION_STORAGE_KEY);
+        var value = raw ? JSON.parse(raw) : null;
+        var token = String(value && value.sessionToken || "");
+        var expiresAt = Date.parse(String(value && value.expiresAt || ""));
+        if (!/^sca_[A-Za-z0-9_-]{43}$/.test(token) || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+          if (raw) sessionStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);
+          return null;
+        }
+        return { sessionToken: token, expiresAt: expiresAt, email: String(value.email || "") };
+      } catch (_error) {
+        sessionStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);
+        return null;
+      }
+    }
+
+    function prefillVerifiedAccountEmail() {
+      var account = readCandidateAccountSession();
+      var input = document.getElementById("email");
+      if (!account || !input || !isValidEmail(account.email)) return;
+      input.value = account.email;
+      input.readOnly = true;
+      input.setAttribute("aria-describedby", "accountEmailHelp");
+      var help = document.createElement("p");
+      help.id = "accountEmailHelp";
+      help.className = "field-help";
+      help.textContent = "Email подтверждён через аккаунт Яндекс и привязан к этой попытке.";
+      input.insertAdjacentElement("afterend", help);
     }
 
     function handleStartButtonClick() {
@@ -1738,6 +1771,8 @@
       };
       if (ASSESSMENT_API_MODE === "yandex") {
         requestOptions.headers = { "Content-Type": "application/json; charset=utf-8" };
+        var accountSession = readCandidateAccountSession();
+        if (accountSession) requestOptions.headers.Authorization = "Bearer " + accountSession.sessionToken;
       }
       return fetch(ASSESSMENT_API_URL, requestOptions)
       .then(function(response) {

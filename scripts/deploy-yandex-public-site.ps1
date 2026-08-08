@@ -29,6 +29,8 @@ $publicFiles = @(
   "consent.html",
   "ranking.html",
   "ranking-consent.html",
+  "account.html",
+  "account-consent.html",
   "data/acc-junior.json",
   "data/bi-junior.json",
   "data/ca-junior.json",
@@ -122,7 +124,7 @@ if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is mis
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
-if ($publicFiles.Count -ne 19 -or @($publicFiles | Sort-Object -Unique).Count -ne 19) {
+if ($publicFiles.Count -ne 21 -or @($publicFiles | Sort-Object -Unique).Count -ne 21) {
   throw "Public deployment allowlist must contain exactly 19 unique files."
 }
 foreach ($relativePath in $publicFiles) {

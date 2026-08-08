@@ -17,6 +17,9 @@ $siteOrigin = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $githubOrigin = "https://capssman.github.io"
 $publicFiles = @(
   "index.html",
+  "preview-v2.html",
+  "social-preview.png",
+  "social-preview.svg",
   "test.html",
   "admin.html",
   "privacy.html",
@@ -75,6 +78,8 @@ function Assert-ExactBucketBoundary([object]$bucketInfo) {
 function Get-ContentType([string]$relativePath) {
   if ($relativePath.EndsWith(".html", [StringComparison]::OrdinalIgnoreCase)) { return "text/html; charset=utf-8" }
   if ($relativePath.EndsWith(".json", [StringComparison]::OrdinalIgnoreCase)) { return "application/json; charset=utf-8" }
+  if ($relativePath.EndsWith(".svg", [StringComparison]::OrdinalIgnoreCase)) { return "image/svg+xml; charset=utf-8" }
+  if ($relativePath.EndsWith(".png", [StringComparison]::OrdinalIgnoreCase)) { return "image/png" }
   throw "Unsupported public file type."
 }
 
@@ -112,8 +117,8 @@ if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is mis
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
-if ($publicFiles.Count -ne 13 -or @($publicFiles | Sort-Object -Unique).Count -ne 13) {
-  throw "Public deployment allowlist must contain exactly 13 unique files."
+if ($publicFiles.Count -ne 16 -or @($publicFiles | Sort-Object -Unique).Count -ne 16) {
+  throw "Public deployment allowlist must contain exactly 16 unique files."
 }
 foreach ($relativePath in $publicFiles) {
   if ($relativePath -match "(^|/)(?:cloud|docs|scripts|apps-script|private)(/|$)" -or $relativePath -match "\.\.") {
@@ -242,5 +247,5 @@ $deniedOptions = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers 
 if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubOrigin) {
   throw "GitHub fallback unexpectedly received candidate API CORS."
 }
-Write-Host "DONE: 13 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt."
+Write-Host "DONE: 16 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt."
 Write-Host $siteOrigin

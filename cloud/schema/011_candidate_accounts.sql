@@ -51,10 +51,10 @@ CREATE TABLE IF NOT EXISTS candidate_attempt_links (
 ) WITH (TTL = Interval("PT0S") ON purge_at);
 
 UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at)
-VALUES ("account_registration_enabled", "false", CurrentUtcTimestamp());
+VALUES (Utf8("account_registration_enabled"), Utf8("false"), CurrentUtcTimestamp());
 
 UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at)
-VALUES ("profile_publication_enabled", "false", CurrentUtcTimestamp());
+VALUES (Utf8("profile_publication_enabled"), Utf8("false"), CurrentUtcTimestamp());
 
 UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at)
-VALUES ("employer_contact_enabled", "false", CurrentUtcTimestamp());
+VALUES (Utf8("employer_contact_enabled"), Utf8("false"), CurrentUtcTimestamp());

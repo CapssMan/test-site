@@ -108,8 +108,8 @@ function fakeFetch(url, options) {
   assert.match(schema, /candidate_accounts/);
   assert.match(schema, /candidate_account_sessions/);
   assert.match(schema, /candidate_attempt_links/);
-  assert.match(schema, /"account_registration_enabled", "false"/);
-  assert.match(schema, /"profile_publication_enabled", "false"/);
+  assert.match(schema, /Utf8\("account_registration_enabled"\), Utf8\("false"\)/);
+  assert.match(schema, /Utf8\("profile_publication_enabled"\), Utf8\("false"\)/);
   assert.match(assessment, /listRecentProfileAttempts\(accountContext\.profileId, request\.testId/);
   assert.match(assessment, /linkedAttempt\.profileId !== accountContext\.profileId/);
   assert.match(gateway, /\/v1\/account:/);

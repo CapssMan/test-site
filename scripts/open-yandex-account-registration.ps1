@@ -49,7 +49,7 @@ function Assert-AccountSettings([string]$registration) {
 
 function Set-RegistrationGate([string]$value) {
   if (@("true", "false") -notcontains $value) { throw "Invalid registration gate value." }
-  $query = 'UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at) VALUES ("account_registration_enabled", "' + $value + '", CurrentUtcTimestamp());'
+  $query = 'UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at) VALUES (Utf8("account_registration_enabled"), Utf8("' + $value + '"), CurrentUtcTimestamp());'
   $null = Invoke-YdbQuery $query
 }
 

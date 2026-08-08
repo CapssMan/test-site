@@ -16,6 +16,7 @@ assert.match(launch, /Assert-LiveDocuments[\s\S]*Set-RegistrationGate "true"/);
 assert.match(launch, /skillcheck-privacy-2026-08-08-v8/);
 assert.match(launch, /skillcheck-account-2026-08-08-v1/);
 assert.match(launch, /account_registration_enabled/);
+assert.match(launch, /VALUES \(Utf8\("account_registration_enabled"\), Utf8\("/);
 assert.match(launch, /profile_publication_enabled/);
 assert.match(launch, /employer_contact_enabled/);
 assert.match(launch, /Set-RegistrationGate "false"[\s\S]*rolled back to closed/);

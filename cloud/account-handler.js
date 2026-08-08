@@ -108,7 +108,7 @@ function createAccountHandler(dependencies) {
       enabled: configured && settings.account_registration_enabled === "true",
       clientId: configured ? clientId : "",
       redirectUri: configured ? redirectUri : "",
-      scope: "login:info login:email",
+      scope: "login:email",
       accountConsentVersion: ACCOUNT_CONSENT_VERSION,
       publicProfileConsentVersion: PUBLIC_PROFILE_CONSENT_VERSION,
       publicProfileEnabled: settings.profile_publication_enabled === "true"

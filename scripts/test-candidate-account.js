@@ -64,6 +64,7 @@ function fakeFetch(url, options) {
   const closed = createAccountHandler({ store: closedStore, fetchImpl: fakeFetch, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
   const closedConfig = JSON.parse((await closed(event("GET"))).body);
   assert.equal(closedConfig.enabled, false);
+  assert.equal(closedConfig.scope, "login:email");
   const closedExchange = await closed(event("POST", { action: "exchangeYandexCode", apiVersion: ACCOUNT_API_VERSION, code: "valid-code", codeVerifier: "a".repeat(43), state: "b".repeat(43), accountConsent: ACCOUNT_CONSENT_VERSION }));
   assert.equal(closedExchange.statusCode, 403);
 

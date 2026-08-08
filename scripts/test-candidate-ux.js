@@ -173,7 +173,7 @@ assert.equal(helperContext.__helpers.isValidEmail("candidate@invalid"), false);
 ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"].forEach(testId => {
   assert.match(indexPage, new RegExp('href="test\\.html\\?test=' + testId + '"'), "home must retain " + testId);
 });
-assert.match(indexPage, /<div class="stat-number">240<\/div>/, "home must show the production bank size");
+assert.match(indexPage, /data-count="240"[^>]*>240<\//, "home must show the production bank size");
 
 const doPost = extractTopLevelFunction(backend, "doPost");
 assert.match(doPost, /action === "beginAttempt"/);

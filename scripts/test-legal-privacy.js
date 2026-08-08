@@ -17,7 +17,7 @@ const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
 const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
 const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
 const accountVersion = "skillcheck-account-2026-08-08-v1";
-const privacyVersion = "skillcheck-privacy-2026-08-08-v8";
+const privacyVersion = "skillcheck-privacy-2026-08-08-v9";
 function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
 function extract(source, name) {
   const marker = "function " + name + "(";
@@ -41,7 +41,8 @@ has(consent, "YDB применяются автоматическим TTL");
 has(privacy, "Yandex API Gateway и Cloud Functions");
 has(privacy, "Managed Service for YDB");
 has(privacy, "не являются активным production-маршрутом");
-has(privacy, "регистрация аккаунтов доступна");
+has(privacy, "Приём новых персональных данных временно закрыт");
+has(privacy, "регистрация закрыта до подтверждения отправки первичного уведомления Роскомнадзору");
 has(privacy, "не более 12 месяцев без активности");
 has(accountConsent, "логин, основной email и список email");
 has(accountConsent, "OAuth-токен используется сервером один раз и не сохраняется");
@@ -63,6 +64,6 @@ has(extract(backend, "setAuthoritativeAttemptIssuanceEnabled"), "isLegalPilotApp
 assert(!extract(backend, "doPost").includes("setLegalPilotApprovedForOwner"));
 has(review, "Дата технической сверки и owner-решения: 31 июля 2026 года.");
 has(review, "RETENTION_AUTOMATION_ENABLED=true");
-has(review, "LEGAL_PILOT_APPROVED=true");
-has(review, "ATTEMPT_ISSUANCE_ENABLED=true");
+has(review, "NO-GO до первичного уведомления Роскомнадзору");
+has(review, "регистрация аккаунтов, публикация профилей и employer-контакты закрыты");
 console.log("Legal/privacy checks passed: current Russian data flow, versioned separate consents, retention and fail-closed pilot gates.");

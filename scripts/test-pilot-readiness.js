@@ -20,11 +20,11 @@ const sourcePrivacyPlan = read("docs/SOURCE_PRIVACY_AND_ATTRIBUTION.md");
 const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
 
 [
-  "LIMITED GO для контролируемого пилота",
-  "legal_pilot_approved=true",
-  "attempt_issuance_enabled=true",
+  "NO-GO до подтверждения первичной подачи",
+  "legal_pilot_approved",
+  "attempt_issuance_enabled",
   "retention_automation_enabled=true",
-  "Остаточные ограничения после LIMITED GO",
+  "Остаточные ограничения и условия будущего LIMITED GO",
   "Private storage/retention",
   "YDB clean start",
   "10–30 завершённых прохождений"
@@ -50,9 +50,9 @@ const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
   .forEach(fragment => assert.ok(prePilotInputs.includes(fragment), `pre-pilot inputs missing: ${fragment}`));
 
 [
-  "контролируемый пилот открыт 31 июля 2026 года",
-  "LEGAL_PILOT_APPROVED=true",
-  "ATTEMPT_ISSUANCE_ENABLED=true",
+  "пилот временно закрыт до подтверждения первичного уведомления Роскомнадзору",
+  "LEGAL_PILOT_APPROVED=false",
+  "ATTEMPT_ISSUANCE_ENABLED=false",
   "RETENTION_AUTOMATION_ENABLED=true",
   "1–5 учебных потоков, преподавателей, работодателей или рекрутеров",
   "10–30 завершённых прохождений",
@@ -67,7 +67,7 @@ const technicalDataExclusion = read("docs/TECHNICAL_DATA_EXCLUSION.md");
   "достигнут лимит 30 завершённых прохождений"
 ].forEach(fragment => assert.ok(pilotRunbook.includes(fragment), `pilot runbook missing: ${fragment}`));
 
-assert.match(pilotRunbook, /Статус: \*\*контролируемый пилот открыт 31 июля 2026 года\*\*/);
+assert.match(pilotRunbook, /Статус на 8 августа 2026 года: \*\*пилот временно закрыт до подтверждения первичного уведомления Роскомнадзору\*\*/);
 
 [
   "двусторонней платформой проверенных профессиональных навыков",

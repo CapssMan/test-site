@@ -41,7 +41,7 @@ has(consent, "YDB применяются автоматическим TTL");
 has(privacy, "Yandex API Gateway и Cloud Functions");
 has(privacy, "Managed Service for YDB");
 has(privacy, "не являются активным production-маршрутом");
-has(privacy, "регистрация закрыта серверной настройкой");
+has(privacy, "регистрация аккаунтов доступна");
 has(privacy, "не более 12 месяцев без активности");
 has(accountConsent, "логин, основной email и список email");
 has(accountConsent, "OAuth-токен используется сервером один раз и не сохраняется");

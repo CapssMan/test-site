@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+"use strict";
+
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const root = path.resolve(__dirname, "..");
+const index = fs.readFileSync(path.join(root, "cloud", "index.js"), "utf8");
+const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "utf8");
+const schema = fs.readFileSync(path.join(root, "cloud", "schema", "012_employer_workspace.sql"), "utf8");
+const deploy = fs.readFileSync(path.join(root, "scripts", "deploy-yandex-employer-foundation.ps1"), "utf8");
+assert.match(index, /runtimeMode === "employer"/);
+assert.match(index, /createEmployerHandler/);
+assert.match(index, /createYdbEmployerStore/);
+assert.match(gateway, /\/v1\/employer:/);
+assert.equal((gateway.match(/tag: "employer-v1"/g) || []).length, 2);
+assert.match(schema, /CREATE TABLE IF NOT EXISTS employer_accounts/);
+assert.match(schema, /CREATE TABLE IF NOT EXISTS employer_shortlists/);
+assert.match(schema, /CREATE TABLE IF NOT EXISTS employer_shortlist_items/);
+assert.match(schema, /employer_workspace_enabled/);
+assert.match(deploy, /\$sourceTag = "account-v1"/);
+assert.match(deploy, /\$employerTag = "employer-v1"/);
+assert.match(deploy, /012_employer_workspace\.sql/);
+assert.match(deploy, /Assert-Gates-Closed/);
+assert.match(deploy, /ACCOUNT_SESSION_SECRET_V1/);
+assert.match(deploy, /IDENTITY_HASH_SECRET_V1/);
+assert.match(deploy, /--no-logging/);
+assert.match(deploy, /api-gateway update/);
+assert.doesNotMatch(deploy, /client_secret|Lockbox|lockbox/);
+assert.doesNotMatch(deploy, /employer_workspace_enabled[^\n]*"true"|employer_contact_enabled[^\n]*"true"/);
+console.log("Employer deployment checks passed: additive schema, protected runtime, closed gates, existing account identity and no paid secret service.");

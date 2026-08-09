@@ -1,3 +1,19 @@
+## Employer foundation — 9 August 2026
+
+Stage 20A is implemented locally and is not yet deployed. The first employer workspace uses the existing verified Yandex account as identity and adds a separate manually verified employer authorization. There is no open company registration.
+
+The protected `/v1/employer` contour provides six financial role templates, explainable candidate ordering and persistent shortlists of 1–10 people. Experience is shown before assessments and contributes 45% of the comparison score; assessments contribute 35%; availability and matching conditions contribute 20%. The score only orders the shortlist and never makes an automatic hiring decision.
+
+Only active `discoverable` candidate profiles with the current publication consent, an active/open job status and a current server-verified financial result can enter search. The response contains a derived talent ID, alias, experience band, region/work format, availability, verification level and assessment summaries. Internal profile IDs, result codes, raw answers, full reports, email and phone are not returned.
+
+The production gates remain closed by default:
+
+- `employer_workspace_enabled=false`;
+- `employer_contact_enabled=false`;
+- existing `profile_publication_enabled` is still required independently.
+
+The public `employer.html` page has no mock candidates and shows an honest closed-pilot state until the runtime is deployed and a verified employer is explicitly admitted. Contact requests, notifications, chat and contact disclosure are not part of 20A.
+
 ## Group-link copy release — 3 August 2026
 
 Admin Build `2026.08.03.2` and protected runtime `admin-v10` (`d4eta4npbkr8vonrcv82`) are live; `admin-v9` remains the immediate rollback. Every currently usable group-invitation row now has a «Копировать ссылку» button. The bearer code is re-derived only after an authenticated admin action, verified against the stored hash and never added to the group-list response or database. Revoked, expired and full links cannot be revealed.

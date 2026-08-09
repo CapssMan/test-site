@@ -11,7 +11,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Российский технический MVP уже работает через YDB Serverless, Cloud Functions, API Gateway и Object Storage: тестирование, защищённая админка, чтение рейтинга, добровольная публикация, отзыв и TTL профиля реализованы; расширенный employer discovery начинается после короткого пилота. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md).
+Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Российский технический MVP уже работает через YDB Serverless, Cloud Functions, API Gateway и Object Storage. Candidate account опубликован; первый employer discovery/shortlist-контур реализован локально с закрытыми production gates. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) и [`docs/EMPLOYER_FOUNDATION.md`](docs/EMPLOYER_FOUNDATION.md).
 
 ## Текущий статус
 
@@ -24,6 +24,8 @@ LEGAL_PILOT_APPROVED и ATTEMPT_ISSUANCE_ENABLED открыты отдельны
 Рабочая версия включает:
 
 - выбор теста на `index.html`;
+- подтверждённый аккаунт кандидата на `account.html` с управлением видимостью, статусом поиска, регионом, форматом работы и диапазоном опыта;
+- подготовленный `employer.html`: типовые роли, фильтры, объяснимое сравнение и постоянный shortlist 1–10 без контактов и mock-кандидатов;
 - отдельную публичную страницу `ranking.html` с выбором одной из пяти профессий, live Yandex API, безопасным состоянием набора участников и без вымышленных профилей;
 - серверное ядро рейтинга: отдельный opt-in, подтверждение результата через Apps Script без общего секрета, раздельные read/write-права, отзыв по локальному management token, TTL 365 дней, минимум пять участников и строгий список публичных полей;
 - прохождение теста на `test.html?test=<testId>`;
@@ -81,6 +83,8 @@ privacy.html            Политика обработки персональн
 consent.html            Отдельное versioned-согласие на обработку данных
 admin.html              Псевдонимизированная админ-панель по кодам
 ranking.html            Публичная страница добровольного рейтинга
+account.html            Подтверждённый аккаунт кандидата и настройки профиля
+employer.html           Закрытый employer workspace и shortlists 1–10
 cloud/*.js              Ядро, YDB store и handler действующей Yandex Cloud Function
 data/*.json             Display-only банки без answer key
 apps-script/Code.gs     Google Apps Script API для Яндекс Диска

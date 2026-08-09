@@ -28,6 +28,7 @@ $publicFiles = @(
   "privacy.html",
   "consent.html",
   "ranking.html",
+  "employer.html",
   "ranking-consent.html",
   "account.html",
   "account-consent.html",
@@ -124,8 +125,8 @@ if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is mis
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
-if ($publicFiles.Count -ne 21 -or @($publicFiles | Sort-Object -Unique).Count -ne 21) {
-  throw "Public deployment allowlist must contain exactly 21 unique files."
+if ($publicFiles.Count -ne 22 -or @($publicFiles | Sort-Object -Unique).Count -ne 22) {
+  throw "Public deployment allowlist must contain exactly 22 unique files."
 }
 foreach ($relativePath in $publicFiles) {
   if ($relativePath -match "(^|/)(?:cloud|docs|scripts|apps-script|private)(/|$)" -or $relativePath -match "\.\.") {
@@ -135,7 +136,7 @@ foreach ($relativePath in $publicFiles) {
   if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Allowlisted public file is missing: $relativePath" }
 }
 
-foreach ($validator in @("check-static-links.js", "test-public-bank-secrecy.js", "test-candidate-ux.js", "test-yandex-public-site-deployment.js")) {
+foreach ($validator in @("check-static-links.js", "test-public-bank-secrecy.js", "test-candidate-ux.js", "test-employer-ui.js", "test-yandex-public-site-deployment.js")) {
   & node (Join-Path $PSScriptRoot $validator)
   if ($LASTEXITCODE -ne 0) { throw "Public deployment validator failed." }
 }
@@ -254,5 +255,5 @@ $deniedOptions = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers 
 if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubOrigin) {
   throw "GitHub fallback unexpectedly received candidate API CORS."
 }
-Write-Host "DONE: 21 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt."
+Write-Host "DONE: 22 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt."
 Write-Host $siteOrigin

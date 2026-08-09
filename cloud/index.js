@@ -2,6 +2,7 @@
 
 const { createAccountHandler } = require("./account-handler");
 const { createAdminHandler } = require("./admin-handler");
+const { createEmployerHandler } = require("./employer-handler");
 const { createAssessmentHandler, jsonResponse: assessmentJsonResponse, storageErrorResponse } = require("./assessment-handler");
 const { createObjectStorageClient } = require("./object-storage-client");
 const { createRankingHandler, jsonResponse } = require("./ranking-handler");
@@ -9,6 +10,7 @@ const { createRankingProfileHandler, privateJsonResponse } = require("./ranking-
 const { createYdbAssessmentStore } = require("./ydb-assessment-store");
 const { createYdbAdminStore } = require("./ydb-admin-store");
 const { createYdbAccountStore } = require("./ydb-account-store");
+const { createYdbEmployerStore } = require("./ydb-employer-store");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
 const { DEFAULT_ALLOWED_ORIGINS, readAllowedOriginsFromEnvironment, resolveAllowedOrigin } = require("./cors-origin");
 
@@ -40,6 +42,15 @@ async function createRuntime() {
       redirectUri: String(process.env.YANDEX_ID_REDIRECT_URI || ""),
       identitySecret: String(process.env.IDENTITY_HASH_SECRET_V1 || ""),
       sessionSecret: String(process.env.ACCOUNT_SESSION_SECRET_V1 || "")
+    });
+  }
+  if (runtimeMode === "employer") {
+    const employerStore = Object.assign(createYdbAccountStore(sql), createYdbEmployerStore(sql));
+    return createEmployerHandler({
+      store: employerStore,
+      allowedOrigins,
+      sessionSecret: String(process.env.ACCOUNT_SESSION_SECRET_V1 || ""),
+      talentSecret: String(process.env.IDENTITY_HASH_SECRET_V1 || "")
     });
   }
   if (runtimeMode === "write") {
@@ -96,6 +107,9 @@ async function handler(event, context) {
     }
     if (runtimeMode === "account") {
       return assessmentJsonResponse(503, { ok: false, error: "account_temporarily_unavailable" }, allowedOrigin);
+    }
+    if (runtimeMode === "employer") {
+      return assessmentJsonResponse(503, { ok: false, error: "employer_temporarily_unavailable" }, allowedOrigin);
     }
     if (runtimeMode === "assessment" || runtimeMode === "admin") {
       return assessmentJsonResponse(503, storageErrorResponse(), allowedOrigin);

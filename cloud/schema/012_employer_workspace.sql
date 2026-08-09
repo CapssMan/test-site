@@ -32,9 +32,3 @@ CREATE TABLE IF NOT EXISTS employer_shortlist_items (
     purge_at Timestamp NOT NULL,
     PRIMARY KEY (employer_id, shortlist_id, talent_profile_id)
 ) WITH (TTL = Interval("PT0S") ON purge_at);
-
-UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at)
-VALUES (Utf8('employer_workspace_enabled'), Utf8('false'), CurrentUtcTimestamp());
-
-UPSERT INTO assessment_runtime_settings (setting_key, setting_value, updated_at)
-VALUES (Utf8('employer_contact_enabled'), Utf8('false'), CurrentUtcTimestamp());

@@ -66,6 +66,17 @@ function Get-ObjectKeys() {
   foreach ($item in @($contents)) { Write-Output ([string]$item.key) }
 }
 
+function Invoke-WebRequestWithRetry([hashtable]$parameters) {
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    try { return Invoke-WebRequest @parameters }
+    catch {
+      if ($attempt -eq 3) { throw }
+      Start-Sleep -Seconds $attempt
+    }
+  }
+  throw "Web request retry boundary failed."
+}
+
 function Assert-ExactBucketBoundary([object]$bucketInfo) {
   $anonymous = Read-Property $bucketInfo @("anonymous_access_flags", "anonymousAccessFlags")
   $website = Read-Property $bucketInfo @("website_settings", "websiteSettings")
@@ -223,23 +234,23 @@ $invalidInviteBody = [ordered]@{
   privacyConsentVersion = "skillcheck-pd-consent-2026-07-31-v5"; ageConfirmed = $true
 }
 foreach ($origin in @($siteOrigin)) {
-  $options = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
+  $options = Invoke-WebRequestWithRetry @{ Method = "OPTIONS"; Uri = $assessmentUrl; Headers = @{
     Origin = $origin
     "Access-Control-Request-Method" = "POST"
     "Access-Control-Request-Headers" = "content-type"
-  } -UseBasicParsing -TimeoutSec 30
+  }; UseBasicParsing = $true; TimeoutSec = 30 }
   if ([int]$options.StatusCode -ne 204 -or [string]$options.Headers["Access-Control-Allow-Origin"] -ne $origin) {
     throw "CORS preflight failed for an approved frontend origin."
   }
-  foreach ($apiPath in @("/v1/assessment", "/v1/admin", "/v1/account", "/v1/ranking?testId=fa-junior")) {
-    $getResponse = Invoke-WebRequest -Method GET -Uri ($apiBase + $apiPath) -Headers @{ Origin = $origin } `
-      -UseBasicParsing -TimeoutSec 30
+  foreach ($apiPath in @("/v1/assessment", "/v1/admin", "/v1/account", "/v1/ranking?testId=fa-junior", "/v1/employer")) {
+    $getResponse = Invoke-WebRequestWithRetry @{ Method = "GET"; Uri = ($apiBase + $apiPath); Headers = @{ Origin = $origin }; `
+      UseBasicParsing = $true; TimeoutSec = 30 }
     if ([int]$getResponse.StatusCode -ne 200 -or [string]$getResponse.Headers["Access-Control-Allow-Origin"] -ne $origin) {
       throw "Actual API response CORS failed for an approved frontend origin."
     }
   }
-  $invalidInviteResponse = Invoke-WebRequest -Method POST -Uri $assessmentUrl -Headers @{ Origin = $origin } `
-    -ContentType "application/json; charset=utf-8" -Body ($invalidInviteBody | ConvertTo-Json -Compress) -UseBasicParsing -TimeoutSec 30
+  $invalidInviteResponse = Invoke-WebRequestWithRetry @{ Method = "POST"; Uri = $assessmentUrl; Headers = @{ Origin = $origin }; `
+    ContentType = "application/json; charset=utf-8"; Body = ($invalidInviteBody | ConvertTo-Json -Compress); UseBasicParsing = $true; TimeoutSec = 30 }
   $invalidInvite = $invalidInviteResponse.Content | ConvertFrom-Json
   if ([string]$invalidInviteResponse.Headers["Access-Control-Allow-Origin"] -ne $origin -or
       $invalidInvite.ok -ne $false -or [string]$invalidInvite.failureCode -ne "attempt_unavailable") {
@@ -247,11 +258,11 @@ foreach ($origin in @($siteOrigin)) {
   }
 }
 
-$deniedOptions = Invoke-WebRequest -Method OPTIONS -Uri $assessmentUrl -Headers @{
+$deniedOptions = Invoke-WebRequestWithRetry @{ Method = "OPTIONS"; Uri = $assessmentUrl; Headers = @{
   Origin = $githubOrigin
   "Access-Control-Request-Method" = "POST"
   "Access-Control-Request-Headers" = "content-type"
-} -UseBasicParsing -TimeoutSec 30
+}; UseBasicParsing = $true; TimeoutSec = 30 }
 if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubOrigin) {
   throw "GitHub fallback unexpectedly received candidate API CORS."
 }

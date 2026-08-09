@@ -17,6 +17,9 @@ $origin = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $sourceTag = "account-v1"
 $employerTag = "employer-v1"
 $schema = Join-Path $repoRoot "cloud\schema\012_employer_workspace.sql"
+$schemaRuntimePath = Join-Path $env:TEMP ("skillcheck-employer-schema-" + [Guid]::NewGuid().ToString("N") + ".sql")
+$settingsSchema = Join-Path $repoRoot "cloud\schema\013_employer_runtime_settings.sql"
+$settingsRuntimePath = Join-Path $env:TEMP ("skillcheck-employer-settings-" + [Guid]::NewGuid().ToString("N") + ".sql")
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $packagePath = Join-Path $env:TEMP ("skillcheck-employer-" + [Guid]::NewGuid().ToString("N") + ".zip")
 $packageUri = ""
@@ -56,13 +59,13 @@ function Assert-Gates-Closed() {
   $rows = $raw | ConvertFrom-Json
   $settings = @{}
   foreach ($row in $rows) { $settings[[string]$row.setting_key] = [string]$row.setting_value }
-  foreach ($key in @("employer_workspace_enabled", "employer_contact_enabled")) {
+  foreach ($key in @("employer_workspace_enabled", "employer_contact_enabled", "profile_publication_enabled")) {
     if (-not $settings.ContainsKey($key) -or $settings[$key] -ne "false") { throw "Employer gate is missing or unexpectedly open: $key" }
   }
 }
 
 try {
-  foreach ($path in @($yc, $ydb, $node, $schema, $gatewaySpec, (Join-Path $repoRoot "cloud\employer-handler.js"))) {
+  foreach ($path in @($yc, $ydb, $node, $schema, $settingsSchema, $gatewaySpec, (Join-Path $repoRoot "cloud\employer-handler.js"))) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required employer deployment input is missing." }
   }
   foreach ($validator in @("test-employer-foundation.js", "test-ydb-employer-store.js", "test-security.js")) {
@@ -78,8 +81,14 @@ try {
 
   $env:YDB_TOKEN = & $yc iam create-token
   if ($LASTEXITCODE -ne 0 -or [String]::IsNullOrWhiteSpace($env:YDB_TOKEN)) { throw "Temporary YDB token was not created." }
-  $null = & $ydb -e $endpoint -d $database sql -f $schema --format json-unicode-array
+  Copy-Item -LiteralPath $schema -Destination $schemaRuntimePath -Force
+  if (-not (Test-Path -LiteralPath $schemaRuntimePath -PathType Leaf)) { throw "Temporary schema copy was not created." }
+  $null = & $ydb -e $endpoint -d $database sql -f $schemaRuntimePath --format json-unicode-array
   if ($LASTEXITCODE -ne 0) { throw "Employer schema migration failed." }
+  Copy-Item -LiteralPath $settingsSchema -Destination $settingsRuntimePath -Force
+  if (-not (Test-Path -LiteralPath $settingsRuntimePath -PathType Leaf)) { throw "Temporary settings copy was not created." }
+  $null = & $ydb -e $endpoint -d $database sql -f $settingsRuntimePath --format json-unicode-array
+  if ($LASTEXITCODE -ne 0) { throw "Employer runtime settings migration failed." }
   Assert-Gates-Closed
 
   $cloudPath = Join-Path $repoRoot "cloud"
@@ -126,5 +135,7 @@ try {
 } finally {
   if (-not [String]::IsNullOrWhiteSpace($packageUri)) { & $yc storage s3 rm $packageUri --only-show-errors | Out-Null }
   Remove-Item -LiteralPath $packagePath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $schemaRuntimePath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $settingsRuntimePath -Force -ErrorAction SilentlyContinue
   Remove-Item Env:\YDB_TOKEN -ErrorAction SilentlyContinue
 }

@@ -149,7 +149,9 @@ function createStore(settingsOverrides) {
   assert.match(schema, /employer_accounts/);
   assert.match(schema, /employer_shortlists/);
   assert.match(schema, /employer_shortlist_items/);
-  assert.match(schema, /Utf8\('employer_workspace_enabled'\), Utf8\('false'\)/);
-  assert.match(schema, /Utf8\('employer_contact_enabled'\), Utf8\('false'\)/);
+  assert.doesNotMatch(schema, /UPSERT INTO/);
+  const settingsSchema = fs.readFileSync(path.join(root, "cloud", "schema", "013_employer_runtime_settings.sql"), "utf8");
+  assert.match(settingsSchema, /Utf8\('employer_workspace_enabled'\), Utf8\('false'\)/);
+  assert.match(settingsSchema, /Utf8\('employer_contact_enabled'\), Utf8\('false'\)/);
   console.log("Employer foundation checks passed: verified access, consent-gated talent search, explainable ordering, shortlist cap contract and no contact disclosure.");
 })().catch(error => { console.error(error); process.exit(1); });

@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const script = fs.readFileSync(path.join(__dirname, "rotate-exposed-runtime-secrets.ps1"), "utf8");
+for (const tag of ["assessment-v12", "admin-v10", "account-v1"]) assert(script.includes('Replace-TaggedVersion "' + tag + '"'));
+for (const name of ["ATTEMPT_SIGNING_SECRET_V1", "IDENTITY_HASH_SECRET_V1", "INVITE_CODE_SECRET_V1"]) assert(script.includes(name));
+assert.match(script, /RandomNumberGenerator\]::Create/);
+assert.match(script, /\.GetBytes\(\$bytes\)/);
+assert.match(script, /Active assessment sessions block credential rotation/);
+assert.match(script, /Existing candidate accounts require a separate identity migration/);
+assert.match(script, /Set-Issuance "false"/);
+assert.match(script, /Set-Issuance \$issuanceBefore/);
+assert.match(script, /assessment_invite_groups/);
+assert.match(script, /group-code-identity-v1/);
+assert.match(script, /invite-code-v1\|SC1/);
+assert.doesNotMatch(script, /assessment_invite_groups SET code_hash[^\n]*updated_at/);
+assert.match(script, /Remove-Item -LiteralPath \$packagePath,\$groupSqlPath/);
+assert.match(script, /\$removeOutput = @\(& \$yc serverless function version remove-tag/);
+assert.match(script, /\$restoreOutput = @\(& \$yc serverless function version set-tag/);
+assert.doesNotMatch(script, /Write-Host[^\n]*(Secret|environment)/i);
+assert.doesNotMatch(script, /version delete|function delete|storage s3 rm[^\n]*--recursive/);
+assert.doesNotMatch(script, /[A-Za-z0-9_-]{48,}\s*$/m);
+console.log("Exposed-secret rotation checks passed: no active-session cutover, same-tag replacement, group-link reissue and no secret output.");

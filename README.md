@@ -11,7 +11,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
-Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Российский технический MVP уже работает через YDB Serverless, Cloud Functions, API Gateway и Object Storage. Candidate account опубликован; первый employer discovery/shortlist-контур реализован локально с закрытыми production gates. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) и [`docs/EMPLOYER_FOUNDATION.md`](docs/EMPLOYER_FOUNDATION.md).
+Долгосрочная North Star: специалисты самостоятельно проходят тесты, по своему выбору формируют видимый профиль и участвуют в рейтинге по профессии; работодатели получают объяснимый shortlist или проверяют собственных кандидатов. Российский технический MVP уже работает через YDB Serverless, Cloud Functions, API Gateway и Object Storage. Candidate account и первый employer discovery/shortlist-контур опубликованы; employer workspace, публикация расширенных профилей и контакты остаются закрытыми серверными gates. Границы зафиксированы в [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md) и [`docs/EMPLOYER_FOUNDATION.md`](docs/EMPLOYER_FOUNDATION.md).
 
 ## Текущий статус
 

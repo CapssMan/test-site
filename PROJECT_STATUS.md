@@ -1,6 +1,28 @@
+## Employer foundation production release — 9 August 2026
+
+Stage 20A is deployed behind closed gates. Runtime tags and active version IDs are: `assessment-v12` (`d4emffs52denqnjl30dd`), `admin-v10` (`d4eovis5o4tkk016skoa`), `account-v1` (`d4e77dd9rcsc8cjea6a9`) and `employer-v1` (`d4esn3fvi5voknihjdhl`). The public Yandex bucket contains exactly 22 allowlisted files; live `employer.html` matches the local file by SHA-256.
+
+Full CI passed 64/64 checks after the production cutover and runtime-credential rotation.
+
+A Yandex CLI tag-removal command unexpectedly emitted the environment of an obsolete runtime during deployment. The three affected runtime credentials were treated as compromised and rotated. No active assessment sessions, candidate accounts or employer accounts existed. Issuance was closed during cutover and restored to `true` only after verification. The obsolete `assessment-v10` tag was released to satisfy the function-tag quota, while version `d4ear9l5kemg3e41gn9d` remains recoverable by ID.
+
+Six issued group invitations were rehashed under the new credential. Their old bearer links no longer work; the administrator must use «Копировать ссылку» again before distributing them. Group descriptions, limits, usage counters and expiry were not deleted. Two completed assessment sessions/results remain unchanged.
+
+Production verification confirms:
+
+- `attempt_issuance_enabled=true`;
+- `employer_workspace_enabled=false`;
+- `employer_contact_enabled=false`;
+- `profile_publication_enabled=false`;
+- `/v1/employer` GET returns `employer-workspace-v1`, `enabled:false`, `contactEnabled:false`;
+- unauthenticated employer search returns HTTP 401;
+- assessment/admin/account/ranking/employer responses allow only the main Yandex origin;
+- invalid invitation remains `attempt_unavailable` and creates no usable attempt;
+- there are no mock candidates and no public contacts.
+
 ## Employer foundation — 9 August 2026
 
-Stage 20A is implemented locally and is not yet deployed. The first employer workspace uses the existing verified Yandex account as identity and adds a separate manually verified employer authorization. There is no open company registration.
+Stage 20A was first implemented locally and is now deployed behind the closed production gates recorded above. The first employer workspace uses the existing verified Yandex account as identity and adds a separate manually verified employer authorization. There is no open company registration.
 
 The protected `/v1/employer` contour provides six financial role templates, explainable candidate ordering and persistent shortlists of 1–10 people. Experience is shown before assessments and contributes 45% of the comparison score; assessments contribute 35%; availability and matching conditions contribute 20%. The score only orders the shortlist and never makes an automatic hiring decision.
 

@@ -1,6 +1,8 @@
 # SkillCheck — employer foundation 20A
 
-Статус: локальная реализация от 9 августа 2026 года. Production deployment и employer-доступ ещё не выполнены.
+Статус: опубликовано 9 августа 2026 года в Yandex Cloud за закрытыми gates. Страница и API доступны технически, но поиск реальных профилей, shortlists и контакты работодателям не открыты.
+
+Активный runtime: `employer-v1` (`d4esn3fvi5voknihjdhl`). Live `employer.html` совпадает с локальным файлом по SHA-256. Сетевой и CORS smoke пройден для assessment/admin/account/ranking/employer.
 
 ## Цель подэтапа
 
@@ -57,9 +59,9 @@ Employer API может вернуть только:
 - `profile_publication_enabled=false` — независимо закрывает расширенную публикацию профилей;
 - `employer_contact_enabled=false` — резерв под будущий contact-flow; 20A его не использует.
 
-Миграция `cloud/schema/012_employer_workspace.sql` создаёт таблицы и явно устанавливает оба новых employer-gate в `false`. Deployment-скрипт повторно проверяет это до и после создания runtime.
+Миграция `cloud/schema/012_employer_workspace.sql` создаёт таблицы, а отдельная data-миграция `cloud/schema/013_employer_runtime_settings.sql` устанавливает оба новых employer-gate в `false`. Deployment-скрипт применяет их раздельно и повторно проверяет gates до и после создания runtime.
 
-## Безопасный порядок публикации
+## Выполненный порядок публикации
 
 1. Запустить полный локальный CI.
 2. Развернуть schema/runtime/API скриптом `scripts/deploy-yandex-employer-foundation.ps1`.
@@ -67,6 +69,8 @@ Employer API может вернуть только:
 4. Опубликовать точный 22-file статический allowlist обычным скриптом Yandex public site.
 5. Проверить GET-конфигурацию и закрытый POST без работодателя; реальные профили не должны возвращаться.
 6. Не создавать employer account и не открывать gate в рамках технической публикации.
+
+Все шесть шагов выполнены. Employer account не создан. Оба employer-gate и отдельный profile-publication gate подтверждены как `false`.
 
 ## Что требуется перед первым employer-пилотом
 

@@ -122,6 +122,9 @@ function fakeFetch(url, options) {
   assert.match(accountPage, /attempt<3/);
   assert.match(accountPage, /accountServiceUnavailable/);
   assert.match(accountPage, /Повторить проверку/);
+  assert.match(accountPage, /window\.location\.origin===GITHUB_FALLBACK_ORIGIN/);
+  assert.match(accountPage, /window\.location\.replace\(PRIMARY_SITE_ORIGIN\+primaryPath/);
+  assert.match(accountPage, /window\.location\.origin!==GITHUB_FALLBACK_ORIGIN\)boot\(\)/);
   assert.match(indexPage, /href="account\.html">Личный кабинет<\/a>/);
   assert.doesNotMatch(accountPage, /value="link"/);
   assert.doesNotMatch(accountPage, /localStorage|client_secret|login:phone|login:birthday|login:avatar/);

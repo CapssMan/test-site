@@ -40,6 +40,12 @@
   </main>
   <script>
     "use strict";
+    const PRIMARY_SITE_ORIGIN="https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net";
+    const GITHUB_FALLBACK_ORIGIN="https://capssman.github.io";
+    if(window.location.origin===GITHUB_FALLBACK_ORIGIN){
+      const primaryPath=window.location.pathname.replace(/^\/test-site(?=\/|$)/,"")||"/account.html";
+      window.location.replace(PRIMARY_SITE_ORIGIN+primaryPath+window.location.search+window.location.hash);
+    }
     const ACCOUNT_API_URL="https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/account";
     const ACCOUNT_API_VERSION="candidate-account-v1";
     const ACCOUNT_SESSION_STORAGE_KEY="skillcheck_candidate_account_v1";
@@ -69,7 +75,7 @@
     async function logout(){try{await apiPost({action:"logout",apiVersion:ACCOUNT_API_VERSION})}catch(_error){}sessionStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);location.reload()}
     async function deleteAccount(){if(prompt('Для удаления аккаунта введите слово УДАЛИТЬ')!=="УДАЛИТЬ")return;try{await apiPost({action:"deleteAccount",apiVersion:ACCOUNT_API_VERSION,confirmation:"УДАЛИТЬ"});sessionStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);location.reload()}catch(_error){setStatus("Удаление не завершилось. Повторите позже или обратитесь оператору.","error")}}
     async function boot(){if(bootInProgress)return;bootInProgress=true;accountServiceUnavailable=false;loginView.hidden=false;loginButton.textContent="Проверяем сервис…";loginButton.disabled=true;setStatus("Проверяем доступность сервиса аккаунтов…","");try{config=await fetchAccountConfig();loginButton.textContent="Войти через Яндекс";if(await handleCallback())return;if(await loadProfile())return;loginView.hidden=false;loginButton.disabled=!config.enabled||!accountConsent.checked;setStatus(config.enabled?"Войдите, чтобы выбрать тест и получить попытку без кода приглашения.":"Регистрация аккаунтов временно закрыта.",config.enabled?"success":"")}catch(_error){config=null;accountServiceUnavailable=true;loginView.hidden=false;loginButton.textContent="Повторить проверку";loginButton.disabled=false;setStatus("Сервис аккаунтов временно недоступен. Нажмите «Повторить проверку» — перезагружать страницу не нужно.","error")}finally{bootInProgress=false}}
-    loginButton.addEventListener("click",startLogin);accountConsent.addEventListener("change",()=>{loginButton.disabled=accountServiceUnavailable?false:!(config&&config.enabled&&accountConsent.checked)});document.getElementById("saveButton").addEventListener("click",saveProfile);document.getElementById("logoutButton").addEventListener("click",logout);document.getElementById("deleteButton").addEventListener("click",deleteAccount);document.getElementById("visibility").addEventListener("change",event=>{document.getElementById("publicConsentBox").hidden=event.target.value!=="discoverable"});boot();
+    loginButton.addEventListener("click",startLogin);accountConsent.addEventListener("change",()=>{loginButton.disabled=accountServiceUnavailable?false:!(config&&config.enabled&&accountConsent.checked)});document.getElementById("saveButton").addEventListener("click",saveProfile);document.getElementById("logoutButton").addEventListener("click",logout);document.getElementById("deleteButton").addEventListener("click",deleteAccount);document.getElementById("visibility").addEventListener("change",event=>{document.getElementById("publicConsentBox").hidden=event.target.value!=="discoverable"});if(window.location.origin!==GITHUB_FALLBACK_ORIGIN)boot();
   </script>
 </body>
 </html>

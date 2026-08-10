@@ -50,6 +50,40 @@ function plusMs(now, milliseconds) {
   return new Date(now.getTime() + milliseconds);
 }
 
+const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
+const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
+const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
+
+function buildTestAccess(attempts, now, enabled) {
+  const currentTime = validDate(now) || new Date();
+  const rows = Array.isArray(attempts) ? attempts.slice() : [];
+  return SELF_SERVICE_TEST_IDS.map(testId => {
+    if (!enabled) return { testId, status: "closed", availableAt: "", lastResultCode: "", lastPercent: 0 };
+    const matching = rows.filter(item => item && item.testId === testId).sort((left, right) => {
+      return Date.parse(String(right.completedAt || right.startedAt || "")) - Date.parse(String(left.completedAt || left.startedAt || ""));
+    });
+    const active = matching.find(item => item.state === "active" && validDate(item.startedAt));
+    if (active) {
+      const activeUntil = plusMs(validDate(active.startedAt), ACTIVE_ATTEMPT_TTL_MS);
+      if (currentTime < activeUntil) {
+        return { testId, status: "in_progress", availableAt: activeUntil.toISOString(), lastResultCode: "", lastPercent: 0 };
+      }
+    }
+    const completed = matching.find(item => item.state === "completed" && validDate(item.completedAt));
+    if (completed) {
+      const nextEligibleAt = plusMs(validDate(completed.completedAt), RETAKE_WINDOW_MS);
+      return {
+        testId,
+        status: currentTime >= nextEligibleAt ? "available" : "cooldown",
+        availableAt: nextEligibleAt.toISOString(),
+        lastResultCode: String(completed.resultCode || ""),
+        lastPercent: Number(completed.percent || 0)
+      };
+    }
+    return { testId, status: "available", availableAt: "", lastResultCode: "", lastPercent: 0 };
+  });
+}
+
 function publicProfile(account, attempts) {
   return {
     profileId: account.profileId,
@@ -111,7 +145,9 @@ function createAccountHandler(dependencies) {
       scope: "login:email",
       accountConsentVersion: ACCOUNT_CONSENT_VERSION,
       publicProfileConsentVersion: PUBLIC_PROFILE_CONSENT_VERSION,
-      publicProfileEnabled: settings.profile_publication_enabled === "true"
+      publicProfileEnabled: settings.profile_publication_enabled === "true",
+      selfServiceEnabled: settings.account_self_service_enabled === "true",
+      accountRequiredForAttempts: settings.account_required_for_attempts === "true"
     };
   }
 
@@ -170,12 +206,15 @@ function createAccountHandler(dependencies) {
     await store.upsertAccount(account);
     const token = randomToken();
     const expiresAt = plusMs(now, SESSION_TTL_MS);
+    const attempts = await store.listProfileAttempts(account.profileId);
     await store.insertSession({ profileId: account.profileId, tokenHash: hashSessionToken(sessionSecret, token), issuedAt: now, expiresAt, lastSeenAt: now, purgeAt: expiresAt });
     return {
       statusCode: 200,
       payload: {
         ok: true, apiVersion: ACCOUNT_API_VERSION, sessionToken: token, expiresAt: expiresAt.toISOString(), email,
-        profile: publicProfile(account, await store.listProfileAttempts(account.profileId))
+        profile: publicProfile(account, attempts),
+        selfServiceEnabled: settings.account_self_service_enabled === "true",
+        testAccess: buildTestAccess(attempts, now, settings.account_self_service_enabled === "true")
       }
     };
   }
@@ -202,7 +241,11 @@ function createAccountHandler(dependencies) {
       if (!auth) return jsonResponse(401, { ok: false, error: "authentication_required" }, origin);
       if (body.action === "getProfile") {
         validateSimpleAction(body, "getProfile");
-        return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(auth.account, await store.listProfileAttempts(auth.account.profileId)), publicProfileEnabled: settings.profile_publication_enabled === "true" }, origin);
+        const attempts = await store.listProfileAttempts(auth.account.profileId);
+        return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(auth.account, attempts),
+          publicProfileEnabled: settings.profile_publication_enabled === "true",
+          selfServiceEnabled: settings.account_self_service_enabled === "true",
+          testAccess: buildTestAccess(attempts, nowProvider(), settings.account_self_service_enabled === "true") }, origin);
       }
       if (body.action === "updateProfile") {
         const update = validateUpdate(body);
@@ -212,7 +255,10 @@ function createAccountHandler(dependencies) {
         const now = nowProvider();
         await store.updateProfile(auth.account.profileId, { ...update, publicConsentVersion: update.publicConsent, publicConsentedAt: update.visibility === "discoverable" ? now : new Date(0), updatedAt: now, purgeAt: plusMs(now, ACCOUNT_RETENTION_MS) });
         const account = await store.getAccountByProfileId(auth.account.profileId);
-        return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(account, await store.listProfileAttempts(account.profileId)) }, origin);
+        const attempts = await store.listProfileAttempts(account.profileId);
+        return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(account, attempts),
+          selfServiceEnabled: settings.account_self_service_enabled === "true",
+          testAccess: buildTestAccess(attempts, now, settings.account_self_service_enabled === "true") }, origin);
       }
       if (body.action === "logout") {
         validateSimpleAction(body, "logout");
@@ -235,4 +281,4 @@ function createAccountHandler(dependencies) {
   };
 }
 
-module.exports = { createAccountHandler, jsonResponse, publicProfile };
+module.exports = { createAccountHandler, jsonResponse, publicProfile, buildTestAccess };

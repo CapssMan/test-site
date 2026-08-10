@@ -133,7 +133,7 @@ const handler = createRankingProfileHandler({
   assert.match(testPage, /function publishRankingProfile\(/);
   assert.match(testPage, /function withdrawRankingProfile\(/);
   assert.match(consentPage, new RegExp(RANKING_CONSENT_VERSION));
-  assert.match(gateway, /tag: "assessment-v12"/);
+  assert.match(gateway, /tag: "assessment-v13"/);
   assert.match(gateway, /tag: "read-v6"/);
   assert.match(gateway, /tag: "write-v8"/);
 assert.match(gateway, /\/v1\/ranking\/profile:/);

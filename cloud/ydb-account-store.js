@@ -78,6 +78,23 @@ function mapAttempt(row) {
   };
 }
 
+function mapSelfServiceSlot(row) {
+  if (!row) return null;
+  return {
+    profileId: String(row.profile_id || ""),
+    testId: String(row.test_id || ""),
+    inviteId: String(row.invite_id || ""),
+    beginRequestId: String(row.begin_request_id || ""),
+    attemptId: String(row.attempt_id || ""),
+    state: String(row.slot_state || ""),
+    grantedAt: iso(row.granted_at),
+    expiresAt: iso(row.expires_at),
+    eligibleAfter: iso(row.eligible_after),
+    updatedAt: iso(row.updated_at),
+    purgeAt: iso(row.purge_at)
+  };
+}
+
 function createYdbAccountStore(sql) {
   if (typeof sql !== "function") throw new Error("ydb_query_client_required");
   return {
@@ -200,15 +217,67 @@ function createYdbAccountStore(sql) {
       ], ["completed", row.resultCode, row.percent, row.bankVersion, row.completedAt, row.purgeAt, row.profileId, row.testId, row.attemptId]);
     },
 
+    async getSelfServiceSlot(profileId, testId) {
+      const resultSets = await executeRead(sql, [
+        "SELECT * FROM candidate_self_service_slots WHERE profile_id = ", " AND test_id = ", ";"
+      ], [String(profileId || ""), String(testId || "")]);
+      return mapSelfServiceSlot(rowsFrom(resultSets)[0]);
+    },
+
+    async claimSelfServiceSlot(row) {
+      await executeWrite(sql, [
+        `$current = SELECT slot_state, expires_at, eligible_after FROM candidate_self_service_slots
+          WHERE profile_id = `, " AND test_id = ", `;
+        $eligible = SELECT profile_id FROM candidate_accounts
+          WHERE profile_id = `, " AND account_status = ", ` AND (
+            NOT EXISTS (SELECT * FROM $current) OR
+            EXISTS (SELECT * FROM $current WHERE
+              (slot_state = `, " AND expires_at <= CAST(", ` AS Timestamp)) OR
+              (slot_state = `, " AND eligible_after <= CAST(", ` AS Timestamp))
+            )
+          );
+        UPSERT INTO candidate_self_service_slots
+          (profile_id, test_id, invite_id, begin_request_id, attempt_id, slot_state,
+           granted_at, expires_at, eligible_after, updated_at, purge_at)
+          SELECT profile_id, `, " AS test_id, ", " AS invite_id, ", " AS begin_request_id, ",
+            " AS attempt_id, ", " AS slot_state, CAST(", " AS Timestamp), CAST(",
+            " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(",
+            " AS Timestamp) FROM $eligible;"
+      ], [row.profileId, row.testId, row.profileId, "active", "active", row.now, "completed", row.now,
+        row.testId, row.inviteId, row.beginRequestId, "", "active", row.grantedAt, row.expiresAt,
+        row.eligibleAfter, row.updatedAt, row.purgeAt]);
+      return this.getSelfServiceSlot(row.profileId, row.testId);
+    },
+
+    async activateSelfServiceSlot(row) {
+      await executeWrite(sql, [
+        "UPDATE candidate_self_service_slots SET attempt_id = ", ", expires_at = CAST(",
+        " AS Timestamp), updated_at = CAST(", " AS Timestamp) WHERE profile_id = ",
+        " AND test_id = ", " AND invite_id = ", " AND begin_request_id = ", " AND slot_state = ", ";"
+      ], [row.attemptId, row.expiresAt, row.updatedAt, row.profileId, row.testId, row.inviteId,
+        row.beginRequestId, "active"]);
+    },
+
+    async completeSelfServiceSlot(row) {
+      await executeWrite(sql, [
+        "UPDATE candidate_self_service_slots SET slot_state = ", ", eligible_after = CAST(",
+        " AS Timestamp), expires_at = CAST(", " AS Timestamp), updated_at = CAST(",
+        " AS Timestamp), purge_at = CAST(", " AS Timestamp) WHERE profile_id = ",
+        " AND test_id = ", " AND attempt_id = ", " AND slot_state = ", ";"
+      ], ["completed", row.eligibleAfter, row.completedAt, row.completedAt, row.purgeAt,
+        row.profileId, row.testId, row.attemptId, "active"]);
+    },
+
     async deleteAccount(profileId) {
       await executeWrite(sql, [
         "DELETE FROM candidate_account_sessions WHERE profile_id = ",
         "; DELETE FROM candidate_attempt_links WHERE profile_id = ",
+        "; DELETE FROM candidate_self_service_slots WHERE profile_id = ",
         "; DELETE FROM candidate_accounts WHERE profile_id = ",
         ";"
-      ], [profileId, profileId, profileId]);
+      ], [profileId, profileId, profileId, profileId]);
     }
   };
 }
 
-module.exports = { QUERY_TIMEOUT_MS, createYdbAccountStore, mapAccount, mapSession, mapAttempt, rowsFrom };
+module.exports = { QUERY_TIMEOUT_MS, createYdbAccountStore, mapAccount, mapSession, mapAttempt, mapSelfServiceSlot, rowsFrom };

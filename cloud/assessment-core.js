@@ -3,7 +3,7 @@
 const crypto = require("node:crypto");
 
 const ASSESSMENT_API_VERSION = "attempt-v2";
-const ASSESSMENT_BACKEND_VERSION = "yandex-cloud-admin-2026-08-03-group-link-copy1";
+const ASSESSMENT_BACKEND_VERSION = "yandex-cloud-self-service-2026-08-09-1";
 const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
 const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const SCORE_VERIFICATION_SERVER = "server-verified";
@@ -121,8 +121,9 @@ function validateBeginRequest(value) {
   }
   const beginRequestId = String(value.beginRequestId || "").trim();
   if (!/^scb_[a-z0-9]{24,40}$/.test(beginRequestId)) throw publicError("invalid_begin_request_id", "Некорректный идентификатор начала попытки.");
-  const inviteCode = normalizeInviteCode(value.inviteCode);
-  if (!inviteCode) throw publicError("attempt_unavailable", "Попытка недоступна.");
+  const suppliedInviteCode = boundedText(value.inviteCode, 160, false, "Ссылка потока");
+  const inviteCode = suppliedInviteCode ? normalizeInviteCode(suppliedInviteCode) : "";
+  if (suppliedInviteCode && !inviteCode) throw publicError("attempt_unavailable", "Попытка недоступна.");
   if (value.privacyConsent !== true || value.ageConfirmed !== true || value.privacyConsentVersion !== PRIVACY_CONSENT_VERSION) {
     throw publicError("privacy_consent_required", "Обновите страницу и подтвердите актуальное согласие.");
   }

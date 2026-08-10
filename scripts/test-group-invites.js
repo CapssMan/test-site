@@ -59,7 +59,7 @@ assert.match(admin, /Копировать ссылку/);
 assert.match(admin, /data-edit-invite-group-description/);
 assert.match(admin, /data-save-invite-group-description/);
 assert.match(admin, /Описание групповой ссылки сохранено\. Остальные параметры не изменены\./);
-assert.match(candidate, /персональным и групповым приглашениям/);
-assert.match(candidate, /общая ссылка преподавателя/);
+assert.match(candidate, /Ссылка преподавателя или вуза может отметить поток/);
+assert.match(candidate, /Групповая ссылка не требуется/);
 
 console.log("Group invite checks passed: capped cohort schema, atomic unique claims, description-only editing, protected link recovery, admin controls and candidate flow.");

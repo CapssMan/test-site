@@ -86,7 +86,7 @@ function unavailableResponse() {
     retryable: false,
     failureCode: "attempt_unavailable",
     backendVersion: ASSESSMENT_BACKEND_VERSION,
-    message: "Не удалось начать попытку. Проверьте приглашение или обратитесь к организатору."
+    message: "Не удалось начать попытку. Проверьте вход в аккаунт и повторите позже."
   };
 }
 
@@ -306,7 +306,9 @@ function assertDependencies(settings) {
   const accountSecret = String(settings.accountSessionSecret || "");
   if (accountSecret && accountSecret.length < 32) throw new Error("account_session_secret_invalid");
   if (accountSecret) {
-    const accountMethods = ["getSessionByTokenHash", "getAccountByProfileId", "listRecentProfileAttempts", "getProfileAttemptByAttemptId", "upsertProfileAttempt", "completeProfileAttempt"];
+    const accountMethods = ["getSessionByTokenHash", "getAccountByProfileId", "listRecentProfileAttempts",
+      "getProfileAttemptByAttemptId", "upsertProfileAttempt", "completeProfileAttempt", "getSelfServiceSlot",
+      "claimSelfServiceSlot", "activateSelfServiceSlot", "completeSelfServiceSlot"];
     if (accountMethods.some(method => typeof store[method] !== "function")) throw new Error("assessment_account_store_required");
   }
   if (!bankStorage || typeof bankStorage.readJson !== "function") throw new Error("bank_storage_required");
@@ -344,7 +346,7 @@ function createAssessmentHandler(dependencies) {
     const account = await store.getAccountByProfileId(session.profileId);
     const expectedEmailHash = hashAccountEmail(identitySecret, request.email);
     if (!account || account.status !== "active" || !timingSafeEqual(account.emailHash, expectedEmailHash)) return { provided: true, valid: false };
-    return { provided: true, valid: true, profileId: account.profileId };
+    return { provided: true, valid: true, profileId: account.profileId, emailMasked: account.emailMasked };
   }
 
   function profileAttemptBlocksRetake(link, now) {
@@ -359,13 +361,15 @@ function createAssessmentHandler(dependencies) {
     if (!accountContext.valid) return null;
     const existing = await store.getProfileAttemptByAttemptId(session.attemptId);
     if (existing && existing.profileId !== accountContext.profileId) throw new Error("attempt_account_mismatch");
-    if (existing) return existing;
     const started = validDate(session.startedAt) || now;
-    const link = { profileId: accountContext.profileId, testId: session.testId, attemptId: session.attemptId,
+    const link = existing || { profileId: accountContext.profileId, testId: session.testId, attemptId: session.attemptId,
       state: session.state === "completed" ? "completed" : "active", resultCode: String(session.resultCode || ""),
       percent: Number(session.result && session.result.percent || 0), bankVersion: session.bankVersion, startedAt: started,
       completedAt: validDate(session.completedAt) || started, purgeAt: plusMs(started, RESULT_RETENTION_MS) };
-    await store.upsertProfileAttempt(link);
+    if (!existing) await store.upsertProfileAttempt(link);
+    await store.activateSelfServiceSlot({ profileId: accountContext.profileId, testId: session.testId,
+      inviteId: session.inviteId, beginRequestId: session.beginRequestId, attemptId: session.attemptId,
+      expiresAt: validDate(session.tokenExpiresAt) || plusMs(now, ATTEMPT_ACTIVE_TTL_MS), updatedAt: now });
     return link;
   }
 
@@ -376,6 +380,9 @@ function createAssessmentHandler(dependencies) {
     await store.completeProfileAttempt({ profileId: link.profileId, testId: session.testId, attemptId: session.attemptId,
       resultCode: String(session.resultCode || result.code || ""), percent: Number(result.percent || 0),
       bankVersion: session.bankVersion, completedAt, purgeAt: plusMs(completedAt, RESULT_RETENTION_MS) });
+    await store.completeSelfServiceSlot({ profileId: link.profileId, testId: session.testId,
+      attemptId: session.attemptId, completedAt, eligibleAfter: plusMs(completedAt, RETAKE_WINDOW_MS),
+      purgeAt: plusMs(completedAt, RESULT_RETENTION_MS) });
   }
 
   async function loadBank(testId, bankVersion, context) {
@@ -461,6 +468,61 @@ function createAssessmentHandler(dependencies) {
     return invite;
   }
 
+  async function resolveSelfServiceInvite(request, accountContext, identityHash, now) {
+    if (!accountContext.valid) return null;
+    const inviteId = "inv_" + hmacHex(inviteSecret,
+      "account-self-service-v1|" + accountContext.profileId + "|" + request.testId + "|" + request.beginRequestId).slice(0, 32);
+    const expiry = plusMs(now, ATTEMPT_ACTIVE_TTL_MS);
+    const existingSlot = await store.getSelfServiceSlot(accountContext.profileId, request.testId);
+    const existingExpiry = validDate(existingSlot && existingSlot.expiresAt);
+    const sameActiveRequest = existingSlot && existingSlot.state === "active" &&
+      existingSlot.inviteId === inviteId && existingSlot.beginRequestId === request.beginRequestId &&
+      existingExpiry && now < existingExpiry;
+    let slot = sameActiveRequest ? existingSlot : null;
+
+    if (!slot) {
+      const recent = await store.listRecentSessions(request.testId, identityHash, plusMs(now, -RETAKE_WINDOW_MS));
+      if (recent.some(session => recentSessionBlocksRetake(session, now))) return null;
+      const profileRecent = await store.listRecentProfileAttempts(accountContext.profileId, request.testId, plusMs(now, -RETAKE_WINDOW_MS));
+      if (profileRecent.some(link => profileAttemptBlocksRetake(link, now))) return null;
+      slot = await store.claimSelfServiceSlot({
+        profileId: accountContext.profileId,
+        testId: request.testId,
+        inviteId,
+        beginRequestId: request.beginRequestId,
+        now,
+        grantedAt: now,
+        expiresAt: expiry,
+        eligibleAfter: now,
+        updatedAt: now,
+        purgeAt: plusMs(now, RESULT_RETENTION_MS)
+      });
+    }
+    if (!slot || slot.inviteId !== inviteId || slot.beginRequestId !== request.beginRequestId || slot.state !== "active") return null;
+
+    let invite = await store.getInviteById(inviteId);
+    if (!invite) {
+      const syntheticCode = buildDeterministicInviteCode(inviteSecret, inviteId, request.testId, identityHash);
+      invite = {
+        inviteId,
+        requestId: "sca_" + hmacHex(inviteSecret, "account-self-service-request-v1|" + inviteId).slice(0, 32),
+        testId: request.testId,
+        codeHash: hashInviteCode(inviteSecret, syntheticCode),
+        identityHash,
+        emailMasked: accountContext.emailMasked,
+        purpose: "Yandex ID self-service",
+        allowRetake: false,
+        validForHours: 6,
+        state: "issued",
+        issuedAt: validDate(slot.grantedAt) || now,
+        expiresAt: validDate(slot.expiresAt) || expiry,
+        purgeAt: plusMs(now, INVITE_AND_SESSION_RETENTION_MS)
+      };
+      await store.upsertInvite(invite);
+    }
+    return invite;
+  }
+
   async function beginAttempt(request, context, event) {
     const now = nowProvider();
     const accountContext = await resolveAccountContext(event, request, now);
@@ -469,11 +531,18 @@ function createAssessmentHandler(dependencies) {
     if (runtimeSettings.legal_pilot_approved !== "true" || runtimeSettings.attempt_issuance_enabled !== "true") {
       return unavailableResponse();
     }
-    const codeHash = hashInviteCode(inviteSecret, request.inviteCode);
+    if (runtimeSettings.account_required_for_attempts === "true" && !accountContext.valid) return unavailableResponse();
     const identityHash = hashIdentity(identitySecret, request.testId, request.email);
     const fingerprintHash = hashFingerprint(identitySecret, request.testId, request.browserFingerprint);
-    let invite = await store.getInviteByCodeHash(codeHash);
-    if (!invite) invite = await resolveGroupInvite(request, codeHash, identityHash, now);
+    let invite = null;
+    if (request.inviteCode) {
+      const codeHash = hashInviteCode(inviteSecret, request.inviteCode);
+      invite = await store.getInviteByCodeHash(codeHash);
+      if (!invite) invite = await resolveGroupInvite(request, codeHash, identityHash, now);
+    }
+    if (!invite && accountContext.valid && runtimeSettings.account_self_service_enabled === "true") {
+      invite = await resolveSelfServiceInvite(request, accountContext, identityHash, now);
+    }
     const inviteExpiry = invite && validDate(invite.expiresAt);
     if (!invite || invite.testId !== request.testId || !timingSafeEqual(invite.identityHash, identityHash) ||
         !["issued", "active"].includes(invite.state) || !inviteExpiry || now >= inviteExpiry) return unavailableResponse();
@@ -561,6 +630,7 @@ function createAssessmentHandler(dependencies) {
     await store.completeSession(session.attemptId, result, validDate(stored.completedAt) || now, plusMs(validDate(stored.completedAt) || now, INVITE_AND_SESSION_RETENTION_MS));
     await store.completeInvite(session.inviteId, session.attemptId, validDate(stored.completedAt) || now, plusMs(validDate(stored.completedAt) || now, INVITE_AND_SESSION_RETENTION_MS));
     const repaired = Object.assign({}, session, { state: "completed", resultCode: stored.code, result, completedAt: stored.completedAt });
+    await completeProfileAttemptIfLinked(repaired, result, validDate(stored.completedAt) || now);
     return buildSavedResponse(repaired, result, true);
   }
 

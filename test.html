@@ -256,6 +256,21 @@
     .ranking-panel button { margin-top: 12px; }
     .secondary-button { background: #334155; }
     .secondary-button:hover { background: #1e293b; }
+    .account-gate {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      margin: 18px 0;
+      padding: 18px;
+      border: 1px solid #c7d2fe;
+      border-radius: 14px;
+      background: #f5f7ff;
+    }
+    .account-gate.ready { border-color: #a7f3d0; background: #f0fdf4; }
+    .account-gate h2 { margin: 0 0 6px; font-size: 18px; }
+    .account-gate p { margin: 0; color: #475569; font-size: 14px; line-height: 1.5; }
+    .account-login { display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 16px;border-radius:11px;background:#111827;color:#fff;text-decoration:none;font-weight:700;white-space:nowrap; }
     @media (max-width: 600px) {
       body { padding: 12px; }
       .card { padding: 18px; border-radius: 12px; }
@@ -266,6 +281,7 @@
       .pill { text-align: center; }
       button { padding: 14px; }
       .context-table { min-width: 520px; }
+      .account-gate { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -276,7 +292,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.08.02.1</div>
+      <div class="build-number">Build 2026.08.09.1</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
@@ -285,15 +301,15 @@
       </p>
 
       <div class="warning">
-        <b>Контролируемый пилот открыт по персональным и групповым приглашениям.</b>
-        В пилоте используются пять банков v6 и одна персональная попытка на участника. Результат является исследовательской оценкой навыков, не официальной сертификацией и не единственным основанием кадрового решения.
+        <b>Для тестирования нужен подтверждённый аккаунт Яндекс.</b>
+        Для каждого направления доступна одна попытка раз в 21 день. Ссылка преподавателя или вуза может отметить поток, но не является пропуском и не заменяет вход.
       </div>
 
-      <div class="field-group">
-        <label for="inviteCode">Код приглашения <span class="required-mark">*</span></label>
-        <input id="inviteCode" type="text" placeholder="Введите код из приглашения" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="160" required>
-        <p class="field-help">Подойдёт персональная ссылка или общая ссылка преподавателя. После начала код будет удалён из формы.</p>
+      <div id="accountGate" class="account-gate">
+        <div><h2>Проверяем вход через Яндекс</h2><p id="accountGateStatus">Подождите несколько секунд.</p></div>
+        <a id="accountLoginButton" class="account-login" href="account.html" hidden>Войти через Яндекс</a>
       </div>
+      <input id="inviteCode" type="hidden" value="">
 
       <div class="field-group">
         <label for="name">Имя <span class="required-mark">*</span></label>
@@ -427,12 +443,14 @@
     const YANDEX_ASSESSMENT_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/assessment";
     const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const ASSESSMENT_API_URL = ASSESSMENT_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ASSESSMENT_API_URL;
+    const ACCOUNT_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/account";
     const API_VERSION = "attempt-v2";
     const RANKING_PROFILE_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/ranking/profile";
+    const ACCOUNT_API_VERSION = "candidate-account-v1";
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
     const ACCOUNT_SESSION_STORAGE_KEY = "skillcheck_candidate_account_v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-31-v3";
-    const FRONTEND_BUILD = "2026.08.02.1";
+    const FRONTEND_BUILD = "2026.08.09.1";
     const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
     const NETWORK_TIMEOUT_MS = 20000;
     const BEGIN_NETWORK_TIMEOUT_MS = 30000;
@@ -555,6 +573,8 @@
     let resultSubmissionInFlight = false;
     let resultSaved = false;
     let rankingPublishProof = null;
+    let accountAccessState = "checking";
+    let accountTestAccess = null;
 
     document.addEventListener("DOMContentLoaded", function() {
       document.querySelector(".build-number").textContent = "Build " + FRONTEND_BUILD;
@@ -580,18 +600,17 @@
           : "Проверьте ссылку или вернитесь на главную страницу и выберите доступный тест.";
         document.getElementById("startButton").disabled = true;
         document.getElementById("startButton").textContent = "Тест недоступен";
-        document.getElementById("inviteCode").disabled = true;
         return;
       }
 
       document.getElementById("testTitle").textContent = currentTestConfig.title;
-      prefillVerifiedAccountEmail();
       restoreInviteInput();
       cleanupExpiredAttemptSession();
       scheduleAllPendingResultExpirations();
       updateTestInfo();
       if (restorePendingResult()) return;
       loadQuestions();
+      initializeCandidateAccess();
     });
 
     window.addEventListener("beforeunload", function(event) {
@@ -657,8 +676,7 @@
     function loadQuestions() {
       var startButton = document.getElementById("startButton");
       questionLoadState = "loading";
-      startButton.disabled = true;
-      startButton.textContent = "Загрузка вопросов...";
+      refreshStartButton();
       setAttemptStatus("Загружаем публичную часть банка вопросов…", "");
 
       fetch(currentTestConfig.questionsFile, { cache: "no-store", credentials: "omit" })
@@ -673,19 +691,13 @@
           loadedQuestionBank = bank;
           questionLoadState = "ready";
           updateTestInfo();
-          startButton.disabled = false;
-          startButton.textContent = "Начать тест (" + loadedQuestionBank.questionsPerAttempt + " " +
-            pluralizeRu(loadedQuestionBank.questionsPerAttempt, "вопрос", "вопроса", "вопросов") + ")";
-          setAttemptStatus(
-            "Вопросы готовы. Для начала нужна действующая персональная или групповая ссылка-приглашение.",
-            "success"
-          );
+          refreshStartButton();
+          if (accountAccessState === "ready") setAttemptStatus("Вопросы готовы. Попытка будет привязана к вашему аккаунту.", "success");
         })
         .catch(function() {
           loadedQuestionBank = null;
           questionLoadState = "error";
-          startButton.disabled = false;
-          startButton.textContent = "Повторить загрузку вопросов";
+          refreshStartButton();
           setAttemptStatus(
             "Не удалось подготовить тест. Проверьте подключение и повторите загрузку.",
             "error"
@@ -872,6 +884,96 @@
       }
     }
 
+    function accountReturnTarget() {
+      return "test.html?test=" + encodeURIComponent(currentTestId);
+    }
+
+    function renderAccountGate(message, ready, showLogin) {
+      var gate = document.getElementById("accountGate");
+      var status = document.getElementById("accountGateStatus");
+      var login = document.getElementById("accountLoginButton");
+      gate.className = "account-gate" + (ready ? " ready" : "");
+      gate.querySelector("h2").textContent = ready ? "Вход подтверждён" : "Нужен аккаунт Яндекс";
+      status.textContent = String(message || "");
+      login.href = "account.html?return=" + encodeURIComponent(accountReturnTarget());
+      login.hidden = !showLogin;
+    }
+
+    function refreshStartButton() {
+      var startButton = document.getElementById("startButton");
+      if (questionLoadState === "error") {
+        startButton.disabled = false;
+        startButton.textContent = "Повторить загрузку вопросов";
+        return;
+      }
+      if (questionLoadState !== "ready" || !loadedQuestionBank) {
+        startButton.disabled = true;
+        startButton.textContent = "Загрузка вопросов...";
+        return;
+      }
+      if (accountAccessState !== "ready") {
+        startButton.disabled = true;
+        startButton.textContent = accountAccessState === "checking" ? "Проверяем аккаунт..." : "Войдите через Яндекс";
+        return;
+      }
+      startButton.disabled = false;
+      startButton.textContent = "Начать тест (" + loadedQuestionBank.questionsPerAttempt + " " +
+        pluralizeRu(loadedQuestionBank.questionsPerAttempt, "вопрос", "вопроса", "вопросов") + ")";
+    }
+
+    function initializeCandidateAccess() {
+      var account = readCandidateAccountSession();
+      accountAccessState = "checking";
+      refreshStartButton();
+      if (!account || !isValidEmail(account.email)) {
+        accountAccessState = "missing";
+        renderAccountGate("Войдите один раз, чтобы результаты сохранялись в одном профиле, а повторная попытка контролировалась без кодов.", false, true);
+        refreshStartButton();
+        return;
+      }
+      renderAccountGate("Проверяем активную сессию и доступность выбранного теста…", false, false);
+      fetch(ACCOUNT_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8", Authorization: "Bearer " + account.sessionToken },
+        body: JSON.stringify({ action: "getProfile", apiVersion: ACCOUNT_API_VERSION }),
+        cache: "no-store",
+        credentials: "omit",
+        referrerPolicy: "no-referrer"
+      }).then(function(response) {
+        return response.json().then(function(body) { return { response: response, body: body }; });
+      }).then(function(result) {
+        if (!result.response.ok || !result.body || result.body.ok !== true) throw new Error("account_session_invalid");
+        if (result.body.selfServiceEnabled !== true) {
+          accountAccessState = "closed";
+          renderAccountGate("Самостоятельная выдача попыток временно закрыта. Аккаунт и прежние результаты сохранены.", false, false);
+          return;
+        }
+        accountTestAccess = Array.isArray(result.body.testAccess)
+          ? result.body.testAccess.find(function(item) { return item && item.testId === currentTestId; }) : null;
+        if (!accountTestAccess || !["available","cooldown","in_progress"].includes(String(accountTestAccess.status||""))) { accountAccessState="closed";renderAccountGate("Сервер не подтвердил доступ к этому тесту. Попробуйте позже.",false,false);return; }
+        if (accountTestAccess && accountTestAccess.status === "cooldown") {
+          accountAccessState = "cooldown";
+          var date = new Date(accountTestAccess.availableAt);
+          renderAccountGate("Повторная попытка станет доступна " + date.toLocaleString("ru-RU") + ". Остальные направления можно проходить независимо.", true, false);
+          return;
+        }
+        if (accountTestAccess && accountTestAccess.status === "in_progress") {
+          accountAccessState = "in_progress";
+          renderAccountGate("По этому направлению уже начата попытка. Вернитесь в исходную вкладку или дождитесь завершения её срока.", true, false);
+          return;
+        }
+        accountAccessState = "ready";
+        prefillVerifiedAccountEmail();
+        renderAccountGate("Email подтверждён через Яндекс ID. Групповая ссылка не требуется.", true, false);
+      }).catch(function() {
+        sessionStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY);
+        accountAccessState = "missing";
+        renderAccountGate("Сессия закончилась. Войдите через Яндекс ещё раз — результаты аккаунта не потеряются.", false, true);
+      }).finally(function() {
+        refreshStartButton();
+      });
+    }
+
     function prefillVerifiedAccountEmail() {
       var account = readCandidateAccountSession();
       var input = document.getElementById("email");
@@ -887,6 +989,10 @@
     }
 
     function handleStartButtonClick() {
+      if (accountAccessState !== "ready") {
+        setAttemptStatus("Для новой попытки нужен активный аккаунт Яндекс без действующего ограничения 21 день.", "error");
+        return;
+      }
       if (questionLoadState === "error") {
         loadQuestions();
         return;
@@ -911,11 +1017,7 @@
       }
 
       var inviteCode = String(document.getElementById("inviteCode").value || "").trim();
-      if (!isValidInviteCode(inviteCode)) {
-        setAttemptStatus("Введите действующий код приглашения из полученной ссылки.", "error");
-        document.getElementById("inviteCode").focus();
-        return;
-      }
+      if (inviteCode && !isValidInviteCode(inviteCode)) inviteCode = "";
 
       var beginState = getOrCreateBeginState(inviteCode, candidate.email);
       var payload = {
@@ -935,8 +1037,8 @@
       beginInProgress = true;
       var startButton = document.getElementById("startButton");
       startButton.disabled = true;
-      startButton.textContent = "Проверяем приглашение...";
-      setAttemptStatus("Сервер создаёт персональную попытку…", "");
+      startButton.textContent = "Создаём попытку...";
+      setAttemptStatus("Сервер проверяет аккаунт и 21-дневный интервал…", "");
 
       postBeginAttemptWithRetry(payload, 0)
         .then(function(result) {
@@ -964,12 +1066,10 @@
         })
         .catch(function() {
           setAttemptStatus(
-            "Не удалось начать попытку. Проверьте код приглашения и подключение, затем попробуйте снова.",
+            "Не удалось начать попытку. Проверьте сессию аккаунта или ограничение 21 день и попробуйте позже.",
             "error"
           );
-          startButton.disabled = false;
-          startButton.textContent = "Начать тест (" + loadedQuestionBank.questionsPerAttempt + " " +
-            pluralizeRu(loadedQuestionBank.questionsPerAttempt, "вопрос", "вопроса", "вопросов") + ")";
+          refreshStartButton();
         })
         .finally(function() {
           beginInProgress = false;

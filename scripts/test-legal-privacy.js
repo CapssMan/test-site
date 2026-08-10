@@ -16,8 +16,8 @@ const privacy = read("privacy.html");
 const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
 const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
 const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
-const accountVersion = "skillcheck-account-2026-08-08-v1";
-const privacyVersion = "skillcheck-privacy-2026-08-08-v10";
+const accountVersion = "skillcheck-account-2026-08-09-v2";
+const privacyVersion = "skillcheck-privacy-2026-08-09-v11";
 function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
 function extract(source, name) {
   const marker = "function " + name + "(";
@@ -42,8 +42,10 @@ has(privacy, "Yandex API Gateway и Cloud Functions");
 has(privacy, "Managed Service for YDB");
 has(privacy, "не являются активным production-маршрутом");
 has(privacy, "Контролируемый пилот открыт");
-has(privacy, "Регистрация открыта 8 августа 2026 года");
+has(privacy, "без аккаунта новую попытку начать нельзя");
 has(privacy, "не более 12 месяцев без активности");
+has(accountConsent, "он необходим для новой попытки");
+has(accountConsent, "Групповая или вузовская ссылка является только необязательной отметкой потока");
 has(accountConsent, "логин, основной email и список email");
 has(accountConsent, "OAuth-токен используется сервером один раз и не сохраняется");
 assert(!privacy.includes("автоматическое применение сроков ещё не завершено"));

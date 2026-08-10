@@ -35,10 +35,12 @@ assert.match(testPage, /версии <b>29\.07\.2026-v2<\/b>/);
 assert.match(testPage, /const YANDEX_ASSESSMENT_API_URL = "https:\/\/[^"\s]+\.apigw\.yandexcloud\.net\/v1\/assessment"/);
 assert.match(testPage, /const LEGACY_GOOGLE_SCRIPT_URL = "https:\/\/script\.google\.com\/macros\/s\//);
 assert.match(testPage, /const ASSESSMENT_API_URL = ASSESSMENT_API_MODE === "legacy-google" \? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ASSESSMENT_API_URL/);
-assert.match(testPage, /const FRONTEND_BUILD = "2026\.08\.02\.1"/, "candidate build must be current");
-assert.match(testPage, />Build 2026\.08\.02\.1<\//, "visible candidate build must match submitted build");
+assert.match(testPage, /const FRONTEND_BUILD = "2026\.08\.09\.1"/, "candidate build must be current");
+assert.match(testPage, />Build 2026\.08\.09\.1<\//, "visible candidate build must match submitted build");
 assert.match(testPage, /const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5"/);
-assert.match(testPage, /<label for="inviteCode">[\s\S]*?<input[^>]+id="inviteCode"[^>]+required/i, "invite code must be required");
+assert.match(testPage, /<input[^>]+id="inviteCode"[^>]+type="hidden"/i, "optional cohort code must stay hidden from the normal account flow");
+assert.doesNotMatch(testPage, /id="inviteCode"[^>]+required/i, "cohort link must not be required");
+assert.match(testPage, /id="accountGate"[\s\S]*id="accountLoginButton"/, "candidate page must explain and offer Yandex account login");
 assert.match(testPage, /<label for="name">[\s\S]*?<input[^>]+id="name"[^>]+required/i);
 assert.match(testPage, /<label for="email">[\s\S]*?<input[^>]+id="email"[^>]+required/i);
 assert.match(testPage, /id="privacyConsent"[^>]+required/i);
@@ -59,6 +61,10 @@ assert.doesNotMatch(adminPage, /searchParams\.set\("invite"/, "admin must not pu
 assert.match(adminPage, /url\.hash\s*=\s*"invite="/, "admin invite links must use a fragment bearer");
 assert.doesNotMatch(adminPage, /data\.inviteUrl\s*\|\|/, "admin must ignore backend-provided URLs");
 assert.doesNotMatch(testPage, /function\s+checkAttempt\s*\(/, "public email/retake oracle must be removed from the client");
+assert.match(testPage, /const ACCOUNT_SESSION_STORAGE_KEY = "skillcheck_candidate_account_v1"/);
+assert.match(testPage, /action: "getProfile", apiVersion: ACCOUNT_API_VERSION/);
+assert.match(testPage, /accountAccessState !== "ready"/);
+assert.match(testPage, /Групповая ссылка не требуется/);
 
 const loadQuestions = extractTopLevelFunction(testPage, "loadQuestions");
 assert.match(loadQuestions, /cache:\s*"no-store"/);
@@ -146,6 +152,7 @@ assert.match(extractTopLevelFunction(testPage, "postJsonOnce"), /fetch\(ASSESSME
 assert.match(extractTopLevelFunction(testPage, "postJsonOnce"), /ASSESSMENT_API_MODE === "yandex"[\s\S]*Content-Type/);
 assert.doesNotMatch(extractTopLevelFunction(testPage, "postJsonOnce"), /fetch\((?:GOOGLE_SCRIPT_URL|LEGACY_GOOGLE_SCRIPT_URL)/);
 assert.match(extractTopLevelFunction(testPage, "sendResultAttempt"), /MAX_AUTOMATIC_RETRIES/);
+assert.match(extractTopLevelFunction(testPage, "postJsonOnce"), /headers\.Authorization = "Bearer " \+ accountSession\.sessionToken/);
 
 assert.match(extractTopLevelFunction(testPage, "persistPendingResult"), /sessionStorage\.setItem/);
 assert.doesNotMatch(extractTopLevelFunction(testPage, "persistPendingResult"), /localStorage\.setItem/);
@@ -183,4 +190,4 @@ assert.match(doPost, /verifyRankingResultForPublicProfile/);
 assert.match(doPost, /saveAuthoritativeTestResult/);
 assert.match(doPost, /action === "checkAttempt"[\s\S]*buildClientUpgradeRequiredResponse/);
 
-console.log("Candidate UX tests passed: invite flow, server manifest, answer-only payload, verified rendering, voluntary ranking and session-only retry.");
+console.log("Candidate UX tests passed: account-first access, optional cohort links, server manifest, verified rendering, voluntary ranking and session-only retry.");

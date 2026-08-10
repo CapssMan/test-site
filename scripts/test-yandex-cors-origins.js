@@ -16,7 +16,7 @@ const root = path.resolve(__dirname, "..");
 const deploy = fs.readFileSync(path.join(__dirname, "deploy-yandex-runtime-v5.ps1"), "utf8");
 const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "utf8");
 for (const [source, target] of [["assessment-v7", "assessment-v8"], ["admin-v4", "admin-v5"], ["read-v5", "read-v6"], ["write-v7", "write-v8"]]) assert(deploy.includes('SourceTag = "' + source + '"; TargetTag = "' + target + '"'));
-for (const tag of ["assessment-v12", "admin-v10", "read-v6", "write-v8"]) assert(gateway.includes('tag: "' + tag + '"'));
+for (const tag of ["assessment-v13", "account-v2", "admin-v10", "employer-v1", "read-v6", "write-v8"]) assert(gateway.includes('tag: "' + tag + '"'));
 assert(deploy.includes('$allowedOrigins = "' + yandex + '"'));
 assert(!deploy.includes('https://capssman.github.io;'));
 assert(!gateway.includes('https://capssman.github.io'));
@@ -25,4 +25,4 @@ for (const file of ["assessment-handler.js", "admin-handler.js", "ranking-handle
   assert.match(source, /resolveAllowedOrigin\(event, allowedOrigins\)/);
 }
 assert.doesNotMatch(deploy, /Write-Host[^\n]*(?:environment|secret|password)/i);
-console.log("Yandex CORS checks passed: primary Yandex origin only, four-version successor rollout and GitHub denial.");
+console.log("Yandex CORS checks passed: primary Yandex origin only, current routed runtimes and GitHub denial.");

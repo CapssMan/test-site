@@ -48,7 +48,7 @@ assert.equal(markdownTableCount, 92, "all current Markdown tables must render");
 const hostile = sandbox.renderMarkdownQuestionContext("| Поле | Значение |\n|---|---|\n| <img src=x onerror=alert(1)> | безопасно |");
 assert.doesNotMatch(hostile, /<img\b/i);
 assert.match(hostile, /&lt;img src=x onerror=alert\(1\)&gt;/);
-assert.match(frontend, /const FRONTEND_BUILD = "2026\.08\.02\.1"/);
+assert.match(frontend, /const FRONTEND_BUILD = "2026\.08\.09\.1"/);
 assert.match(frontend, /postBeginAttemptWithRetry\(payload, 0\)/);
 assert.match(frontend, /новое место не расходуется/);
 

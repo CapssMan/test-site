@@ -3,7 +3,7 @@
 const crypto = require("crypto");
 
 const ACCOUNT_API_VERSION = "candidate-account-v1";
-const ACCOUNT_CONSENT_VERSION = "skillcheck-account-2026-08-08-v1";
+const ACCOUNT_CONSENT_VERSION = "skillcheck-account-2026-08-09-v2";
 const PUBLIC_PROFILE_CONSENT_VERSION = "skillcheck-profile-discovery-2026-08-08-v1";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const ACCOUNT_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;

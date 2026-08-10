@@ -1,3 +1,25 @@
+## Account-first production release — 10 August 2026
+
+Candidate self-service is live. Active runtime tags are `assessment-v13` (`d4e2v5ldkbkinsqgot2u`) and `account-v2` (`d4epkq6evda8ojgmt6r5`); `admin-v10`, `employer-v1`, `read-v6` and `write-v8` remain unchanged. The public bucket contains exactly 22 allowlisted files and Candidate Build `2026.08.09.1`.
+Full local CI passed 67/67 checks. A valid unauthenticated live `beginAttempt` request was denied with the neutral `attempt_unavailable` response, returned no attempt credentials and left active/reserved session count at zero.
+A transient fail-closed account message captured during cutover exposed a one-shot frontend recovery gap. `account.html` now performs three bounded configuration retries and offers an enabled «Повторить проверку» action without requiring a page reload; the updated live file and all 22 public checks were verified again.
+
+
+Production gates were verified as:
+
+- `legal_pilot_approved=true`;
+- `attempt_issuance_enabled=true`;
+- `account_registration_enabled=true`;
+- `account_self_service_enabled=true`;
+- `account_required_for_attempts=true`;
+- `profile_publication_enabled=false`;
+- `employer_workspace_enabled=false`;
+- `employer_contact_enabled=false`.
+
+The first cutover attempt stopped fail closed because the ten-tag Cloud Functions quota was full. Only obsolete tags `read-v5` and `write-v7` were detached; their runtime versions were not deleted and remain available by IDs `d4e2ln4rrpabia9rqtg2` and `d4ej8qqg4j7a26fmr4iu`. The second attempt created both new runtimes and switched the API. An external 120-second command limit interrupted the parent process after the new runtime and public files were already live, so the 22-file SHA-256/CORS verification was rerun independently before the three candidate gates were opened atomically.
+
+A candidate can now choose any of five tests, authenticate through Yandex ID and receive one new attempt per test every 21 days. A group link is optional cohort metadata, not an access credential. Employer search, profile publication and contact disclosure remain unavailable.
+
 ## Employer foundation production release — 9 August 2026
 
 Stage 20A is deployed behind closed gates. Runtime tags and active version IDs are: `assessment-v12` (`d4emffs52denqnjl30dd`), `admin-v10` (`d4eovis5o4tkk016skoa`), `account-v1` (`d4e77dd9rcsc8cjea6a9`) and `employer-v1` (`d4esn3fvi5voknihjdhl`). The public Yandex bucket contains exactly 22 allowlisted files; live `employer.html` matches the local file by SHA-256.

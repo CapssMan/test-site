@@ -237,9 +237,11 @@ foreach ($origin in @($siteOrigin)) {
   $options = Invoke-WebRequestWithRetry @{ Method = "OPTIONS"; Uri = $assessmentUrl; Headers = @{
     Origin = $origin
     "Access-Control-Request-Method" = "POST"
-    "Access-Control-Request-Headers" = "content-type"
+    "Access-Control-Request-Headers" = "content-type,authorization,cache-control,pragma"
   }; UseBasicParsing = $true; TimeoutSec = 30 }
-  if ([int]$options.StatusCode -ne 204 -or [string]$options.Headers["Access-Control-Allow-Origin"] -ne $origin) {
+  $allowedRequestHeaders = [string]$options.Headers["Access-Control-Allow-Headers"]
+  if ([int]$options.StatusCode -ne 204 -or [string]$options.Headers["Access-Control-Allow-Origin"] -ne $origin -or
+      $allowedRequestHeaders -ne "Content-Type,Authorization,Cache-Control,Pragma") {
     throw "CORS preflight failed for an approved frontend origin."
   }
   foreach ($apiPath in @("/v1/assessment", "/v1/admin", "/v1/account", "/v1/ranking?testId=fa-junior", "/v1/employer")) {

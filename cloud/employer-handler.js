@@ -27,7 +27,7 @@ function jsonResponse(statusCode, payload, origin) {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Headers": "Content-Type,Authorization",
+      "Access-Control-Allow-Headers": "Content-Type,Authorization,Cache-Control,Pragma",
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "no-referrer"

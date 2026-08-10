@@ -20,6 +20,7 @@ for (const tag of ["assessment-v13", "account-v2", "admin-v10", "employer-v1", "
 assert(deploy.includes('$allowedOrigins = "' + yandex + '"'));
 assert(!deploy.includes('https://capssman.github.io;'));
 assert(!gateway.includes('https://capssman.github.io'));
+for (const header of ["Content-Type", "Authorization", "Cache-Control", "Pragma"]) assert(gateway.includes("      - " + header));
 for (const file of ["assessment-handler.js", "admin-handler.js", "ranking-handler.js", "ranking-profile-handler.js"]) {
   const source = fs.readFileSync(path.join(root, "cloud", file), "utf8");
   assert.match(source, /resolveAllowedOrigin\(event, allowedOrigins\)/);

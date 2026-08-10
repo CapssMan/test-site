@@ -44,6 +44,8 @@ assert.match(deploy, /HtmlEncode\(\$operatorAddress\)/);
 assert.match(deploy, /\$expectedSha256/);
 assert.match(deploy, /Remove-Item -LiteralPath \$renderedPath/);
 for (const file of ["privacy.html", "consent.html", "ranking-consent.html"]) {
+assert.match(deploy, /content-type,authorization,cache-control,pragma/);
+assert.match(deploy, /Content-Type,Authorization,Cache-Control,Pragma/);
   const template = fs.readFileSync(path.join(root, file), "utf8");
   assert.equal(template.split("[Адрес оператора опубликован на основном сайте Yandex Cloud]").length - 1, 1);
   assert(!template.includes("PUBLIC_OPERATOR_ADDRESS="));

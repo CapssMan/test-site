@@ -64,7 +64,7 @@ function fakeFetch(url, options) {
   const closed = createAccountHandler({ store: closedStore, fetchImpl: fakeFetch, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
   const closedConfig = JSON.parse((await closed(event("GET"))).body);
   assert.equal(closedConfig.enabled, false);
-  assert.equal(closedConfig.backendVersion, "yandex-account-recovery-2026-08-15-1");
+  assert.equal(closedConfig.backendVersion, "yandex-account-recovery-2026-08-15-2");
   assert.equal(closedConfig.scope, "login:email");
   assert.equal(closedConfig.selfServiceEnabled, false);
   assert.equal(closedConfig.accountRequiredForAttempts, false);

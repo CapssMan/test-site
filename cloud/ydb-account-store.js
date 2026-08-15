@@ -20,6 +20,18 @@ function executeWrite(sql, strings, values) {
     .timeout(QUERY_TIMEOUT_MS);
 }
 
+function valueStrings(prefix, valueCount, timestampIndexes) {
+  const timestamps = new Set(timestampIndexes || []);
+  const open = index => timestamps.has(index) ? "Unwrap(CAST(" : "";
+  const close = index => timestamps.has(index) ? " AS Timestamp))" : "";
+  const strings = [prefix + open(0)];
+  for (let index = 0; index < valueCount - 1; index += 1) {
+    strings.push(close(index) + ", " + open(index + 1));
+  }
+  strings.push(close(valueCount - 1) + ");");
+  return strings;
+}
+
 function iso(value) {
   return value instanceof Date ? value.toISOString() : value ? String(value) : "";
 }
@@ -126,20 +138,22 @@ function createYdbAccountStore(sql) {
     },
 
     async upsertAccount(row) {
-      await executeWrite(sql, [
+      await executeWrite(sql, valueStrings(
         "UPSERT INTO candidate_accounts (profile_id, account_status, provider, provider_subject_hash, email_hash, email_masked, public_alias, visibility, job_status, region, work_format, experience_band, account_consent_version, account_consented_at, public_consent_version, public_consented_at, created_at, last_login_at, updated_at, purge_at) VALUES (",
-        ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", ", CAST(", " AS Timestamp), ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
-      ], [row.profileId, row.status, row.provider, row.providerSubjectHash, row.emailHash, row.emailMasked,
+        20,
+        [13, 15, 16, 17, 18, 19]
+      ), [row.profileId, row.status, row.provider, row.providerSubjectHash, row.emailHash, row.emailMasked,
         row.publicAlias, row.visibility, row.jobStatus, row.region, row.workFormat, row.experienceBand,
         row.accountConsentVersion, row.accountConsentedAt, row.publicConsentVersion, row.publicConsentedAt,
         row.createdAt, row.lastLoginAt, row.updatedAt, row.purgeAt]);
     },
 
     async insertSession(row) {
-      await executeWrite(sql, [
+      await executeWrite(sql, valueStrings(
         "UPSERT INTO candidate_account_sessions (profile_id, session_token_hash, issued_at, expires_at, last_seen_at, purge_at) VALUES (",
-        ", ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
-      ], [row.profileId, row.tokenHash, row.issuedAt, row.expiresAt, row.lastSeenAt, row.purgeAt]);
+        6,
+        [2, 3, 4, 5]
+      ), [row.profileId, row.tokenHash, row.issuedAt, row.expiresAt, row.lastSeenAt, row.purgeAt]);
     },
 
     async getSessionByTokenHash(tokenHash) {
@@ -196,10 +210,11 @@ function createYdbAccountStore(sql) {
     },
 
     async upsertProfileAttempt(row) {
-      await executeWrite(sql, [
+      await executeWrite(sql, valueStrings(
         "UPSERT INTO candidate_attempt_links (profile_id, test_id, attempt_id, attempt_state, result_code, percent, bank_version, started_at, completed_at, purge_at) VALUES (",
-        ", ", ", ", ", ", ", ", ", ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
-      ], [row.profileId, row.testId, row.attemptId, row.state, row.resultCode, row.percent, row.bankVersion, row.startedAt, row.completedAt, row.purgeAt]);
+        10,
+        [7, 8, 9]
+      ), [row.profileId, row.testId, row.attemptId, row.state, row.resultCode, row.percent, row.bankVersion, row.startedAt, row.completedAt, row.purgeAt]);
     },
 
     async completeProfileAttempt(row) {

@@ -14,7 +14,7 @@ $packageBucket = "assessment-b1gafbjd3dlh-private"
 $origin = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $gatewayOrigin = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net"
 $sourceTag = "account-v2"
-$backendVersion = "yandex-account-recovery-2026-08-15-1"
+$backendVersion = "yandex-account-recovery-2026-08-15-2"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $packagePath = Join-Path $env:TEMP ("skillcheck-account-recovery-" + [Guid]::NewGuid().ToString("N") + ".zip")
 $packageUri = ""
@@ -99,7 +99,7 @@ try {
       --entrypoint ([string]$source.entrypoint) --memory ($memoryMb.ToString() + "MB") `
       --execution-timeout ($timeoutSeconds.ToString() + "s") --service-account-id ([string]$source.service_account_id) `
       --package-bucket-name $packageBucket --package-object-name $packageObject --package-sha256 $packageSha `
-      --description "Account OAuth/YDB staged recovery diagnostics without PII logs" --environment (Join-Environment $source) `
+      --description "Account YDB write fix with staged diagnostics and no PII logs" --environment (Join-Environment $source) `
       --tags $sourceTag --concurrency ([int]$source.concurrency) --no-logging --format json)
     if ($LASTEXITCODE -ne 0) { throw "Account recovery runtime creation failed." }
     $created = ($raw -join "`n") | ConvertFrom-Json

@@ -8,7 +8,7 @@ const sessionRow={profile_id:accountRow.profile_id,session_token_hash:"d".repeat
 const attemptRow={profile_id:accountRow.profile_id,test_id:"fa-junior",attempt_id:"att_"+"e".repeat(32),attempt_state:"completed",result_code:"FA-ABCDE",percent:92.5,bank_version:"FA Junior v6.0",started_at:now,completed_at:now,purge_at:purge};
 const queued=[[[{setting_key:"account_registration_enabled",setting_value:"false"}]],[[accountRow]],[[accountRow]],[[accountRow]],[],[],[[sessionRow]],[],[],[[attemptRow]],[[attemptRow]],[[attemptRow]],[],[],[],[]];
 const calls=[];
-function fakeSql(strings,...values){const call={text:strings.join("?"),values,isolation:null,idempotent:null,timeout:null};calls.push(call);const query={isolation(mode,settings){call.isolation={mode,settings};return query},idempotent(value){call.idempotent=value;return query},timeout(value){call.timeout=value;return query},then(resolve,reject){return Promise.resolve(queued.shift()).then(resolve,reject)}};return query}
+function fakeSql(strings,...values){const call={text:strings.join("?"),stringsLength:strings.length,values,isolation:null,idempotent:null,timeout:null};calls.push(call);const query={isolation(mode,settings){call.isolation={mode,settings};return query},idempotent(value){call.idempotent=value;return query},timeout(value){call.timeout=value;return query},then(resolve,reject){return Promise.resolve(queued.shift()).then(resolve,reject)}};return query}
 (async()=>{
   assert.throws(()=>createYdbAccountStore(),/ydb_query_client_required/);
   const store=createYdbAccountStore(fakeSql);
@@ -27,11 +27,13 @@ function fakeSql(strings,...values){const call={text:strings.join("?"),values,is
   await store.upsertProfileAttempt({profileId:accountRow.profile_id,testId:"fa-junior",attemptId:attemptRow.attempt_id,state:"active",resultCode:"",percent:0,bankVersion:"FA Junior v6.0",startedAt:now,completedAt:now,purgeAt:purge});
   await store.completeProfileAttempt({profileId:accountRow.profile_id,testId:"fa-junior",attemptId:attemptRow.attempt_id,resultCode:"FA-ABCDE",percent:92.5,bankVersion:"FA Junior v6.0",completedAt:now,purgeAt:purge});
   await store.deleteAccount(accountRow.profile_id);
-  calls.forEach(call=>{assert.equal(call.idempotent,true);assert.equal(call.timeout,QUERY_TIMEOUT_MS)});
+  calls.forEach(call=>{assert.equal(call.stringsLength,call.values.length+1,"every YDB template must have exactly one more string segment than bound values");assert.equal(call.idempotent,true);assert.equal(call.timeout,QUERY_TIMEOUT_MS)});
   calls.slice(0,4).concat(calls.slice(6,7),calls.slice(9,12)).forEach(call=>{assert.equal(call.isolation.mode,"onlineReadOnly");assert.equal(call.isolation.settings.allowInconsistentReads,false)});
   for(const index of [4,5,7,8,12,13,14])assert.equal(calls[index].isolation.mode,"serializableReadWrite");
   assert.match(calls[1].text,/VIEW candidate_provider_subject/);
   assert.match(calls[2].text,/VIEW candidate_email/);
+  assert.equal(calls[4].values.length,20);
+  assert.match(calls[4].text,/Unwrap\(CAST\(\? AS Timestamp\)\)/);
   assert.match(calls[6].text,/VIEW candidate_session_token/);
   assert.match(calls[11].text,/VIEW candidate_attempt/);
   assert.match(calls[14].text,/DELETE FROM candidate_account_sessions[\s\S]*DELETE FROM candidate_attempt_links[\s\S]*DELETE FROM candidate_accounts/);

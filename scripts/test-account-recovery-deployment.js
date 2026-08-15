@@ -15,7 +15,7 @@ assert.match(deploy, /version set-tag/);
 assert.match(deploy, /--no-logging/);
 assert.match(deploy, /account-v2 tag was restored to the previous version/);
 assert.match(deploy, /deploy-yandex-public-site\.ps1/);
-assert.match(deploy, /yandex-account-recovery-2026-08-15-1/);
+assert.match(deploy, /yandex-account-recovery-2026-08-15-2/);
 assert.match(deploy, /ACC-YDB-WRITE/);
 assert.doesNotMatch(deploy, /Lockbox|--public|system:allUsers/);
 assert.equal((gateway.match(/tag: "account-v2"/g) || []).length, 2);

@@ -51,7 +51,7 @@ function plusMs(now, milliseconds) {
 }
 
 const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
-const ACCOUNT_BACKEND_VERSION = "yandex-account-recovery-2026-08-15-1";
+const ACCOUNT_BACKEND_VERSION = "yandex-account-recovery-2026-08-15-2";
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
 

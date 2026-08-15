@@ -1,43 +1,280 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="referrer" content="no-referrer">
-  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Личный кабинет кандидата SkillCheck: тесты, подтверждённые результаты и настройки профиля.">
+  <meta name="color-scheme" content="light">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
-  <title>Профиль кандидата — SkillCheck</title>
+  <title>Личный кабинет — SkillCheck</title>
   <style>
-    :root{--ink:#111827;--muted:#667085;--line:#e4e8f0;--blue:#2f6df6;--violet:#7957ef;--green:#12865f;--red:#c2414c;--shadow:0 28px 80px rgba(30,42,72,.12)}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,"Segoe UI",system-ui,sans-serif;color:var(--ink);background:radial-gradient(circle at 85% 0,rgba(121,87,239,.14),transparent 34rem),radial-gradient(circle at 0 28%,rgba(47,109,246,.11),transparent 32rem),#f7f8fb}.shell{width:min(1120px,calc(100% - 32px));margin:auto}.header{border-bottom:1px solid rgba(228,232,240,.85);background:rgba(247,248,251,.82);backdrop-filter:blur(18px)}.nav{height:72px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font-weight:850}.mark{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;color:#fff;background:linear-gradient(135deg,var(--blue),var(--violet))}.nav a:last-child{color:#475467;text-decoration:none;font-weight:700}.hero{padding:66px 0 34px}.eyebrow{color:#5d46d4;font-size:13px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}.hero h1{max-width:760px;margin:15px 0 18px;font-size:clamp(42px,7vw,74px);line-height:1;letter-spacing:-.055em}.hero h1 em{font-family:Georgia,serif;font-weight:500;color:#6251d9}.hero p{max-width:680px;margin:0;color:var(--muted);font-size:17px;line-height:1.65}.panel{margin-bottom:70px;padding:30px;border:1px solid rgba(228,232,240,.95);border-radius:28px;background:rgba(255,255,255,.9);box-shadow:var(--shadow);backdrop-filter:blur(16px)}.status{padding:17px;border:1px solid #d8def0;border-radius:15px;background:#f7f9ff;color:#526079;line-height:1.5}.status.error{border-color:#f3ccd0;background:#fff6f7;color:#a13843}.status.success{border-color:#bfe7d6;background:#f2fbf7;color:#0d7551}.login-card{display:grid;grid-template-columns:1fr auto;gap:26px;align-items:center}.login-card h2,.profile-head h2{margin:0 0 8px;font-size:25px}.login-card p,.profile-head p{margin:0;color:var(--muted);line-height:1.55}.account-consent{display:flex;gap:9px;align-items:flex-start;margin-top:14px;color:#475467;font-size:13px;line-height:1.45}.account-consent input{margin-top:3px}.account-consent a{color:#465bd4}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;font-weight:800;cursor:pointer;text-decoration:none;box-shadow:0 12px 28px rgba(69,84,226,.22)}.button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}.button.secondary{background:#fff;color:#344054;border:1px solid #d5dae5;box-shadow:none}.button.danger{background:#fff;color:var(--red);border:1px solid #efc7cb;box-shadow:none}.profile-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:26px}.verified{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:7px 10px;border-radius:999px;background:#eaf8f2;color:var(--green);font-size:12px;font-weight:850}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field label{display:block;margin-bottom:8px;color:#344054;font-size:13px;font-weight:800}.field input,.field select{width:100%;height:48px;padding:0 14px;border:1px solid #d6dce7;border-radius:13px;background:#fff;color:var(--ink);outline:none}.field input:focus,.field select:focus{border-color:#8298f6;box-shadow:0 0 0 4px rgba(47,109,246,.09)}.help{margin:7px 0 0;color:#7a8496;font-size:12px;line-height:1.45}.wide{grid-column:1/-1}.visibility{padding:16px;border:1px solid var(--line);border-radius:16px;background:#fafbfc}.visibility strong{display:block;margin-bottom:6px}.form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.results{margin-top:32px;padding-top:26px;border-top:1px solid var(--line)}.results h3{margin:0 0 14px}.result-list{display:grid;gap:10px}.result{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:15px;border:1px solid var(--line);border-radius:15px}.result strong,.result small{display:block}.result small{margin-top:4px;color:var(--muted)}.score{font-size:21px;font-weight:900;color:#315bd6}.empty{padding:26px;border:1px dashed #cbd2df;border-radius:16px;color:var(--muted);text-align:center}.danger-zone{margin-top:30px;padding-top:24px;border-top:1px solid var(--line)}.danger-zone summary{color:#9c3340;font-weight:800;cursor:pointer}.danger-zone p{color:var(--muted);font-size:13px;line-height:1.55}.legal{margin-top:18px;color:#7a8496;font-size:12px;line-height:1.6}.legal a{color:#465bd4}@media(max-width:720px){.hero{padding:44px 0 26px}.hero h1{font-size:45px}.panel{padding:20px;border-radius:22px}.login-card{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.profile-head{display:block}.profile-head .button{margin-top:16px}.result{grid-template-columns:1fr auto}.result time{display:none}.nav{height:64px}}
+    :root{
+      --ink:#141722;--muted:#697386;--soft:#8d96a8;--line:#dde2eb;--surface:#fff;--canvas:#f5f6f8;
+      --blue:#3d72f5;--violet:#7656ee;--green:#11835e;--amber:#a96c10;--red:#b6404b;
+      --dark:#11131a;--shadow:0 24px 72px rgba(25,31,48,.1);--radius:26px
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:radial-gradient(circle at 88% -6%,rgba(118,86,238,.13),transparent 31rem),radial-gradient(circle at -8% 24%,rgba(61,114,245,.1),transparent 30rem),var(--canvas)}
+    button,input,select{font:inherit}
+    button,a{-webkit-tap-highlight-color:transparent}
+    [hidden]{display:none!important}
+    .shell{width:min(1180px,calc(100% - 40px));margin-inline:auto}
+    .header{position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(221,226,235,.82);background:rgba(245,246,248,.84);backdrop-filter:blur(18px)}
+    .nav{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .brand{display:inline-flex;align-items:center;gap:11px;color:var(--ink);font-weight:900;text-decoration:none;letter-spacing:-.02em}
+    .mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;color:#fff;background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 9px 24px rgba(76,94,226,.24)}
+    .nav-links{display:flex;align-items:center;gap:22px}
+    .nav-links a{color:#4d5668;text-decoration:none;font-size:14px;font-weight:750}
+    .nav-links a[aria-current="page"]{color:var(--ink)}
+    .guest-hero{padding:74px 0 36px}
+    .eyebrow{display:flex;align-items:center;gap:9px;color:#5e4ad0;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.11em}
+    .eyebrow::before{content:"";width:24px;height:2px;border-radius:9px;background:currentColor}
+    .guest-hero h1{max-width:800px;margin:18px 0 20px;font-size:clamp(42px,7vw,76px);line-height:.98;letter-spacing:-.055em}
+    .guest-hero h1 em{font-family:Georgia,serif;font-weight:500;color:#6251d9}
+    .guest-hero p{max-width:690px;margin:0;color:var(--muted);font-size:18px;line-height:1.65}
+    .status-wrap{margin-top:28px}
+    .status{padding:16px 18px;border:1px solid #d6ddef;border-radius:16px;background:#f7f9ff;color:#526079;line-height:1.5}
+    .status.error{border-color:#efc7cc;background:#fff6f7;color:#9f3641}
+    .status.success{border-color:#bce3d2;background:#f1faf6;color:#0e7252}
+    .guest-panel{margin:0 0 76px;padding:34px;border:1px solid rgba(221,226,235,.95);border-radius:30px;background:rgba(255,255,255,.92);box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+    .login-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:42px;align-items:center}
+    .login-copy h2{margin:0 0 12px;font-size:30px;letter-spacing:-.035em}
+    .login-copy>p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}
+    .login-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:24px}
+    .login-benefit{padding:14px;border:1px solid var(--line);border-radius:15px;background:#fafbfc;color:#485264;font-size:13px;font-weight:750;line-height:1.4}
+    .login-benefit span{display:block;margin-bottom:7px;color:#536ce0;font-size:17px}
+    .login-action{padding:22px;border:1px solid #e1e4ec;border-radius:21px;background:#f8f9fb}
+    .login-action p{margin:13px 0 0;color:#7b8495;font-size:12px;line-height:1.55}
+    .account-consent{display:flex;gap:10px;align-items:flex-start;margin-bottom:17px;color:#475164;font-size:13px;line-height:1.5}
+    .account-consent input{width:17px;height:17px;margin:2px 0 0;accent-color:var(--blue);flex:0 0 auto}
+    .account-consent a,.legal a,.visibility-card a{color:#465bd4}
+    .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 19px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;font-weight:850;cursor:pointer;text-decoration:none;box-shadow:0 12px 28px rgba(69,84,226,.22);transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease}
+    .button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 16px 34px rgba(69,84,226,.28)}
+    .button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid rgba(61,114,245,.24);outline-offset:3px}
+    .button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+    .button.full{width:100%}
+    .button.secondary{background:#fff;color:#344054;border:1px solid #d5dae5;box-shadow:none}
+    .button.danger{background:#fff;color:var(--red);border:1px solid #efc7cb;box-shadow:none}
+    .dashboard{padding:42px 0 76px}
+    .dashboard-head{display:flex;justify-content:space-between;gap:30px;align-items:flex-start;margin-bottom:24px;padding:28px 30px;border-radius:var(--radius);color:#fff;background:linear-gradient(135deg,#11131a 0%,#181a25 55%,#29224f 100%);box-shadow:0 30px 80px rgba(17,19,26,.18);overflow:hidden;position:relative}
+    .dashboard-head::after{content:"";position:absolute;right:-90px;top:-140px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(126,99,255,.34),transparent 66%);pointer-events:none}
+    .dashboard-head-copy{position:relative;z-index:1}
+    .dashboard-head .eyebrow{color:#a99aff}
+    .dashboard-head h1{margin:16px 0 9px;font-size:clamp(32px,5vw,54px);line-height:1;letter-spacing:-.05em}
+    .account-line{display:flex;flex-wrap:wrap;align-items:center;gap:10px;color:#b8bfce;font-size:14px}
+    .verified{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(69,205,151,.12);color:#75ddb5;font-size:11px;font-weight:850}
+    .dashboard-head .button{position:relative;z-index:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);box-shadow:none}
+    .dashboard-head .button:hover{background:rgba(255,255,255,.14)}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .metric{min-height:128px;padding:20px;border:1px solid var(--line);border-radius:21px;background:rgba(255,255,255,.93)}
+    .metric-label{color:var(--muted);font-size:12px;font-weight:800}
+    .metric-value{display:block;margin-top:13px;font-size:30px;font-weight:920;letter-spacing:-.04em}
+    .metric-note{display:block;margin-top:5px;color:var(--soft);font-size:12px}
+    .dashboard-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(310px,.72fr);gap:18px;align-items:start}
+    .stack{display:grid;gap:18px}
+    .card{border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.94);box-shadow:0 14px 44px rgba(26,34,53,.055)}
+    .card-pad{padding:26px}
+    .section-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:18px}
+    .section-kicker{color:#6b58df;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.09em}
+    .section-head h2,.section-head h3{margin:7px 0 0;font-size:25px;letter-spacing:-.035em}
+    .section-head p{max-width:430px;margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+    .next-action{display:grid;grid-template-columns:1fr auto;gap:26px;align-items:center;padding:25px 26px;border-color:#d4d9ee;background:linear-gradient(125deg,#fff,#f5f4ff)}
+    .next-action h2{margin:7px 0 7px;font-size:27px;letter-spacing:-.04em}
+    .next-action p{margin:0;color:var(--muted);line-height:1.55}
+    .test-list{display:grid;gap:11px}
+    .test-access{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fff;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+    .test-access:hover{border-color:#c9d1e3;box-shadow:0 12px 28px rgba(30,42,72,.07);transform:translateY(-1px)}
+    .test-access.highlighted{border-color:#8ea4fa;box-shadow:0 0 0 4px rgba(61,114,245,.09)}
+    .test-copy{min-width:0}
+    .test-topline{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    .test-copy strong{font-size:16px}
+    .test-copy small{display:block;margin-top:6px;color:var(--muted);line-height:1.45}
+    .status-pill{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;background:#eef2ff;color:#4c61d3;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .status-pill.cooldown{background:#fff5e7;color:#9c6613}
+    .status-pill.progress{background:#eef8f4;color:#167555}
+    .status-pill.closed{background:#f0f1f3;color:#70798a}
+    .test-result{margin-top:8px;color:#475164;font-size:12px;font-weight:750}
+    .test-locked{color:#7a8496;font-size:12px;font-weight:800;text-align:right}
+    .results-list{display:grid;gap:10px}
+    .result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:17px 18px;border:1px solid var(--line);border-radius:17px;background:#fff}
+    .result strong,.result small{display:block}
+    .result small{margin-top:5px;color:var(--muted)}
+    .result-side{text-align:right}
+    .score{display:block;color:#315bd6;font-size:23px;font-weight:920;letter-spacing:-.035em}
+    .result time{display:block;margin-top:4px;color:var(--soft);font-size:11px}
+    .empty{padding:26px;border:1px dashed #cbd2df;border-radius:17px;color:var(--muted);text-align:center;line-height:1.55}
+    .profile-card{position:sticky;top:90px}
+    .profile-summary{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}
+    .profile-summary h2{margin:0;font-size:24px;letter-spacing:-.035em}
+    .profile-state{padding:6px 9px;border-radius:999px;background:#fff4df;color:#98610c;font-size:10px;font-weight:900;text-transform:uppercase}
+    .profile-state.complete{background:#eaf8f2;color:#0e7553}
+    .progress-label{display:flex;justify-content:space-between;gap:16px;margin-bottom:8px;color:var(--muted);font-size:12px;font-weight:750}
+    .profile-progress{height:7px;margin-bottom:22px;border-radius:99px;background:#eaedf2;overflow:hidden}
+    .profile-progress span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),var(--violet));transition:width .35s ease}
+    .profile-fields{display:grid;gap:14px}
+    .field label{display:block;margin-bottom:7px;color:#344054;font-size:12px;font-weight:850}
+    .field input,.field select{width:100%;height:46px;padding:0 13px;border:1px solid #d6dce7;border-radius:12px;background:#fff;color:var(--ink);outline:none}
+    .field input:focus,.field select:focus{border-color:#8298f6;box-shadow:0 0 0 4px rgba(47,109,246,.09)}
+    .help{margin:6px 0 0;color:#7a8496;font-size:11px;line-height:1.45}
+    .visibility-card{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fafbfc;color:#485264;font-size:12px;line-height:1.5}
+    .visibility-card strong{display:block;margin-bottom:5px;color:#303848}
+    .visibility-card label{display:flex;gap:8px;align-items:flex-start}
+    .visibility-card input{margin-top:2px}
+    .form-actions{display:flex;gap:10px;margin-top:18px}
+    .danger-zone{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+    .danger-zone summary{color:#9c3340;font-size:12px;font-weight:850;cursor:pointer}
+    .danger-zone p{color:var(--muted);font-size:12px;line-height:1.55}
+    .legal{margin:18px 0 0;color:#7a8496;font-size:11px;line-height:1.65}
+    @media(max-width:940px){
+      .metrics{grid-template-columns:repeat(2,1fr)}
+      .dashboard-grid{grid-template-columns:1fr}
+      .profile-card{position:static}
+      .login-layout{grid-template-columns:1fr}
+    }
+    @media(max-width:680px){
+      .shell{width:min(100% - 24px,1180px)}
+      .nav{min-height:64px}.nav-links{gap:13px}.nav-links a{font-size:12px}.nav-links a:first-child{display:none}
+      .guest-hero{padding:48px 0 26px}.guest-hero h1{font-size:45px}.guest-hero p{font-size:16px}
+      .guest-panel{padding:20px;border-radius:22px}.login-benefits{grid-template-columns:1fr}.login-action{padding:17px}
+      .dashboard{padding:24px 0 52px}.dashboard-head{display:block;padding:24px;border-radius:22px}.dashboard-head h1{font-size:38px}.dashboard-head .button{margin-top:20px}
+      .metrics{grid-template-columns:1fr 1fr;gap:9px}.metric{min-height:112px;padding:16px}.metric-value{font-size:25px}
+      .card{border-radius:21px}.card-pad{padding:19px}.next-action{grid-template-columns:1fr;padding:20px}.next-action .button{width:100%}
+      .section-head{display:block}.section-head p{margin-top:9px}
+      .test-access{grid-template-columns:1fr}.test-access .button{width:100%}.test-locked{text-align:left}
+      .result{padding:15px}.profile-summary h2{font-size:22px}
+    }
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
   </style>
-  <style>.tests,.results{margin-top:32px;padding-top:26px;border-top:1px solid var(--line)}.tests h3,.results h3{margin:0 0 14px}.test-access-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.test-access{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:17px;border:1px solid var(--line);border-radius:16px;background:#fff}.test-access strong,.test-access small{display:block}.test-access small{margin-top:5px;color:var(--muted);line-height:1.4}.test-access a{color:#315bd6;font-weight:850;text-decoration:none;white-space:nowrap}.test-access .locked{color:#7a8496;font-size:13px;font-weight:750}@media(max-width:720px){.test-access-list{grid-template-columns:1fr}}</style>
 </head>
-<body>
-  <header class="header"><div class="shell nav"><a class="brand" href="index.html"><span class="mark">✓</span><span>SkillCheck</span></a><a href="ranking.html">Рейтинг</a></div></header>
-  <main>
-    <section class="hero"><div class="shell"><div class="eyebrow">Подтверждённый аккаунт</div><h1>Ваш профиль <em>компетенций.</em></h1><p>Результаты, настройки видимости и ограничение повторной попытки в одном месте. Вход подтверждает аккаунт Яндекс, но не паспортную личность.</p></div></section>
-    <section class="shell panel">
-      <div id="accountStatus" class="status" role="status" aria-live="polite">Проверяем доступность аккаунтов…</div>
-      <div id="loginView" class="login-card" hidden><div><h2>Войдите через Яндекс</h2><p>Один аккаунт объединяет результаты и контролирует правило: одна новая попытка по каждому тесту раз в 21 день. Запрашиваются только уникальный идентификатор и основной email.</p><label class="account-consent"><input id="accountConsent" type="checkbox"> <span>Я принимаю <a href="account-consent.html" target="_blank" rel="noopener">условия создания аккаунта</a> и согласен на указанную обработку данных.</span></label></div><button id="loginButton" class="button" type="button" disabled>Войти через Яндекс</button></div>
-      <div id="profileView" hidden>
-        <div class="profile-head"><div><h2>Профиль кандидата</h2><p id="profileEmail">Подтверждённый email</p><span class="verified">✓ Канал подтверждён Яндекс ID</span></div><button id="logoutButton" class="button secondary" type="button">Выйти</button></div>
-        <div class="grid">
-          <div class="field"><label for="publicAlias">Публичный псевдоним</label><input id="publicAlias" maxlength="40" autocomplete="off" placeholder="Например, Кирилл К."><p class="help">Нужен только для доступа по ссылке или рейтинга.</p></div>
-          <div class="field"><label for="visibility">Видимость</label><select id="visibility"><option value="private">Приватный профиль</option> <option value="discoverable">Доступен работодателям</option></select><p id="visibilityHelp" class="help">Публичный поиск откроется только после отдельного юридического допуска.</p></div>
-          <div class="field"><label for="jobStatus">Статус поиска</label><select id="jobStatus"><option value="hidden">Не указывать</option><option value="active">Активно ищу работу</option><option value="open">Открыт предложениям</option><option value="not_looking">Сейчас не ищу</option></select></div>
-          <div class="field"><label for="experienceBand">Практический опыт</label><select id="experienceBand"><option value="">Не указывать</option><option value="student">Студент</option><option value="under_1">До 1 года</option><option value="1_3">1–3 года</option><option value="3_plus">Более 3 лет</option></select></div>
-          <div class="field"><label for="region">Регион</label><input id="region" maxlength="80" autocomplete="address-level1" placeholder="Например, Москва"></div>
-          <div class="field"><label for="workFormat">Формат работы</label><select id="workFormat"><option value="">Не указывать</option><option value="office">Офис</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select></div>
-          <div id="publicConsentBox" class="visibility wide" hidden><strong>Отдельное согласие на поиск работодателями</strong><label><input id="publicConsent" type="checkbox"> Разрешаю публикацию выбранных полей по условиям <a href="account-consent.html" target="_blank" rel="noopener">отдельного согласия</a>.</label></div>
-        </div>
-        <div class="form-actions"><button id="saveButton" class="button" type="button">Сохранить профиль</button></div>
-        <section class="tests"><h3>Тесты и доступ</h3><div id="testAccessList" class="test-access-list"></div></section>
-        <section class="results"><h3>Подтверждённые результаты</h3><div id="resultList" class="result-list"></div></section>
-        <details class="danger-zone"><summary>Удаление аккаунта</summary><p>Аккаунт, сессии и связи с результатами будут удалены. Сам assessment-результат хранится по срокам основного согласия; для полного удаления всех данных используйте обращение оператору.</p><button id="deleteButton" class="button danger" type="button">Удалить аккаунт</button></details>
+<body data-account-view="loading">
+  <header class="header">
+    <div class="shell nav">
+      <a class="brand" href="index.html"><span class="mark">✓</span><span>SkillCheck</span></a>
+      <nav class="nav-links" aria-label="Основная навигация">
+        <a href="index.html">Главная</a>
+        <a href="ranking.html">Рейтинг</a>
+        <a href="account.html" aria-current="page">Личный кабинет</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="guestHero" class="guest-hero">
+      <div class="shell">
+        <div class="eyebrow">Личный кабинет кандидата</div>
+        <h1>Ваш путь к результату — <em>в одном месте.</em></h1>
+        <p>Войдите через Яндекс, чтобы выбирать тесты, видеть подтверждённые результаты и управлять своим профилем компетенций.</p>
       </div>
-      <p class="legal">Используя аккаунт, вы принимаете <a href="account-consent.html">условия обработки данных аккаунта</a>. Публичная видимость всегда добровольна и управляется отдельно.</p>
+    </section>
+
+    <div class="shell status-wrap">
+      <div id="accountStatus" class="status" role="status" aria-live="polite">Проверяем доступность сервиса аккаунтов…</div>
+    </div>
+
+    <section id="loginView" class="shell guest-panel" hidden aria-labelledby="loginTitle">
+      <div class="login-layout">
+        <div class="login-copy">
+          <h2 id="loginTitle">Войдите через Яндекс</h2>
+          <p>После входа вы попадёте в личный кабинет. Один аккаунт объединяет результаты и контролирует правило одной новой попытки по каждому тесту раз в 21 день.</p>
+          <div class="login-benefits" aria-label="Возможности кабинета">
+            <div class="login-benefit"><span>01</span>Пять финансовых направлений</div>
+            <div class="login-benefit"><span>02</span>Подтверждённые результаты</div>
+            <div class="login-benefit"><span>03</span>Добровольная видимость</div>
+          </div>
+        </div>
+        <div class="login-action">
+          <label class="account-consent">
+            <input id="accountConsent" type="checkbox">
+            <span>Я принимаю <a href="account-consent.html" target="_blank" rel="noopener">условия создания аккаунта</a> и согласен на указанную обработку данных.</span>
+          </label>
+          <button id="loginButton" class="button full" type="button" disabled>Войти через Яндекс</button>
+          <p>Запрашиваются только уникальный идентификатор аккаунта и основной email. Яндекс ID подтверждает канал входа, но не паспортную личность.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="dashboardView" class="dashboard" hidden aria-labelledby="dashboardTitle">
+      <div class="shell">
+        <div class="dashboard-head">
+          <div class="dashboard-head-copy">
+            <div class="eyebrow">Личный кабинет</div>
+            <h1 id="dashboardTitle">Профиль компетенций</h1>
+            <div class="account-line">
+              <span id="profileEmail">Подтверждённый email</span>
+              <span class="verified">✓ Вход подтверждён Яндекс ID</span>
+            </div>
+          </div>
+          <button id="logoutButton" class="button" type="button">Выйти</button>
+        </div>
+
+        <div class="metrics" aria-label="Сводка кабинета">
+          <article class="metric"><span class="metric-label">Пройдено тестов</span><strong id="completedMetric" class="metric-value">0 из 5</strong><span class="metric-note">Подтверждённые попытки</span></article>
+          <article class="metric"><span class="metric-label">Лучший результат</span><strong id="bestMetric" class="metric-value">—</strong><span class="metric-note">Среди завершённых тестов</span></article>
+          <article class="metric"><span class="metric-label">Доступно сейчас</span><strong id="availableMetric" class="metric-value">0</strong><span class="metric-note">Можно начать без приглашения</span></article>
+          <article class="metric"><span class="metric-label">Статус профиля</span><strong id="jobMetric" class="metric-value">Приватный</strong><span id="jobMetricNote" class="metric-note">Вы управляете видимостью</span></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="stack">
+            <article class="card next-action">
+              <div>
+                <div class="section-kicker">Следующий шаг</div>
+                <h2 id="nextActionTitle">Выберите первый тест</h2>
+                <p id="nextActionText">Результат автоматически появится в этом кабинете.</p>
+              </div>
+              <a id="nextActionButton" class="button" href="#tests">Выбрать тест</a>
+            </article>
+
+            <section id="tests" class="card card-pad" aria-labelledby="testsTitle">
+              <div class="section-head">
+                <div><div class="section-kicker">Диагностика навыков</div><h2 id="testsTitle">Тесты и доступ</h2></div>
+                <p>Каждое направление имеет собственный 21-дневный цикл повторной попытки.</p>
+              </div>
+              <div id="testAccessList" class="test-list"></div>
+            </section>
+
+            <section class="card card-pad" aria-labelledby="resultsTitle">
+              <div class="section-head">
+                <div><div class="section-kicker">История</div><h2 id="resultsTitle">Подтверждённые результаты</h2></div>
+                <p>Здесь отображаются только завершённые и связанные с вашим аккаунтом попытки.</p>
+              </div>
+              <div id="resultList" class="results-list"></div>
+            </section>
+          </div>
+
+          <aside id="profileEditor" class="card card-pad profile-card" aria-labelledby="profileTitle">
+            <div class="profile-summary">
+              <h2 id="profileTitle">Профиль кандидата</h2>
+              <span id="profileState" class="profile-state">Заполните</span>
+            </div>
+            <div class="progress-label"><span>Заполненность</span><span id="profileProgressText">0%</span></div>
+            <div class="profile-progress" role="progressbar" aria-label="Заполненность профиля" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="profileProgressBar"></span></div>
+
+            <div class="profile-fields">
+              <div class="field"><label for="publicAlias">Имя в рейтинге</label><input id="publicAlias" maxlength="40" autocomplete="off" placeholder="Например, Кирилл К."><p class="help">Понадобится только при добровольной публикации.</p></div>
+              <div class="field"><label for="jobStatus">Статус поиска</label><select id="jobStatus"><option value="hidden">Не указывать</option><option value="active">Активно ищу работу</option><option value="open">Открыт предложениям</option><option value="not_looking">Сейчас не ищу</option></select></div>
+              <div class="field"><label for="experienceBand">Практический опыт</label><select id="experienceBand"><option value="">Не указывать</option><option value="student">Студент</option><option value="under_1">До 1 года</option><option value="1_3">1–3 года</option><option value="3_plus">Более 3 лет</option></select></div>
+              <div class="field"><label for="region">Регион</label><input id="region" maxlength="80" autocomplete="address-level1" placeholder="Например, Москва"></div>
+              <div class="field"><label for="workFormat">Формат работы</label><select id="workFormat"><option value="">Не указывать</option><option value="office">Офис</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select></div>
+              <div class="field"><label for="visibility">Видимость профиля</label><select id="visibility"><option value="private">Только я</option><option value="discoverable">Доступен работодателям</option></select><p id="visibilityHelp" class="help">Публикация профиля включается только отдельным согласием.</p></div>
+              <div id="publicConsentBox" class="visibility-card" hidden><strong>Отдельное согласие</strong><label><input id="publicConsent" type="checkbox"> <span>Разрешаю публикацию выбранных полей по <a href="account-consent.html" target="_blank" rel="noopener">условиям поиска работодателями</a>.</span></label></div>
+            </div>
+
+            <div class="form-actions"><button id="saveButton" class="button full" type="button">Сохранить профиль</button></div>
+
+            <details class="danger-zone">
+              <summary>Удаление аккаунта</summary>
+              <p>Аккаунт, сессии и связи с результатами будут удалены. Для удаления всех assessment-данных можно отдельно обратиться оператору.</p>
+              <button id="deleteButton" class="button danger full" type="button">Удалить аккаунт</button>
+            </details>
+            <p class="legal">Публичная видимость всегда добровольна. Подробнее — в <a href="account-consent.html">условиях обработки данных аккаунта</a>.</p>
+          </aside>
+        </div>
+      </div>
     </section>
   </main>
+
   <script>
     "use strict";
     const PRIMARY_SITE_ORIGIN="https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net";
@@ -57,35 +294,363 @@
     const ACCOUNT_CONSENT_VERSION="skillcheck-account-2026-08-09-v2";
     const PUBLIC_CONSENT_VERSION="skillcheck-profile-discovery-2026-08-08-v1";
     const TEST_TITLES={"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budget Analyst","acc-junior":"Accounting / Reporting","bi-junior":"Finance BI / Data Analyst"};
-    const statusNode=document.getElementById("accountStatus"),loginView=document.getElementById("loginView"),profileView=document.getElementById("profileView"),loginButton=document.getElementById("loginButton"),accountConsent=document.getElementById("accountConsent");
-    let config=null,currentProfile=null,currentTestAccess=[],accountServiceUnavailable=false,bootInProgress=false;
-    function setStatus(message,type){statusNode.textContent=message;statusNode.className="status"+(type?" "+type:"");statusNode.hidden=!message}
-    function safeReturnTarget(value){const target=String(value||"");return /^test\.html\?test=(fa-junior|ca-junior|fpa-junior|acc-junior|bi-junior)$/.test(target)?target:""}
+    const JOB_LABELS={hidden:"Приватный",active:"Ищу работу",open:"Открыт",not_looking:"Не ищу"};
+    const statusNode=document.getElementById("accountStatus");
+    const guestHero=document.getElementById("guestHero");
+    const loginView=document.getElementById("loginView");
+    const dashboardView=document.getElementById("dashboardView");
+    const loginButton=document.getElementById("loginButton");
+    const accountConsent=document.getElementById("accountConsent");
+    let config=null,currentProfile=null,currentTestAccess=[],accountServiceUnavailable=false,bootInProgress=false,highlightedTestId="";
+
+    function setStatus(message,type){
+      statusNode.textContent=message;
+      statusNode.className="status"+(type?" "+type:"");
+      statusNode.parentElement.hidden=!message;
+    }
+    function setAccountView(view){
+      document.body.dataset.accountView=view;
+      guestHero.hidden=view==="dashboard";
+      loginView.hidden=view!=="guest";
+      dashboardView.hidden=view!=="dashboard";
+    }
+    function safeReturnTarget(value){
+      const target=String(value||"");
+      return /^test\.html\?test=(fa-junior|ca-junior|fpa-junior|acc-junior|bi-junior)$/.test(target)?target:"";
+    }
     function requestedReturnTarget(){return safeReturnTarget(new URLSearchParams(location.search).get("return"))}
-    function randomBase64Url(bytes){const values=new Uint8Array(bytes);crypto.getRandomValues(values);let binary="";values.forEach(value=>binary+=String.fromCharCode(value));return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"")}
-    async function sha256Base64Url(value){const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));let binary="";new Uint8Array(digest).forEach(item=>binary+=String.fromCharCode(item));return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"")}
+    function testIdFromReturnTarget(value){
+      const target=safeReturnTarget(value);
+      const match=target.match(/[?&]test=([a-z-]+)/);
+      return match&&TEST_TITLES[match[1]]?match[1]:"";
+    }
+    function randomBase64Url(bytes){
+      const values=new Uint8Array(bytes);crypto.getRandomValues(values);let binary="";
+      values.forEach(value=>binary+=String.fromCharCode(value));
+      return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+    }
+    async function sha256Base64Url(value){
+      const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));let binary="";
+      new Uint8Array(digest).forEach(item=>binary+=String.fromCharCode(item));
+      return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+    }
     function storageGet(key){try{return sessionStorage.getItem(key)}catch(_error){throw new Error("browser_storage_unavailable")}}
     function storageSet(key,value){try{sessionStorage.setItem(key,value)}catch(_error){throw new Error("browser_storage_unavailable")}}
     function storageRemove(key){try{sessionStorage.removeItem(key)}catch(_error){throw new Error("browser_storage_unavailable")}}
     function clearStoredSession(){try{sessionStorage.removeItem(ACCOUNT_SESSION_STORAGE_KEY)}catch(_error){}}
-    function readSession(){let value;try{value=JSON.parse(storageGet(ACCOUNT_SESSION_STORAGE_KEY)||"null")}catch(error){if(error&&error.message==="browser_storage_unavailable")throw error;clearStoredSession();return null}const expiry=Date.parse(String(value&&value.expiresAt||""));if(!value||!/^sca_[A-Za-z0-9_-]{43}$/.test(String(value.sessionToken||""))||!Number.isFinite(expiry)||expiry<=Date.now()){clearStoredSession();return null}return value}
+    function readSession(){
+      let value;
+      try{value=JSON.parse(storageGet(ACCOUNT_SESSION_STORAGE_KEY)||"null")}
+      catch(error){if(error&&error.message==="browser_storage_unavailable")throw error;clearStoredSession();return null}
+      const expiry=Date.parse(String(value&&value.expiresAt||""));
+      if(!value||!/^sca_[A-Za-z0-9_-]{43}$/.test(String(value.sessionToken||""))||!Number.isFinite(expiry)||expiry<=Date.now()){clearStoredSession();return null}
+      return value;
+    }
     function saveSession(result){storageSet(ACCOUNT_SESSION_STORAGE_KEY,JSON.stringify({sessionToken:result.sessionToken,expiresAt:result.expiresAt,email:result.email||""}))}
-    async function apiPost(payload){const session=readSession(),headers={"Content-Type":"application/json; charset=utf-8"};if(session)headers.Authorization="Bearer "+session.sessionToken;const response=await fetch(ACCOUNT_API_URL,{method:"POST",headers,body:JSON.stringify(payload),cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"});let body;try{body=await response.json()}catch(_error){throw new Error("account_response_invalid_"+response.status)}if(!response.ok||!body.ok)throw new Error(String(body.error||"request_failed"));return body}
+    async function apiPost(payload){
+      const session=readSession(),headers={"Content-Type":"application/json; charset=utf-8"};
+      if(session)headers.Authorization="Bearer "+session.sessionToken;
+      const response=await fetch(ACCOUNT_API_URL,{method:"POST",headers,body:JSON.stringify(payload),cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"});
+      let body;
+      try{body=await response.json()}catch(_error){throw new Error("account_response_invalid_"+response.status)}
+      if(!response.ok||!body.ok)throw new Error(String(body.error||"request_failed"));
+      return body;
+    }
     function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-    async function fetchAccountConfig(){let lastError=null;for(let attempt=0;attempt<3;attempt++){try{const response=await fetch(ACCOUNT_API_URL,{credentials:"omit",referrerPolicy:"no-referrer"});if(!response.ok)throw new Error("config_http_"+response.status);const body=await response.json();if(!body.ok)throw new Error("config_payload");return body}catch(error){lastError=error;if(attempt<2)await wait(700*(attempt+1))}}throw lastError||new Error("config_failed")}
-    function connectionErrorCode(error){if(navigator.onLine===false)return"ACC-OFFLINE";const message=String(error&&error.message||"");const httpMatch=message.match(/^config_http_(\d{3})$/),responseMatch=message.match(/^account_response_invalid_(\d{3})$/);if(httpMatch)return"ACC-HTTP-"+httpMatch[1];if(responseMatch)return"ACC-RESPONSE-"+responseMatch[1];const codes={config_payload:"ACC-DATA",browser_storage_unavailable:"ACC-STORAGE",oauth_cancelled:"ACC-OAUTH-CANCELLED",oauth_state_invalid:"ACC-OAUTH-STATE",identity_verification_failed:"ACC-OAUTH-VERIFY",identity_token_unavailable:"ACC-OAUTH-TOKEN",identity_token_invalid_response:"ACC-OAUTH-TOKEN-DATA",identity_profile_unavailable:"ACC-OAUTH-PROFILE",identity_profile_invalid_response:"ACC-OAUTH-PROFILE-DATA",account_lookup_unavailable:"ACC-YDB-LOOKUP",account_write_unavailable:"ACC-YDB-WRITE",account_attempts_unavailable:"ACC-YDB-ATTEMPTS",account_session_unavailable:"ACC-YDB-SESSION",account_temporarily_unavailable:"ACC-SERVICE",account_conflict:"ACC-CONFLICT"};return codes[message]||"ACC-NET"}
-    function accountErrorMessage(error){const code=connectionErrorCode(error);if(code==="ACC-STORAGE")return"Chrome запрещает сайту сохранять данные входа. Разрешите данные сайта и повторите. Код: "+code+".";if(code==="ACC-OAUTH-CANCELLED")return"Вход через Яндекс отменён. Можно повторить попытку. Код: "+code+".";if(code==="ACC-OAUTH-STATE")return"Сессия входа устарела или открыта в другой вкладке. Начните вход заново. Код: "+code+".";if(code.startsWith("ACC-YDB-"))return"Сервис аккаунтов не смог сохранить профиль. Повторите позже. Код: "+code+".";if(code.startsWith("ACC-OAUTH-"))return"Не удалось завершить вход через Яндекс. Повторите попытку. Код: "+code+".";return"Не удалось связаться с сервисом аккаунтов. Нажмите «Повторить проверку». Код: "+code+"."}
-    async function startLogin(){try{if(accountServiceUnavailable){await boot();return}if(!config||!config.enabled||!accountConsent.checked)return;const verifier=randomBase64Url(48),state=(IS_UNIFIED_PREVIEW?"u_":"s_")+randomBase64Url(32),challenge=await sha256Base64Url(verifier),returnTo=requestedReturnTarget();storageSet(OAUTH_FLOW_STORAGE_KEY,JSON.stringify({verifier,state,consentVersion:ACCOUNT_CONSENT_VERSION,returnTo,createdAt:Date.now()}));const url=new URL("https://oauth.yandex.ru/authorize");url.searchParams.set("response_type","code");url.searchParams.set("client_id",config.clientId);url.searchParams.set("redirect_uri",config.redirectUri);url.searchParams.set("scope",config.scope);url.searchParams.set("state",state);url.searchParams.set("code_challenge",challenge);url.searchParams.set("code_challenge_method","S256");window.location.assign(url.toString())}catch(error){setStatus(accountErrorMessage(error),"error")}}
-    async function handleCallback(){const params=new URLSearchParams(location.search),code=params.get("code"),state=params.get("state"),providerError=params.get("error");if(!code&&!providerError)return false;history.replaceState({},document.title,location.pathname);const flowRaw=storageGet(OAUTH_FLOW_STORAGE_KEY);storageRemove(OAUTH_FLOW_STORAGE_KEY);if(providerError||!code||!state)throw new Error("oauth_cancelled");const flow=JSON.parse(flowRaw||"null");if(!flow||flow.state!==state||flow.consentVersion!==ACCOUNT_CONSENT_VERSION||Date.now()-Number(flow.createdAt)>10*60*1000)throw new Error("oauth_state_invalid");const result=await apiPost({action:"exchangeYandexCode",apiVersion:ACCOUNT_API_VERSION,code,codeVerifier:flow.verifier,state,accountConsent:flow.consentVersion});saveSession(result);const returnTo=safeReturnTarget(flow.returnTo);if(returnTo&&result.selfServiceEnabled===true){location.replace(returnTo);return true}currentProfile=result.profile;renderProfile(result.profile,result.email,result.testAccess);return true}
-    function renderResults(results){const list=document.getElementById("resultList");list.replaceChildren();if(!Array.isArray(results)||!results.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="В этом профиле пока нет завершённых тестов.";list.append(empty);return}results.forEach(result=>{const row=document.createElement("article");row.className="result";const title=document.createElement("div");const strong=document.createElement("strong");strong.textContent=TEST_TITLES[result.testId]||result.testId;const small=document.createElement("small");small.textContent=result.resultCode||"Подтверждённый результат";title.append(strong,small);const score=document.createElement("span");score.className="score";score.textContent=Number(result.percent||0).toFixed(1)+"%";const time=document.createElement("time");time.dateTime=String(result.completedAt||"");time.textContent=new Date(result.completedAt).toLocaleDateString("ru-RU");row.append(title,score,time);list.append(row)})}
-    function renderTestAccess(items){const list=document.getElementById("testAccessList");list.replaceChildren();currentTestAccess=Array.isArray(items)?items:[];Object.keys(TEST_TITLES).forEach(testId=>{const item=currentTestAccess.find(row=>row&&row.testId===testId)||{status:"closed"};const card=document.createElement("article");card.className="test-access";const copy=document.createElement("div"),title=document.createElement("strong"),note=document.createElement("small");title.textContent=TEST_TITLES[testId];if(item.status==="available")note.textContent="Попытка доступна сейчас";else if(item.status==="cooldown")note.textContent="Повторно с "+new Date(item.availableAt).toLocaleString("ru-RU");else if(item.status==="in_progress")note.textContent="Попытка уже начата в другой вкладке";else note.textContent="Самостоятельный доступ временно закрыт";copy.append(title,note);if(item.status==="available"){const link=document.createElement("a");link.href="test.html?test="+encodeURIComponent(testId);link.textContent="Начать →";card.append(copy,link)}else{const locked=document.createElement("span");locked.className="locked";locked.textContent=item.status==="cooldown"?"21 день":item.status==="in_progress"?"Идёт попытка":"Недоступно";card.append(copy,locked)}list.append(card)})}
-    function renderProfile(profile,email,testAccess){currentProfile=profile;loginView.hidden=true;profileView.hidden=false;setStatus("","");document.getElementById("profileEmail").textContent=email||profile.emailMasked;for(const key of ["publicAlias","visibility","jobStatus","region","workFormat","experienceBand"])document.getElementById(key).value=String(profile[key]||"");document.getElementById("visibility").querySelector('option[value="discoverable"]').disabled=!(config&&config.publicProfileEnabled);document.getElementById("publicConsentBox").hidden=document.getElementById("visibility").value!=="discoverable";document.getElementById("publicConsent").checked=profile.publicConsentVersion===PUBLIC_CONSENT_VERSION;renderTestAccess(testAccess);renderResults(profile.results)}
-    async function loadProfile(){const session=readSession();if(!session)return false;try{const result=await apiPost({action:"getProfile",apiVersion:ACCOUNT_API_VERSION});config.publicProfileEnabled=result.publicProfileEnabled===true;config.selfServiceEnabled=result.selfServiceEnabled===true;const returnTo=requestedReturnTarget();if(returnTo&&config.selfServiceEnabled){location.replace(returnTo);return true}renderProfile(result.profile,session.email,result.testAccess);return true}catch(_error){clearStoredSession();return false}}
-    async function saveProfile(){const visibility=document.getElementById("visibility").value;try{document.getElementById("saveButton").disabled=true;const result=await apiPost({action:"updateProfile",apiVersion:ACCOUNT_API_VERSION,publicAlias:document.getElementById("publicAlias").value,visibility,jobStatus:document.getElementById("jobStatus").value,region:document.getElementById("region").value,workFormat:document.getElementById("workFormat").value,experienceBand:document.getElementById("experienceBand").value,publicConsent:visibility==="discoverable"&&document.getElementById("publicConsent").checked?PUBLIC_CONSENT_VERSION:""});renderProfile(result.profile,readSession()&&readSession().email,result.testAccess);setStatus("Профиль сохранён.","success")}catch(_error){setStatus("Не удалось сохранить профиль. Проверьте поля и повторите.","error")}finally{document.getElementById("saveButton").disabled=false}}
-    async function logout(){try{await apiPost({action:"logout",apiVersion:ACCOUNT_API_VERSION})}catch(_error){}clearStoredSession();location.reload()}
-    async function deleteAccount(){if(prompt('Для удаления аккаунта введите слово УДАЛИТЬ')!=="УДАЛИТЬ")return;try{await apiPost({action:"deleteAccount",apiVersion:ACCOUNT_API_VERSION,confirmation:"УДАЛИТЬ"});clearStoredSession();location.reload()}catch(_error){setStatus("Удаление не завершилось. Повторите позже или обратитесь оператору.","error")}}
-    async function boot(){if(bootInProgress)return;bootInProgress=true;accountServiceUnavailable=false;loginView.hidden=false;loginButton.textContent="Проверяем сервис…";loginButton.disabled=true;setStatus("Проверяем доступность сервиса аккаунтов…","");try{config=await fetchAccountConfig();loginButton.textContent="Войти через Яндекс";if(await handleCallback())return;if(await loadProfile())return;loginView.hidden=false;loginButton.disabled=!config.enabled||!accountConsent.checked;setStatus(config.enabled?"Войдите, чтобы выбрать тест и получить попытку без кода приглашения.":"Регистрация аккаунтов временно закрыта.",config.enabled?"success":"")}catch(error){config=null;accountServiceUnavailable=true;loginView.hidden=false;loginButton.textContent="Повторить проверку";loginButton.disabled=false;setStatus(accountErrorMessage(error),"error")}finally{bootInProgress=false}}
-    loginButton.addEventListener("click",startLogin);accountConsent.addEventListener("change",()=>{loginButton.disabled=accountServiceUnavailable?false:!(config&&config.enabled&&accountConsent.checked)});document.getElementById("saveButton").addEventListener("click",saveProfile);document.getElementById("logoutButton").addEventListener("click",logout);document.getElementById("deleteButton").addEventListener("click",deleteAccount);document.getElementById("visibility").addEventListener("change",event=>{document.getElementById("publicConsentBox").hidden=event.target.value!=="discoverable"});if(!SHOULD_FORWARD_UNIFIED_CALLBACK&&!SHOULD_USE_PRIMARY_ORIGIN)boot();
+    async function fetchAccountConfig(){
+      let lastError=null;
+      for(let attempt=0;attempt<3;attempt++){
+        try{
+          const response=await fetch(ACCOUNT_API_URL,{credentials:"omit",referrerPolicy:"no-referrer"});
+          if(!response.ok)throw new Error("config_http_"+response.status);
+          const body=await response.json();
+          if(!body.ok)throw new Error("config_payload");
+          return body;
+        }catch(error){lastError=error;if(attempt<2)await wait(700*(attempt+1))}
+      }
+      throw lastError||new Error("config_failed");
+    }
+    function connectionErrorCode(error){
+      if(navigator.onLine===false)return"ACC-OFFLINE";
+      const message=String(error&&error.message||"");
+      const httpMatch=message.match(/^config_http_(\d{3})$/),responseMatch=message.match(/^account_response_invalid_(\d{3})$/);
+      if(httpMatch)return"ACC-HTTP-"+httpMatch[1];
+      if(responseMatch)return"ACC-RESPONSE-"+responseMatch[1];
+      const codes={config_payload:"ACC-DATA",browser_storage_unavailable:"ACC-STORAGE",oauth_cancelled:"ACC-OAUTH-CANCELLED",oauth_state_invalid:"ACC-OAUTH-STATE",identity_verification_failed:"ACC-OAUTH-VERIFY",identity_token_unavailable:"ACC-OAUTH-TOKEN",identity_token_invalid_response:"ACC-OAUTH-TOKEN-DATA",identity_profile_unavailable:"ACC-OAUTH-PROFILE",identity_profile_invalid_response:"ACC-OAUTH-PROFILE-DATA",account_lookup_unavailable:"ACC-YDB-LOOKUP",account_write_unavailable:"ACC-YDB-WRITE",account_attempts_unavailable:"ACC-YDB-ATTEMPTS",account_session_unavailable:"ACC-YDB-SESSION",account_temporarily_unavailable:"ACC-SERVICE",account_conflict:"ACC-CONFLICT",authentication_required:"ACC-SESSION"};
+      return codes[message]||"ACC-NET";
+    }
+    function accountErrorMessage(error){
+      const code=connectionErrorCode(error);
+      if(code==="ACC-STORAGE")return"Chrome запрещает сайту сохранять данные входа. Разрешите данные сайта и повторите. Код: "+code+".";
+      if(code==="ACC-SESSION")return"Сессия кабинета завершилась. Войдите через Яндекс ещё раз. Код: "+code+".";
+      if(code==="ACC-OAUTH-CANCELLED")return"Вход через Яндекс отменён. Можно повторить попытку. Код: "+code+".";
+      if(code==="ACC-OAUTH-STATE")return"Сессия входа устарела или открыта в другой вкладке. Начните вход заново. Код: "+code+".";
+      if(code.startsWith("ACC-YDB-"))return"Сервис аккаунтов не смог сохранить профиль. Повторите позже. Код: "+code+".";
+      if(code.startsWith("ACC-OAUTH-"))return"Не удалось завершить вход через Яндекс. Повторите попытку. Код: "+code+".";
+      return"Не удалось связаться с сервисом аккаунтов. Нажмите «Повторить проверку». Код: "+code+".";
+    }
+    async function startLogin(){
+      try{
+        if(accountServiceUnavailable){await boot();return}
+        if(!config||!config.enabled||!accountConsent.checked)return;
+        const verifier=randomBase64Url(48),state=(IS_UNIFIED_PREVIEW?"u_":"s_")+randomBase64Url(32),challenge=await sha256Base64Url(verifier),returnTo=requestedReturnTarget();
+        storageSet(OAUTH_FLOW_STORAGE_KEY,JSON.stringify({verifier,state,consentVersion:ACCOUNT_CONSENT_VERSION,returnTo,createdAt:Date.now()}));
+        const url=new URL("https://oauth.yandex.ru/authorize");
+        url.searchParams.set("response_type","code");
+        url.searchParams.set("client_id",config.clientId);
+        url.searchParams.set("redirect_uri",config.redirectUri);
+        url.searchParams.set("scope",config.scope);
+        url.searchParams.set("state",state);
+        url.searchParams.set("code_challenge",challenge);
+        url.searchParams.set("code_challenge_method","S256");
+        window.location.assign(url.toString());
+      }catch(error){setStatus(accountErrorMessage(error),"error")}
+    }
+    async function handleCallback(){
+      const params=new URLSearchParams(location.search),code=params.get("code"),state=params.get("state"),providerError=params.get("error");
+      if(!code&&!providerError)return false;
+      history.replaceState({},document.title,location.pathname);
+      const flowRaw=storageGet(OAUTH_FLOW_STORAGE_KEY);
+      storageRemove(OAUTH_FLOW_STORAGE_KEY);
+      if(providerError||!code||!state)throw new Error("oauth_cancelled");
+      const flow=JSON.parse(flowRaw||"null");
+      if(!flow||flow.state!==state||flow.consentVersion!==ACCOUNT_CONSENT_VERSION||Date.now()-Number(flow.createdAt)>10*60*1000)throw new Error("oauth_state_invalid");
+      const result=await apiPost({action:"exchangeYandexCode",apiVersion:ACCOUNT_API_VERSION,code,codeVerifier:flow.verifier,state,accountConsent:flow.consentVersion});
+      saveSession(result);
+      highlightedTestId=testIdFromReturnTarget(flow.returnTo);
+      config.selfServiceEnabled=result.selfServiceEnabled===true;
+      renderDashboard(result.profile,result.email,result.testAccess);
+      setStatus("Вход выполнен. Добро пожаловать в личный кабинет.","success");
+      return true;
+    }
+    function resultRows(profile){
+      return Array.isArray(profile&&profile.results)?profile.results.slice().sort((left,right)=>Date.parse(String(right.completedAt||""))-Date.parse(String(left.completedAt||""))):[];
+    }
+    function formatDate(value){
+      const parsed=new Date(value);
+      return Number.isFinite(parsed.getTime())?parsed.toLocaleDateString("ru-RU",{day:"2-digit",month:"long",year:"numeric"}):"";
+    }
+    function formatAccessDate(value){
+      const parsed=new Date(value);
+      return Number.isFinite(parsed.getTime())?parsed.toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"позже";
+    }
+    function renderResults(results){
+      const list=document.getElementById("resultList");
+      list.replaceChildren();
+      const rows=Array.isArray(results)?results.slice().sort((left,right)=>Date.parse(String(right.completedAt||""))-Date.parse(String(left.completedAt||""))):[];
+      if(!rows.length){
+        const empty=document.createElement("div");empty.className="empty";
+        empty.textContent="Завершённых тестов пока нет. Выберите направление выше — первый результат появится здесь.";
+        list.append(empty);return;
+      }
+      rows.forEach(result=>{
+        const row=document.createElement("article");row.className="result";
+        const copy=document.createElement("div"),title=document.createElement("strong"),code=document.createElement("small");
+        title.textContent=TEST_TITLES[result.testId]||result.testId;
+        code.textContent=result.resultCode||"Подтверждённый результат";
+        copy.append(title,code);
+        const side=document.createElement("div");side.className="result-side";
+        const score=document.createElement("span");score.className="score";score.textContent=Number(result.percent||0).toFixed(1)+"%";
+        const time=document.createElement("time");time.dateTime=String(result.completedAt||"");time.textContent=formatDate(result.completedAt);
+        side.append(score,time);row.append(copy,side);list.append(row);
+      });
+    }
+    function accessDescription(item){
+      if(item.status==="available")return"Попытка доступна сейчас";
+      if(item.status==="cooldown")return"Следующая попытка — "+formatAccessDate(item.availableAt);
+      if(item.status==="in_progress")return"Попытка уже начата; доступ освободится после завершения или истечения сессии";
+      return"Самостоятельный доступ временно закрыт";
+    }
+    function renderTestAccess(items){
+      const list=document.getElementById("testAccessList");
+      list.replaceChildren();
+      currentTestAccess=Array.isArray(items)?items:[];
+      Object.keys(TEST_TITLES).forEach(testId=>{
+        const item=currentTestAccess.find(row=>row&&row.testId===testId)||{status:"closed"};
+        const card=document.createElement("article");
+        card.className="test-access"+(testId===highlightedTestId?" highlighted":"");
+        if(testId===highlightedTestId)card.dataset.highlighted="true";
+        const copy=document.createElement("div");copy.className="test-copy";
+        const top=document.createElement("div");top.className="test-topline";
+        const title=document.createElement("strong");title.textContent=TEST_TITLES[testId];
+        const pill=document.createElement("span");pill.className="status-pill";
+        if(item.status==="available")pill.textContent="Доступен";
+        else if(item.status==="cooldown"){pill.textContent="Ожидание";pill.classList.add("cooldown")}
+        else if(item.status==="in_progress"){pill.textContent="Идёт попытка";pill.classList.add("progress")}
+        else{pill.textContent="Закрыт";pill.classList.add("closed")}
+        top.append(title,pill);
+        const note=document.createElement("small");note.textContent=accessDescription(item);
+        copy.append(top,note);
+        if(item.lastResultCode){
+          const previous=document.createElement("div");previous.className="test-result";
+          previous.textContent="Последний результат: "+Number(item.lastPercent||0).toFixed(1)+"% · "+item.lastResultCode;
+          copy.append(previous);
+        }
+        if(item.status==="available"){
+          const link=document.createElement("a");link.className="button secondary";link.href="test.html?test="+encodeURIComponent(testId);link.textContent=item.lastResultCode?"Пройти снова":"Открыть тест";
+          card.append(copy,link);
+        }else{
+          const locked=document.createElement("span");locked.className="test-locked";
+          locked.textContent=item.status==="cooldown"?"Лимит 21 день":item.status==="in_progress"?"Попытка активна":"Недоступно";
+          card.append(copy,locked);
+        }
+        list.append(card);
+      });
+    }
+    function profileCompletion(profile){
+      const completed=[
+        profile&&profile.jobStatus&&profile.jobStatus!=="hidden",
+        profile&&profile.experienceBand,
+        profile&&String(profile.region||"").trim(),
+        profile&&profile.workFormat
+      ].filter(Boolean).length;
+      return Math.round(completed/4*100);
+    }
+    function updateProfileSummary(profile){
+      const percent=profileCompletion(profile);
+      const bar=document.getElementById("profileProgressBar");
+      const progress=bar.parentElement;
+      bar.style.width=percent+"%";
+      progress.setAttribute("aria-valuenow",String(percent));
+      document.getElementById("profileProgressText").textContent=percent+"%";
+      const state=document.getElementById("profileState");
+      state.textContent=percent===100?"Готов":"Заполните";
+      state.classList.toggle("complete",percent===100);
+    }
+    function updateMetrics(profile,testAccess){
+      const results=resultRows(profile);
+      const uniqueTests=new Set(results.map(row=>row.testId));
+      const best=results.reduce((value,row)=>Math.max(value,Number(row.percent||0)),0);
+      const available=(Array.isArray(testAccess)?testAccess:[]).filter(row=>row&&row.status==="available").length;
+      document.getElementById("completedMetric").textContent=uniqueTests.size+" из 5";
+      document.getElementById("bestMetric").textContent=results.length?best.toFixed(1)+"%":"—";
+      document.getElementById("availableMetric").textContent=String(available);
+      document.getElementById("jobMetric").textContent=JOB_LABELS[profile.jobStatus]||"Приватный";
+      document.getElementById("jobMetricNote").textContent=profile.visibility==="discoverable"?"Профиль доступен для поиска":"Видимость работодателям выключена";
+    }
+    function availableTest(testAccess,testId){
+      const rows=Array.isArray(testAccess)?testAccess:[];
+      if(testId){
+        const requested=rows.find(row=>row&&row.testId===testId);
+        if(requested&&requested.status==="available")return requested;
+      }
+      return rows.find(row=>row&&row.status==="available")||null;
+    }
+    function updateNextAction(profile,testAccess){
+      const title=document.getElementById("nextActionTitle"),text=document.getElementById("nextActionText"),button=document.getElementById("nextActionButton");
+      const requested=highlightedTestId&&currentTestAccess.find(row=>row&&row.testId===highlightedTestId);
+      const next=availableTest(testAccess,highlightedTestId);
+      button.hidden=false;
+      if(next&&highlightedTestId===next.testId){
+        title.textContent=TEST_TITLES[next.testId]+" готов к запуску";
+        text.textContent="Вы выбрали этот тест до входа. Проверьте кабинет и начинайте, когда будете готовы.";
+        button.href="test.html?test="+encodeURIComponent(next.testId);button.textContent="Начать тест";
+        return;
+      }
+      if(requested&&requested.status!=="available"){
+        title.textContent="Выбранный тест пока недоступен";
+        text.textContent=accessDescription(requested)+". Ниже можно выбрать другое доступное направление.";
+      }else if(!resultRows(profile).length){
+        title.textContent="Начните с первого теста";
+        text.textContent="Результат автоматически свяжется с аккаунтом и появится в истории кабинета.";
+      }else if(profileCompletion(profile)<100){
+        title.textContent="Дополните профиль кандидата";
+        text.textContent="Регион, опыт и формат работы помогут подготовить профиль к будущему поиску работодателями.";
+        button.href="#profileEditor";button.textContent="Заполнить профиль";return;
+      }else{
+        title.textContent="Продолжайте подтверждать навыки";
+        text.textContent="Каждый новый результат расширяет ваш профиль компетенций.";
+      }
+      if(next){button.href="test.html?test="+encodeURIComponent(next.testId);button.textContent="Открыть "+TEST_TITLES[next.testId]}
+      else{button.href="#tests";button.textContent="Посмотреть сроки"}
+    }
+    function renderDashboard(profile,email,testAccess){
+      currentProfile=profile;
+      setAccountView("dashboard");
+      setStatus("","");
+      document.getElementById("profileEmail").textContent=email||profile.emailMasked;
+      const displayName=String(profile.publicAlias||"").trim();
+      document.getElementById("dashboardTitle").textContent=displayName?"Здравствуйте, "+displayName:"Профиль компетенций";
+      ["publicAlias","visibility","jobStatus","region","workFormat","experienceBand"].forEach(key=>{document.getElementById(key).value=String(profile[key]||"")});
+      const discoverableOption=document.getElementById("visibility").querySelector('option[value="discoverable"]');
+      discoverableOption.disabled=!(config&&config.publicProfileEnabled);
+      document.getElementById("visibilityHelp").textContent=config&&config.publicProfileEnabled?"Видимость можно изменить в любой момент.":"Поиск работодателями пока закрыт; ваш профиль остаётся приватным.";
+      document.getElementById("publicConsentBox").hidden=document.getElementById("visibility").value!=="discoverable";
+      document.getElementById("publicConsent").checked=profile.publicConsentVersion===PUBLIC_CONSENT_VERSION;
+      renderTestAccess(testAccess);
+      renderResults(profile.results);
+      updateMetrics(profile,testAccess);
+      updateProfileSummary(profile);
+      updateNextAction(profile,testAccess);
+      document.title="Личный кабинет — SkillCheck";
+    }
+    async function loadProfile(){
+      const session=readSession();
+      if(!session)return false;
+      try{
+        const result=await apiPost({action:"getProfile",apiVersion:ACCOUNT_API_VERSION});
+        config.publicProfileEnabled=result.publicProfileEnabled===true;
+        config.selfServiceEnabled=result.selfServiceEnabled===true;
+        highlightedTestId=testIdFromReturnTarget(requestedReturnTarget());
+        renderDashboard(result.profile,session.email,result.testAccess);
+        return true;
+      }catch(error){
+        if(String(error&&error.message||"")==="authentication_required"){clearStoredSession();return false}
+        throw error;
+      }
+    }
+    async function saveProfile(){
+      const visibility=document.getElementById("visibility").value;
+      const saveButton=document.getElementById("saveButton");
+      try{
+        saveButton.disabled=true;saveButton.textContent="Сохраняем…";
+        const result=await apiPost({action:"updateProfile",apiVersion:ACCOUNT_API_VERSION,publicAlias:document.getElementById("publicAlias").value,visibility,jobStatus:document.getElementById("jobStatus").value,region:document.getElementById("region").value,workFormat:document.getElementById("workFormat").value,experienceBand:document.getElementById("experienceBand").value,publicConsent:visibility==="discoverable"&&document.getElementById("publicConsent").checked?PUBLIC_CONSENT_VERSION:""});
+        renderDashboard(result.profile,readSession()&&readSession().email,result.testAccess);
+        setStatus("Профиль сохранён.","success");
+        statusNode.scrollIntoView({block:"nearest"});
+      }catch(error){
+        const message=String(error&&error.message||"");
+        setStatus(message==="profile_publication_closed"?"Публичный поиск пока закрыт. Сохраните профиль с видимостью «Только я».":"Не удалось сохранить профиль. Проверьте поля и повторите.","error");
+      }finally{saveButton.disabled=false;saveButton.textContent="Сохранить профиль"}
+    }
+    async function logout(){
+      try{await apiPost({action:"logout",apiVersion:ACCOUNT_API_VERSION})}catch(_error){}
+      clearStoredSession();location.replace("account.html");
+    }
+    async function deleteAccount(){
+      if(prompt('Для удаления аккаунта введите слово УДАЛИТЬ')!=="УДАЛИТЬ")return;
+      try{
+        await apiPost({action:"deleteAccount",apiVersion:ACCOUNT_API_VERSION,confirmation:"УДАЛИТЬ"});
+        clearStoredSession();location.replace("account.html");
+      }catch(_error){setStatus("Удаление не завершилось. Повторите позже или обратитесь оператору.","error")}
+    }
+    async function boot(){
+      if(bootInProgress)return;
+      bootInProgress=true;accountServiceUnavailable=false;setAccountView("loading");
+      loginButton.textContent="Проверяем сервис…";loginButton.disabled=true;
+      setStatus("Проверяем доступность сервиса аккаунтов…","");
+      try{
+        config=await fetchAccountConfig();
+        loginButton.textContent="Войти через Яндекс";
+        if(await handleCallback())return;
+        if(await loadProfile())return;
+        setAccountView("guest");
+        loginButton.disabled=!config.enabled||!accountConsent.checked;
+        setStatus(config.enabled?"Войдите через Яндекс — после подтверждения откроется ваш личный кабинет.":"Регистрация аккаунтов временно закрыта.",config.enabled?"success":"");
+      }catch(error){
+        config=null;accountServiceUnavailable=true;setAccountView("guest");
+        loginButton.textContent="Повторить проверку";loginButton.disabled=false;
+        setStatus(accountErrorMessage(error),"error");
+      }finally{bootInProgress=false}
+    }
+
+    loginButton.addEventListener("click",startLogin);
+    accountConsent.addEventListener("change",()=>{loginButton.disabled=accountServiceUnavailable?false:!(config&&config.enabled&&accountConsent.checked)});
+    document.getElementById("saveButton").addEventListener("click",saveProfile);
+    document.getElementById("logoutButton").addEventListener("click",logout);
+    document.getElementById("deleteButton").addEventListener("click",deleteAccount);
+    document.getElementById("visibility").addEventListener("change",event=>{document.getElementById("publicConsentBox").hidden=event.target.value!=="discoverable"});
+    if(!SHOULD_FORWARD_UNIFIED_CALLBACK&&!SHOULD_USE_PRIMARY_ORIGIN)boot();
   </script>
 </body>
 </html>

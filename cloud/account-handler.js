@@ -51,6 +51,7 @@ function plusMs(now, milliseconds) {
 }
 
 const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
+const ACCOUNT_BACKEND_VERSION = "yandex-account-recovery-2026-08-15-1";
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -121,6 +122,30 @@ function createAccountHandler(dependencies) {
   if (!store || typeof store.getRuntimeSettings !== "function" || typeof fetchImpl !== "function") throw new Error("account_dependencies_required");
   if (identitySecret.length < 32 || sessionSecret.length < 32) throw new Error("account_secret_required");
 
+  async function providerRequest(url, requestOptions, errorCode) {
+    try {
+      return await fetchImpl(url, requestOptions);
+    } catch (_error) {
+      throw new Error(errorCode);
+    }
+  }
+
+  async function providerJson(reply, errorCode) {
+    try {
+      return await reply.json();
+    } catch (_error) {
+      throw new Error(errorCode);
+    }
+  }
+
+  async function storageRequest(operation, errorCode) {
+    try {
+      return await operation();
+    } catch (_error) {
+      throw new Error(errorCode);
+    }
+  }
+
   async function authenticate(event) {
     const token = extractBearerToken(event);
     if (!token) return null;
@@ -136,6 +161,7 @@ function createAccountHandler(dependencies) {
   function buildConfig(settings) {
     const configured = /^[A-Za-z0-9]{20,80}$/.test(clientId) && /^https:\/\//.test(redirectUri);
     return {
+      backendVersion: ACCOUNT_BACKEND_VERSION,
       ok: true,
       apiVersion: ACCOUNT_API_VERSION,
       provider: "yandex",
@@ -156,7 +182,7 @@ function createAccountHandler(dependencies) {
     if (settings.account_registration_enabled !== "true") {
       return { statusCode: 403, payload: { ok: false, error: "account_registration_closed" } };
     }
-    const tokenReply = await fetchImpl("https://oauth.yandex.ru/token", {
+    const tokenReply = await providerRequest("https://oauth.yandex.ru/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -166,17 +192,17 @@ function createAccountHandler(dependencies) {
         code_verifier: request.codeVerifier,
         redirect_uri: redirectUri
       }).toString()
-    });
+    }, "identity_token_unavailable");
     if (!tokenReply.ok) return { statusCode: 403, payload: { ok: false, error: "identity_verification_failed" } };
-    const tokenData = await tokenReply.json();
+    const tokenData = await providerJson(tokenReply, "identity_token_invalid_response");
     const accessToken = String(tokenData && tokenData.access_token || "");
-    if (accessToken.length < 20 || accessToken.length > 4096) throw new Error("invalid_provider_token");
-    const infoReply = await fetchImpl("https://login.yandex.ru/info?format=json", {
+    if (accessToken.length < 20 || accessToken.length > 4096) throw new Error("identity_token_invalid_response");
+    const infoReply = await providerRequest("https://login.yandex.ru/info?format=json", {
       method: "GET",
       headers: { Authorization: "OAuth " + accessToken, Accept: "application/json" }
-    });
+    }, "identity_profile_unavailable");
     if (!infoReply.ok) return { statusCode: 403, payload: { ok: false, error: "identity_verification_failed" } };
-    const info = await infoReply.json();
+    const info = await providerJson(infoReply, "identity_profile_invalid_response");
     const subject = String(info && info.id || "");
     const providerClient = String(info && info.client_id || "");
     const email = normalizeEmail(info && info.default_email);
@@ -186,8 +212,8 @@ function createAccountHandler(dependencies) {
     const now = nowProvider();
     const subjectHash = hashProviderSubject(identitySecret, subject);
     const emailHash = hashAccountEmail(identitySecret, email);
-    let account = await store.getAccountByProviderSubject("yandex", subjectHash);
-    const emailAccount = await store.getAccountByEmailHash(emailHash);
+    let account = await storageRequest(() => store.getAccountByProviderSubject("yandex", subjectHash), "account_lookup_unavailable");
+    const emailAccount = await storageRequest(() => store.getAccountByEmailHash(emailHash), "account_lookup_unavailable");
     if (emailAccount && (!account || emailAccount.profileId !== account.profileId)) {
       return { statusCode: 409, payload: { ok: false, error: "account_conflict" } };
     }
@@ -203,11 +229,11 @@ function createAccountHandler(dependencies) {
     } else {
       account = { ...account, emailHash, emailMasked: maskEmail(email), accountConsentVersion: ACCOUNT_CONSENT_VERSION, accountConsentedAt: now, lastLoginAt: now, updatedAt: now, purgeAt: plusMs(now, ACCOUNT_RETENTION_MS) };
     }
-    await store.upsertAccount(account);
+    await storageRequest(() => store.upsertAccount(account), "account_write_unavailable");
     const token = randomToken();
     const expiresAt = plusMs(now, SESSION_TTL_MS);
-    const attempts = await store.listProfileAttempts(account.profileId);
-    await store.insertSession({ profileId: account.profileId, tokenHash: hashSessionToken(sessionSecret, token), issuedAt: now, expiresAt, lastSeenAt: now, purgeAt: expiresAt });
+    const attempts = await storageRequest(() => store.listProfileAttempts(account.profileId), "account_attempts_unavailable");
+    await storageRequest(() => store.insertSession({ profileId: account.profileId, tokenHash: hashSessionToken(sessionSecret, token), issuedAt: now, expiresAt, lastSeenAt: now, purgeAt: expiresAt }), "account_session_unavailable");
     return {
       statusCode: 200,
       payload: {
@@ -273,9 +299,12 @@ function createAccountHandler(dependencies) {
       return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
     } catch (error) {
       const clientErrors = new Set(["invalid_request", "exchange_invalid", "invalid_exchange", "getProfile_invalid", "update_invalid", "invalid_profile", "public_alias_required", "public_consent_required", "invalid_public_consent", "delete_invalid", "invalid_delete_confirmation"]);
-      if (error instanceof SyntaxError || clientErrors.has(String(error && error.message || ""))) {
+      const serviceErrors = new Set(["identity_token_unavailable", "identity_token_invalid_response", "identity_profile_unavailable", "identity_profile_invalid_response", "account_lookup_unavailable", "account_write_unavailable", "account_attempts_unavailable", "account_session_unavailable"]);
+      const errorCode = String(error && error.message || "");
+      if (error instanceof SyntaxError || clientErrors.has(errorCode)) {
         return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
       }
+      if (serviceErrors.has(errorCode)) return jsonResponse(503, { ok: false, error: errorCode }, origin);
       return jsonResponse(503, { ok: false, error: "account_temporarily_unavailable" }, origin);
     }
   };

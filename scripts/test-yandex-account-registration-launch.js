@@ -25,6 +25,6 @@ assert.match(launch, /Remove-Item Env:\\YDB_TOKEN/);
 assert.doesNotMatch(launch, /profile_publication_enabled[^\n]*"true"|employer_contact_enabled[^\n]*"true"/);
 assert.doesNotMatch(launch, /client_secret|Lockbox|lockbox/);
 assert.match(index, /href="account\.html">Личный кабинет<\/a>/);
-assert.match(account, /sessionStorage\.removeItem\(OAUTH_FLOW_STORAGE_KEY\)/);
+assert.match(account, /storageRemove\(OAUTH_FLOW_STORAGE_KEY\)/);
 
 console.log("Account-registration launch checks passed: legal-first publication, registration-only gate and verified rollback.");

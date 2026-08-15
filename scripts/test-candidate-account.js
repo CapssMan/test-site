@@ -64,11 +64,33 @@ function fakeFetch(url, options) {
   const closed = createAccountHandler({ store: closedStore, fetchImpl: fakeFetch, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
   const closedConfig = JSON.parse((await closed(event("GET"))).body);
   assert.equal(closedConfig.enabled, false);
+  assert.equal(closedConfig.backendVersion, "yandex-account-recovery-2026-08-15-1");
   assert.equal(closedConfig.scope, "login:email");
   assert.equal(closedConfig.selfServiceEnabled, false);
   assert.equal(closedConfig.accountRequiredForAttempts, false);
   const closedExchange = await closed(event("POST", { action: "exchangeYandexCode", apiVersion: ACCOUNT_API_VERSION, code: "valid-code", codeVerifier: "a".repeat(43), state: "b".repeat(43), accountConsent: ACCOUNT_CONSENT_VERSION }));
   assert.equal(closedExchange.statusCode, 403);
+
+  const diagnosticPayload = { action: "exchangeYandexCode", apiVersion: ACCOUNT_API_VERSION, code: "valid-code", codeVerifier: "a".repeat(43), state: "b".repeat(43), accountConsent: ACCOUNT_CONSENT_VERSION };
+  const tokenFailure = createAccountHandler({ store: createStore(true), fetchImpl: async () => { throw new Error("provider_down"); }, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
+  const tokenFailureResponse = await tokenFailure(event("POST", diagnosticPayload));
+  assert.equal(tokenFailureResponse.statusCode, 503);
+  assert.equal(JSON.parse(tokenFailureResponse.body).error, "identity_token_unavailable");
+
+  const profileFailure = createAccountHandler({ store: createStore(true), fetchImpl: async url => {
+    if (url === "https://oauth.yandex.ru/token") return { ok: true, async json() { return { access_token: "fake-account-token-12345" }; } };
+    throw new Error("provider_profile_down");
+  }, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
+  const profileFailureResponse = await profileFailure(event("POST", diagnosticPayload));
+  assert.equal(profileFailureResponse.statusCode, 503);
+  assert.equal(JSON.parse(profileFailureResponse.body).error, "identity_profile_unavailable");
+
+  const writeFailureStore = createStore(true);
+  writeFailureStore.upsertAccount = async () => { throw new Error("ydb_write_failed"); };
+  const writeFailure = createAccountHandler({ store: writeFailureStore, fetchImpl: fakeFetch, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
+  const writeFailureResponse = await writeFailure(event("POST", diagnosticPayload));
+  assert.equal(writeFailureResponse.statusCode, 503);
+  assert.equal(JSON.parse(writeFailureResponse.body).error, "account_write_unavailable");
 
   const store = createStore(true);
   const handler = createAccountHandler({ store, fetchImpl: fakeFetch, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
@@ -136,6 +158,11 @@ function fakeFetch(url, options) {
   assert.match(accountPage, /ACC-OFFLINE/);
   assert.match(accountPage, /ACC-HTTP-/);
   assert.match(accountPage, /ACC-NET/);
+  assert.match(accountPage, /ACC-STORAGE/);
+  assert.match(accountPage, /ACC-OAUTH-TOKEN/);
+  assert.match(accountPage, /ACC-OAUTH-PROFILE/);
+  assert.match(accountPage, /ACC-YDB-WRITE/);
+  assert.match(accountPage, /accountErrorMessage/);
   assert.match(indexPage, /href="account\.html">Личный кабинет<\/a>/);
   assert.doesNotMatch(accountPage, /value="link"/);
   assert.doesNotMatch(accountPage, /localStorage|client_secret|login:phone|login:birthday|login:avatar/);

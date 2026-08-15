@@ -122,10 +122,17 @@ function fakeFetch(url, options) {
   assert.match(accountPage, /attempt<3/);
   assert.match(accountPage, /accountServiceUnavailable/);
   assert.match(accountPage, /Повторить проверку/);
+  assert.match(accountPage, /UNIFIED_PREVIEW_ORIGIN="https:\/\/[^"\s]+\.apigw\.yandexcloud\.net"/);
+  assert.match(accountPage, /UNIFIED_PREVIEW_PREFIX="\/preview-unified"/);
+  assert.match(accountPage, /IS_UNIFIED_PREVIEW/);
+  assert.match(accountPage, /CALLBACK_STATE\.startsWith\("u_"\)/);
+  assert.match(accountPage, /UNIFIED_PREVIEW_ORIGIN\+UNIFIED_PREVIEW_PREFIX\+"\/account\.html"/);
+  assert.match(accountPage, /IS_UNIFIED_PREVIEW\?"\/v1\/account"/);
+  assert.match(accountPage, /state=\(IS_UNIFIED_PREVIEW\?"u_":"s_"\)\+randomBase64Url\(32\)/);
   assert.match(accountPage, /window\.location\.origin!==PRIMARY_SITE_ORIGIN/);
   assert.match(accountPage, /LOCAL_PREVIEW_HOSTS\.has\(window\.location\.hostname\)/);
   assert.match(accountPage, /window\.location\.replace\(PRIMARY_SITE_ORIGIN\+"\/account\.html"/);
-  assert.match(accountPage, /if\(!SHOULD_USE_PRIMARY_ORIGIN\)boot\(\)/);
+  assert.match(accountPage, /if\(!SHOULD_FORWARD_UNIFIED_CALLBACK&&!SHOULD_USE_PRIMARY_ORIGIN\)boot\(\)/);
   assert.match(accountPage, /ACC-OFFLINE/);
   assert.match(accountPage, /ACC-HTTP-/);
   assert.match(accountPage, /ACC-NET/);

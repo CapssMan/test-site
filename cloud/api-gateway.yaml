@@ -199,6 +199,38 @@ paths:
         tag: "read-v6"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
+  # BEGIN UNIFIED_ORIGIN_PREVIEW
+  /preview-unified:
+    get:
+      operationId: getUnifiedPreviewIndex
+      summary: Serve the isolated unified-origin preview index
+      responses:
+        "200":
+          description: Unified-origin preview index
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: assessment-b1gafbjd3dlh-web
+        object: index.html
+  /preview-unified/{file+}:
+    get:
+      operationId: getUnifiedPreviewFile
+      summary: Serve an isolated unified-origin preview file
+      parameters:
+        - name: file
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unified-origin preview file
+        "404":
+          description: Unified-origin preview file not found
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: assessment-b1gafbjd3dlh-web
+        object: '{file}'
+  # END UNIFIED_ORIGIN_PREVIEW
   /v1/ranking/profile:
     post:
       operationId: managePublicRankingProfile

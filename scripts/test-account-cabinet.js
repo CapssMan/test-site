@@ -16,7 +16,8 @@ new vm.Script(scripts[0], { filename: "account.html" });
 [
   "loginView", "dashboardView", "dashboardTitle", "completedMetric", "bestMetric", "availableMetric",
   "jobMetric", "nextActionTitle", "nextActionButton", "testAccessList", "resultList", "profileEditor",
-  "profileProgressBar", "saveButton", "logoutButton", "deleteButton"
+  "profileProgressBar", "careerProfileCard", "currentRole", "targetRole", "experienceSummary", "professionalTools",
+  "availabilityPanel", "confirmAvailabilityButton", "profileConsentRefresh", "saveButton", "logoutButton", "deleteButton"
 ].forEach(id => assert.match(page, new RegExp('id="' + id + '"'), "cabinet missing #" + id));
 
 assert.match(page, /После входа вы попадёте в личный кабинет/);
@@ -33,6 +34,11 @@ assert.match(page, /publicProfileEnabled/);
 assert.match(page, /discoverableOption\.disabled=/);
 assert.match(page, /profile_publication_closed/);
 assert.match(page, /role="progressbar"[^>]+aria-valuemin="0"[^>]+aria-valuemax="100"/);
+assert.match(page, /currentRole:document\.getElementById\("currentRole"\)\.value/);
+assert.match(page, /confirmAvailability:confirmAvailability===true/);
+assert.match(page, /profile\.accountConsentVersion!==ACCOUNT_CONSENT_VERSION/);
+assert.match(page, /updateAvailability\(profile\)/);
+assert.match(page, /skillcheck-account-2026-08-16-v3/);
 assert.match(page, /@media\(max-width:680px\)/);
 assert.match(page, /@media\(prefers-reduced-motion:reduce\)/);
 assert.doesNotMatch(page, /localStorage|login:phone|login:birthday|login:avatar|client_secret/);

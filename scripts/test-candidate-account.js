@@ -64,7 +64,7 @@ function fakeFetch(url, options) {
   const closed = createAccountHandler({ store: closedStore, fetchImpl: fakeFetch, clientId, redirectUri, identitySecret, sessionSecret, allowedOrigins: [origin], now: () => now });
   const closedConfig = JSON.parse((await closed(event("GET"))).body);
   assert.equal(closedConfig.enabled, false);
-  assert.equal(closedConfig.backendVersion, "yandex-account-recovery-2026-08-15-2");
+  assert.equal(closedConfig.backendVersion, "yandex-candidate-profile-2026-08-16-1");
   assert.equal(closedConfig.scope, "login:email");
   assert.equal(closedConfig.selfServiceEnabled, false);
   assert.equal(closedConfig.accountRequiredForAttempts, false);
@@ -104,6 +104,11 @@ function fakeFetch(url, options) {
   assert.equal(exchange.email, "candidate@yandex.ru");
   assert.equal(exchange.profile.visibility, "private");
   assert.equal(exchange.profile.accountConsentVersion, ACCOUNT_CONSENT_VERSION);
+  assert.equal(exchange.profile.currentRole, "");
+  assert.equal(exchange.profile.targetRole, "");
+  assert.equal(exchange.profile.experienceSummary, "");
+  assert.equal(exchange.profile.professionalTools, "");
+  assert.equal(exchange.profile.availabilityConfirmedAt, new Date(0).toISOString());
   const account = [...store.state.accounts.values()][0];
   assert.equal(account.emailHash, hashAccountEmail(identitySecret, "candidate@yandex.ru"));
   assert.equal(account.providerSubjectHash, hashProviderSubject(identitySecret, "2411360937"));
@@ -124,11 +129,29 @@ function fakeFetch(url, options) {
   assert.equal(buildTestAccess([{ testId: "fa-junior", state: "active", startedAt: now.toISOString() }], now, true).find(item => item.testId === "fa-junior").status, "in_progress");
   assert.equal(buildTestAccess([{ testId: "fa-junior", state: "completed", completedAt: new Date(now.getTime() - 22 * 24 * 60 * 60 * 1000).toISOString() }], now, false).find(item => item.testId === "fa-junior").status, "closed");
   assert.equal(profileResponse.statusCode, 200);
+  const careerUpdate = await handler(event("POST", { action: "updateProfile", apiVersion: ACCOUNT_API_VERSION,
+    publicAlias: "Кандидат", visibility: "private", jobStatus: "open", region: "Москва", workFormat: "hybrid",
+    experienceBand: "under_1", currentRole: "Стажёр FDD", targetRole: "Финансовый аналитик",
+    experienceSummary: "Учебная финансовая модель и практика анализа отчётности.",
+    professionalTools: "Excel, Power BI, SQL", confirmAvailability: true,
+    accountConsent: ACCOUNT_CONSENT_VERSION, publicConsent: "" }, exchange.sessionToken));
+  assert.equal(careerUpdate.statusCode, 200);
+  const careerProfile = JSON.parse(careerUpdate.body).profile;
+  assert.equal(careerProfile.currentRole, "Стажёр FDD");
+  assert.equal(careerProfile.targetRole, "Финансовый аналитик");
+  assert.equal(careerProfile.professionalTools, "Excel, Power BI, SQL");
+  assert.equal(careerProfile.availabilityConfirmedAt, now.toISOString());
+  assert.equal(careerProfile.accountConsentVersion, ACCOUNT_CONSENT_VERSION);
   const discoverable = await handler(event("POST", { action: "updateProfile", apiVersion: ACCOUNT_API_VERSION, publicAlias: "Кандидат", visibility: "discoverable", jobStatus: "active", region: "Москва", workFormat: "hybrid", experienceBand: "student", publicConsent: PUBLIC_PROFILE_CONSENT_VERSION }, exchange.sessionToken));
   assert.equal(discoverable.statusCode, 403);
   const privateUpdate = await handler(event("POST", { action: "updateProfile", apiVersion: ACCOUNT_API_VERSION, publicAlias: "", visibility: "private", jobStatus: "hidden", region: "", workFormat: "", experienceBand: "", publicConsent: "" }, exchange.sessionToken));
   assert.equal(privateUpdate.statusCode, 200);
   assert.throws(() => validateUpdate({ action: "updateProfile", apiVersion: ACCOUNT_API_VERSION, publicAlias: "x", visibility: "discoverable", jobStatus: "active", region: "", workFormat: "", experienceBand: "", publicConsent: "" }));
+  const missingCareerConsent = await handler(event("POST", { action: "updateProfile", apiVersion: ACCOUNT_API_VERSION,
+    publicAlias: "", visibility: "private", jobStatus: "open", region: "", workFormat: "", experienceBand: "",
+    currentRole: "Аналитик", targetRole: "", experienceSummary: "", professionalTools: "",
+    confirmAvailability: false, accountConsent: "", publicConsent: "" }, exchange.sessionToken));
+  assert.equal(missingCareerConsent.statusCode, 400);
 
   const accountPage = fs.readFileSync(path.join(root, "account.html"), "utf8");
   const indexPage = fs.readFileSync(path.join(root, "index.html"), "utf8");

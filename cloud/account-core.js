@@ -3,7 +3,8 @@
 const crypto = require("crypto");
 
 const ACCOUNT_API_VERSION = "candidate-account-v1";
-const ACCOUNT_CONSENT_VERSION = "skillcheck-account-2026-08-09-v2";
+const ACCOUNT_CONSENT_VERSION = "skillcheck-account-2026-08-16-v3";
+const LEGACY_ACCOUNT_CONSENT_VERSION = "skillcheck-account-2026-08-09-v2";
 const PUBLIC_PROFILE_CONSENT_VERSION = "skillcheck-profile-discovery-2026-08-08-v1";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const ACCOUNT_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
@@ -77,8 +78,17 @@ function extractBearerToken(event) {
 }
 
 function safeText(value, max, pattern) {
+
   const text = String(value || "").trim();
   if (text.length > max || (text && pattern && !pattern.test(text))) throw new Error("invalid_profile");
+  return text;
+}
+
+function safeMultilineText(value, max) {
+  const text = String(value || "").trim().replace(/\r\n?/g, "\n");
+  if (text.length > max || /[<>\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text)) {
+    throw new Error("invalid_profile");
+  }
   return text;
 }
 
@@ -99,16 +109,28 @@ function validateSimpleAction(value, action) {
 }
 
 function validateUpdate(value) {
-  assertExactKeys(value, ["action", "apiVersion", "publicAlias", "visibility", "jobStatus", "region", "workFormat", "experienceBand", "publicConsent"], "update");
+  assertExactKeys(value, ["action", "apiVersion", "publicAlias", "visibility", "jobStatus", "region", "workFormat", "experienceBand", "currentRole", "targetRole", "experienceSummary", "professionalTools", "confirmAvailability", "accountConsent", "publicConsent"], "update");
   if (value.action !== "updateProfile" || value.apiVersion !== ACCOUNT_API_VERSION ||
       !VISIBILITIES.has(value.visibility) || !JOB_STATUSES.has(value.jobStatus) ||
       !WORK_FORMATS.has(value.workFormat) || !EXPERIENCE_BANDS.has(value.experienceBand)) throw new Error("invalid_profile");
+  const hasCareerFields = ["currentRole", "targetRole", "experienceSummary", "professionalTools", "confirmAvailability", "accountConsent"]
+    .some(key => Object.prototype.hasOwnProperty.call(value, key));
+  const accountConsent = String(value.accountConsent || "");
+  if (hasCareerFields && accountConsent !== ACCOUNT_CONSENT_VERSION) throw new Error("account_consent_required");
+  const currentRole = value.currentRole === undefined ? undefined : safeText(value.currentRole, 100, /^[^<>\u0000-\u001f]+$/);
+  const targetRole = value.targetRole === undefined ? undefined : safeText(value.targetRole, 100, /^[^<>\u0000-\u001f]+$/);
+  const experienceSummary = value.experienceSummary === undefined ? undefined : safeMultilineText(value.experienceSummary, 1000);
+  const professionalTools = value.professionalTools === undefined ? undefined : safeText(value.professionalTools, 300, /^[^<>\u0000-\u001f]+$/);
+  if (accountConsent && accountConsent !== ACCOUNT_CONSENT_VERSION && accountConsent !== LEGACY_ACCOUNT_CONSENT_VERSION) throw new Error("invalid_account_consent");
+  if (value.confirmAvailability !== undefined && typeof value.confirmAvailability !== "boolean") throw new Error("invalid_profile");
   const publicAlias = safeText(value.publicAlias, 40, /^[^<>\u0000-\u001f]+$/);
   const region = safeText(value.region, 80, /^[^<>\u0000-\u001f]+$/);
   if (value.visibility !== "private" && !publicAlias) throw new Error("public_alias_required");
   if (value.visibility === "discoverable" && value.publicConsent !== PUBLIC_PROFILE_CONSENT_VERSION) throw new Error("public_consent_required");
   if (value.visibility !== "discoverable" && value.publicConsent !== "") throw new Error("invalid_public_consent");
-  return { publicAlias, visibility: value.visibility, jobStatus: value.jobStatus, region, workFormat: value.workFormat, experienceBand: value.experienceBand, publicConsent: value.publicConsent };
+  return { publicAlias, visibility: value.visibility, jobStatus: value.jobStatus, region, workFormat: value.workFormat,
+    experienceBand: value.experienceBand, currentRole, targetRole, experienceSummary, professionalTools,
+    confirmAvailability: value.confirmAvailability === true, accountConsent, publicConsent: value.publicConsent };
 }
 
 function validateDelete(value) {
@@ -121,6 +143,7 @@ function validateDelete(value) {
 module.exports = {
   ACCOUNT_API_VERSION,
   ACCOUNT_CONSENT_VERSION,
+  LEGACY_ACCOUNT_CONSENT_VERSION,
   PUBLIC_PROFILE_CONSENT_VERSION,
   SESSION_TTL_MS,
   ACCOUNT_RETENTION_MS,

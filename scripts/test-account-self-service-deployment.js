@@ -38,16 +38,16 @@ assert.doesNotMatch(deploy, /remove-tag|New-Secret|New-SessionSecret|client_secr
 assert.doesNotMatch(deploy, /Write-Host[^\n]*(?:environment|secret|password)/i);
 
 assert.equal((gateway.match(/tag: "assessment-v13"/g) || []).length, 2);
-assert.equal((gateway.match(/tag: "account-v2"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "account-v3"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "assessment-v12"/g) || []).length, 0);
 assert.equal((gateway.match(/tag: "account-v1"/g) || []).length, 0);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS candidate_self_service_slots/);
 assert.match(schema, /PRIMARY KEY \(profile_id, test_id\)/);
 assert.match(schema, /Utf8\('account_self_service_enabled'\), Utf8\('false'\)/);
 assert.match(schema, /Utf8\('account_required_for_attempts'\), Utf8\('false'\)/);
-assert.match(accountCore, /skillcheck-account-2026-08-09-v2/);
+assert.match(accountCore, /skillcheck-account-2026-08-16-v3/);
 assert.match(assessmentCore, /yandex-cloud-self-service-2026-08-09-1/);
 assert.match(privacy, /skillcheck-privacy-2026-08-09-v11/);
-assert.match(accountConsent, /skillcheck-account-2026-08-09-v2/);
+assert.match(accountConsent, /skillcheck-account-2026-08-16-v3/);
 
 console.log("Account self-service deployment checks passed: explicit cutover, paused issuance, additive schema, preserved secrets and closed employer gates.");

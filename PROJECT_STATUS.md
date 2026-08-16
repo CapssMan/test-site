@@ -1,3 +1,22 @@
+## Candidate career profile v2 — 16 August 2026
+
+Личный кабинет кандидата расширен и опубликован на `account-v3` (`d4etah5u1d09fcmotvsq`); `assessment-v13` и остальные runtime остаются без изменений. Добавочная схема `015` хранит текущую и желаемую роль, краткий практический опыт/проекты, профессиональные инструменты и серверную дату подтверждения актуальности поиска. Старые аккаунты и результаты не переписывались.
+
+Согласие аккаунта обновлено до `skillcheck-account-2026-08-16-v3`. Существующий участник может продолжать просматривать кабинет и проходить тесты без повторного подтверждения, но новые карьерные поля сохраняются только после явного принятия v3. Все сведения по умолчанию приватны.
+
+Production-проверка подтвердила:
+
+- `/v1/account` возвращает HTTP 200 и backend `yandex-candidate-profile-2026-08-16-1`;
+- `account_registration_enabled=true`, `account_self_service_enabled=true`, `account_required_for_attempts=true` и `attempt_issuance_enabled=true`;
+- `profile_publication_enabled=false`, `employer_workspace_enabled=false`, `employer_contact_enabled=false`;
+- `candidate_profile_v2_schema=true`;
+- публичная страница содержит карьерный блок и управление актуальностью;
+- полный CI проходит 72/72 проверки.
+
+Первый deployment остановился до миграции, потому что общий public-скрипт неявно переключил Gateway на ещё не созданный тег. Маршрут был сразу восстановлен на рабочий `account-v2`, а public deployment получил явный режим `-SkipGatewayUpdate`. Второй запуск остановился до схемы из-за кириллицы в пути YDB CLI; SQL перенесён во временный ASCII-путь. Третий запуск был отклонён до изменений схемы из-за смешения DDL/DML; запросы разделены. После успешной миграции квота тегов потребовала снять устаревший `account-v1`; версия `d4e77dd9rcsc8cjea6a9` не удалена и сохранена по ID. Финальный запуск создал и проверил `account-v3`.
+
+Employer workspace, публикация профилей и раскрытие контактов не открывались. Следующий продуктовый блок — двусторонние приглашения работодателя и ответы кандидата за закрытыми gates; открывать его имеет смысл после появления реальных добровольных профилей и отдельной legal/privacy-сверки.
+
 ## Account-first production release — 10 August 2026
 
 Candidate self-service is live. Active runtime tags are `assessment-v13` (`d4e2v5ldkbkinsqgot2u`) and `account-v2` (`d4epkq6evda8ojgmt6r5`); `admin-v10`, `employer-v1`, `read-v6` and `write-v8` remain unchanged. The public bucket contains exactly 22 allowlisted files and Candidate Build `2026.08.09.1`.

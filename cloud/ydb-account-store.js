@@ -51,6 +51,11 @@ function mapAccount(row) {
     region: String(row.region || ""),
     workFormat: String(row.work_format || ""),
     experienceBand: String(row.experience_band || ""),
+    currentRole: String(row.current_role || ""),
+    targetRole: String(row.target_role || ""),
+    experienceSummary: String(row.experience_summary || ""),
+    professionalTools: String(row.professional_tools || ""),
+    availabilityConfirmedAt: iso(row.availability_confirmed_at),
     accountConsentVersion: String(row.account_consent_version || ""),
     accountConsentedAt: iso(row.account_consented_at),
     publicConsentVersion: String(row.public_consent_version || ""),
@@ -139,13 +144,14 @@ function createYdbAccountStore(sql) {
 
     async upsertAccount(row) {
       await executeWrite(sql, valueStrings(
-        "UPSERT INTO candidate_accounts (profile_id, account_status, provider, provider_subject_hash, email_hash, email_masked, public_alias, visibility, job_status, region, work_format, experience_band, account_consent_version, account_consented_at, public_consent_version, public_consented_at, created_at, last_login_at, updated_at, purge_at) VALUES (",
-        20,
-        [13, 15, 16, 17, 18, 19]
+        "UPSERT INTO candidate_accounts (profile_id, account_status, provider, provider_subject_hash, email_hash, email_masked, public_alias, visibility, job_status, region, work_format, experience_band, current_role, target_role, experience_summary, professional_tools, availability_confirmed_at, account_consent_version, account_consented_at, public_consent_version, public_consented_at, created_at, last_login_at, updated_at, purge_at) VALUES (",
+        25,
+        [16, 18, 20, 21, 22, 23, 24]
       ), [row.profileId, row.status, row.provider, row.providerSubjectHash, row.emailHash, row.emailMasked,
-        row.publicAlias, row.visibility, row.jobStatus, row.region, row.workFormat, row.experienceBand,
-        row.accountConsentVersion, row.accountConsentedAt, row.publicConsentVersion, row.publicConsentedAt,
-        row.createdAt, row.lastLoginAt, row.updatedAt, row.purgeAt]);
+        row.publicAlias, row.visibility, row.jobStatus, row.region, row.workFormat, row.experienceBand, row.currentRole,
+        row.targetRole, row.experienceSummary, row.professionalTools, row.availabilityConfirmedAt,
+        row.accountConsentVersion, row.accountConsentedAt, row.publicConsentVersion,
+        row.publicConsentedAt, row.createdAt, row.lastLoginAt, row.updatedAt, row.purgeAt]);
     },
 
     async insertSession(row) {
@@ -175,12 +181,17 @@ function createYdbAccountStore(sql) {
     async updateProfile(profileId, changes) {
       await executeWrite(sql, [
         "UPDATE candidate_accounts SET public_alias = ", ", visibility = ", ", job_status = ",
-        ", region = ", ", work_format = ", ", experience_band = ", ", public_consent_version = ",
-        ", public_consented_at = CAST(", " AS Timestamp), updated_at = CAST(", " AS Timestamp), purge_at = CAST(",
-        " AS Timestamp) WHERE profile_id = ", " AND account_status = ", ";"
+        ", region = ", ", work_format = ", ", experience_band = ", ", current_role = ",
+        ", target_role = ", ", experience_summary = ", ", professional_tools = ",
+        ", availability_confirmed_at = CAST(", " AS Timestamp), account_consent_version = ",
+        ", account_consented_at = CAST(", " AS Timestamp), public_consent_version = ",
+        ", public_consented_at = CAST(", " AS Timestamp), updated_at = CAST(",
+        " AS Timestamp), purge_at = CAST(", " AS Timestamp) WHERE profile_id = ", " AND account_status = ", ";"
       ], [changes.publicAlias, changes.visibility, changes.jobStatus, changes.region, changes.workFormat,
-        changes.experienceBand, changes.publicConsentVersion, changes.publicConsentedAt, changes.updatedAt,
-        changes.purgeAt, profileId, "active"]);
+        changes.experienceBand, changes.currentRole, changes.targetRole, changes.experienceSummary,
+        changes.professionalTools, changes.availabilityConfirmedAt, changes.accountConsentVersion,
+        changes.accountConsentedAt, changes.publicConsentVersion, changes.publicConsentedAt,
+        changes.updatedAt, changes.purgeAt, profileId, "active"]);
     },
 
     async listProfileAttempts(profileId) {

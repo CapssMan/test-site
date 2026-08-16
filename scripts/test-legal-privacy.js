@@ -16,7 +16,7 @@ const privacy = read("privacy.html");
 const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
 const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
 const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
-const accountVersion = "skillcheck-account-2026-08-09-v2";
+const accountVersion = "skillcheck-account-2026-08-16-v3";
 const privacyVersion = "skillcheck-privacy-2026-08-09-v11";
 function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
 function extract(source, name) {

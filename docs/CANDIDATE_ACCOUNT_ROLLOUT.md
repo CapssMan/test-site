@@ -30,12 +30,13 @@ OAuth-токен используется сервером один раз дл�
 6. [x] Политика v11 и согласие аккаунта v2 для account-first опубликованы в Yandex Cloud.
 7. [x] После подтверждения первичной подачи production повторно проверен и регистрация открыта. Публичный поиск и работодатели остаются закрыты.
 8. [x] 10 августа 2026 года выполнен отдельно подтверждённый production-cutover на `assessment-v13` и `account-v2`.
+9. [x] 16 августа 2026 года опубликованы схема `015`, согласие аккаунта v3 и `account-v3` с приватным карьерным профилем и актуальностью поиска.
 
 Подробный состав изменения и порядок запуска: [CANDIDATE_ACCOUNT_LEGAL_HANDOFF.md](CANDIDATE_ACCOUNT_LEGAL_HANDOFF.md).
 
 ## Текущее production-состояние
 
-С 10 августа 2026 года активны `account-v2` (`d4epkq6evda8ojgmt6r5`) и `assessment-v13` (`d4e2v5ldkbkinsqgot2u`). `account_registration_enabled`, `account_self_service_enabled`, `account_required_for_attempts` и `attempt_issuance_enabled` равны `true`. Публичная публикация профиля, employer workspace и employer-контакты остаются закрыты. Групповые ссылки необязательны и используются только для атрибуции потока.
+С 16 августа 2026 года активны `account-v3` (`d4etah5u1d09fcmotvsq`) и `assessment-v13` (`d4e2v5ldkbkinsqgot2u`). `account_registration_enabled`, `account_self_service_enabled`, `account_required_for_attempts` и `attempt_issuance_enabled` равны `true`. `candidate_profile_v2_schema=true`. Публичная публикация профиля, employer workspace и employer-контакты остаются закрыты. Групповые ссылки необязательны и используются только для атрибуции потока.
 
 ## Модель заработка без продажи базы
 
@@ -44,3 +45,5 @@ SkillCheck не продаёт email и выгрузку кандидатов. �
 ## Развёртывание
 
 `scripts/deploy-yandex-account-self-service.ps1 -OpenSelfService` временно закрывает выдачу новых попыток, требует отсутствие активных прохождений, применяет добавочную схему `014`, создаёт `assessment-v13` и `account-v2`, публикует страницы, проверяет live API и лишь затем открывает account-first режим. При любой ошибке выдача остаётся закрытой. Секреты не меняются и не выводятся; Lockbox, CDN, VM, платная почта и новые платные сервисы не подключаются.
+
+`scripts/deploy-yandex-candidate-profile-v2.ps1 -Deploy` публикует совместимую страницу без преждевременного переключения Gateway, применяет добавочную схему `015` отдельными DDL/DML-запросами, создаёт `account-v3`, переключает только account-маршрут и проверяет live API. `account-v2` и старые runtime-версии не удаляются; платные сервисы не подключаются.

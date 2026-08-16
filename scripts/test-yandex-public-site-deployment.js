@@ -23,6 +23,8 @@ assert.deepEqual(website, { index: "index.html", error: "index.html" });
 
 assert.match(deploy, /\$unexpectedBefore/);
 assert.match(deploy, /object set does not exactly match the approved allowlist/);
+assert.match(deploy, /param\(\[switch\]\$SkipGatewayUpdate\)/);
+assert.match(deploy, /if \(-not \$SkipGatewayUpdate\)[\s\S]*api-gateway", "update"/);
 assert.match(deploy, /--content-md5/);
 assert.match(deploy, /Get-FileHash[\s\S]*SHA256/);
 assert.match(deploy, /--public-read/);

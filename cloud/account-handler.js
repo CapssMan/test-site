@@ -51,7 +51,7 @@ function plusMs(now, milliseconds) {
 }
 
 const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
-const ACCOUNT_BACKEND_VERSION = "yandex-account-recovery-2026-08-15-2";
+const ACCOUNT_BACKEND_VERSION = "yandex-candidate-profile-2026-08-16-1";
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -95,6 +95,11 @@ function publicProfile(account, attempts) {
     region: account.region,
     workFormat: account.workFormat,
     experienceBand: account.experienceBand,
+    currentRole: account.currentRole,
+    targetRole: account.targetRole,
+    experienceSummary: account.experienceSummary,
+    professionalTools: account.professionalTools,
+    availabilityConfirmedAt: account.availabilityConfirmedAt,
     accountConsentVersion: account.accountConsentVersion,
     publicConsentVersion: account.publicConsentVersion,
     createdAt: account.createdAt,
@@ -222,12 +227,14 @@ function createAccountHandler(dependencies) {
         profileId: randomProfileId(identitySecret, subject), status: "active", provider: "yandex",
         providerSubjectHash: subjectHash, emailHash, emailMasked: maskEmail(email), publicAlias: "",
         visibility: "private", jobStatus: "hidden", region: "", workFormat: "", experienceBand: "",
+        currentRole: "", targetRole: "", experienceSummary: "", professionalTools: "", availabilityConfirmedAt: new Date(0),
         accountConsentVersion: ACCOUNT_CONSENT_VERSION, accountConsentedAt: now,
         publicConsentVersion: "", publicConsentedAt: new Date(0), createdAt: now, lastLoginAt: now,
         updatedAt: now, purgeAt: plusMs(now, ACCOUNT_RETENTION_MS)
       };
     } else {
       account = { ...account, emailHash, emailMasked: maskEmail(email), accountConsentVersion: ACCOUNT_CONSENT_VERSION, accountConsentedAt: now, lastLoginAt: now, updatedAt: now, purgeAt: plusMs(now, ACCOUNT_RETENTION_MS) };
+      account = { ...account, availabilityConfirmedAt: validDate(account.availabilityConfirmedAt) || new Date(0) };
     }
     await storageRequest(() => store.upsertAccount(account), "account_write_unavailable");
     const token = randomToken();
@@ -279,7 +286,26 @@ function createAccountHandler(dependencies) {
           return jsonResponse(403, { ok: false, error: "profile_publication_closed" }, origin);
         }
         const now = nowProvider();
-        await store.updateProfile(auth.account.profileId, { ...update, publicConsentVersion: update.publicConsent, publicConsentedAt: update.visibility === "discoverable" ? now : new Date(0), updatedAt: now, purgeAt: plusMs(now, ACCOUNT_RETENTION_MS) });
+        const wasAvailable = auth.account.jobStatus === "active" || auth.account.jobStatus === "open";
+        const isAvailable = update.jobStatus === "active" || update.jobStatus === "open";
+        const acceptedCurrentConsent = update.accountConsent === ACCOUNT_CONSENT_VERSION;
+        const availabilityConfirmedAt = isAvailable
+          ? ((!wasAvailable || update.confirmAvailability) ? now : (validDate(auth.account.availabilityConfirmedAt) || now))
+          : new Date(0);
+        await store.updateProfile(auth.account.profileId, {
+          ...update,
+          currentRole: update.currentRole === undefined ? auth.account.currentRole : update.currentRole,
+          targetRole: update.targetRole === undefined ? auth.account.targetRole : update.targetRole,
+          experienceSummary: update.experienceSummary === undefined ? auth.account.experienceSummary : update.experienceSummary,
+          professionalTools: update.professionalTools === undefined ? auth.account.professionalTools : update.professionalTools,
+          availabilityConfirmedAt,
+          accountConsentVersion: acceptedCurrentConsent ? ACCOUNT_CONSENT_VERSION : auth.account.accountConsentVersion,
+          accountConsentedAt: acceptedCurrentConsent ? now : auth.account.accountConsentedAt,
+          publicConsentVersion: update.publicConsent,
+          publicConsentedAt: update.visibility === "discoverable" ? now : new Date(0),
+          updatedAt: now,
+          purgeAt: plusMs(now, ACCOUNT_RETENTION_MS)
+        });
         const account = await store.getAccountByProfileId(auth.account.profileId);
         const attempts = await store.listProfileAttempts(account.profileId);
         return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(account, attempts),
@@ -298,7 +324,7 @@ function createAccountHandler(dependencies) {
       }
       return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
     } catch (error) {
-      const clientErrors = new Set(["invalid_request", "exchange_invalid", "invalid_exchange", "getProfile_invalid", "update_invalid", "invalid_profile", "public_alias_required", "public_consent_required", "invalid_public_consent", "delete_invalid", "invalid_delete_confirmation"]);
+      const clientErrors = new Set(["invalid_request", "exchange_invalid", "invalid_exchange", "getProfile_invalid", "update_invalid", "invalid_profile", "public_alias_required", "public_consent_required", "invalid_public_consent", "account_consent_required", "invalid_account_consent", "delete_invalid", "invalid_delete_confirmation"]);
       const serviceErrors = new Set(["identity_token_unavailable", "identity_token_invalid_response", "identity_profile_unavailable", "identity_profile_invalid_response", "account_lookup_unavailable", "account_write_unavailable", "account_attempts_unavailable", "account_session_unavailable"]);
       const errorCode = String(error && error.message || "");
       if (error instanceof SyntaxError || clientErrors.has(errorCode)) {

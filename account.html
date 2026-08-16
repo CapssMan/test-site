@@ -16,7 +16,7 @@
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{margin:0;min-height:100vh;font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:radial-gradient(circle at 88% -6%,rgba(118,86,238,.13),transparent 31rem),radial-gradient(circle at -8% 24%,rgba(61,114,245,.1),transparent 30rem),var(--canvas)}
-    button,input,select{font:inherit}
+    button,input,select,textarea{font:inherit}
     button,a{-webkit-tap-highlight-color:transparent}
     [hidden]{display:none!important}
     .shell{width:min(1180px,calc(100% - 40px));margin-inline:auto}
@@ -51,7 +51,7 @@
     .account-consent a,.legal a,.visibility-card a{color:#465bd4}
     .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 19px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;font-weight:850;cursor:pointer;text-decoration:none;box-shadow:0 12px 28px rgba(69,84,226,.22);transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease}
     .button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 16px 34px rgba(69,84,226,.28)}
-    .button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid rgba(61,114,245,.24);outline-offset:3px}
+    .button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid rgba(61,114,245,.24);outline-offset:3px}
     .button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
     .button.full{width:100%}
     .button.secondary{background:#fff;color:#344054;border:1px solid #d5dae5;box-shadow:none}
@@ -114,8 +114,19 @@
     .profile-progress span{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),var(--violet));transition:width .35s ease}
     .profile-fields{display:grid;gap:14px}
     .field label{display:block;margin-bottom:7px;color:#344054;font-size:12px;font-weight:850}
-    .field input,.field select{width:100%;height:46px;padding:0 13px;border:1px solid #d6dce7;border-radius:12px;background:#fff;color:var(--ink);outline:none}
-    .field input:focus,.field select:focus{border-color:#8298f6;box-shadow:0 0 0 4px rgba(47,109,246,.09)}
+    .field input,.field select,.field textarea{width:100%;border:1px solid #d6dce7;border-radius:12px;background:#fff;color:var(--ink);outline:none}
+    .field input,.field select{height:46px;padding:0 13px}
+    .field textarea{min-height:118px;padding:12px 13px;line-height:1.55;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:#8298f6;box-shadow:0 0 0 4px rgba(47,109,246,.09)}
+    .career-card{overflow:hidden}
+    .career-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+    .field-wide{grid-column:1/-1}
+    .availability-panel{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-top:18px;padding:16px;border:1px solid #d9e3df;border-radius:16px;background:#f4faf7}
+    .availability-panel strong{display:block;margin-bottom:5px;color:#245e49;font-size:13px}
+    .availability-panel p{margin:0;color:#5d746b;font-size:12px;line-height:1.5}
+    .availability-panel .button{flex:0 0 auto}
+    .consent-refresh{margin-top:18px;padding:15px;border:1px solid #ead8ae;border-radius:15px;background:#fff9ec;color:#5e4a20;font-size:12px;line-height:1.55}
+    .consent-refresh strong{display:block;margin-bottom:7px}.consent-refresh label{display:flex;gap:9px;align-items:flex-start}.consent-refresh input{margin-top:3px}.consent-refresh a{color:#465bd4}
     .help{margin:6px 0 0;color:#7a8496;font-size:11px;line-height:1.45}
     .visibility-card{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fafbfc;color:#485264;font-size:12px;line-height:1.5}
     .visibility-card strong{display:block;margin-bottom:5px;color:#303848}
@@ -144,6 +155,8 @@
       .test-access{grid-template-columns:1fr}.test-access .button{width:100%}.test-locked{text-align:left}
       .result{padding:15px}.profile-summary h2{font-size:22px}
     }
+      .career-grid{grid-template-columns:1fr}.field-wide{grid-column:auto}
+      .availability-panel{display:block}.availability-panel .button{width:100%;margin-top:13px}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
   </style>
 </head>
@@ -226,6 +239,32 @@
               <a id="nextActionButton" class="button" href="#tests">Выбрать тест</a>
             </article>
 
+            <section id="careerProfileCard" class="card card-pad career-card" aria-labelledby="careerProfileTitle">
+              <div class="section-head">
+                <div><div class="section-kicker">Карьерный профиль</div><h2 id="careerProfileTitle">Опыт и желаемая роль</h2></div>
+                <p>Эти сведения остаются приватными, пока вы отдельно не включите видимость работодателям.</p>
+              </div>
+              <div class="career-grid">
+                <div class="field"><label for="currentRole">Текущая роль</label><input id="currentRole" maxlength="100" autocomplete="organization-title" placeholder="Например, стажёр FDD"></div>
+                <div class="field"><label for="targetRole">Желаемая роль</label><input id="targetRole" maxlength="100" autocomplete="off" placeholder="Например, финансовый аналитик"></div>
+                <div class="field field-wide"><label for="experienceSummary">Практический опыт и проекты</label><textarea id="experienceSummary" maxlength="1000" placeholder="Кратко: стажировки, учебные и личные проекты, реальные задачи и ваш вклад"></textarea><p class="help">Без длинного резюме — только факты, важные для первичного отбора.</p></div>
+                <div class="field field-wide"><label for="professionalTools">Инструменты</label><input id="professionalTools" maxlength="300" autocomplete="off" placeholder="Например, Excel, Power BI, SQL, 1С"></div>
+                <div class="field"><label for="jobStatus">Статус поиска</label><select id="jobStatus"><option value="hidden">Не указывать</option><option value="active">Активно ищу работу</option><option value="open">Открыт предложениям</option><option value="not_looking">Сейчас не ищу</option></select></div>
+                <div class="field"><label for="experienceBand">Практический опыт</label><select id="experienceBand"><option value="">Не указывать</option><option value="student">Студент</option><option value="under_1">До 1 года</option><option value="1_3">1–3 года</option><option value="3_plus">Более 3 лет</option></select></div>
+                <div class="field"><label for="region">Регион</label><input id="region" maxlength="80" autocomplete="address-level1" placeholder="Например, Москва"></div>
+                <div class="field"><label for="workFormat">Формат работы</label><select id="workFormat"><option value="">Не указывать</option><option value="office">Офис</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select></div>
+              </div>
+              <div id="availabilityPanel" class="availability-panel">
+                <div><strong>Актуальность поиска</strong><p id="availabilityText">Выберите статус поиска и сохраните профиль.</p></div>
+                <button id="confirmAvailabilityButton" class="button secondary" type="button" hidden>Подтвердить актуальность</button>
+              </div>
+              <div id="profileConsentRefresh" class="consent-refresh" hidden>
+                <strong>Обновлены поля карьерного профиля</strong>
+                <label><input id="profileConsent" type="checkbox"> <span>Я принимаю <a href="account-consent.html" target="_blank" rel="noopener">условия аккаунта версии 2026-08-16</a> для сохранения роли, опыта и инструментов.</span></label>
+              </div>
+              <div class="form-actions"><button id="saveButton" class="button" type="button">Сохранить профиль</button></div>
+            </section>
+
             <section id="tests" class="card card-pad" aria-labelledby="testsTitle">
               <div class="section-head">
                 <div><div class="section-kicker">Диагностика навыков</div><h2 id="testsTitle">Тесты и доступ</h2></div>
@@ -253,15 +292,9 @@
 
             <div class="profile-fields">
               <div class="field"><label for="publicAlias">Имя в рейтинге</label><input id="publicAlias" maxlength="40" autocomplete="off" placeholder="Например, Кирилл К."><p class="help">Понадобится только при добровольной публикации.</p></div>
-              <div class="field"><label for="jobStatus">Статус поиска</label><select id="jobStatus"><option value="hidden">Не указывать</option><option value="active">Активно ищу работу</option><option value="open">Открыт предложениям</option><option value="not_looking">Сейчас не ищу</option></select></div>
-              <div class="field"><label for="experienceBand">Практический опыт</label><select id="experienceBand"><option value="">Не указывать</option><option value="student">Студент</option><option value="under_1">До 1 года</option><option value="1_3">1–3 года</option><option value="3_plus">Более 3 лет</option></select></div>
-              <div class="field"><label for="region">Регион</label><input id="region" maxlength="80" autocomplete="address-level1" placeholder="Например, Москва"></div>
-              <div class="field"><label for="workFormat">Формат работы</label><select id="workFormat"><option value="">Не указывать</option><option value="office">Офис</option><option value="hybrid">Гибрид</option><option value="remote">Удалённо</option></select></div>
               <div class="field"><label for="visibility">Видимость профиля</label><select id="visibility"><option value="private">Только я</option><option value="discoverable">Доступен работодателям</option></select><p id="visibilityHelp" class="help">Публикация профиля включается только отдельным согласием.</p></div>
               <div id="publicConsentBox" class="visibility-card" hidden><strong>Отдельное согласие</strong><label><input id="publicConsent" type="checkbox"> <span>Разрешаю публикацию выбранных полей по <a href="account-consent.html" target="_blank" rel="noopener">условиям поиска работодателями</a>.</span></label></div>
             </div>
-
-            <div class="form-actions"><button id="saveButton" class="button full" type="button">Сохранить профиль</button></div>
 
             <details class="danger-zone">
               <summary>Удаление аккаунта</summary>
@@ -291,7 +324,7 @@
     const ACCOUNT_API_VERSION="candidate-account-v1";
     const ACCOUNT_SESSION_STORAGE_KEY="skillcheck_candidate_account_v1";
     const OAUTH_FLOW_STORAGE_KEY="skillcheck_yandex_pkce_v1";
-    const ACCOUNT_CONSENT_VERSION="skillcheck-account-2026-08-09-v2";
+    const ACCOUNT_CONSENT_VERSION="skillcheck-account-2026-08-16-v3";
     const PUBLIC_CONSENT_VERSION="skillcheck-profile-discovery-2026-08-08-v1";
     const TEST_TITLES={"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budget Analyst","acc-junior":"Accounting / Reporting","bi-junior":"Finance BI / Data Analyst"};
     const JOB_LABELS={hidden:"Приватный",active:"Ищу работу",open:"Открыт",not_looking:"Не ищу"};
@@ -502,9 +535,13 @@
         profile&&profile.jobStatus&&profile.jobStatus!=="hidden",
         profile&&profile.experienceBand,
         profile&&String(profile.region||"").trim(),
-        profile&&profile.workFormat
+        profile&&profile.workFormat,
+        profile&&String(profile.currentRole||"").trim(),
+        profile&&String(profile.targetRole||"").trim(),
+        profile&&String(profile.experienceSummary||"").trim(),
+        profile&&String(profile.professionalTools||"").trim()
       ].filter(Boolean).length;
-      return Math.round(completed/4*100);
+      return Math.round(completed/8*100);
     }
     function updateProfileSummary(profile){
       const percent=profileCompletion(profile);
@@ -519,6 +556,20 @@
     }
     function updateMetrics(profile,testAccess){
       const results=resultRows(profile);
+    function updateAvailability(profile){
+      const available=profile.jobStatus==="active"||profile.jobStatus==="open";
+      const button=document.getElementById("confirmAvailabilityButton");
+      const text=document.getElementById("availabilityText");
+      button.hidden=!available;
+      if(!available){text.textContent="Выберите «Активно ищу» или «Открыт предложениям», если хотите получать приглашения в будущем.";return}
+      const confirmed=new Date(profile.availabilityConfirmedAt||"");
+      if(!Number.isFinite(confirmed.getTime())||confirmed.getTime()<=0){text.textContent="Статус ещё не подтверждён.";return}
+      const ageDays=Math.floor((Date.now()-confirmed.getTime())/86400000);
+      text.textContent=ageDays>30
+        ? "Статус не подтверждался больше 30 дней. Обновите его, чтобы профиль считался актуальным."
+        : "Подтверждено "+confirmed.toLocaleDateString("ru-RU",{day:"2-digit",month:"long",year:"numeric"})+".";
+    }
+
       const uniqueTests=new Set(results.map(row=>row.testId));
       const best=results.reduce((value,row)=>Math.max(value,Number(row.percent||0)),0);
       const available=(Array.isArray(testAccess)?testAccess:[]).filter(row=>row&&row.status==="available").length;
@@ -555,7 +606,7 @@
         text.textContent="Результат автоматически свяжется с аккаунтом и появится в истории кабинета.";
       }else if(profileCompletion(profile)<100){
         title.textContent="Дополните профиль кандидата";
-        text.textContent="Регион, опыт и формат работы помогут подготовить профиль к будущему поиску работодателями.";
+        text.textContent="Роль, практический опыт и инструменты подготовят профиль к будущему поиску работодателями.";
         button.href="#profileEditor";button.textContent="Заполнить профиль";return;
       }else{
         title.textContent="Продолжайте подтверждать навыки";
@@ -571,12 +622,22 @@
       document.getElementById("profileEmail").textContent=email||profile.emailMasked;
       const displayName=String(profile.publicAlias||"").trim();
       document.getElementById("dashboardTitle").textContent=displayName?"Здравствуйте, "+displayName:"Профиль компетенций";
-      ["publicAlias","visibility","jobStatus","region","workFormat","experienceBand"].forEach(key=>{document.getElementById(key).value=String(profile[key]||"")});
+      ["publicAlias","visibility","jobStatus","region","workFormat","experienceBand","currentRole","targetRole","experienceSummary","professionalTools"].forEach(key=>{document.getElementById(key).value=String(profile[key]||"")});
       const discoverableOption=document.getElementById("visibility").querySelector('option[value="discoverable"]');
       discoverableOption.disabled=!(config&&config.publicProfileEnabled);
       document.getElementById("visibilityHelp").textContent=config&&config.publicProfileEnabled?"Видимость можно изменить в любой момент.":"Поиск работодателями пока закрыт; ваш профиль остаётся приватным.";
+      const careerSupported=config&&config.accountConsentVersion===ACCOUNT_CONSENT_VERSION;
+      ["currentRole","targetRole","experienceSummary","professionalTools"].forEach(key=>{document.getElementById(key).disabled=!careerSupported});
       document.getElementById("publicConsentBox").hidden=document.getElementById("visibility").value!=="discoverable";
       document.getElementById("publicConsent").checked=profile.publicConsentVersion===PUBLIC_CONSENT_VERSION;
+      const needsConsent=careerSupported&&profile.accountConsentVersion!==ACCOUNT_CONSENT_VERSION;
+      document.getElementById("profileConsentRefresh").hidden=!needsConsent;
+      document.getElementById("profileConsent").checked=!needsConsent;
+      if(careerSupported)updateAvailability(profile);
+      else{
+        document.getElementById("confirmAvailabilityButton").hidden=true;
+        document.getElementById("availabilityText").textContent="Расширенный карьерный профиль подключается; основные настройки аккаунта уже доступны.";
+      }
       renderTestAccess(testAccess);
       renderResults(profile.results);
       updateMetrics(profile,testAccess);
@@ -599,19 +660,37 @@
         throw error;
       }
     }
-    async function saveProfile(){
+    async function saveProfile(confirmAvailability){
       const visibility=document.getElementById("visibility").value;
       const saveButton=document.getElementById("saveButton");
+      const careerSupported=config&&config.accountConsentVersion===ACCOUNT_CONSENT_VERSION;
+      const needsConsent=careerSupported&&currentProfile&&currentProfile.accountConsentVersion!==ACCOUNT_CONSENT_VERSION;
+      const consentCheckbox=document.getElementById("profileConsent");
+      if(needsConsent&&!consentCheckbox.checked){
+        setStatus("Перед сохранением новых карьерных полей примите обновлённые условия аккаунта.","error");
+        document.getElementById("profileConsentRefresh").scrollIntoView({block:"center"});return;
+      }
       try{
-        saveButton.disabled=true;saveButton.textContent="Сохраняем…";
-        const result=await apiPost({action:"updateProfile",apiVersion:ACCOUNT_API_VERSION,publicAlias:document.getElementById("publicAlias").value,visibility,jobStatus:document.getElementById("jobStatus").value,region:document.getElementById("region").value,workFormat:document.getElementById("workFormat").value,experienceBand:document.getElementById("experienceBand").value,publicConsent:visibility==="discoverable"&&document.getElementById("publicConsent").checked?PUBLIC_CONSENT_VERSION:""});
+        const confirmButton=document.getElementById("confirmAvailabilityButton");
+        saveButton.disabled=true;confirmButton.disabled=true;saveButton.textContent="Сохраняем…";
+        const payload={action:"updateProfile",apiVersion:ACCOUNT_API_VERSION,publicAlias:document.getElementById("publicAlias").value,visibility,
+          jobStatus:document.getElementById("jobStatus").value,region:document.getElementById("region").value,
+          workFormat:document.getElementById("workFormat").value,experienceBand:document.getElementById("experienceBand").value,
+          publicConsent:visibility==="discoverable"&&document.getElementById("publicConsent").checked?PUBLIC_CONSENT_VERSION:""};
+        if(careerSupported)Object.assign(payload,{
+          currentRole:document.getElementById("currentRole").value,targetRole:document.getElementById("targetRole").value,
+          experienceSummary:document.getElementById("experienceSummary").value,
+          professionalTools:document.getElementById("professionalTools").value,
+          confirmAvailability:confirmAvailability===true,accountConsent:ACCOUNT_CONSENT_VERSION
+        });
+        const result=await apiPost(payload);
         renderDashboard(result.profile,readSession()&&readSession().email,result.testAccess);
         setStatus("Профиль сохранён.","success");
         statusNode.scrollIntoView({block:"nearest"});
       }catch(error){
         const message=String(error&&error.message||"");
         setStatus(message==="profile_publication_closed"?"Публичный поиск пока закрыт. Сохраните профиль с видимостью «Только я».":"Не удалось сохранить профиль. Проверьте поля и повторите.","error");
-      }finally{saveButton.disabled=false;saveButton.textContent="Сохранить профиль"}
+      }finally{saveButton.disabled=false;document.getElementById("confirmAvailabilityButton").disabled=false;saveButton.textContent="Сохранить профиль"}
     }
     async function logout(){
       try{await apiPost({action:"logout",apiVersion:ACCOUNT_API_VERSION})}catch(_error){}
@@ -646,7 +725,8 @@
 
     loginButton.addEventListener("click",startLogin);
     accountConsent.addEventListener("change",()=>{loginButton.disabled=accountServiceUnavailable?false:!(config&&config.enabled&&accountConsent.checked)});
-    document.getElementById("saveButton").addEventListener("click",saveProfile);
+    document.getElementById("saveButton").addEventListener("click",()=>saveProfile(false));
+    document.getElementById("confirmAvailabilityButton").addEventListener("click",()=>saveProfile(true));
     document.getElementById("logoutButton").addEventListener("click",logout);
     document.getElementById("deleteButton").addEventListener("click",deleteAccount);
     document.getElementById("visibility").addEventListener("change",event=>{document.getElementById("publicConsentBox").hidden=event.target.value!=="discoverable"});

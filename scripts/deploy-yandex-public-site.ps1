@@ -1,4 +1,4 @@
-param()
+param([switch]$SkipGatewayUpdate)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -158,7 +158,9 @@ $existingKeys = @(Get-ObjectKeys)
 $unexpectedBefore = @($existingKeys | Where-Object { $publicFiles -notcontains $_ })
 if ($unexpectedBefore.Count -gt 0) { throw "Public bucket contains an object outside the approved allowlist." }
 
-$null = Invoke-YcJson @("serverless", "api-gateway", "update", "--id", $gatewayId, "--spec", $gatewaySpec, "--no-logging")
+if (-not $SkipGatewayUpdate) {
+  $null = Invoke-YcJson @("serverless", "api-gateway", "update", "--id", $gatewayId, "--spec", $gatewaySpec, "--no-logging")
+}
 
 foreach ($relativePath in $publicFiles) {
   $source = Join-Path $repoRoot ($relativePath -replace "/", "\")

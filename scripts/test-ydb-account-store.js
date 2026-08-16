@@ -3,7 +3,7 @@
 const assert=require("node:assert/strict");
 const {QUERY_TIMEOUT_MS,createYdbAccountStore}=require("../cloud/ydb-account-store");
 const now=new Date("2026-08-08T12:00:00.000Z"),purge=new Date("2027-08-08T12:00:00.000Z");
-const accountRow={profile_id:"acct_"+"a".repeat(32),account_status:"active",provider:"yandex",provider_subject_hash:"b".repeat(64),email_hash:"c".repeat(64),email_masked:"c***@yandex.ru",public_alias:"",visibility:"private",job_status:"hidden",region:"",work_format:"",experience_band:"",account_consent_version:"skillcheck-account-2026-08-08-v1",account_consented_at:now,public_consent_version:"",public_consented_at:new Date(0),created_at:now,last_login_at:now,updated_at:now,purge_at:purge};
+const accountRow={profile_id:"acct_"+"a".repeat(32),account_status:"active",provider:"yandex",provider_subject_hash:"b".repeat(64),email_hash:"c".repeat(64),email_masked:"c***@yandex.ru",public_alias:"",visibility:"private",job_status:"hidden",region:"",work_format:"",experience_band:"",current_role:"Стажёр",target_role:"Аналитик",experience_summary:"Финансовая модель",professional_tools:"Excel, SQL",availability_confirmed_at:now,account_consent_version:"skillcheck-account-2026-08-16-v3",account_consented_at:now,public_consent_version:"",public_consented_at:new Date(0),created_at:now,last_login_at:now,updated_at:now,purge_at:purge};
 const sessionRow={profile_id:accountRow.profile_id,session_token_hash:"d".repeat(64),issued_at:now,expires_at:purge,last_seen_at:now,purge_at:purge};
 const attemptRow={profile_id:accountRow.profile_id,test_id:"fa-junior",attempt_id:"att_"+"e".repeat(32),attempt_state:"completed",result_code:"FA-ABCDE",percent:92.5,bank_version:"FA Junior v6.0",started_at:now,completed_at:now,purge_at:purge};
 const queued=[[[{setting_key:"account_registration_enabled",setting_value:"false"}]],[[accountRow]],[[accountRow]],[[accountRow]],[],[],[[sessionRow]],[],[],[[attemptRow]],[[attemptRow]],[[attemptRow]],[],[],[],[]];
@@ -15,12 +15,12 @@ function fakeSql(strings,...values){const call={text:strings.join("?"),stringsLe
   assert.equal((await store.getRuntimeSettings()).account_registration_enabled,"false");
   assert.equal((await store.getAccountByProviderSubject("yandex",accountRow.provider_subject_hash)).profileId,accountRow.profile_id);
   assert.equal((await store.getAccountByEmailHash(accountRow.email_hash)).emailMasked,"c***@yandex.ru");
-  assert.equal((await store.getAccountByProfileId(accountRow.profile_id)).visibility,"private");
-  await store.upsertAccount({profileId:accountRow.profile_id,status:"active",provider:"yandex",providerSubjectHash:accountRow.provider_subject_hash,emailHash:accountRow.email_hash,emailMasked:accountRow.email_masked,publicAlias:"",visibility:"private",jobStatus:"hidden",region:"",workFormat:"",experienceBand:"",accountConsentVersion:accountRow.account_consent_version,accountConsentedAt:now,publicConsentVersion:"",publicConsentedAt:new Date(0),createdAt:now,lastLoginAt:now,updatedAt:now,purgeAt:purge});
+  assert.equal((await store.getAccountByProfileId(accountRow.profile_id)).currentRole,"Стажёр");
+  await store.upsertAccount({profileId:accountRow.profile_id,status:"active",provider:"yandex",providerSubjectHash:accountRow.provider_subject_hash,emailHash:accountRow.email_hash,emailMasked:accountRow.email_masked,publicAlias:"",visibility:"private",jobStatus:"hidden",region:"",workFormat:"",experienceBand:"",currentRole:"Стажёр",targetRole:"Аналитик",experienceSummary:"Финансовая модель",professionalTools:"Excel, SQL",availabilityConfirmedAt:now,accountConsentVersion:accountRow.account_consent_version,accountConsentedAt:now,publicConsentVersion:"",publicConsentedAt:new Date(0),createdAt:now,lastLoginAt:now,updatedAt:now,purgeAt:purge});
   await store.insertSession({profileId:accountRow.profile_id,tokenHash:sessionRow.session_token_hash,issuedAt:now,expiresAt:purge,lastSeenAt:now,purgeAt:purge});
   assert.equal((await store.getSessionByTokenHash(sessionRow.session_token_hash)).profileId,accountRow.profile_id);
   await store.deleteSession(accountRow.profile_id,sessionRow.session_token_hash);
-  await store.updateProfile(accountRow.profile_id,{publicAlias:"",visibility:"private",jobStatus:"hidden",region:"",workFormat:"",experienceBand:"",publicConsentVersion:"",publicConsentedAt:new Date(0),updatedAt:now,purgeAt:purge});
+  await store.updateProfile(accountRow.profile_id,{publicAlias:"",visibility:"private",jobStatus:"hidden",region:"",workFormat:"",experienceBand:"",currentRole:"Стажёр",targetRole:"Аналитик",experienceSummary:"Финансовая модель",professionalTools:"Excel, SQL",availabilityConfirmedAt:now,accountConsentVersion:accountRow.account_consent_version,accountConsentedAt:now,publicConsentVersion:"",publicConsentedAt:new Date(0),updatedAt:now,purgeAt:purge});
   assert.equal((await store.listProfileAttempts(accountRow.profile_id))[0].resultCode,"FA-ABCDE");
   assert.equal((await store.listRecentProfileAttempts(accountRow.profile_id,"fa-junior",now))[0].percent,92.5);
   assert.equal((await store.getProfileAttemptByAttemptId(attemptRow.attempt_id)).profileId,accountRow.profile_id);
@@ -32,7 +32,7 @@ function fakeSql(strings,...values){const call={text:strings.join("?"),stringsLe
   for(const index of [4,5,7,8,12,13,14])assert.equal(calls[index].isolation.mode,"serializableReadWrite");
   assert.match(calls[1].text,/VIEW candidate_provider_subject/);
   assert.match(calls[2].text,/VIEW candidate_email/);
-  assert.equal(calls[4].values.length,20);
+  assert.equal(calls[4].values.length,25);
   assert.match(calls[4].text,/Unwrap\(CAST\(\? AS Timestamp\)\)/);
   assert.match(calls[6].text,/VIEW candidate_session_token/);
   assert.match(calls[11].text,/VIEW candidate_attempt/);

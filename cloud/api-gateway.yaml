@@ -98,7 +98,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "account-v3"
+        tag: "account-v4"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
     post:
@@ -120,7 +120,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "account-v3"
+        tag: "account-v4"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
   /v1/employer:
@@ -135,7 +135,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "employer-v1"
+        tag: "employer-v2"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
     post:
@@ -159,7 +159,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "employer-v1"
+        tag: "employer-v2"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
   /v1/ranking:

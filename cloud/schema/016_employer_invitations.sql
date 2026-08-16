@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS candidate_employer_invitations (
+  candidate_profile_id Utf8 NOT NULL,
+  invitation_id Utf8 NOT NULL,
+  employer_id Utf8 NOT NULL,
+  shortlist_id Utf8 NOT NULL,
+  request_id Utf8 NOT NULL,
+  talent_profile_id Utf8 NOT NULL,
+  candidate_alias Utf8 NOT NULL,
+  organization_name Utf8 NOT NULL,
+  role_title Utf8 NOT NULL,
+  role_summary Utf8 NOT NULL,
+  work_format Utf8 NOT NULL,
+  region Utf8 NOT NULL,
+  compensation Utf8 NOT NULL,
+  invitation_status Utf8 NOT NULL,
+  response_deadline Timestamp NOT NULL,
+  created_at Timestamp NOT NULL,
+  viewed_at Timestamp NOT NULL,
+  responded_at Timestamp NOT NULL,
+  updated_at Timestamp NOT NULL,
+  purge_at Timestamp NOT NULL,
+  PRIMARY KEY (candidate_profile_id, invitation_id),
+  INDEX employer_invitations GLOBAL ON (employer_id, invitation_id)
+)
+WITH (STORE = ROW);

@@ -1,3 +1,11 @@
+## Дополнение 16.08.2026 — employer invitations v1
+
+Foundation расширен до полного закрытого вертикального среза. Активен `employer-v2` (`d4ehoduqcvhn5rhu1aua`): основной раздел «Все кандидаты» показывает весь разрешённый каталог, а не только заранее выбранных людей; любого доступного кандидата можно добавить в shortlist 1–10. Работодатель может отправить shortlist структурированное приглашение и видеть статусы кандидатов.
+
+Активен `account-v4` (`d4e8bvjsr7sla1d4bo0p`): кандидат получает invitation inbox и может ответить «Интересно», «Нужны подробности» или «Неинтересно». Email, телефон и внутренние идентификаторы не раскрываются.
+
+Все gates сохранены закрытыми: `profile_publication_enabled=false`, `employer_workspace_enabled=false`, `employer_invitation_enabled=false`, `employer_contact_enabled=false`. Предыдущий `employer-v1` сохранён как runtime-версия. Подробности: `EMPLOYER_INVITATIONS.md`.
+
 # SkillCheck — employer foundation 20A
 
 Статус: опубликовано 9 августа 2026 года в Yandex Cloud за закрытыми gates. Страница и API доступны технически, но поиск реальных профилей, shortlists и контакты работодателям не открыты.

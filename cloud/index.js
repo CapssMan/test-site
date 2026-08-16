@@ -11,6 +11,7 @@ const { createYdbAssessmentStore } = require("./ydb-assessment-store");
 const { createYdbAdminStore } = require("./ydb-admin-store");
 const { createYdbAccountStore } = require("./ydb-account-store");
 const { createYdbEmployerStore } = require("./ydb-employer-store");
+const { createYdbInvitationStore } = require("./ydb-invitation-store");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
 const { DEFAULT_ALLOWED_ORIGINS, readAllowedOriginsFromEnvironment, resolveAllowedOrigin } = require("./cors-origin");
 
@@ -36,7 +37,7 @@ async function createRuntime() {
   if (runtimeMode === "read") return createRankingHandler({ store: createYdbRankingStore(sql), allowedOrigins });
   if (runtimeMode === "account") {
     return createAccountHandler({
-      store: createYdbAccountStore(sql),
+      store: Object.assign(createYdbAccountStore(sql), createYdbInvitationStore(sql)),
       allowedOrigins,
       clientId: String(process.env.YANDEX_ID_CLIENT_ID || ""),
       redirectUri: String(process.env.YANDEX_ID_REDIRECT_URI || ""),
@@ -45,7 +46,7 @@ async function createRuntime() {
     });
   }
   if (runtimeMode === "employer") {
-    const employerStore = Object.assign(createYdbAccountStore(sql), createYdbEmployerStore(sql));
+    const employerStore = Object.assign(createYdbAccountStore(sql), createYdbEmployerStore(sql), createYdbInvitationStore(sql));
     return createEmployerHandler({
       store: employerStore,
       allowedOrigins,

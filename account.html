@@ -103,6 +103,17 @@
     .result-side{text-align:right}
     .score{display:block;color:#315bd6;font-size:23px;font-weight:920;letter-spacing:-.035em}
     .result time{display:block;margin-top:4px;color:var(--soft);font-size:11px}
+    .invitation-list{display:grid;gap:12px}
+    .invitation{padding:20px;border:1px solid #d9dff0;border-radius:19px;background:linear-gradient(135deg,#fff,#f7f6ff)}
+    .invitation-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+    .invitation-company{color:#6b58df;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+    .invitation h3{margin:7px 0 0;font-size:20px;letter-spacing:-.03em}
+    .invitation-status{padding:6px 9px;border-radius:999px;background:#eef2ff;color:#4c61d3;font-size:10px;font-weight:900;text-transform:uppercase;white-space:nowrap}
+    .invitation-status.positive{background:#eaf8f2;color:#0e7553}.invitation-status.negative{background:#f3f4f6;color:#697386}
+    .invitation-summary{margin:14px 0;color:#4f596b;font-size:13px;line-height:1.6}
+    .invitation-meta{display:flex;flex-wrap:wrap;gap:7px}.invitation-meta span{padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #e1e5ee;color:#657084;font-size:11px;font-weight:750}
+    .invitation-deadline{margin-top:12px;color:#7a8496;font-size:11px}
+    .invitation-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.invitation-actions .button{min-height:40px;padding:0 13px;font-size:11px}
     .empty{padding:26px;border:1px dashed #cbd2df;border-radius:17px;color:var(--muted);text-align:center;line-height:1.55}
     .profile-card{position:sticky;top:90px}
     .profile-summary{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}
@@ -154,6 +165,7 @@
       .section-head{display:block}.section-head p{margin-top:9px}
       .test-access{grid-template-columns:1fr}.test-access .button{width:100%}.test-locked{text-align:left}
       .result{padding:15px}.profile-summary h2{font-size:22px}
+      .invitation-top{display:block}.invitation-status{display:inline-flex;margin-top:10px}.invitation-actions .button{width:100%}
     }
       .career-grid{grid-template-columns:1fr}.field-wide{grid-column:auto}
       .availability-panel{display:block}.availability-panel .button{width:100%;margin-top:13px}
@@ -238,6 +250,14 @@
               </div>
               <a id="nextActionButton" class="button" href="#tests">Выбрать тест</a>
             </article>
+
+            <section id="invitations" class="card card-pad" aria-labelledby="invitationsTitle">
+              <div class="section-head">
+                <div><div class="section-kicker">Предложения</div><h2 id="invitationsTitle">Приглашения работодателей</h2></div>
+                <p>Ответьте одним нажатием. Контакты и чат не открываются автоматически.</p>
+              </div>
+              <div id="invitationList" class="invitation-list"><div class="empty">Проверяем приглашения…</div></div>
+            </section>
 
             <section id="careerProfileCard" class="card card-pad career-card" aria-labelledby="careerProfileTitle">
               <div class="section-head">
@@ -328,13 +348,14 @@
     const PUBLIC_CONSENT_VERSION="skillcheck-profile-discovery-2026-08-08-v1";
     const TEST_TITLES={"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budget Analyst","acc-junior":"Accounting / Reporting","bi-junior":"Finance BI / Data Analyst"};
     const JOB_LABELS={hidden:"Приватный",active:"Ищу работу",open:"Открыт",not_looking:"Не ищу"};
+    const INVITATION_STATUS_LABELS={sent:"Новое",viewed:"Просмотрено",interested:"Интересно",details:"Нужны детали",declined:"Неинтересно",expired:"Срок истёк"};
     const statusNode=document.getElementById("accountStatus");
     const guestHero=document.getElementById("guestHero");
     const loginView=document.getElementById("loginView");
     const dashboardView=document.getElementById("dashboardView");
     const loginButton=document.getElementById("loginButton");
     const accountConsent=document.getElementById("accountConsent");
-    let config=null,currentProfile=null,currentTestAccess=[],accountServiceUnavailable=false,bootInProgress=false,highlightedTestId="";
+    let config=null,currentProfile=null,currentTestAccess=[],currentInvitations=[],accountServiceUnavailable=false,bootInProgress=false,highlightedTestId="";
 
     function setStatus(message,type){
       statusNode.textContent=message;
@@ -452,7 +473,8 @@
       saveSession(result);
       highlightedTestId=testIdFromReturnTarget(flow.returnTo);
       config.selfServiceEnabled=result.selfServiceEnabled===true;
-      renderDashboard(result.profile,result.email,result.testAccess);
+      config.invitationEnabled=result.invitationEnabled===true;
+      renderDashboard(result.profile,result.email,result.testAccess,null);
       setStatus("Вход выполнен. Добро пожаловать в личный кабинет.","success");
       return true;
     }
@@ -487,6 +509,55 @@
         const time=document.createElement("time");time.dateTime=String(result.completedAt||"");time.textContent=formatDate(result.completedAt);
         side.append(score,time);row.append(copy,side);list.append(row);
       });
+    }
+    function invitationWorkLabel(value){return{office:"Офис",hybrid:"Гибрид",remote:"Удалённо",flexible:"Гибко"}[value]||"Формат уточняется"}
+    function invitationStatusClass(value){return["interested","details"].includes(value)?" positive":["declined","expired"].includes(value)?" negative":""}
+    function renderInvitations(items){
+      const root=document.getElementById("invitationList");root.replaceChildren();currentInvitations=Array.isArray(items)?items:[];
+      if(!(config&&config.invitationEnabled)){
+        const empty=document.createElement("div");empty.className="empty";empty.textContent="Контур приглашений подготовлен, но ещё не открыт для работодателей.";root.append(empty);return;
+      }
+      if(!currentInvitations.length){
+        const empty=document.createElement("div");empty.className="empty";empty.textContent="Новых приглашений пока нет. Когда проверенный работодатель выберет ваш профиль, предложение появится здесь.";root.append(empty);return;
+      }
+      currentInvitations.forEach(item=>{
+        const card=document.createElement("article");card.className="invitation";card.dataset.invitationId=item.invitationId;
+        const top=document.createElement("div");top.className="invitation-top";
+        const copy=document.createElement("div"),company=document.createElement("div"),title=document.createElement("h3");company.className="invitation-company";company.textContent=item.organizationName;title.textContent=item.roleTitle;copy.append(company,title);
+        const status=document.createElement("span");status.className="invitation-status"+invitationStatusClass(item.status);status.textContent=INVITATION_STATUS_LABELS[item.status]||item.status;top.append(copy,status);
+        const summary=document.createElement("p");summary.className="invitation-summary";summary.textContent=item.roleSummary;
+        const meta=document.createElement("div");meta.className="invitation-meta";
+        [invitationWorkLabel(item.workFormat),item.region||"Регион уточняется",item.compensation].filter(Boolean).forEach(value=>{const pill=document.createElement("span");pill.textContent=value;meta.append(pill)});
+        const deadline=document.createElement("div");deadline.className="invitation-deadline";deadline.textContent="Ответ до "+formatAccessDate(item.responseDeadline);
+        card.append(top,summary,meta,deadline);
+        if(["sent","viewed"].includes(item.status)){
+          const actions=document.createElement("div");actions.className="invitation-actions";
+          [["interested","Интересно"],["details","Нужны подробности"],["declined","Неинтересно"]].forEach(([response,label])=>{const button=document.createElement("button");button.className="button"+(response==="declined"?" secondary":"");button.type="button";button.textContent=label;button.addEventListener("click",()=>respondInvitation(item.invitationId,response));actions.append(button)});
+          card.append(actions);
+        }
+        root.append(card);
+      });
+    }
+    async function loadInvitations(){
+      try{
+        const result=await apiPost({action:"listInvitations",apiVersion:ACCOUNT_API_VERSION});
+        config.invitationEnabled=result.invitationEnabled===true;renderInvitations(result.invitations);
+        const unseen=(result.invitations||[]).filter(item=>item.status==="sent");
+        if(unseen.length){
+          const updated=await Promise.all(unseen.map(item=>apiPost({action:"markInvitationViewed",apiVersion:ACCOUNT_API_VERSION,invitationId:item.invitationId}).catch(()=>null)));
+          updated.filter(Boolean).forEach(reply=>{const index=currentInvitations.findIndex(item=>item.invitationId===reply.invitation.invitationId);if(index>=0)currentInvitations[index]=reply.invitation});
+          renderInvitations(currentInvitations);
+        }
+      }catch(_error){const empty=document.createElement("div");empty.className="empty";empty.textContent="Не удалось обновить приглашения. Остальные функции кабинета продолжают работать.";document.getElementById("invitationList").replaceChildren(empty)}
+    }
+    async function respondInvitation(invitationId,response){
+      const card=document.querySelector('[data-invitation-id="'+CSS.escape(invitationId)+'"]');
+      if(card)card.querySelectorAll("button").forEach(button=>button.disabled=true);
+      try{
+        const result=await apiPost({action:"respondInvitation",apiVersion:ACCOUNT_API_VERSION,invitationId,response});
+        const index=currentInvitations.findIndex(item=>item.invitationId===invitationId);if(index>=0)currentInvitations[index]=result.invitation;renderInvitations(currentInvitations);
+        setStatus(response==="interested"?"Работодатель увидит, что предложение вам интересно.":response==="details"?"Работодатель увидит запрос дополнительных подробностей.":"Ответ сохранён.","success");
+      }catch(_error){if(card)card.querySelectorAll("button").forEach(button=>button.disabled=false);setStatus("Не удалось сохранить ответ на приглашение. Повторите позже.","error")}
     }
     function accessDescription(item){
       if(item.status==="available")return"Попытка доступна сейчас";
@@ -554,8 +625,6 @@
       state.textContent=percent===100?"Готов":"Заполните";
       state.classList.toggle("complete",percent===100);
     }
-    function updateMetrics(profile,testAccess){
-      const results=resultRows(profile);
     function updateAvailability(profile){
       const available=profile.jobStatus==="active"||profile.jobStatus==="open";
       const button=document.getElementById("confirmAvailabilityButton");
@@ -570,6 +639,8 @@
         : "Подтверждено "+confirmed.toLocaleDateString("ru-RU",{day:"2-digit",month:"long",year:"numeric"})+".";
     }
 
+    function updateMetrics(profile,testAccess){
+      const results=resultRows(profile);
       const uniqueTests=new Set(results.map(row=>row.testId));
       const best=results.reduce((value,row)=>Math.max(value,Number(row.percent||0)),0);
       const available=(Array.isArray(testAccess)?testAccess:[]).filter(row=>row&&row.status==="available").length;
@@ -615,7 +686,7 @@
       if(next){button.href="test.html?test="+encodeURIComponent(next.testId);button.textContent="Открыть "+TEST_TITLES[next.testId]}
       else{button.href="#tests";button.textContent="Посмотреть сроки"}
     }
-    function renderDashboard(profile,email,testAccess){
+    function renderDashboard(profile,email,testAccess,invitations){
       currentProfile=profile;
       setAccountView("dashboard");
       setStatus("","");
@@ -638,6 +709,8 @@
         document.getElementById("confirmAvailabilityButton").hidden=true;
         document.getElementById("availabilityText").textContent="Расширенный карьерный профиль подключается; основные настройки аккаунта уже доступны.";
       }
+      renderInvitations(Array.isArray(invitations)?invitations:[]);
+      if(config&&config.invitationEnabled&&!Array.isArray(invitations))loadInvitations();
       renderTestAccess(testAccess);
       renderResults(profile.results);
       updateMetrics(profile,testAccess);
@@ -652,8 +725,9 @@
         const result=await apiPost({action:"getProfile",apiVersion:ACCOUNT_API_VERSION});
         config.publicProfileEnabled=result.publicProfileEnabled===true;
         config.selfServiceEnabled=result.selfServiceEnabled===true;
+        config.invitationEnabled=result.invitationEnabled===true;
         highlightedTestId=testIdFromReturnTarget(requestedReturnTarget());
-        renderDashboard(result.profile,session.email,result.testAccess);
+        renderDashboard(result.profile,session.email,result.testAccess,result.invitations);
         return true;
       }catch(error){
         if(String(error&&error.message||"")==="authentication_required"){clearStoredSession();return false}
@@ -684,7 +758,7 @@
           confirmAvailability:confirmAvailability===true,accountConsent:ACCOUNT_CONSENT_VERSION
         });
         const result=await apiPost(payload);
-        renderDashboard(result.profile,readSession()&&readSession().email,result.testAccess);
+        renderDashboard(result.profile,readSession()&&readSession().email,result.testAccess,currentInvitations);
         setStatus("Профиль сохранён.","success");
         statusNode.scrollIntoView({block:"nearest"});
       }catch(error){

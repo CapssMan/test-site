@@ -38,7 +38,7 @@ assert.doesNotMatch(deploy, /remove-tag|New-Secret|New-SessionSecret|client_secr
 assert.doesNotMatch(deploy, /Write-Host[^\n]*(?:environment|secret|password)/i);
 
 assert.equal((gateway.match(/tag: "assessment-v13"/g) || []).length, 2);
-assert.equal((gateway.match(/tag: "account-v3"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "account-v4"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "assessment-v12"/g) || []).length, 0);
 assert.equal((gateway.match(/tag: "account-v1"/g) || []).length, 0);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS candidate_self_service_slots/);

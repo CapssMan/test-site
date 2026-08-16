@@ -18,7 +18,7 @@ assert.match(deploy, /deploy-yandex-public-site\.ps1/);
 assert.match(deploy, /yandex-account-recovery-2026-08-15-2/);
 assert.match(deploy, /ACC-YDB-WRITE/);
 assert.doesNotMatch(deploy, /Lockbox|--public|system:allUsers/);
-assert.equal((gateway.match(/tag: "account-v3"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "account-v4"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "account-v2"/g) || []).length, 0);
 
 console.log("Account recovery deployment checks passed: quota-neutral account-v2 replacement, no-PII diagnostics, public-page verification and automatic tag rollback.");

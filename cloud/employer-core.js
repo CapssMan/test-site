@@ -2,6 +2,7 @@
 
 const crypto = require("node:crypto");
 const { PUBLIC_PROFILE_CONSENT_VERSION, hmacHex } = require("./account-core");
+const { validateEmployerInvitationAction } = require("./invitation-core");
 
 const EMPLOYER_API_VERSION = "employer-workspace-v1";
 const MAX_BODY_CHARS = 16000;
@@ -168,6 +169,9 @@ function validateAction(value) {
   if (value.action === "addToShortlist" || value.action === "removeFromShortlist") {
     assertAllowedKeys(value, common.concat(["shortlistId", "talentProfileId"]), "change_shortlist");
     return { type: value.action === "addToShortlist" ? "addToShortlist" : "removeFromShortlist", shortlistId: validateShortlistId(value.shortlistId), talentProfileId: validateTalentId(value.talentProfileId) };
+  }
+  if (value.action === "listInvitations" || value.action === "createInvitationBatch") {
+    return validateEmployerInvitationAction(value, EMPLOYER_API_VERSION);
   }
   throw new Error("invalid_request");
 }

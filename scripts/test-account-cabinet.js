@@ -17,13 +17,14 @@ new vm.Script(scripts[0], { filename: "account.html" });
   "loginView", "dashboardView", "dashboardTitle", "completedMetric", "bestMetric", "availableMetric",
   "jobMetric", "nextActionTitle", "nextActionButton", "testAccessList", "resultList", "profileEditor",
   "profileProgressBar", "careerProfileCard", "currentRole", "targetRole", "experienceSummary", "professionalTools",
-  "availabilityPanel", "confirmAvailabilityButton", "profileConsentRefresh", "saveButton", "logoutButton", "deleteButton"
+  "availabilityPanel", "confirmAvailabilityButton", "profileConsentRefresh", "saveButton", "logoutButton", "deleteButton",
+  "invitations", "invitationList"
 ].forEach(id => assert.match(page, new RegExp('id="' + id + '"'), "cabinet missing #" + id));
 
 assert.match(page, /После входа вы попадёте в личный кабинет/);
 assert.match(page, /\.guest-panel\{margin:0 auto 76px;/, "guest login panel must remain centered inside the shared shell");
 assert.doesNotMatch(page, /\.guest-panel\{margin:0 0 76px;/, "guest login panel must not reset the shell's horizontal auto margins");
-assert.match(page, /renderDashboard\(result\.profile,result\.email,result\.testAccess\)/);
+assert.match(page, /renderDashboard\(result\.profile,result\.email,result\.testAccess,null\)/);
 assert.doesNotMatch(page, /location\.replace\(returnTo\)/, "OAuth callback must land in the cabinet, not bypass it");
 assert.match(page, /highlightedTestId=testIdFromReturnTarget\(flow\.returnTo\)/);
 assert.match(page, /card\.dataset\.highlighted="true"/);
@@ -38,9 +39,16 @@ assert.match(page, /currentRole:document\.getElementById\("currentRole"\)\.value
 assert.match(page, /confirmAvailability:confirmAvailability===true/);
 assert.match(page, /profile\.accountConsentVersion!==ACCOUNT_CONSENT_VERSION/);
 assert.match(page, /updateAvailability\(profile\)/);
+assert.match(page, /action:"listInvitations"/);
+assert.match(page, /action:"markInvitationViewed"/);
+assert.match(page, /action:"respondInvitation"/);
+assert.match(page, /Интересно/);
+assert.match(page, /Нужны подробности/);
+assert.match(page, /Неинтересно/);
+assert.match(page, /Контакты и чат не открываются автоматически/);
 assert.match(page, /skillcheck-account-2026-08-16-v3/);
 assert.match(page, /@media\(max-width:680px\)/);
 assert.match(page, /@media\(prefers-reduced-motion:reduce\)/);
 assert.doesNotMatch(page, /localStorage|login:phone|login:birthday|login:avatar|client_secret/);
 
-console.log("Account cabinet checks passed: Yandex lands in dashboard, selected test is highlighted, profile visibility stays gated and desktop/mobile states are present.");
+console.log("Account cabinet checks passed: Yandex dashboard, candidate invitation inbox, tests, gated visibility and desktop/mobile states are present.");

@@ -13,8 +13,16 @@ const {
   rankTalent,
   validateAction
 } = require("./employer-core");
+const {
+  INVITATION_RETENTION_MS,
+  OPEN_INVITATION_STATUSES,
+  assertInvitationDeadline,
+  createInvitationId,
+  effectiveInvitationStatus
+} = require("./invitation-core");
 
 const EMPLOYER_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
+const EMPLOYER_BACKEND_VERSION = "yandex-employer-invitations-2026-08-16-1";
 
 function method(event) {
   return String(event && (event.httpMethod || (event.requestContext && event.requestContext.http && event.requestContext.http.method)) || "GET").toUpperCase();
@@ -56,6 +64,27 @@ function publicShortlist(shortlist, itemCount) {
     roleTitle: ROLE_TEMPLATES[shortlist.roleTemplateId] ? ROLE_TEMPLATES[shortlist.roleTemplateId].title : "Финансы",
     itemCount: Number(itemCount || 0),
     updatedAt: shortlist.updatedAt
+  };
+}
+
+function publicEmployerInvitation(invitation, now) {
+  return {
+    invitationId: invitation.invitationId,
+    talentProfileId: invitation.talentProfileId,
+    candidateAlias: invitation.candidateAlias,
+    shortlistId: invitation.shortlistId,
+    organizationName: invitation.organizationName,
+    roleTitle: invitation.roleTitle,
+    roleSummary: invitation.roleSummary,
+    workFormat: invitation.workFormat,
+    region: invitation.region,
+    compensation: invitation.compensation,
+    status: effectiveInvitationStatus(invitation, now),
+    responseDeadline: invitation.responseDeadline instanceof Date ? invitation.responseDeadline.toISOString() : invitation.responseDeadline,
+    createdAt: invitation.createdAt instanceof Date ? invitation.createdAt.toISOString() : invitation.createdAt,
+    viewedAt: invitation.viewedAt instanceof Date ? invitation.viewedAt.toISOString() : invitation.viewedAt,
+    respondedAt: invitation.respondedAt instanceof Date ? invitation.respondedAt.toISOString() : invitation.respondedAt,
+    updatedAt: invitation.updatedAt instanceof Date ? invitation.updatedAt.toISOString() : invitation.updatedAt
   };
 }
 
@@ -132,9 +161,11 @@ function createEmployerHandler(dependencies) {
       if (verb === "GET") {
         return jsonResponse(200, {
           ok: true,
+          backendVersion: EMPLOYER_BACKEND_VERSION,
           apiVersion: EMPLOYER_API_VERSION,
           enabled: settings.employer_workspace_enabled === "true",
           contactEnabled: settings.employer_contact_enabled === "true",
+          invitationEnabled: settings.employer_invitation_enabled === "true",
           roleTemplates: publicRoleTemplates(),
           shortlistLimit: MAX_SHORTLIST_SIZE
         }, origin);
@@ -174,6 +205,16 @@ function createEmployerHandler(dependencies) {
         return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, shortlist: publicShortlist(shortlist, 0) }, origin);
       }
 
+      if (action.type === "listInvitations") {
+        if (settings.employer_invitation_enabled !== "true") return jsonResponse(403, { ok: false, error: "employer_invitation_closed" }, origin);
+        if (typeof store.listEmployerInvitations !== "function") throw new Error("employer_invitation_store_required");
+        const now = nowProvider();
+        const invitations = (await store.listEmployerInvitations(auth.employer.employerId))
+          .map(item => publicEmployerInvitation(item, now))
+          .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)));
+        return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, invitations }, origin);
+      }
+
       const shortlist = await store.getShortlist(auth.employer.employerId, action.shortlistId);
       if (!shortlist) return jsonResponse(404, { ok: false, error: "shortlist_not_found" }, origin);
 
@@ -183,6 +224,68 @@ function createEmployerHandler(dependencies) {
         const byId = talent.entryByTalentId;
         const entries = items.map(item => byId.get(item.talentProfileId)).filter(Boolean);
         return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, shortlist: publicShortlist(shortlist, items.length), entries, unavailableCount: items.length - entries.length }, origin);
+      }
+
+      if (action.type === "createInvitationBatch") {
+        if (settings.employer_invitation_enabled !== "true") return jsonResponse(403, { ok: false, error: "employer_invitation_closed" }, origin);
+        if (typeof store.listEmployerInvitations !== "function" || typeof store.upsertInvitation !== "function") throw new Error("employer_invitation_store_required");
+        const now = nowProvider();
+        const deadline = assertInvitationDeadline(action.responseDeadline, now);
+        const items = await store.listShortlistItems(auth.employer.employerId, shortlist.shortlistId);
+        if (!items.length) return jsonResponse(409, { ok: false, error: "shortlist_empty" }, origin);
+        if (items.length > MAX_SHORTLIST_SIZE) return jsonResponse(409, { ok: false, error: "shortlist_limit_reached" }, origin);
+        const talent = await loadAllTalent();
+        const candidates = items.map(item => ({
+          item,
+          candidateProfileId: talent.profileByTalentId.get(item.talentProfileId),
+          entry: talent.entryByTalentId.get(item.talentProfileId)
+        }));
+        if (candidates.some(candidate => !candidate.candidateProfileId || !candidate.entry)) {
+          return jsonResponse(409, { ok: false, error: "shortlist_contains_unavailable_talent" }, origin);
+        }
+        const existing = await store.listEmployerInvitations(auth.employer.employerId);
+        const existingById = new Map(existing.map(item => [item.invitationId, item]));
+        const intended = candidates.map(candidate => ({
+          ...candidate,
+          invitationId: createInvitationId(talentSecret, auth.employer.employerId, action.requestId, candidate.candidateProfileId)
+        }));
+        const duplicate = intended.find(candidate => existing.some(item => item.invitationId !== candidate.invitationId &&
+          item.candidateProfileId === candidate.candidateProfileId && OPEN_INVITATION_STATUSES.has(effectiveInvitationStatus(item, now))));
+        if (duplicate) return jsonResponse(409, { ok: false, error: "active_invitation_exists" }, origin);
+        const rows = [];
+        for (const candidate of intended) {
+          const previous = existingById.get(candidate.invitationId);
+          if (previous) {
+            rows.push(previous);
+            continue;
+          }
+          const row = {
+            candidateProfileId: candidate.candidateProfileId,
+            invitationId: candidate.invitationId,
+            employerId: auth.employer.employerId,
+            shortlistId: shortlist.shortlistId,
+            requestId: action.requestId,
+            talentProfileId: candidate.item.talentProfileId,
+            candidateAlias: candidate.entry.alias,
+            organizationName: auth.employer.organizationName,
+            roleTitle: action.roleTitle,
+            roleSummary: action.roleSummary,
+            workFormat: action.workFormat,
+            region: action.region,
+            compensation: action.compensation,
+            status: "sent",
+            responseDeadline: deadline,
+            createdAt: now,
+            viewedAt: new Date(0),
+            respondedAt: new Date(0),
+            updatedAt: now,
+            purgeAt: plusMs(now, INVITATION_RETENTION_MS)
+          };
+          await store.upsertInvitation(row);
+          rows.push(row);
+        }
+        return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, createdCount: rows.length,
+          invitations: rows.map(item => publicEmployerInvitation(item, now)) }, origin);
       }
 
       if (action.type === "addToShortlist") {
@@ -204,7 +307,8 @@ function createEmployerHandler(dependencies) {
       }
       return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
     } catch (error) {
-      if (error instanceof SyntaxError || /^(invalid_request|[a-z_]+_invalid)$/.test(String(error && error.message || ""))) {
+      const errorCode = String(error && error.message || "");
+      if (error instanceof SyntaxError || errorCode === "invalid_invitation_deadline" || /^(invalid_request|[a-z_]+_invalid)$/.test(errorCode)) {
         return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
       }
       return jsonResponse(503, { ok: false, error: "employer_temporarily_unavailable" }, origin);
@@ -212,4 +316,4 @@ function createEmployerHandler(dependencies) {
   };
 }
 
-module.exports = { EMPLOYER_RETENTION_MS, createEmployerHandler, jsonResponse, publicEmployer, publicShortlist };
+module.exports = { EMPLOYER_BACKEND_VERSION, EMPLOYER_RETENTION_MS, createEmployerHandler, jsonResponse, publicEmployer, publicEmployerInvitation, publicShortlist };

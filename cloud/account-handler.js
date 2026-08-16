@@ -21,6 +21,11 @@ const {
   validateUpdate,
   validateDelete
 } = require("./account-core");
+const {
+  OPEN_INVITATION_STATUSES,
+  effectiveInvitationStatus,
+  validateCandidateInvitationAction
+} = require("./invitation-core");
 
 function getMethod(event) {
   return String(event && (event.httpMethod || (event.requestContext && event.requestContext.http && event.requestContext.http.method)) || "GET").toUpperCase();
@@ -51,7 +56,7 @@ function plusMs(now, milliseconds) {
 }
 
 const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
-const ACCOUNT_BACKEND_VERSION = "yandex-candidate-profile-2026-08-16-1";
+const ACCOUNT_BACKEND_VERSION = "yandex-candidate-invitations-2026-08-16-1";
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -114,6 +119,24 @@ function publicProfile(account, attempts) {
   };
 }
 
+function publicCandidateInvitation(invitation, now) {
+  return {
+    invitationId: invitation.invitationId,
+    organizationName: invitation.organizationName,
+    roleTitle: invitation.roleTitle,
+    roleSummary: invitation.roleSummary,
+    workFormat: invitation.workFormat,
+    region: invitation.region,
+    compensation: invitation.compensation,
+    status: effectiveInvitationStatus(invitation, now),
+    responseDeadline: invitation.responseDeadline,
+    createdAt: invitation.createdAt,
+    viewedAt: invitation.viewedAt,
+    respondedAt: invitation.respondedAt,
+    updatedAt: invitation.updatedAt
+  };
+}
+
 function createAccountHandler(dependencies) {
   const options = dependencies || {};
   const store = options.store;
@@ -163,6 +186,15 @@ function createAccountHandler(dependencies) {
     return account && account.status === "active" ? { account, session, tokenHash } : null;
   }
 
+  async function loadCandidateInvitations(profileId, settings) {
+    if (settings.employer_invitation_enabled !== "true") return [];
+    if (typeof store.listCandidateInvitations !== "function") throw new Error("account_invitation_unavailable");
+    const now = nowProvider();
+    const rows = await storageRequest(() => store.listCandidateInvitations(profileId), "account_invitation_unavailable");
+    return rows.map(row => publicCandidateInvitation(row, now))
+      .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)));
+  }
+
   function buildConfig(settings) {
     const configured = /^[A-Za-z0-9]{20,80}$/.test(clientId) && /^https:\/\//.test(redirectUri);
     return {
@@ -178,6 +210,7 @@ function createAccountHandler(dependencies) {
       publicProfileConsentVersion: PUBLIC_PROFILE_CONSENT_VERSION,
       publicProfileEnabled: settings.profile_publication_enabled === "true",
       selfServiceEnabled: settings.account_self_service_enabled === "true",
+      invitationEnabled: settings.employer_invitation_enabled === "true",
       accountRequiredForAttempts: settings.account_required_for_attempts === "true"
     };
   }
@@ -246,6 +279,7 @@ function createAccountHandler(dependencies) {
       payload: {
         ok: true, apiVersion: ACCOUNT_API_VERSION, sessionToken: token, expiresAt: expiresAt.toISOString(), email,
         profile: publicProfile(account, attempts),
+        invitationEnabled: settings.employer_invitation_enabled === "true",
         selfServiceEnabled: settings.account_self_service_enabled === "true",
         testAccess: buildTestAccess(attempts, now, settings.account_self_service_enabled === "true")
       }
@@ -275,10 +309,42 @@ function createAccountHandler(dependencies) {
       if (body.action === "getProfile") {
         validateSimpleAction(body, "getProfile");
         const attempts = await store.listProfileAttempts(auth.account.profileId);
+        const invitations = await loadCandidateInvitations(auth.account.profileId, settings);
         return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(auth.account, attempts),
           publicProfileEnabled: settings.profile_publication_enabled === "true",
+          invitationEnabled: settings.employer_invitation_enabled === "true",
+          invitations,
           selfServiceEnabled: settings.account_self_service_enabled === "true",
           testAccess: buildTestAccess(attempts, nowProvider(), settings.account_self_service_enabled === "true") }, origin);
+      }
+      if (["listInvitations", "markInvitationViewed", "respondInvitation"].includes(body.action)) {
+        const action = validateCandidateInvitationAction(body, ACCOUNT_API_VERSION);
+        if (action.type === "listInvitations") {
+          return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION,
+            invitationEnabled: settings.employer_invitation_enabled === "true",
+            invitations: await loadCandidateInvitations(auth.account.profileId, settings) }, origin);
+        }
+        if (settings.employer_invitation_enabled !== "true") return jsonResponse(403, { ok: false, error: "employer_invitation_closed" }, origin);
+        if (typeof store.getCandidateInvitation !== "function") throw new Error("account_invitation_unavailable");
+        const now = nowProvider();
+        let invitation = await storageRequest(() => store.getCandidateInvitation(auth.account.profileId, action.invitationId), "account_invitation_unavailable");
+        if (!invitation) return jsonResponse(404, { ok: false, error: "invitation_not_found" }, origin);
+        const effectiveStatus = effectiveInvitationStatus(invitation, now);
+        if (effectiveStatus === "expired") return jsonResponse(409, { ok: false, error: "invitation_expired" }, origin);
+        if (action.type === "markInvitationViewed") {
+          if (invitation.status === "sent") {
+            if (typeof store.markInvitationViewed !== "function") throw new Error("account_invitation_unavailable");
+            invitation = await storageRequest(() => store.markInvitationViewed(auth.account.profileId, action.invitationId, now), "account_invitation_unavailable");
+          }
+          return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
+        }
+        if (!OPEN_INVITATION_STATUSES.has(invitation.status) || invitation.status === "interested" || invitation.status === "details") {
+          if (invitation.status === action.response) return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
+          return jsonResponse(409, { ok: false, error: "invitation_already_responded" }, origin);
+        }
+        if (typeof store.respondInvitation !== "function") throw new Error("account_invitation_unavailable");
+        invitation = await storageRequest(() => store.respondInvitation(auth.account.profileId, action.invitationId, action.response, now), "account_invitation_unavailable");
+        return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
       }
       if (body.action === "updateProfile") {
         const update = validateUpdate(body);
@@ -325,7 +391,7 @@ function createAccountHandler(dependencies) {
       return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
     } catch (error) {
       const clientErrors = new Set(["invalid_request", "exchange_invalid", "invalid_exchange", "getProfile_invalid", "update_invalid", "invalid_profile", "public_alias_required", "public_consent_required", "invalid_public_consent", "account_consent_required", "invalid_account_consent", "delete_invalid", "invalid_delete_confirmation"]);
-      const serviceErrors = new Set(["identity_token_unavailable", "identity_token_invalid_response", "identity_profile_unavailable", "identity_profile_invalid_response", "account_lookup_unavailable", "account_write_unavailable", "account_attempts_unavailable", "account_session_unavailable"]);
+      const serviceErrors = new Set(["identity_token_unavailable", "identity_token_invalid_response", "identity_profile_unavailable", "identity_profile_invalid_response", "account_lookup_unavailable", "account_write_unavailable", "account_attempts_unavailable", "account_session_unavailable", "account_invitation_unavailable"]);
       const errorCode = String(error && error.message || "");
       if (error instanceof SyntaxError || clientErrors.has(errorCode)) {
         return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
@@ -336,4 +402,4 @@ function createAccountHandler(dependencies) {
   };
 }
 
-module.exports = { createAccountHandler, jsonResponse, publicProfile, buildTestAccess };
+module.exports = { createAccountHandler, jsonResponse, publicCandidateInvitation, publicProfile, buildTestAccess };

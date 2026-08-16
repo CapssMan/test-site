@@ -20,6 +20,8 @@ new vm.Script(scripts[0], { filename: "account.html" });
 ].forEach(id => assert.match(page, new RegExp('id="' + id + '"'), "cabinet missing #" + id));
 
 assert.match(page, /После входа вы попадёте в личный кабинет/);
+assert.match(page, /\.guest-panel\{margin:0 auto 76px;/, "guest login panel must remain centered inside the shared shell");
+assert.doesNotMatch(page, /\.guest-panel\{margin:0 0 76px;/, "guest login panel must not reset the shell's horizontal auto margins");
 assert.match(page, /renderDashboard\(result\.profile,result\.email,result\.testAccess\)/);
 assert.doesNotMatch(page, /location\.replace\(returnTo\)/, "OAuth callback must land in the cabinet, not bypass it");
 assert.match(page, /highlightedTestId=testIdFromReturnTarget\(flow\.returnTo\)/);

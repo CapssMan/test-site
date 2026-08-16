@@ -14,7 +14,7 @@ assert.match(index, /runtimeMode === "employer"/);
 assert.match(index, /createEmployerHandler/);
 assert.match(index, /createYdbEmployerStore/);
 assert.match(gateway, /\/v1\/employer:/);
-assert.equal((gateway.match(/tag: "employer-v2"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "employer-v3"/g) || []).length, 2);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS employer_accounts/);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS employer_shortlists/);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS employer_shortlist_items/);

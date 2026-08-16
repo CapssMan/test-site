@@ -1,6 +1,6 @@
 # SkillCheck — каталог кандидатов, shortlist и приглашения
 
-Статус: опубликовано 16 августа 2026 года в Yandex Cloud за закрытыми production gates. Активные runtime: `account-v4` (`d4e8bvjsr7sla1d4bo0p`) и `employer-v2` (`d4ehoduqcvhn5rhu1aua`).
+Статус: слой приглашений опубликован 16 августа 2026 года и 17 августа включён в закрытые runtime `account-v5` (`d4en6fej4e2o9vb8nt7a`) и `employer-v3` (`d4eh03cik2hpp71gsos1`). Production gates по-прежнему закрыты.
 
 ## Продуктовый сценарий
 

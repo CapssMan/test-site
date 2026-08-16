@@ -18,7 +18,7 @@ assert.match(deploy, /--no-logging/);
 assert.match(deploy, /version remove-tag/);
 assert.doesNotMatch(deploy, /version delete/);
 assert.match(deploy, /admin-v8 remains rollback/);
-assert.equal((gateway.match(/tag: "admin-v10"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "admin-v11"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "assessment-v13"/g) || []).length, 2);
 
 console.log("Question analytics deployment checks passed: admin-only successor, rollback and gateway boundary.");

@@ -281,6 +281,7 @@
     .empty-state { padding: 42px 18px; color: #64748b; text-align: center; line-height: 1.55; }
     .empty-state strong { display: block; margin-bottom: 4px; color: #334155; font-size: 16px; }
     .hidden { display: none !important; }
+    .trust-panel h2{margin:0 0 6px}.trust-panel>p{margin:0;color:var(--muted);line-height:1.55}.trust-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.trust-form{padding:16px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}.trust-form h3{margin:0 0 13px;font-size:16px}.trust-form .field{margin-bottom:11px}.trust-form textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--line);border-radius:8px;resize:vertical}.trust-queue{display:grid;gap:10px;margin-top:18px}.trust-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff}.trust-item strong,.trust-item small{display:block}.trust-item small{margin-top:5px;color:var(--muted);line-height:1.5}.trust-item a{display:inline-block;margin-top:9px;color:#315bd6;font-size:12px;font-weight:700}.trust-actions{display:flex;align-items:flex-start;gap:7px}.trust-actions button{min-height:40px}.trust-status{margin-top:12px}
     @media (max-width: 1100px) {
       .stats-grid { grid-template-columns: repeat(3, 1fr); }
       .filters { grid-template-columns: repeat(2, 1fr); }
@@ -293,6 +294,7 @@
       .toolbar-actions button { flex: 1; }
       .login-card { margin: 34px auto; padding: 22px; }
       .filters, .stats-grid, .dashboard { grid-template-columns: 1fr; }
+      .trust-grid,.trust-item{grid-template-columns:1fr}.trust-actions{flex-wrap:wrap}.trust-actions button{flex:1}
       .diagnostics-summary, .calibration-summary { grid-template-columns: 1fr 1fr; }
       .calibration-heading, .calibration-controls { flex-direction: column; align-items: stretch; }
       .calibration-controls .field { min-width: 0; }
@@ -326,7 +328,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.03.2</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.17.1</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -396,6 +398,31 @@
         </div>
         <div id="calibrationStatus" class="status" role="status" aria-live="polite"></div>
         <div id="calibrationContent" class="hidden"></div>
+      </section>
+
+      <section class="card trust-panel" aria-labelledby="trustHeading">
+        <h2 id="trustHeading">Проверка профилей и компаний</h2>
+        <p>Работодатель увидит регалию только после ручной проверки. Employer-доступ выдаётся существующему аккаунту Яндекс и только для подтверждённой компании.</p>
+        <div id="trustStatus" class="status trust-status" role="status" aria-live="polite"></div>
+        <div id="trustQueue" class="trust-queue"><div class="empty-state">Загружаем очередь проверки…</div></div>
+        <div class="trust-grid">
+          <form id="organizationForm" class="trust-form">
+            <h3>Подтвердить компанию</h3>
+            <div class="field"><label for="organizationDisplayName">Публичное название</label><input id="organizationDisplayName" maxlength="120" required placeholder="Например, Example"></div>
+            <div class="field"><label for="organizationLegalName">Юридическое название</label><input id="organizationLegalName" maxlength="200" required placeholder="ООО «Example»"></div>
+            <div class="field"><label for="organizationDomain">Домен</label><input id="organizationDomain" maxlength="120" required placeholder="example.ru"></div>
+            <div class="field"><label for="organizationWebsite">HTTPS-сайт</label><input id="organizationWebsite" type="url" maxlength="300" required placeholder="https://example.ru"></div>
+            <div class="field"><label for="organizationDescription">Краткое описание</label><textarea id="organizationDescription" maxlength="600"></textarea></div>
+            <button class="secondary-btn" type="submit">Сохранить проверенную компанию</button>
+          </form>
+          <form id="employerAccessForm" class="trust-form">
+            <h3>Выдать employer-доступ</h3>
+            <div class="field"><label for="employerAccountEmail">Email аккаунта Яндекс</label><input id="employerAccountEmail" type="email" maxlength="254" required placeholder="hr@example.ru"></div>
+            <div class="field"><label for="employerOrganizationDomain">Домен проверенной компании</label><input id="employerOrganizationDomain" maxlength="120" required placeholder="example.ru"></div>
+            <div class="field"><label for="employerRole">Роль</label><select id="employerRole"><option value="recruiter">Рекрутер</option><option value="admin">Администратор компании</option></select></div>
+            <button class="secondary-btn" type="submit">Выдать доступ</button>
+          </form>
+        </div>
       </section>
 
       <div class="card report-policy">
@@ -590,7 +617,7 @@
     const YANDEX_ADMIN_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/admin";
     const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const ADMIN_API_URL = ADMIN_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ADMIN_API_URL;
-    const FRONTEND_BUILD = "2026.08.03.2";
+    const FRONTEND_BUILD = "2026.08.17.1";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze([
@@ -655,6 +682,9 @@
     document.getElementById("inviteGroupForm").addEventListener("submit", createAdminInviteGroup);
     document.getElementById("deletionPreviewForm").addEventListener("submit", previewAdminDeletion);
     document.getElementById("deletionConfirmForm").addEventListener("submit", confirmAdminDeletion);
+    document.getElementById("organizationForm").addEventListener("submit", saveVerifiedOrganization);
+    document.getElementById("employerAccessForm").addEventListener("submit", authorizeEmployerAccount);
+    document.getElementById("trustQueue").addEventListener("click", reviewCredentialFromButton);
     document.getElementById("copyInviteButton").addEventListener("click", copyInviteLink);
     document.getElementById("copyInviteGroupButton").addEventListener("click", copyInviteGroupLink);
     document.getElementById("inviteGroupList").addEventListener("click", function(event) {
@@ -711,6 +741,7 @@
         loadAdminInvites();
         loadAdminDiagnostics();
         loadAdminQuestionAnalytics();
+        loadAdminTrust();
       } catch (error) {
         const message = error && error.message ? error.message : "Не удалось загрузить данные.";
         if (isRefresh && !document.getElementById("adminBlock").classList.contains("hidden")) {
@@ -815,6 +846,13 @@
         setInviteGroupStatus(error && error.message ? error.message : "Не удалось загрузить групповые ссылки.", "error");
       }
     }
+
+    function setTrustStatus(message,type){const node=document.getElementById("trustStatus");node.textContent=message||"";node.className="status trust-status"+(type?" "+type:"")}
+    function renderTrustQueue(items){const root=document.getElementById("trustQueue"),rows=Array.isArray(items)?items:[];root.replaceChildren();if(!rows.length){const empty=document.createElement("div");empty.className="empty-state";empty.textContent="Очередь пуста: новых регалий со ссылкой на подтверждение нет.";root.append(empty);return}rows.forEach(item=>{const card=document.createElement("article");card.className="trust-item";const copy=document.createElement("div"),title=document.createElement("strong"),meta=document.createElement("small");title.textContent=item.title;meta.textContent=[item.credentialTypeLabel,item.issuer,item.issuedYear,"Профиль "+item.candidateProfileId].filter(Boolean).join(" · ");copy.append(title,meta);if(item.description){const description=document.createElement("small");description.textContent=item.description;copy.append(description)}if(item.evidenceUrl){const evidence=document.createElement("a");evidence.href=item.evidenceUrl;evidence.target="_blank";evidence.rel="noopener noreferrer";evidence.textContent="Открыть подтверждение";copy.append(evidence)}const actions=document.createElement("div");actions.className="trust-actions";const approve=document.createElement("button");approve.className="secondary-btn";approve.type="button";approve.textContent="Подтвердить";approve.dataset.trustDecision="verified";approve.dataset.profileId=item.candidateProfileId;approve.dataset.credentialId=item.credentialId;const reject=document.createElement("button");reject.className="danger-btn";reject.type="button";reject.textContent="Отклонить";reject.dataset.trustDecision="rejected";reject.dataset.profileId=item.candidateProfileId;reject.dataset.credentialId=item.credentialId;actions.append(approve,reject);card.append(copy,actions);root.append(card)})}
+    async function loadAdminTrust(){if(!activePassword)return;setTrustStatus("Загружаем очередь проверки…","");try{const data=await requestAdminAction("adminTrustReviewQueue",activePassword,{});if(data.ok!==true||data.status!=="ok"||!Array.isArray(data.credentials))throw new Error(data.message||"Не удалось загрузить очередь.");renderTrustQueue(data.credentials);setTrustStatus("Очередь обновлена. Ссылка на доказательство видна только оператору.","success")}catch(error){renderTrustQueue([]);setTrustStatus(error&&error.message?error.message:"Не удалось загрузить очередь.","error")}}
+    async function reviewCredentialFromButton(event){const button=event.target.closest("[data-trust-decision]");if(!button||button.disabled)return;const decision=button.dataset.trustDecision;let note="";if(decision==="rejected"){note=prompt("Укажите причину отклонения — кандидат увидит этот комментарий:")||"";if(!note.trim())return}else if(!confirm("Подтвердить достоверность этой регалии?"))return;try{button.disabled=true;const data=await requestAdminAction("adminReviewCredential",activePassword,{profileId:button.dataset.profileId,credentialId:button.dataset.credentialId,decision:decision,note:note});if(data.ok!==true)throw new Error(data.message||"Проверка не сохранена.");setTrustStatus(decision==="verified"?"Регалия подтверждена.":"Регалия отклонена с комментарием.","success");await loadAdminTrust()}catch(error){setTrustStatus(error&&error.message?error.message:"Проверка не сохранена.","error");button.disabled=false}}
+    async function saveVerifiedOrganization(event){event.preventDefault();const button=event.currentTarget.querySelector("button"),payload={displayName:document.getElementById("organizationDisplayName").value,legalName:document.getElementById("organizationLegalName").value,domain:document.getElementById("organizationDomain").value,websiteUrl:document.getElementById("organizationWebsite").value,description:document.getElementById("organizationDescription").value};try{button.disabled=true;const data=await requestAdminAction("adminUpsertOrganization",activePassword,payload);if(data.ok!==true)throw new Error(data.message||"Компания не сохранена.");document.getElementById("employerOrganizationDomain").value=data.organization.domain;setTrustStatus("Компания «"+data.organization.displayName+"» подтверждена. Теперь можно выдать доступ её сотруднику.","success")}catch(error){setTrustStatus(error&&error.message?error.message:"Компания не сохранена.","error")}finally{button.disabled=false}}
+    async function authorizeEmployerAccount(event){event.preventDefault();const button=event.currentTarget.querySelector("button"),payload={email:document.getElementById("employerAccountEmail").value,domain:document.getElementById("employerOrganizationDomain").value,role:document.getElementById("employerRole").value};if(!confirm("Выдать этому аккаунту доступ работодателя от имени указанной компании?"))return;try{button.disabled=true;const data=await requestAdminAction("adminAuthorizeEmployer",activePassword,payload);if(data.ok!==true)throw new Error(data.message||"Доступ не выдан.");setTrustStatus("Employer-доступ выдан аккаунту "+data.employer.emailMasked+" от компании «"+data.employer.organization.displayName+"».","success");event.currentTarget.reset()}catch(error){setTrustStatus(error&&error.message?error.message:"Доступ не выдан.","error")}finally{button.disabled=false}}
 
     async function loadAdminDiagnostics() {
       if (!activePassword || diagnosticsLoading) return;
@@ -1756,6 +1794,8 @@
       setCalibrationStatus("", "");
       document.getElementById("diagnosticsContent").classList.add("hidden");
       document.getElementById("calibrationContent").classList.add("hidden");
+      renderTrustQueue([]);
+      setTrustStatus("","");
       document.getElementById("calibrationContent").innerHTML = "";
       document.getElementById("diagnosticsContent").innerHTML = "";
       document.getElementById("inviteOutput").classList.add("hidden");

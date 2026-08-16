@@ -20,6 +20,8 @@ function mapEmployer(row) {
     employerId: String(row.employer_id || ""),
     identityProfileId: String(row.identity_profile_id || ""),
     organizationName: String(row.organization_name || ""),
+    organizationId: String(row.organization_id || ""),
+    role: String(row.employer_role || "recruiter"),
     organizationDomain: String(row.organization_domain || ""),
     verificationStatus: String(row.verification_status || ""),
     status: String(row.employer_status || ""),
@@ -63,6 +65,13 @@ function createYdbEmployerStore(sql) {
         " LIMIT 1;"
       ], [profileId]);
       return mapEmployer(rowsFrom(sets)[0]);
+    },
+
+    async upsertEmployerAccount(row) {
+      await executeWrite(sql, [
+        "UPSERT INTO employer_accounts (employer_id, identity_profile_id, organization_name, organization_domain, organization_id, employer_role, verification_status, employer_status, created_at, updated_at, purge_at) VALUES (",
+        ", ", ", ", ", ", ", ", ", ", ", ", ", CAST(", " AS Timestamp), CAST(", " AS Timestamp), CAST(", " AS Timestamp));"
+      ], [row.employerId, row.identityProfileId, row.organizationName, row.organizationDomain, row.organizationId, row.role, row.verificationStatus, row.status, row.createdAt, row.updatedAt, row.purgeAt]);
     },
 
     async listDiscoverableAccounts(limit) {

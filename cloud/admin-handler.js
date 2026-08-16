@@ -41,6 +41,8 @@ const {
   verifyAdminPassword,
   verifyDeletionPreview
 } = require("./admin-core");
+const { hashAccountEmail } = require("./account-core");
+const { CREDENTIAL_RETENTION_MS, createOrganizationId, publicCandidateCredential, publicOrganization } = require("./trust-core");
 
 const MAX_ADMIN_RESULTS = 5000;
 
@@ -52,6 +54,29 @@ function exactAction(body, keys) {
   assertExactKeys(body, keys, body.action || "admin");
   if (body.apiVersion !== ASSESSMENT_API_VERSION) throw publicError("client_upgrade_required", "Версия админки устарела. Обновите страницу.");
 }
+
+function adminText(value, max, required, label) {
+  const text = String(value || "").trim().replace(/\r\n?/g, "\n");
+  if ((required && text.length < 2) || text.length > max || /[<>\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text)) throw publicError("invalid_field", "Проверьте поле «" + label + "».");
+  return text;
+}
+
+function adminDomain(value) {
+  const domain = String(value || "").trim().toLowerCase();
+  if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/.test(domain)) throw publicError("invalid_domain", "Проверьте домен компании.");
+  return domain;
+}
+
+function adminWebsite(value, domain) {
+  let url;
+  try { url = new URL(String(value || "").trim()); } catch (_error) { throw publicError("invalid_website", "Проверьте HTTPS-сайт компании."); }
+  const host = url.hostname.toLowerCase();
+  if (url.protocol !== "https:" || url.username || url.password || (host !== domain && !host.endsWith("." + domain))) throw publicError("invalid_website", "Сайт должен использовать HTTPS и соответствовать домену компании.");
+  return url.toString();
+}
+
+function adminProfileId(value) { const id = String(value || ""); if (!/^acct_[a-f0-9]{32}$/.test(id)) throw publicError("invalid_profile_id", "Некорректный профиль кандидата."); return id; }
+function adminCredentialId(value) { const id = String(value || ""); if (!/^cred_[a-f0-9]{24}$/.test(id)) throw publicError("invalid_credential_id", "Некорректная регалия."); return id; }
 
 function createAdminHandler(dependencies) {
   const settings = dependencies || {};
@@ -500,6 +525,54 @@ function createAdminHandler(dependencies) {
     };
   }
 
+  async function adminTrustReviewQueue(body) {
+    exactAction(body, ["action", "apiVersion", "password"]);
+    if (typeof store.listCredentialReviewQueue !== "function") throw new Error("admin_trust_store_required");
+    const credentials = await store.listCredentialReviewQueue("pending", 100);
+    return { ok: true, status: "ok", credentials: credentials.map(item => ({ candidateProfileId: item.candidateProfileId, ...publicCandidateCredential(item) })) };
+  }
+
+  async function adminReviewCredential(body) {
+    exactAction(body, ["action", "apiVersion", "password", "profileId", "credentialId", "decision", "note"]);
+    if (typeof store.getCandidateCredential !== "function" || typeof store.setCredentialVerification !== "function") throw new Error("admin_trust_store_required");
+    const profileId = adminProfileId(body.profileId), credentialId = adminCredentialId(body.credentialId);
+    const decision = String(body.decision || "");
+    if (!["verified", "rejected"].includes(decision)) throw publicError("invalid_decision", "Выберите результат проверки.");
+    const note = adminText(body.note, 500, decision === "rejected", "Комментарий проверки");
+    const existing = await store.getCandidateCredential(profileId, credentialId);
+    if (!existing) throw publicError("credential_not_found", "Регалия не найдена.");
+    const now = nowProvider(), updated = await store.setCredentialVerification(profileId, credentialId, decision, note, now, plusMs(now, CREDENTIAL_RETENTION_MS));
+    await audit("credential_" + decision, profileId, "ok", now);
+    return { ok: true, status: "ok", credential: { candidateProfileId: profileId, ...publicCandidateCredential(updated) } };
+  }
+
+  async function adminUpsertOrganization(body) {
+    exactAction(body, ["action", "apiVersion", "password", "displayName", "legalName", "domain", "websiteUrl", "description"]);
+    if (typeof store.getOrganization !== "function" || typeof store.getOrganizationByDomain !== "function" || typeof store.upsertOrganization !== "function") throw new Error("admin_trust_store_required");
+    const domain = adminDomain(body.domain), websiteUrl = adminWebsite(body.websiteUrl, domain), now = nowProvider();
+    const organizationId = createOrganizationId(identitySecret, domain), existing = await store.getOrganizationByDomain(domain);
+    if (existing && existing.organizationId !== organizationId) throw publicError("organization_conflict", "Домен уже связан с другой организацией.");
+    const organization = { organizationId, displayName: adminText(body.displayName, 120, true, "Публичное название"), legalName: adminText(body.legalName, 200, true, "Юридическое название"), domain, websiteUrl, description: adminText(body.description, 600, false, "Описание"), verificationStatus: "verified", status: "active", createdAt: existing ? new Date(existing.createdAt) : now, updatedAt: now, purgeAt: plusMs(now, CREDENTIAL_RETENTION_MS) };
+    await store.upsertOrganization(organization);await audit("organization_verified", organizationId, "ok", now);
+    return { ok: true, status: "ok", organization: publicOrganization(organization) };
+  }
+
+  async function adminAuthorizeEmployer(body) {
+    exactAction(body, ["action", "apiVersion", "password", "email", "domain", "role"]);
+    if (typeof store.getAccountByEmailHash !== "function" || typeof store.getOrganization !== "function" || typeof store.upsertEmployerAccount !== "function") throw new Error("admin_employer_store_required");
+    const email = String(body.email || "").trim().toLowerCase(), domain = adminDomain(body.domain), role = String(body.role || "");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw publicError("invalid_email", "Проверьте email аккаунта Яндекс.");
+    if (!["admin", "recruiter"].includes(role)) throw publicError("invalid_role", "Выберите роль работодателя.");
+    const account = await store.getAccountByEmailHash(hashAccountEmail(identitySecret, email));
+    if (!account || account.status !== "active") throw publicError("account_not_found", "Аккаунт с таким email не найден. Сначала войдите через Яндекс.");
+    const organization = await store.getOrganization(createOrganizationId(identitySecret, domain));
+    if (!publicOrganization(organization)) throw publicError("organization_not_verified", "Сначала подтвердите компанию.");
+    const now = nowProvider(), existing = typeof store.getEmployerByIdentityProfileId === "function" ? await store.getEmployerByIdentityProfileId(account.profileId) : null;
+    const employer = { employerId: existing ? existing.employerId : "emp_" + hmacHex(identitySecret, "employer-account-v1|" + account.profileId).slice(0, 24), identityProfileId: account.profileId, organizationName: organization.displayName, organizationDomain: organization.domain, organizationId: organization.organizationId, role, verificationStatus: "verified", status: "active", createdAt: existing ? new Date(existing.createdAt) : now, updatedAt: now, purgeAt: plusMs(now, CREDENTIAL_RETENTION_MS) };
+    await store.upsertEmployerAccount(employer);await audit("employer_authorized", employer.employerId, "ok", now);
+    return { ok: true, status: "ok", employer: { employerId: employer.employerId, emailMasked: maskEmail(email), organization: publicOrganization(organization), role, verificationStatus: "verified" } };
+  }
+
   return async function adminHandler(event, context) {
     const allowedOrigin = resolveAllowedOrigin(event, allowedOrigins);
     const method = getMethod(event);
@@ -521,6 +594,10 @@ function createAdminHandler(dependencies) {
       else if (body.action === "adminRevokeInvite") response = await adminRevokeInvite(body);
       else if (body.action === "adminRevokeInviteGroup") response = await adminRevokeInviteGroup(body);
       else if (body.action === "adminUpdateInviteGroupDescription") response = await adminUpdateInviteGroupDescription(body);
+      else if (body.action === "adminTrustReviewQueue") response = await adminTrustReviewQueue(body);
+      else if (body.action === "adminReviewCredential") response = await adminReviewCredential(body);
+      else if (body.action === "adminUpsertOrganization") response = await adminUpsertOrganization(body);
+      else if (body.action === "adminAuthorizeEmployer") response = await adminAuthorizeEmployer(body);
       else if (body.action === "adminDeletionPreview") response = await adminDeletionPreview(body, context);
       else if (body.action === "adminDeleteResult") response = await adminDeleteResult(body, context);
       else throw publicError("unsupported_action", "Действие не поддерживается.");

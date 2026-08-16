@@ -3,6 +3,8 @@
 const crypto = require("node:crypto");
 const { PUBLIC_PROFILE_CONSENT_VERSION, hmacHex } = require("./account-core");
 const { validateEmployerInvitationAction } = require("./invitation-core");
+const { publicEmployerCredentials } = require("./trust-core");
+const { validateChatAction } = require("./chat-core");
 
 const EMPLOYER_API_VERSION = "employer-workspace-v1";
 const MAX_BODY_CHARS = 16000;
@@ -149,7 +151,8 @@ function validateTalentId(value) {
   return id;
 }
 
-function validateAction(value) {
+function validateAction(value, options) {
+  const context = options || {};
   const common = ["action", "apiVersion"];
   if (!isPlainObject(value) || value.apiVersion !== EMPLOYER_API_VERSION) throw new Error("invalid_request");
   if (value.action === "searchTalent") return { type: "search", search: normalizeSearch(value) };
@@ -172,6 +175,9 @@ function validateAction(value) {
   }
   if (value.action === "listInvitations" || value.action === "createInvitationBatch") {
     return validateEmployerInvitationAction(value, EMPLOYER_API_VERSION);
+  }
+  if (["listConversations", "listMessages", "sendMessage", "markConversationRead", "setConversationState"].includes(value.action)) {
+    return validateChatAction(value, EMPLOYER_API_VERSION, context.contactsEnabled === true);
   }
   throw new Error("invalid_request");
 }
@@ -203,9 +209,10 @@ function buildTalentCandidate(account, attempts, options) {
   const template = ROLE_TEMPLATES[context.roleTemplateId] || ROLE_TEMPLATES["finance-general"];
   const search = context.search || { query: "", minScore: 0, region: "", workFormat: "", experienceBand: "", jobStatus: "" };
   const relevant = results.filter(result => Object.prototype.hasOwnProperty.call(template.weights, result.testId));
+  const credentials = publicEmployerCredentials(context.credentials);
   if (!relevant.length || Math.max(...relevant.map(result => result.score)) < search.minScore) return null;
   const region = safeText(account.region, 80);
-  const searchable = (alias + " " + region + " " + relevant.map(item => item.title).join(" ")).toLocaleLowerCase("ru-RU");
+  const searchable = (alias + " " + region + " " + relevant.map(item => item.title).join(" ") + " " + credentials.map(item => item.title + " " + item.issuer).join(" ")).toLocaleLowerCase("ru-RU");
   if (search.query && !searchable.includes(search.query)) return null;
   if (search.region && !region.toLocaleLowerCase("ru-RU").includes(search.region) && account.workFormat !== "remote") return null;
   if (search.workFormat && account.workFormat !== search.workFormat) return null;
@@ -230,7 +237,7 @@ function buildTalentCandidate(account, attempts, options) {
     jobStatus: account.jobStatus,
     region,
     workFormat: account.workFormat,
-    verificationLevel: "L2 verified account",
+    verificationLevel: credentials.length ? "L3 · аккаунт и регалии подтверждены" : "L2 · аккаунт подтверждён",
     matchScore,
     matchBreakdown: {
       experience: experience.score,
@@ -239,6 +246,7 @@ function buildTalentCandidate(account, attempts, options) {
       criteria: criteriaScore
     },
     results,
+    credentials,
     updatedAt: String(account.updatedAt || "")
   };
 }

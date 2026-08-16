@@ -30,7 +30,7 @@ assert.match(deploy, /--no-logging/);
 assert.match(deploy, /accountConsentVersion/);
 assert.match(deploy, /candidate-profile-v2/);
 assert.doesNotMatch(deploy, /lockbox|Lockbox|client_secret|secret create/i);
-assert.equal((gateway.match(/tag: "account-v4"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "account-v5"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "account-v2"/g) || []).length, 0);
 assert.match(schema, /candidate_profile_v2_schema/);
 assert.match(schema, /profile_publication_enabled'\), Utf8\('false/);

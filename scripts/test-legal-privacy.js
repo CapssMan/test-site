@@ -17,7 +17,8 @@ const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
 const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
 const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
 const accountVersion = "skillcheck-account-2026-08-16-v3";
-const privacyVersion = "skillcheck-privacy-2026-08-09-v11";
+const extendedProfileVersion = "skillcheck-credentials-chat-2026-08-17-v1";
+const privacyVersion = "skillcheck-privacy-2026-08-17-v12";
 function has(source, value, message) { assert(source.includes(value), message || ("Missing: " + value)); }
 function extract(source, name) {
   const marker = "function " + name + "(";
@@ -30,6 +31,7 @@ has(consent, pdVersion);
 has(privacy, privacyVersion);
 has(rankingConsent, rankingVersion);
 has(accountConsent, accountVersion);
+has(accountConsent, extendedProfileVersion);
 for (const page of [consent, privacy, rankingConsent, accountConsent]) {
   has(page, "Кириллов Кирилл Сергеевич");
   has(page, "skillcheck.project@yandex.ru");
@@ -41,13 +43,18 @@ has(consent, "YDB применяются автоматическим TTL");
 has(privacy, "Yandex API Gateway и Cloud Functions");
 has(privacy, "Managed Service for YDB");
 has(privacy, "не являются активным production-маршрутом");
-has(privacy, "Контролируемый пилот открыт");
+has(privacy, "Контролируемый кандидатский пилот открыт");
 has(privacy, "без аккаунта новую попытку начать нельзя");
 has(privacy, "не более 12 месяцев без активности");
 has(accountConsent, "он необходим для новой попытки");
 has(accountConsent, "Групповая или вузовская ссылка является только необязательной отметкой потока");
 has(accountConsent, "логин, основной email и список email");
 has(accountConsent, "OAuth-токен используется сервером один раз и не сохраняется");
+has(accountConsent, "Ссылка доступна оператору для проверки и не передаётся работодателю");
+has(accountConsent, "После положительного ответа на приглашение");
+has(privacy, "Регалии и внутренние сообщения хранятся не более 12 месяцев");
+has(privacy, "проверенный работодатель сможет видеть только разрешённые кандидатом и проверенные оператором регалии");
+has(privacy, "Email, телефон, Telegram, полный отчёт и ответы не раскрываются");
 assert(!privacy.includes("автоматическое применение сроков ещё не завершено"));
 assert(!consent.includes("Автоматическое применение остальных сроков ещё не завершено"));
 has(rankingConsent, "неопределённому кругу посетителей сайта");

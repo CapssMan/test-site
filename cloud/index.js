@@ -12,6 +12,8 @@ const { createYdbAdminStore } = require("./ydb-admin-store");
 const { createYdbAccountStore } = require("./ydb-account-store");
 const { createYdbEmployerStore } = require("./ydb-employer-store");
 const { createYdbInvitationStore } = require("./ydb-invitation-store");
+const { createYdbTrustStore } = require("./ydb-trust-store");
+const { createYdbChatStore } = require("./ydb-chat-store");
 const { createYdbRankingStore } = require("./ydb-ranking-store");
 const { DEFAULT_ALLOWED_ORIGINS, readAllowedOriginsFromEnvironment, resolveAllowedOrigin } = require("./cors-origin");
 
@@ -37,7 +39,7 @@ async function createRuntime() {
   if (runtimeMode === "read") return createRankingHandler({ store: createYdbRankingStore(sql), allowedOrigins });
   if (runtimeMode === "account") {
     return createAccountHandler({
-      store: Object.assign(createYdbAccountStore(sql), createYdbInvitationStore(sql)),
+      store: Object.assign(createYdbAccountStore(sql), createYdbInvitationStore(sql), createYdbTrustStore(sql), createYdbChatStore(sql)),
       allowedOrigins,
       clientId: String(process.env.YANDEX_ID_CLIENT_ID || ""),
       redirectUri: String(process.env.YANDEX_ID_REDIRECT_URI || ""),
@@ -46,7 +48,7 @@ async function createRuntime() {
     });
   }
   if (runtimeMode === "employer") {
-    const employerStore = Object.assign(createYdbAccountStore(sql), createYdbEmployerStore(sql), createYdbInvitationStore(sql));
+    const employerStore = Object.assign(createYdbAccountStore(sql), createYdbEmployerStore(sql), createYdbInvitationStore(sql), createYdbTrustStore(sql), createYdbChatStore(sql));
     return createEmployerHandler({
       store: employerStore,
       allowedOrigins,
@@ -77,7 +79,7 @@ async function createRuntime() {
   }
   if (runtimeMode === "admin") {
     const privateStorage = createObjectStorageClient({ bucket: String(process.env.PRIVATE_BUCKET || "") });
-    const store = Object.assign(createYdbAssessmentStore(sql), createYdbAdminStore(sql));
+    const store = Object.assign(createYdbAssessmentStore(sql), createYdbAdminStore(sql), createYdbAccountStore(sql), createYdbEmployerStore(sql), createYdbTrustStore(sql));
     const propertyNames = ["YDB_CONNECTION_STRING", "PRIVATE_BUCKET", "ADMIN_PASSWORD_PBKDF2_V1", "INVITE_CODE_SECRET_V1", "IDENTITY_HASH_SECRET_V1", "DELETION_SIGNING_SECRET_V1"];
     return createAdminHandler({
       store,

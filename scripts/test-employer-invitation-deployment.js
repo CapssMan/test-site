@@ -32,8 +32,8 @@ assert.match(deploy, /restored to account-v3 and employer-v1/);
 assert.match(deploy, /--no-logging/);
 assert.doesNotMatch(deploy, /lockbox|Lockbox|secret create|client_secret/i);
 
-assert.equal((gateway.match(/tag: "account-v4"/g) || []).length, 2);
-assert.equal((gateway.match(/tag: "employer-v2"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "account-v5"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "employer-v3"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "account-v3"/g) || []).length, 0);
 assert.equal((gateway.match(/tag: "employer-v1"/g) || []).length, 0);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS candidate_employer_invitations/);

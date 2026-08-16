@@ -18,13 +18,14 @@ new vm.Script(scripts[0], { filename: "account.html" });
   "jobMetric", "nextActionTitle", "nextActionButton", "testAccessList", "resultList", "profileEditor",
   "profileProgressBar", "careerProfileCard", "currentRole", "targetRole", "experienceSummary", "professionalTools",
   "availabilityPanel", "confirmAvailabilityButton", "profileConsentRefresh", "saveButton", "logoutButton", "deleteButton",
-  "invitations", "invitationList"
+  "invitations", "invitationList", "credentialsCard", "credentialList", "saveCredentialButton", "chatCard",
+  "candidateConversationList", "candidateMessageList", "candidateChatForm"
 ].forEach(id => assert.match(page, new RegExp('id="' + id + '"'), "cabinet missing #" + id));
 
 assert.match(page, /После входа вы попадёте в личный кабинет/);
 assert.match(page, /\.guest-panel\{margin:0 auto 76px;/, "guest login panel must remain centered inside the shared shell");
 assert.doesNotMatch(page, /\.guest-panel\{margin:0 0 76px;/, "guest login panel must not reset the shell's horizontal auto margins");
-assert.match(page, /renderDashboard\(result\.profile,result\.email,result\.testAccess,null\)/);
+assert.match(page, /await loadProfile\(\)/, "OAuth callback must load the complete private profile, credentials and conversations");
 assert.doesNotMatch(page, /location\.replace\(returnTo\)/, "OAuth callback must land in the cabinet, not bypass it");
 assert.match(page, /highlightedTestId=testIdFromReturnTarget\(flow\.returnTo\)/);
 assert.match(page, /card\.dataset\.highlighted="true"/);
@@ -46,6 +47,13 @@ assert.match(page, /Интересно/);
 assert.match(page, /Нужны подробности/);
 assert.match(page, /Неинтересно/);
 assert.match(page, /Контакты и чат не открываются автоматически/);
+assert.match(page, /skillcheck-credentials-chat-2026-08-17-v1/);
+assert.match(page, /action:"upsertCredential"/);
+assert.match(page, /action:"deleteCredential"/);
+assert.match(page, /action:"listConversations"/);
+assert.match(page, /action:"sendMessage"/);
+assert.match(page, /contact_sharing_closed/);
+assert.match(page, /Ссылка не передаётся работодателю/);
 assert.match(page, /skillcheck-account-2026-08-16-v3/);
 assert.match(page, /@media\(max-width:680px\)/);
 assert.match(page, /@media\(prefers-reduced-motion:reduce\)/);

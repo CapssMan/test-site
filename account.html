@@ -10,7 +10,7 @@
   <style>
     :root{
       --ink:#141722;--muted:#697386;--soft:#8d96a8;--line:#dde2eb;--surface:#fff;--canvas:#f5f6f8;
-      --blue:#3d72f5;--violet:#7656ee;--green:#11835e;--amber:#a96c10;--red:#b6404b;
+      --blue:#315fd4;--violet:#6848d9;--green:#11835e;--amber:#a96c10;--red:#b6404b;
       --dark:#11131a;--shadow:0 24px 72px rgba(25,31,48,.1);--radius:26px
     }
     *{box-sizing:border-box}
@@ -51,7 +51,7 @@
     .account-consent a,.legal a,.visibility-card a{color:#465bd4}
     .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 19px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;font-weight:850;cursor:pointer;text-decoration:none;box-shadow:0 12px 28px rgba(69,84,226,.22);transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease}
     .button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 16px 34px rgba(69,84,226,.28)}
-    .button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid rgba(61,114,245,.24);outline-offset:3px}
+    .button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
     .button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
     .button.full{width:100%}
     .button.secondary{background:#fff;color:#344054;border:1px solid #d5dae5;box-shadow:none}
@@ -114,6 +114,8 @@
     .invitation-meta{display:flex;flex-wrap:wrap;gap:7px}.invitation-meta span{padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #e1e5ee;color:#657084;font-size:11px;font-weight:750}
     .invitation-deadline{margin-top:12px;color:#7a8496;font-size:11px}
     .invitation-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.invitation-actions .button{min-height:40px;padding:0 13px;font-size:11px}
+    .credential-list{display:grid;gap:11px;margin-top:18px}.credential{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fff}.credential-main{min-width:0}.credential-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.credential-type{color:#5e4ad0;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.credential-status{display:inline-flex;padding:5px 8px;border-radius:999px;color:#606a7d;background:#f0f2f5;font-size:10px;font-weight:900}.credential-status.pending{color:#8d5a0a;background:#fff4df}.credential-status.verified{color:#0e7553;background:#eaf8f2}.credential-status.rejected{color:#9c3340;background:#fff0f2}.credential h3{margin:8px 0 5px;font-size:18px;letter-spacing:-.025em}.credential p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}.credential-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.credential-meta span{padding:6px 8px;border:1px solid #e1e5ee;border-radius:999px;color:#657084;background:#fafbfc;font-size:11px;font-weight:750}.credential-actions{display:grid;align-content:start;gap:7px}.credential-actions .button{min-height:40px;padding:0 13px;font-size:11px}.credential-form{margin-top:18px;padding:18px;border:1px solid #dce1eb;border-radius:19px;background:#f8f9fb}.credential-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.credential-consent{display:flex;align-items:flex-start;gap:9px;margin-top:15px;color:#566174;font-size:12px;line-height:1.5}.credential-consent input{flex:0 0 auto;width:17px;height:17px;margin-top:2px;accent-color:var(--blue)}.credential-consent a{color:#465bd4}.credential-form-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}.credential-note{margin:12px 0 0;color:#788295;font-size:11px;line-height:1.55}
+    .chat-shell{display:grid;grid-template-columns:minmax(190px,.38fr) minmax(0,1fr);min-height:410px;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#fff}.conversation-list{border-right:1px solid var(--line);background:#f8f9fb}.conversation-button{width:100%;min-height:76px;padding:14px;border:0;border-bottom:1px solid #e5e8ef;background:transparent;color:var(--ink);text-align:left;cursor:pointer;transition:background .2s ease}.conversation-button:hover,.conversation-button.active{background:#eef2ff}.conversation-button strong,.conversation-button small{display:block}.conversation-button strong{font-size:13px}.conversation-button small{margin-top:5px;color:#737e91;font-size:11px;line-height:1.35}.conversation-button .unread{display:inline-flex;margin-top:7px;padding:4px 7px;border-radius:999px;color:#fff;background:var(--blue);font-size:9px;font-weight:900}.chat-thread{display:grid;grid-template-rows:auto minmax(210px,1fr) auto;min-width:0}.chat-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line)}.chat-head strong,.chat-head small{display:block}.chat-head small{margin-top:4px;color:var(--muted);font-size:11px}.chat-head .button{min-height:38px;padding:0 12px;font-size:11px}.message-list{display:flex;flex-direction:column;gap:9px;padding:18px;overflow:auto;background:linear-gradient(180deg,#fff,#fbfbfd)}.message{max-width:78%;padding:11px 13px;border:1px solid #e1e5ed;border-radius:15px 15px 15px 5px;color:#3f4859;background:#fff;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.message.mine{align-self:flex-end;border-color:#d6dcff;border-radius:15px 15px 5px 15px;background:#eef1ff}.message time{display:block;margin-top:6px;color:#8790a1;font-size:9px}.chat-composer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;padding:14px;border-top:1px solid var(--line);background:#fff}.chat-composer textarea{min-height:48px;max-height:130px;padding:12px;border:1px solid #d6dce7;border-radius:13px;resize:vertical;outline:none}.chat-composer textarea:focus{border-color:#8298f6;box-shadow:0 0 0 4px rgba(47,109,246,.09)}.chat-empty{display:grid;place-items:center;padding:28px;color:var(--muted);text-align:center;line-height:1.55}.chat-policy{margin:12px 0 0;color:#788295;font-size:11px;line-height:1.55}
     .empty{padding:26px;border:1px dashed #cbd2df;border-radius:17px;color:var(--muted);text-align:center;line-height:1.55}
     .profile-card{position:sticky;top:90px}
     .profile-summary{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}
@@ -165,10 +167,10 @@
       .section-head{display:block}.section-head p{margin-top:9px}
       .test-access{grid-template-columns:1fr}.test-access .button{width:100%}.test-locked{text-align:left}
       .result{padding:15px}.profile-summary h2{font-size:22px}
-      .invitation-top{display:block}.invitation-status{display:inline-flex;margin-top:10px}.invitation-actions .button{width:100%}
-    }
+      .invitation-top{display:block}.invitation-status{display:inline-flex;margin-top:10px}.invitation-actions .button{width:100%}.credential{grid-template-columns:1fr}.credential-actions{grid-template-columns:1fr 1fr}.credential-form-grid{grid-template-columns:1fr}.chat-shell{grid-template-columns:1fr}.conversation-list{max-height:230px;overflow:auto;border-right:0;border-bottom:1px solid var(--line)}.chat-composer{grid-template-columns:1fr}.chat-composer .button{width:100%}.message{max-width:90%}
       .career-grid{grid-template-columns:1fr}.field-wide{grid-column:auto}
       .availability-panel{display:block}.availability-panel .button{width:100%;margin-top:13px}
+    }
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
   </style>
 </head>
@@ -285,6 +287,45 @@
               <div class="form-actions"><button id="saveButton" class="button" type="button">Сохранить профиль</button></div>
             </section>
 
+            <section id="credentialsCard" class="card card-pad" aria-labelledby="credentialsTitle" hidden>
+              <div class="section-head">
+                <div><div class="section-kicker">Подтверждённые факты</div><h2 id="credentialsTitle">Регалии и сертификаты</h2></div>
+                <p>Добавьте образование, опыт, проекты и достижения. Работодатель увидит только проверенные записи, которым вы разрешили показ.</p>
+              </div>
+              <div class="credential-form" aria-label="Добавление достижения">
+                <input id="credentialId" type="hidden">
+                <div class="credential-form-grid">
+                  <div class="field"><label for="credentialType">Тип</label><select id="credentialType"><option value="education">Образование</option><option value="employment">Опыт работы</option><option value="project">Проект</option><option value="certificate">Сертификат</option><option value="olympiad">Олимпиада / конкурс</option><option value="award">Награда</option></select></div>
+                  <div class="field"><label for="credentialYear">Год</label><input id="credentialYear" inputmode="numeric" maxlength="4" placeholder="2026"></div>
+                  <div class="field field-wide"><label for="credentialTitle">Название</label><input id="credentialTitle" maxlength="140" placeholder="Например, кейс-чемпионат по финансовому анализу"></div>
+                  <div class="field"><label for="credentialIssuer">Организация</label><input id="credentialIssuer" maxlength="140" placeholder="Вуз, компания или организатор"></div>
+                  <div class="field"><label for="credentialVisibility">Кому показывать</label><select id="credentialVisibility"><option value="private">Только мне и оператору</option><option value="employer">После проверки — работодателям</option></select></div>
+                  <div class="field field-wide"><label for="credentialDescription">Что именно вы сделали</label><textarea id="credentialDescription" maxlength="800" placeholder="Коротко опишите результат, свою роль и измеримый итог"></textarea></div>
+                  <div class="field field-wide"><label for="credentialEvidence">Ссылка на подтверждение</label><input id="credentialEvidence" type="url" maxlength="500" inputmode="url" placeholder="https://…"><p class="help">Ссылка не передаётся работодателю. Она нужна оператору для проверки записи.</p></div>
+                </div>
+                <label class="credential-consent"><input id="credentialConsent" type="checkbox"><span>Я подтверждаю достоверность сведений и принимаю <a href="account-consent.html" target="_blank" rel="noopener">условия обработки расширенного профиля</a>.</span></label>
+                <div class="credential-form-actions"><button id="saveCredentialButton" class="button" type="button">Добавить достижение</button><button id="cancelCredentialButton" class="button secondary" type="button" hidden>Отменить редактирование</button></div>
+                <p id="credentialFeedback" class="credential-note" role="status" aria-live="polite">Запись со ссылкой получит статус «На проверке». Без ссылки она останется самостоятельным заявлением и не попадёт в выдачу работодателя.</p>
+              </div>
+              <div id="credentialList" class="credential-list"></div>
+            </section>
+
+            <section id="chatCard" class="card card-pad" aria-labelledby="chatTitle" hidden>
+              <div class="section-head">
+                <div><div class="section-kicker">Следующий этап</div><h2 id="chatTitle">Диалоги с компаниями</h2></div>
+                <p>Чат открывается только после вашего положительного ответа на приглашение.</p>
+              </div>
+              <div class="chat-shell">
+                <div id="candidateConversationList" class="conversation-list" aria-label="Диалоги"></div>
+                <div class="chat-thread">
+                  <div id="candidateChatHead" class="chat-head"><div><strong>Выберите диалог</strong><small>Сообщения появятся здесь</small></div></div>
+                  <div id="candidateMessageList" class="message-list"><div class="chat-empty">Сначала выберите компанию слева.</div></div>
+                  <form id="candidateChatForm" class="chat-composer"><textarea id="candidateChatText" maxlength="2000" placeholder="Напишите сообщение" aria-label="Сообщение" disabled></textarea><button id="candidateChatSend" class="button" type="submit" disabled>Отправить</button></form>
+                </div>
+              </div>
+              <p id="candidateChatPolicy" class="chat-policy">Пока раскрытие контактов закрыто, не отправляйте email, телефон, Telegram или внешние ссылки. Всё общение остаётся внутри SkillCheck.</p>
+            </section>
+
             <section id="tests" class="card card-pad" aria-labelledby="testsTitle">
               <div class="section-head">
                 <div><div class="section-kicker">Диагностика навыков</div><h2 id="testsTitle">Тесты и доступ</h2></div>
@@ -346,16 +387,18 @@
     const OAUTH_FLOW_STORAGE_KEY="skillcheck_yandex_pkce_v1";
     const ACCOUNT_CONSENT_VERSION="skillcheck-account-2026-08-16-v3";
     const PUBLIC_CONSENT_VERSION="skillcheck-profile-discovery-2026-08-08-v1";
+    const EXTENDED_PROFILE_CONSENT_VERSION="skillcheck-credentials-chat-2026-08-17-v1";
     const TEST_TITLES={"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budget Analyst","acc-junior":"Accounting / Reporting","bi-junior":"Finance BI / Data Analyst"};
     const JOB_LABELS={hidden:"Приватный",active:"Ищу работу",open:"Открыт",not_looking:"Не ищу"};
     const INVITATION_STATUS_LABELS={sent:"Новое",viewed:"Просмотрено",interested:"Интересно",details:"Нужны детали",declined:"Неинтересно",expired:"Срок истёк"};
+    const CREDENTIAL_STATUS_LABELS={self_reported:"Заявлено",pending:"На проверке",verified:"Проверено",rejected:"Отклонено"};
     const statusNode=document.getElementById("accountStatus");
     const guestHero=document.getElementById("guestHero");
     const loginView=document.getElementById("loginView");
     const dashboardView=document.getElementById("dashboardView");
     const loginButton=document.getElementById("loginButton");
     const accountConsent=document.getElementById("accountConsent");
-    let config=null,currentProfile=null,currentTestAccess=[],currentInvitations=[],accountServiceUnavailable=false,bootInProgress=false,highlightedTestId="";
+    let config=null,currentProfile=null,currentTestAccess=[],currentInvitations=[],currentCredentials=[],currentConversations=[],activeConversationId="",accountServiceUnavailable=false,bootInProgress=false,highlightedTestId="";
 
     function setStatus(message,type){
       statusNode.textContent=message;
@@ -472,9 +515,7 @@
       const result=await apiPost({action:"exchangeYandexCode",apiVersion:ACCOUNT_API_VERSION,code,codeVerifier:flow.verifier,state,accountConsent:flow.consentVersion});
       saveSession(result);
       highlightedTestId=testIdFromReturnTarget(flow.returnTo);
-      config.selfServiceEnabled=result.selfServiceEnabled===true;
-      config.invitationEnabled=result.invitationEnabled===true;
-      renderDashboard(result.profile,result.email,result.testAccess,null);
+      await loadProfile();
       setStatus("Вход выполнен. Добро пожаловать в личный кабинет.","success");
       return true;
     }
@@ -559,6 +600,19 @@
         setStatus(response==="interested"?"Работодатель увидит, что предложение вам интересно.":response==="details"?"Работодатель увидит запрос дополнительных подробностей.":"Ответ сохранён.","success");
       }catch(_error){if(card)card.querySelectorAll("button").forEach(button=>button.disabled=false);setStatus("Не удалось сохранить ответ на приглашение. Повторите позже.","error")}
     }
+    function credentialStatusClass(value){return ["pending","verified","rejected"].includes(value)?" "+value:""}
+    function resetCredentialForm(){["credentialId","credentialTitle","credentialIssuer","credentialDescription","credentialYear","credentialEvidence"].forEach(id=>document.getElementById(id).value="");document.getElementById("credentialType").value="education";document.getElementById("credentialVisibility").value="private";document.getElementById("credentialConsent").checked=false;document.getElementById("saveCredentialButton").textContent="Добавить достижение";document.getElementById("cancelCredentialButton").hidden=true}
+    function editCredential(item){document.getElementById("credentialId").value=item.credentialId;document.getElementById("credentialType").value=item.credentialType;document.getElementById("credentialTitle").value=item.title;document.getElementById("credentialIssuer").value=item.issuer||"";document.getElementById("credentialDescription").value=item.description||"";document.getElementById("credentialYear").value=item.issuedYear||"";document.getElementById("credentialEvidence").value=item.evidenceUrl||"";document.getElementById("credentialVisibility").value=item.visibility||"private";document.getElementById("credentialConsent").checked=false;document.getElementById("saveCredentialButton").textContent="Сохранить изменения";document.getElementById("cancelCredentialButton").hidden=false;document.getElementById("credentialsCard").scrollIntoView({behavior:"smooth",block:"start"})}
+    function renderCredentials(items){const root=document.getElementById("credentialList");root.replaceChildren();currentCredentials=Array.isArray(items)?items:[];if(!currentCredentials.length){root.append(Object.assign(document.createElement("div"),{className:"empty",textContent:"Достижений пока нет. Добавьте первый подтверждаемый факт — образование, проект, опыт или сертификат."}));return}currentCredentials.forEach(item=>{const card=document.createElement("article");card.className="credential";const main=document.createElement("div");main.className="credential-main";const top=document.createElement("div");top.className="credential-top";const type=document.createElement("span");type.className="credential-type";type.textContent=item.credentialTypeLabel;const status=document.createElement("span");status.className="credential-status"+credentialStatusClass(item.verificationStatus);status.textContent=CREDENTIAL_STATUS_LABELS[item.verificationStatus]||"Заявлено";top.append(type,status);const title=document.createElement("h3");title.textContent=item.title;const description=document.createElement("p");description.textContent=item.description||"Описание не добавлено.";const meta=document.createElement("div");meta.className="credential-meta";[item.issuer,item.issuedYear,item.visibility==="employer"?"После проверки — работодателям":"Приватно"].filter(Boolean).forEach(value=>{const chip=document.createElement("span");chip.textContent=value;meta.append(chip)});main.append(top,title,description,meta);const actions=document.createElement("div");actions.className="credential-actions";const edit=document.createElement("button");edit.className="button secondary";edit.type="button";edit.textContent="Изменить";edit.addEventListener("click",()=>editCredential(item));const remove=document.createElement("button");remove.className="button danger";remove.type="button";remove.textContent="Удалить";remove.addEventListener("click",()=>deleteCredential(item.credentialId));actions.append(edit,remove);card.append(main,actions);root.append(card)})}
+    async function saveCredential(){const button=document.getElementById("saveCredentialButton"),feedback=document.getElementById("credentialFeedback");if(!document.getElementById("credentialConsent").checked){feedback.textContent="Подтвердите достоверность сведений и условия расширенного профиля.";return}const payload={action:"upsertCredential",apiVersion:ACCOUNT_API_VERSION,credentialId:document.getElementById("credentialId").value,credentialType:document.getElementById("credentialType").value,title:document.getElementById("credentialTitle").value,issuer:document.getElementById("credentialIssuer").value,description:document.getElementById("credentialDescription").value,issuedYear:document.getElementById("credentialYear").value,evidenceUrl:document.getElementById("credentialEvidence").value,visibility:document.getElementById("credentialVisibility").value,accountConsent:EXTENDED_PROFILE_CONSENT_VERSION};try{button.disabled=true;button.textContent="Сохраняем…";const result=await apiPost(payload);const index=currentCredentials.findIndex(item=>item.credentialId===result.credential.credentialId);if(index>=0)currentCredentials[index]=result.credential;else currentCredentials.unshift(result.credential);renderCredentials(currentCredentials);resetCredentialForm();feedback.textContent=result.credential.verificationStatus==="pending"?"Запись сохранена и ожидает проверки оператора.":"Запись сохранена как самостоятельное заявление."}catch(error){feedback.textContent=String(error&&error.message||"")==="candidate_credentials_closed"?"Добавление достижений ещё закрыто.":"Не удалось сохранить запись. Проверьте поля и HTTPS-ссылку."}finally{button.disabled=false;if(document.getElementById("credentialId").value)button.textContent="Сохранить изменения";else button.textContent="Добавить достижение"}}
+    async function deleteCredential(credentialId){if(!confirm("Удалить это достижение из профиля?"))return;try{await apiPost({action:"deleteCredential",apiVersion:ACCOUNT_API_VERSION,credentialId});currentCredentials=currentCredentials.filter(item=>item.credentialId!==credentialId);renderCredentials(currentCredentials);resetCredentialForm()}catch(_error){document.getElementById("credentialFeedback").textContent="Не удалось удалить запись. Повторите позже."}}
+    function chatRequestId(){const values=new Uint8Array(16);crypto.getRandomValues(values);return"chat_req_"+Array.from(values,value=>value.toString(16).padStart(2,"0")).join("")}
+    function renderCandidateConversations(items){const root=document.getElementById("candidateConversationList");root.replaceChildren();currentConversations=Array.isArray(items)?items:[];if(!currentConversations.length){root.append(Object.assign(document.createElement("div"),{className:"chat-empty",textContent:"Диалоги появятся после положительного ответа на приглашение."}));document.getElementById("candidateMessageList").replaceChildren(Object.assign(document.createElement("div"),{className:"chat-empty",textContent:"Активных диалогов пока нет."}));return}currentConversations.forEach(item=>{const button=document.createElement("button");button.type="button";button.className="conversation-button"+(item.conversationId===activeConversationId?" active":"");button.setAttribute("aria-pressed",item.conversationId===activeConversationId?"true":"false");const title=document.createElement("strong");title.textContent=item.organizationName;const role=document.createElement("small");role.textContent=item.roleTitle;button.append(title,role);if(Number(item.unreadCount)>0){const unread=document.createElement("span");unread.className="unread";unread.textContent=String(item.unreadCount)+" новых";button.append(unread)}button.addEventListener("click",()=>openCandidateConversation(item.conversationId));root.append(button)});if(!activeConversationId)openCandidateConversation(currentConversations[0].conversationId)}
+    function renderCandidateMessages(messages){const root=document.getElementById("candidateMessageList");root.replaceChildren();if(!messages.length){root.append(Object.assign(document.createElement("div"),{className:"chat-empty",textContent:"Диалог открыт. Можно задать вопрос о следующем этапе."}));return}messages.forEach(item=>{const message=document.createElement("div");message.className="message"+(item.senderType==="candidate"?" mine":"");message.textContent=item.text;const time=document.createElement("time");time.dateTime=item.createdAt;time.textContent=new Date(item.createdAt).toLocaleString("ru-RU",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});message.append(time);root.append(message)});root.scrollTop=root.scrollHeight}
+    async function openCandidateConversation(id){activeConversationId=id;renderCandidateConversations(currentConversations);const item=currentConversations.find(row=>row.conversationId===id);const head=document.getElementById("candidateChatHead");head.replaceChildren();const copy=document.createElement("div");copy.append(Object.assign(document.createElement("strong"),{textContent:item.organizationName}),Object.assign(document.createElement("small"),{textContent:item.roleTitle}));const block=document.createElement("button");block.type="button";block.className="button secondary";block.textContent=item.state==="blocked"?"Диалог заблокирован":"Заблокировать";block.disabled=item.state==="blocked";block.addEventListener("click",()=>setCandidateConversationState("blocked"));head.append(copy,block);const enabled=item.state==="open";document.getElementById("candidateChatText").disabled=!enabled;document.getElementById("candidateChatSend").disabled=!enabled;try{const result=await apiPost({action:"listMessages",apiVersion:ACCOUNT_API_VERSION,conversationId:id,limit:100});renderCandidateMessages(result.messages||[]);await apiPost({action:"markConversationRead",apiVersion:ACCOUNT_API_VERSION,conversationId:id});item.unreadCount=0;renderCandidateConversations(currentConversations)}catch(_error){document.getElementById("candidateMessageList").replaceChildren(Object.assign(document.createElement("div"),{className:"chat-empty",textContent:"Не удалось загрузить сообщения."}))}}
+    async function sendCandidateMessage(){const text=document.getElementById("candidateChatText"),button=document.getElementById("candidateChatSend");if(!activeConversationId||!text.value.trim())return;try{button.disabled=true;await apiPost({action:"sendMessage",apiVersion:ACCOUNT_API_VERSION,conversationId:activeConversationId,clientMessageId:chatRequestId(),text:text.value});text.value="";await openCandidateConversation(activeConversationId)}catch(error){document.getElementById("candidateChatPolicy").textContent=String(error&&error.message||"")==="contact_sharing_closed"?"Пока контакты закрыты: уберите email, телефон, Telegram или внешнюю ссылку и отправьте сообщение внутри SkillCheck.":"Сообщение не отправлено. Повторите позже."}finally{button.disabled=false}}
+    async function setCandidateConversationState(state){if(!activeConversationId||!confirm("Заблокировать этот диалог? Компания больше не сможет писать вам здесь."))return;try{await apiPost({action:"setConversationState",apiVersion:ACCOUNT_API_VERSION,conversationId:activeConversationId,state});const item=currentConversations.find(row=>row.conversationId===activeConversationId);if(item)item.state=state;await openCandidateConversation(activeConversationId)}catch(_error){document.getElementById("candidateChatPolicy").textContent="Не удалось изменить состояние диалога."}}
+    async function loadCandidateConversations(){try{const result=await apiPost({action:"listConversations",apiVersion:ACCOUNT_API_VERSION});config.chatEnabled=result.chatEnabled===true;renderCandidateConversations(result.conversations||[])}catch(_error){renderCandidateConversations([])}}
     function accessDescription(item){
       if(item.status==="available")return"Попытка доступна сейчас";
       if(item.status==="cooldown")return"Следующая попытка — "+formatAccessDate(item.availableAt);
@@ -686,7 +740,7 @@
       if(next){button.href="test.html?test="+encodeURIComponent(next.testId);button.textContent="Открыть "+TEST_TITLES[next.testId]}
       else{button.href="#tests";button.textContent="Посмотреть сроки"}
     }
-    function renderDashboard(profile,email,testAccess,invitations){
+    function renderDashboard(profile,email,testAccess,invitations,credentials,conversations){
       currentProfile=profile;
       setAccountView("dashboard");
       setStatus("","");
@@ -711,6 +765,10 @@
       }
       renderInvitations(Array.isArray(invitations)?invitations:[]);
       if(config&&config.invitationEnabled&&!Array.isArray(invitations))loadInvitations();
+      document.getElementById("credentialsCard").hidden=!(config&&config.credentialsEnabled);
+      document.getElementById("chatCard").hidden=!(config&&config.chatEnabled);
+      if(config&&config.credentialsEnabled)renderCredentials(Array.isArray(credentials)?credentials:[]);
+      if(config&&config.chatEnabled){renderCandidateConversations(Array.isArray(conversations)?conversations:[]);if(!Array.isArray(conversations))loadCandidateConversations()}
       renderTestAccess(testAccess);
       renderResults(profile.results);
       updateMetrics(profile,testAccess);
@@ -726,8 +784,11 @@
         config.publicProfileEnabled=result.publicProfileEnabled===true;
         config.selfServiceEnabled=result.selfServiceEnabled===true;
         config.invitationEnabled=result.invitationEnabled===true;
+        config.credentialsEnabled=result.credentialsEnabled===true;
+        config.chatEnabled=result.chatEnabled===true;
+        config.contactEnabled=result.contactEnabled===true;
         highlightedTestId=testIdFromReturnTarget(requestedReturnTarget());
-        renderDashboard(result.profile,session.email,result.testAccess,result.invitations);
+        renderDashboard(result.profile,session.email,result.testAccess,result.invitations,result.credentials,result.conversations);
         return true;
       }catch(error){
         if(String(error&&error.message||"")==="authentication_required"){clearStoredSession();return false}
@@ -758,7 +819,7 @@
           confirmAvailability:confirmAvailability===true,accountConsent:ACCOUNT_CONSENT_VERSION
         });
         const result=await apiPost(payload);
-        renderDashboard(result.profile,readSession()&&readSession().email,result.testAccess,currentInvitations);
+        renderDashboard(result.profile,readSession()&&readSession().email,result.testAccess,currentInvitations,currentCredentials,currentConversations);
         setStatus("Профиль сохранён.","success");
         statusNode.scrollIntoView({block:"nearest"});
       }catch(error){
@@ -804,6 +865,9 @@
     document.getElementById("logoutButton").addEventListener("click",logout);
     document.getElementById("deleteButton").addEventListener("click",deleteAccount);
     document.getElementById("visibility").addEventListener("change",event=>{document.getElementById("publicConsentBox").hidden=event.target.value!=="discoverable"});
+    document.getElementById("saveCredentialButton").addEventListener("click",saveCredential);
+    document.getElementById("cancelCredentialButton").addEventListener("click",resetCredentialForm);
+    document.getElementById("candidateChatForm").addEventListener("submit",event=>{event.preventDefault();sendCandidateMessage()});
     if(!SHOULD_FORWARD_UNIFIED_CALLBACK&&!SHOULD_USE_PRIMARY_ORIGIN)boot();
   </script>
 </body>

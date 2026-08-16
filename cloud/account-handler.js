@@ -5,6 +5,7 @@ const {
   ACCOUNT_API_VERSION,
   ACCOUNT_CONSENT_VERSION,
   PUBLIC_PROFILE_CONSENT_VERSION,
+  EXTENDED_PROFILE_CONSENT_VERSION,
   SESSION_TTL_MS,
   ACCOUNT_RETENTION_MS,
   parseBody,
@@ -26,6 +27,20 @@ const {
   effectiveInvitationStatus,
   validateCandidateInvitationAction
 } = require("./invitation-core");
+const {
+  CREDENTIAL_RETENTION_MS,
+  createCredentialId,
+  publicCandidateCredential,
+  validateCandidateCredentialAction
+} = require("./trust-core");
+const {
+  CHAT_RETENTION_MS,
+  createConversationId,
+  createMessageId,
+  publicConversation,
+  publicMessage,
+  validateChatAction
+} = require("./chat-core");
 
 function getMethod(event) {
   return String(event && (event.httpMethod || (event.requestContext && event.requestContext.http && event.requestContext.http.method)) || "GET").toUpperCase();
@@ -56,7 +71,7 @@ function plusMs(now, milliseconds) {
 }
 
 const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
-const ACCOUNT_BACKEND_VERSION = "yandex-candidate-invitations-2026-08-16-1";
+const ACCOUNT_BACKEND_VERSION = "yandex-candidate-trust-chat-2026-08-17-1";
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -195,6 +210,47 @@ function createAccountHandler(dependencies) {
       .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)));
   }
 
+  async function loadCredentials(profileId, settings) {
+    if (settings.candidate_credentials_enabled !== "true") return [];
+    if (typeof store.listCandidateCredentials !== "function") throw new Error("account_credentials_unavailable");
+    const rows = await storageRequest(() => store.listCandidateCredentials(profileId), "account_credentials_unavailable");
+    return rows.map(publicCandidateCredential);
+  }
+
+  async function ensureCandidateConversations(profileId, settings) {
+    if (settings.employer_chat_enabled !== "true") return;
+    if (typeof store.listCandidateInvitations !== "function" || typeof store.createConversation !== "function") throw new Error("account_chat_unavailable");
+    const invitations = await storageRequest(() => store.listCandidateInvitations(profileId), "account_chat_unavailable");
+    const now = nowProvider();
+    for (const invitation of invitations.filter(item => ["interested", "details"].includes(effectiveInvitationStatus(item, now)))) {
+      await storageRequest(() => store.createConversation({
+        candidateProfileId: profileId,
+        conversationId: createConversationId(identitySecret, invitation.invitationId),
+        invitationId: invitation.invitationId,
+        employerId: invitation.employerId,
+        organizationId: invitation.organizationId || "",
+        organizationName: invitation.organizationName,
+        candidateAlias: invitation.candidateAlias,
+        roleTitle: invitation.roleTitle,
+        state: "open",
+        candidateUnreadCount: 0,
+        employerUnreadCount: 0,
+        lastMessageAt: now,
+        createdAt: now,
+        updatedAt: now,
+        purgeAt: plusMs(now, CHAT_RETENTION_MS)
+      }), "account_chat_unavailable");
+    }
+  }
+
+  async function loadCandidateConversations(profileId, settings) {
+    if (settings.employer_chat_enabled !== "true") return [];
+    if (typeof store.listCandidateConversations !== "function") throw new Error("account_chat_unavailable");
+    await ensureCandidateConversations(profileId, settings);
+    const rows = await storageRequest(() => store.listCandidateConversations(profileId), "account_chat_unavailable");
+    return rows.map(row => publicConversation(row, "candidate"));
+  }
+
   function buildConfig(settings) {
     const configured = /^[A-Za-z0-9]{20,80}$/.test(clientId) && /^https:\/\//.test(redirectUri);
     return {
@@ -207,10 +263,14 @@ function createAccountHandler(dependencies) {
       redirectUri: configured ? redirectUri : "",
       scope: "login:email",
       accountConsentVersion: ACCOUNT_CONSENT_VERSION,
+      extendedProfileConsentVersion: EXTENDED_PROFILE_CONSENT_VERSION,
       publicProfileConsentVersion: PUBLIC_PROFILE_CONSENT_VERSION,
       publicProfileEnabled: settings.profile_publication_enabled === "true",
       selfServiceEnabled: settings.account_self_service_enabled === "true",
       invitationEnabled: settings.employer_invitation_enabled === "true",
+      credentialsEnabled: settings.candidate_credentials_enabled === "true",
+      chatEnabled: settings.employer_chat_enabled === "true",
+      contactEnabled: settings.employer_contact_enabled === "true",
       accountRequiredForAttempts: settings.account_required_for_attempts === "true"
     };
   }
@@ -280,6 +340,8 @@ function createAccountHandler(dependencies) {
         ok: true, apiVersion: ACCOUNT_API_VERSION, sessionToken: token, expiresAt: expiresAt.toISOString(), email,
         profile: publicProfile(account, attempts),
         invitationEnabled: settings.employer_invitation_enabled === "true",
+        credentialsEnabled: settings.candidate_credentials_enabled === "true",
+        chatEnabled: settings.employer_chat_enabled === "true",
         selfServiceEnabled: settings.account_self_service_enabled === "true",
         testAccess: buildTestAccess(attempts, now, settings.account_self_service_enabled === "true")
       }
@@ -310,12 +372,87 @@ function createAccountHandler(dependencies) {
         validateSimpleAction(body, "getProfile");
         const attempts = await store.listProfileAttempts(auth.account.profileId);
         const invitations = await loadCandidateInvitations(auth.account.profileId, settings);
+        const credentials = await loadCredentials(auth.account.profileId, settings);
+        const conversations = await loadCandidateConversations(auth.account.profileId, settings);
         return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, profile: publicProfile(auth.account, attempts),
           publicProfileEnabled: settings.profile_publication_enabled === "true",
           invitationEnabled: settings.employer_invitation_enabled === "true",
           invitations,
+          credentialsEnabled: settings.candidate_credentials_enabled === "true",
+          credentials,
+          chatEnabled: settings.employer_chat_enabled === "true",
+          contactEnabled: settings.employer_contact_enabled === "true",
+          conversations,
           selfServiceEnabled: settings.account_self_service_enabled === "true",
           testAccess: buildTestAccess(attempts, nowProvider(), settings.account_self_service_enabled === "true") }, origin);
+      }
+      if (["listCredentials", "upsertCredential", "deleteCredential"].includes(body.action)) {
+        const action = validateCandidateCredentialAction(body, ACCOUNT_API_VERSION, EXTENDED_PROFILE_CONSENT_VERSION, nowProvider().getUTCFullYear());
+        if (action.type === "listCredentials") {
+          return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION,
+            credentialsEnabled: settings.candidate_credentials_enabled === "true",
+            credentials: await loadCredentials(auth.account.profileId, settings) }, origin);
+        }
+        if (settings.candidate_credentials_enabled !== "true") return jsonResponse(403, { ok: false, error: "candidate_credentials_closed" }, origin);
+        if (typeof store.getCandidateCredential !== "function" || typeof store.upsertCandidateCredential !== "function" || typeof store.deleteCandidateCredential !== "function") throw new Error("account_credentials_unavailable");
+        if (action.type === "deleteCredential") {
+          await storageRequest(() => store.deleteCandidateCredential(auth.account.profileId, action.credentialId), "account_credentials_unavailable");
+          return jsonResponse(200, { ok: true, deleted: true }, origin);
+        }
+        const previous = action.credentialId ? await storageRequest(() => store.getCandidateCredential(auth.account.profileId, action.credentialId), "account_credentials_unavailable") : null;
+        if (action.credentialId && !previous) return jsonResponse(404, { ok: false, error: "credential_not_found" }, origin);
+        const now = nowProvider();
+        const credential = {
+          candidateProfileId: auth.account.profileId,
+          credentialId: action.credentialId || createCredentialId(),
+          credentialType: action.credentialType,
+          title: action.title,
+          issuer: action.issuer,
+          description: action.description,
+          issuedYear: action.issuedYear,
+          evidenceUrl: action.evidenceUrl,
+          visibility: action.visibility,
+          verificationStatus: action.evidenceUrl ? "pending" : "self_reported",
+          verificationNote: "",
+          createdAt: previous ? previous.createdAt : now,
+          updatedAt: now,
+          purgeAt: plusMs(now, CREDENTIAL_RETENTION_MS)
+        };
+        await storageRequest(() => store.upsertCandidateCredential(credential), "account_credentials_unavailable");
+        return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, credential: publicCandidateCredential(credential) }, origin);
+      }
+      if (["listConversations", "listMessages", "sendMessage", "markConversationRead", "setConversationState"].includes(body.action)) {
+        const action = validateChatAction(body, ACCOUNT_API_VERSION, settings.employer_contact_enabled === "true");
+        if (action.type === "listConversations") {
+          return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION,
+            chatEnabled: settings.employer_chat_enabled === "true",
+            conversations: await loadCandidateConversations(auth.account.profileId, settings) }, origin);
+        }
+        if (settings.employer_chat_enabled !== "true") return jsonResponse(403, { ok: false, error: "employer_chat_closed" }, origin);
+        if (typeof store.getCandidateConversation !== "function") throw new Error("account_chat_unavailable");
+        const conversation = await storageRequest(() => store.getCandidateConversation(auth.account.profileId, action.conversationId), "account_chat_unavailable");
+        if (!conversation) return jsonResponse(404, { ok: false, error: "conversation_not_found" }, origin);
+        if (action.type === "listMessages") {
+          const rows = await storageRequest(() => store.listConversationMessages(conversation.conversationId, action.limit), "account_chat_unavailable");
+          return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, conversation: publicConversation(conversation, "candidate"), messages: rows.map(publicMessage) }, origin);
+        }
+        const now = nowProvider();
+        if (action.type === "sendMessage") {
+          if (conversation.state !== "open") return jsonResponse(409, { ok: false, error: "conversation_closed" }, origin);
+          const message = await storageRequest(() => store.writeMessage({
+            candidateProfileId: auth.account.profileId, conversationId: conversation.conversationId,
+            messageId: createMessageId(identitySecret, conversation.conversationId, "candidate", action.clientMessageId),
+            clientMessageId: action.clientMessageId, senderType: "candidate", text: action.text,
+            createdAt: now, purgeAt: plusMs(now, CHAT_RETENTION_MS)
+          }), "account_chat_unavailable");
+          return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, message: publicMessage(message) }, origin);
+        }
+        if (action.type === "markConversationRead") {
+          await storageRequest(() => store.markConversationRead(auth.account.profileId, conversation.conversationId, "candidate", now), "account_chat_unavailable");
+          return jsonResponse(200, { ok: true, read: true }, origin);
+        }
+        await storageRequest(() => store.setConversationState(auth.account.profileId, conversation.conversationId, "candidate", action.state, now, plusMs(now, CHAT_RETENTION_MS)), "account_chat_unavailable");
+        return jsonResponse(200, { ok: true, state: action.state }, origin);
       }
       if (["listInvitations", "markInvitationViewed", "respondInvitation"].includes(body.action)) {
         const action = validateCandidateInvitationAction(body, ACCOUNT_API_VERSION);
@@ -339,11 +476,15 @@ function createAccountHandler(dependencies) {
           return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
         }
         if (!OPEN_INVITATION_STATUSES.has(invitation.status) || invitation.status === "interested" || invitation.status === "details") {
-          if (invitation.status === action.response) return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
+          if (invitation.status === action.response) {
+            if (["interested", "details"].includes(action.response)) await ensureCandidateConversations(auth.account.profileId, settings);
+            return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
+          }
           return jsonResponse(409, { ok: false, error: "invitation_already_responded" }, origin);
         }
         if (typeof store.respondInvitation !== "function") throw new Error("account_invitation_unavailable");
         invitation = await storageRequest(() => store.respondInvitation(auth.account.profileId, action.invitationId, action.response, now), "account_invitation_unavailable");
+        if (["interested", "details"].includes(action.response)) await ensureCandidateConversations(auth.account.profileId, settings);
         return jsonResponse(200, { ok: true, apiVersion: ACCOUNT_API_VERSION, invitation: publicCandidateInvitation(invitation, now) }, origin);
       }
       if (body.action === "updateProfile") {
@@ -385,13 +526,15 @@ function createAccountHandler(dependencies) {
       }
       if (body.action === "deleteAccount") {
         validateDelete(body);
+        if (typeof store.deleteCandidateChats === "function") await storageRequest(() => store.deleteCandidateChats(auth.account.profileId), "account_delete_unavailable");
+        if (typeof store.deleteAllCandidateCredentials === "function") await storageRequest(() => store.deleteAllCandidateCredentials(auth.account.profileId), "account_delete_unavailable");
         await store.deleteAccount(auth.account.profileId);
         return jsonResponse(200, { ok: true, deleted: true }, origin);
       }
       return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
     } catch (error) {
-      const clientErrors = new Set(["invalid_request", "exchange_invalid", "invalid_exchange", "getProfile_invalid", "update_invalid", "invalid_profile", "public_alias_required", "public_consent_required", "invalid_public_consent", "account_consent_required", "invalid_account_consent", "delete_invalid", "invalid_delete_confirmation"]);
-      const serviceErrors = new Set(["identity_token_unavailable", "identity_token_invalid_response", "identity_profile_unavailable", "identity_profile_invalid_response", "account_lookup_unavailable", "account_write_unavailable", "account_attempts_unavailable", "account_session_unavailable", "account_invitation_unavailable"]);
+      const clientErrors = new Set(["invalid_request", "exchange_invalid", "invalid_exchange", "getProfile_invalid", "update_invalid", "invalid_profile", "invalid_credential", "invalid_chat_request", "invalid_chat_message", "contact_sharing_closed", "public_alias_required", "public_consent_required", "invalid_public_consent", "account_consent_required", "invalid_account_consent", "delete_invalid", "invalid_delete_confirmation"]);
+      const serviceErrors = new Set(["identity_token_unavailable", "identity_token_invalid_response", "identity_profile_unavailable", "identity_profile_invalid_response", "account_lookup_unavailable", "account_write_unavailable", "account_attempts_unavailable", "account_session_unavailable", "account_invitation_unavailable", "account_credentials_unavailable", "account_chat_unavailable", "account_delete_unavailable"]);
       const errorCode = String(error && error.message || "");
       if (error instanceof SyntaxError || clientErrors.has(errorCode)) {
         return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);

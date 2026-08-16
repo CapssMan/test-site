@@ -20,9 +20,16 @@ const {
   createInvitationId,
   effectiveInvitationStatus
 } = require("./invitation-core");
+const { publicOrganization } = require("./trust-core");
+const {
+  CHAT_RETENTION_MS,
+  createMessageId,
+  publicConversation,
+  publicMessage
+} = require("./chat-core");
 
 const EMPLOYER_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
-const EMPLOYER_BACKEND_VERSION = "yandex-employer-invitations-2026-08-16-1";
+const EMPLOYER_BACKEND_VERSION = "yandex-employer-trust-chat-2026-08-17-1";
 
 function method(event) {
   return String(event && (event.httpMethod || (event.requestContext && event.requestContext.http && event.requestContext.http.method)) || "GET").toUpperCase();
@@ -48,11 +55,13 @@ function plusMs(now, milliseconds) {
   return new Date(now.getTime() + milliseconds);
 }
 
-function publicEmployer(employer) {
+function publicEmployer(employer, organization) {
   return {
     employerId: employer.employerId,
     organizationName: employer.organizationName,
-    verificationStatus: employer.verificationStatus
+    verificationStatus: employer.verificationStatus,
+    role: employer.role || "recruiter",
+    organization: publicOrganization(organization)
   };
 }
 
@@ -118,9 +127,13 @@ function createEmployerHandler(dependencies) {
     const entryByTalentId = new Map();
     for (const account of accounts) {
       const attempts = await store.listProfileAttempts(account.profileId);
+      let credentials = [];
+      if (typeof store.listVerifiedCandidateCredentials === "function") {
+        credentials = await store.listVerifiedCandidateCredentials(account.profileId);
+      }
       let candidate = null;
       try {
-        candidate = buildTalentCandidate(account, attempts, { talentSecret, roleTemplateId: search.roleTemplateId, search, now: nowProvider() });
+        candidate = buildTalentCandidate(account, attempts, { talentSecret, roleTemplateId: search.roleTemplateId, search, now: nowProvider(), credentials });
       } catch (_error) {
         candidate = null;
       }
@@ -165,6 +178,9 @@ function createEmployerHandler(dependencies) {
           apiVersion: EMPLOYER_API_VERSION,
           enabled: settings.employer_workspace_enabled === "true",
           contactEnabled: settings.employer_contact_enabled === "true",
+          companyProfilesEnabled: settings.employer_company_profiles_enabled === "true",
+          credentialsEnabled: settings.candidate_credentials_enabled === "true",
+          chatEnabled: settings.employer_chat_enabled === "true",
           invitationEnabled: settings.employer_invitation_enabled === "true",
           roleTemplates: publicRoleTemplates(),
           shortlistLimit: MAX_SHORTLIST_SIZE
@@ -172,12 +188,18 @@ function createEmployerHandler(dependencies) {
       }
       if (verb !== "POST") return jsonResponse(405, { ok: false, error: "method_not_allowed" }, origin);
       const body = parseBody(event);
-      const action = validateAction(body);
+      const action = validateAction(body, { contactsEnabled: settings.employer_contact_enabled === "true" });
       const auth = await authenticate(event);
       if (!auth) return jsonResponse(401, { ok: false, error: "authentication_required" }, origin);
       if (!auth.employer) return jsonResponse(403, { ok: false, error: "employer_verification_required" }, origin);
       if (settings.employer_workspace_enabled !== "true" || settings.profile_publication_enabled !== "true") {
         return jsonResponse(403, { ok: false, error: "employer_workspace_closed" }, origin);
+      }
+      let organization = null;
+      if (settings.employer_company_profiles_enabled === "true") {
+        if (typeof store.getOrganization !== "function") throw new Error("employer_organization_store_required");
+        organization = await store.getOrganization(auth.employer.organizationId);
+        if (!publicOrganization(organization)) return jsonResponse(403, { ok: false, error: "organization_verification_required" }, origin);
       }
 
       if (action.type === "search") {
@@ -185,7 +207,7 @@ function createEmployerHandler(dependencies) {
         return jsonResponse(200, {
           ok: true,
           apiVersion: EMPLOYER_API_VERSION,
-          employer: publicEmployer(auth.employer),
+          employer: publicEmployer(auth.employer, organization),
           roleTemplate: publicRoleTemplates().find(item => item.id === action.search.roleTemplateId),
           entries: talent.entries,
           count: talent.entries.length,
@@ -195,7 +217,43 @@ function createEmployerHandler(dependencies) {
       }
 
       if (action.type === "listShortlists") {
-        return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, employer: publicEmployer(auth.employer), shortlists: await shortlistsWithCounts(auth.employer.employerId) }, origin);
+        return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, employer: publicEmployer(auth.employer, organization), shortlists: await shortlistsWithCounts(auth.employer.employerId) }, origin);
+      }
+
+      if (["listConversations", "listMessages", "sendMessage", "markConversationRead", "setConversationState"].includes(action.type)) {
+        if (action.type === "listConversations" && settings.employer_chat_enabled !== "true") {
+          return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, chatEnabled: false, conversations: [] }, origin);
+        }
+        if (settings.employer_chat_enabled !== "true") return jsonResponse(403, { ok: false, error: "employer_chat_closed" }, origin);
+        if (typeof store.getEmployerConversation !== "function" || typeof store.listEmployerConversations !== "function") throw new Error("employer_chat_store_required");
+        if (action.type === "listConversations") {
+          const rows = await store.listEmployerConversations(auth.employer.employerId);
+          return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, chatEnabled: true, conversations: rows.map(row => publicConversation(row, "employer")) }, origin);
+        }
+        const conversation = await store.getEmployerConversation(auth.employer.employerId, action.conversationId);
+        if (!conversation) return jsonResponse(404, { ok: false, error: "conversation_not_found" }, origin);
+        if (action.type === "listMessages") {
+          const rows = await store.listConversationMessages(conversation.conversationId, action.limit);
+          return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, conversation: publicConversation(conversation, "employer"), messages: rows.map(publicMessage) }, origin);
+        }
+        const now = nowProvider();
+        if (action.type === "sendMessage") {
+          if (conversation.state !== "open") return jsonResponse(409, { ok: false, error: "conversation_closed" }, origin);
+          const message = await store.writeMessage({
+            candidateProfileId: conversation.candidateProfileId, conversationId: conversation.conversationId,
+            messageId: createMessageId(talentSecret, conversation.conversationId, "employer", action.clientMessageId),
+            clientMessageId: action.clientMessageId, senderType: "employer", text: action.text,
+            createdAt: now, purgeAt: plusMs(now, CHAT_RETENTION_MS)
+          });
+          return jsonResponse(200, { ok: true, apiVersion: EMPLOYER_API_VERSION, message: publicMessage(message) }, origin);
+        }
+        if (action.type === "markConversationRead") {
+          await store.markConversationRead(auth.employer.employerId, conversation.conversationId, "employer", now);
+          return jsonResponse(200, { ok: true, read: true }, origin);
+        }
+        if (action.state === "blocked") return jsonResponse(403, { ok: false, error: "candidate_only_action" }, origin);
+        await store.setConversationState(auth.employer.employerId, conversation.conversationId, "employer", action.state, now, plusMs(now, CHAT_RETENTION_MS));
+        return jsonResponse(200, { ok: true, state: action.state }, origin);
       }
 
       if (action.type === "createShortlist") {
@@ -267,7 +325,7 @@ function createEmployerHandler(dependencies) {
             requestId: action.requestId,
             talentProfileId: candidate.item.talentProfileId,
             candidateAlias: candidate.entry.alias,
-            organizationName: auth.employer.organizationName,
+            organizationName: organization ? organization.displayName : auth.employer.organizationName,
             roleTitle: action.roleTitle,
             roleSummary: action.roleSummary,
             workFormat: action.workFormat,
@@ -308,7 +366,7 @@ function createEmployerHandler(dependencies) {
       return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
     } catch (error) {
       const errorCode = String(error && error.message || "");
-      if (error instanceof SyntaxError || errorCode === "invalid_invitation_deadline" || /^(invalid_request|[a-z_]+_invalid)$/.test(errorCode)) {
+      if (error instanceof SyntaxError || ["invalid_invitation_deadline", "invalid_chat_request", "invalid_chat_message", "contact_sharing_closed"].includes(errorCode) || /^(invalid_request|[a-z_]+_invalid)$/.test(errorCode)) {
         return jsonResponse(400, { ok: false, error: "invalid_request" }, origin);
       }
       return jsonResponse(503, { ok: false, error: "employer_temporarily_unavailable" }, origin);

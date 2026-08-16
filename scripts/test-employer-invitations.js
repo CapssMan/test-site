@@ -73,7 +73,7 @@ function createStore(invitationEnabled) {
   const store = createStore(true);
   const employer = createEmployerHandler({ store, sessionSecret, talentSecret, allowedOrigins: [origin], now: () => now });
   const employerConfig = JSON.parse((await employer(event("GET"))).body);
-  assert.equal(employerConfig.backendVersion, "yandex-employer-invitations-2026-08-16-1");
+  assert.equal(employerConfig.backendVersion, "yandex-employer-trust-chat-2026-08-17-1");
   assert.equal(employerConfig.invitationEnabled, true);
   assert.equal(employerConfig.contactEnabled, false);
   const createdResponse = await employer(event("POST", request, employerToken));

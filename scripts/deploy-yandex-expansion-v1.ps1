@@ -34,6 +34,14 @@ $bankPlan = @(
     PublicPath = Join-Path $repoRoot "data\software-junior.json"
     ObjectKey = "banks/software-v1/software-junior.json"
     Audit = "audit-software-bank.js"
+  },
+  @{
+    TestId = "product-project-junior"
+    Version = "Product / Project Management Junior v1.0"
+    PrivatePath = Join-Path $workspaceRoot "skillcheck-private-product-project-r1\product-project-junior.json"
+    PublicPath = Join-Path $repoRoot "data\product-project-junior.json"
+    ObjectKey = "banks/product-project-v1/product-project-junior.json"
+    Audit = "audit-product-project-bank.js"
   }
 )
 $runtimePlan = @(
@@ -240,7 +248,7 @@ try {
 
   $created = @{}
   foreach ($item in $runtimePlan) {
-    $created[[string]$item.Target] = Create-Version $sources[[string]$item.Source] ([string]$item.Target) "Tourism and software expansion runtime"
+    $created[[string]$item.Target] = Create-Version $sources[[string]$item.Source] ([string]$item.Target) "SkillCheck multi-direction expansion runtime"
   }
   $null = @(& $yc serverless api-gateway update --id $gatewayId --spec $gatewaySpec --no-logging --format json) | ConvertFrom-Json
   if ($LASTEXITCODE -ne 0) { throw "Expansion API Gateway cutover failed." }
@@ -266,7 +274,7 @@ try {
       throw "Live public-bank verification failed: $testId"
     }
   }
-  Write-Host "DONE: tourism-junior v1.1 and software-junior v1.0 are live; seven production directions are available; employer, profile, credentials, chat and contact gates remain closed."
+  Write-Host "DONE: tourism-junior v1.1, software-junior v1.0 and product-project-junior v1.0 are live; eight production directions are available; employer, profile, credentials, chat and contact gates remain closed."
 } catch {
   if ($ydbReady -and $null -ne $previousSettings) {
     try { Set-AttemptGates "false" "false" $previousSettings.account_required_for_attempts } catch { Write-Warning "Fail-closed attempt gates could not be verified." }

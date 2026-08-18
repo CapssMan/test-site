@@ -60,6 +60,12 @@ const ROLE_TEMPLATES = Object.freeze({
     title: "Разработка ПО",
     description: "Алгоритмы, код, Git, HTTP/API, базы данных, тестирование, безопасность и поставка.",
     weights: Object.freeze({ "software-junior": 1 })
+  }),
+  "product-project-management": Object.freeze({
+    id: "product-project-management",
+    title: "Product / Project Management",
+    description: "Пользовательские задачи, метрики, эксперименты, содержание, сроки, риски, Scrum и качество поставки.",
+    weights: Object.freeze({ "product-project-junior": 1 })
   })
 });
 
@@ -70,7 +76,8 @@ const TEST_TITLES = Object.freeze({
   "acc-junior": "Accounting / Reporting",
   "bi-junior": "Data & BI Analyst",
   "tourism-junior": "Tourism & Hospitality Operations",
-  "software-junior": "Software Development Junior"
+  "software-junior": "Software Development Junior",
+  "product-project-junior": "Product / Project Management Junior"
 });
 
 const EXPERIENCE = Object.freeze({

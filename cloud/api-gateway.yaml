@@ -180,6 +180,7 @@ paths:
               - bi-junior
               - tourism-junior
               - software-junior
+              - product-project-junior
         - name: limit
           in: query
           required: false

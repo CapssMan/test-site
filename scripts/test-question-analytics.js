@@ -36,7 +36,7 @@ rows.push(result(24, { scoreVerification: "client-reported-unverified" }));
 rows.push(result(25, { answerDetails: [{ questionId: "fa_001", isCorrect: true, timedOut: false, timeSpent: 9999, timeLimit: 60 }] }));
 
 const analytics = buildQuestionAnalytics(rows);
-assert.equal(analytics.length, 7);
+assert.equal(analytics.length, 8);
 const financial = analytics.find(item => item.testId === "fa-junior");
 assert.equal(financial.completedAttempts, 20);
 assert.equal(financial.itemResponses, 20);

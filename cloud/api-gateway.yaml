@@ -181,6 +181,7 @@ paths:
               - tourism-junior
               - software-junior
               - product-project-junior
+              - sales-junior
         - name: limit
           in: query
           required: false

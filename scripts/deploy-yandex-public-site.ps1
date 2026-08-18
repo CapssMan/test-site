@@ -39,6 +39,7 @@ $publicFiles = @(
   "data/fa-junior.json",
   "data/fpa-junior.json",
   "data/product-project-junior.json",
+  "data/sales-junior.json",
   "data/software-junior.json",
   "data/tourism-junior.json"
 )
@@ -139,8 +140,8 @@ if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is mis
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
-if ($publicFiles.Count -ne 25 -or @($publicFiles | Sort-Object -Unique).Count -ne 25) {
-  throw "Public deployment allowlist must contain exactly 25 unique files."
+if ($publicFiles.Count -ne 26 -or @($publicFiles | Sort-Object -Unique).Count -ne 26) {
+  throw "Public deployment allowlist must contain exactly 26 unique files."
 }
 foreach ($relativePath in $publicFiles) {
   if ($relativePath -match "(^|/)(?:cloud|docs|scripts|apps-script|private)(/|$)" -or $relativePath -match "\.\.") {

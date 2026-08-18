@@ -42,6 +42,14 @@ $bankPlan = @(
     PublicPath = Join-Path $repoRoot "data\product-project-junior.json"
     ObjectKey = "banks/product-project-v1/product-project-junior.json"
     Audit = "audit-product-project-bank.js"
+  },
+  @{
+    TestId = "sales-junior"
+    Version = "Sales / Business Development Junior v1.0"
+    PrivatePath = Join-Path $workspaceRoot "skillcheck-private-sales-r1\sales-junior.json"
+    PublicPath = Join-Path $repoRoot "data\sales-junior.json"
+    ObjectKey = "banks/sales-v1/sales-junior.json"
+    Audit = "audit-sales-bank.js"
   }
 )
 $runtimePlan = @(
@@ -274,7 +282,7 @@ try {
       throw "Live public-bank verification failed: $testId"
     }
   }
-  Write-Host "DONE: tourism-junior v1.1, software-junior v1.0 and product-project-junior v1.0 are live; eight production directions are available; employer, profile, credentials, chat and contact gates remain closed."
+  Write-Host "DONE: tourism-junior v1.1, software-junior v1.0, product-project-junior v1.0 and sales-junior v1.0 are live; nine production directions are available; employer, profile, credentials, chat and contact gates remain closed."
 } catch {
   if ($ydbReady -and $null -ne $previousSettings) {
     try { Set-AttemptGates "false" "false" $previousSettings.account_required_for_attempts } catch { Write-Warning "Fail-closed attempt gates could not be verified." }

@@ -26,7 +26,8 @@ const TESTS = Object.freeze({
   "bi-junior": Object.freeze({ title: "Data & BI Analyst Junior", testVersion: "BI Junior v6.0", bankVersion: "BI Junior v6.0", questions: 40, attempt: 40, prefix: "BI" }),
   "tourism-junior": Object.freeze({ title: "Tourism & Hospitality Operations Junior", testVersion: "Tourism & Hospitality Operations Junior v1.1", bankVersion: "Tourism & Hospitality Operations Junior v1.1", questions: 40, attempt: 40, prefix: "TOUR" }),
   "software-junior": Object.freeze({ title: "Software Development Junior", testVersion: "Software Development Junior v1.0", bankVersion: "Software Development Junior v1.0", questions: 40, attempt: 40, prefix: "SW" }),
-  "product-project-junior": Object.freeze({ title: "Product / Project Management Junior", testVersion: "Product / Project Management Junior v1.0", bankVersion: "Product / Project Management Junior v1.0", questions: 40, attempt: 40, prefix: "PPM" })
+  "product-project-junior": Object.freeze({ title: "Product / Project Management Junior", testVersion: "Product / Project Management Junior v1.0", bankVersion: "Product / Project Management Junior v1.0", questions: 40, attempt: 40, prefix: "PPM" }),
+  "sales-junior": Object.freeze({ title: "Sales / Business Development Junior", testVersion: "Sales / Business Development Junior v1.0", bankVersion: "Sales / Business Development Junior v1.0", questions: 40, attempt: 40, prefix: "SALES" })
 });
 
 const ALLOWED_ENGLISH_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);

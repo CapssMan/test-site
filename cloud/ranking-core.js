@@ -14,7 +14,8 @@ const SUPPORTED_TESTS = Object.freeze({
   "bi-junior": "Data & BI Analyst Junior",
   "tourism-junior": "Tourism & Hospitality Operations Junior",
   "software-junior": "Software Development Junior",
-  "product-project-junior": "Product / Project Management Junior"
+  "product-project-junior": "Product / Project Management Junior",
+  "sales-junior": "Sales / Business Development Junior"
 });
 
 const TECHNICAL_RESULT_CODES = new Set([

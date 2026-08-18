@@ -13,7 +13,8 @@ const TEST_FILES = [
   "data/bi-junior.json",
   "data/tourism-junior.json",
   "data/software-junior.json",
-  "data/product-project-junior.json"
+  "data/product-project-junior.json",
+  "data/sales-junior.json"
 ];
 const PRIVATE_KEYS = new Set([
   "correct", "correctindex", "correctanswer", "correctoption", "correctoptionid",

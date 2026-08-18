@@ -12,7 +12,7 @@ const website = JSON.parse(fs.readFileSync(path.join(root, "cloud", "public-webs
 const expected = [
   "index.html", "preview-v2.html", "preview-v3.html", "assets/preview-v3.css", "assets/preview-v3.js", "social-preview.png", "social-preview.svg", "test.html", "admin.html", "privacy.html", "consent.html", "ranking.html", "employer.html",
   "ranking-consent.html", "account.html", "account-consent.html", "data/acc-junior.json", "data/bi-junior.json", "data/ca-junior.json",
-  "data/dev-quick.json", "data/fa-junior.json", "data/fpa-junior.json", "data/product-project-junior.json", "data/sales-junior.json", "data/software-junior.json", "data/tourism-junior.json"
+  "data/dev-quick.json", "data/fa-junior.json", "data/fpa-junior.json", "data/logistics-procurement-junior.json", "data/product-project-junior.json", "data/sales-junior.json", "data/software-junior.json", "data/tourism-junior.json"
 ];
 const allowlistMatch = deploy.match(/\$publicFiles\s*=\s*@\(([\s\S]*?)\n\)/);
 assert(allowlistMatch, "public deployment allowlist is missing");
@@ -36,8 +36,8 @@ assert.match(deploy, /\$attempt -le 3/);
 assert.match(deploy, /"\/v1\/employer"/);
 assert.match(deploy, /failureCode -ne "attempt_unavailable"/);
 assert.match(deploy, /"\/v1\/account"/);
-assert.match(deploy, /\$publicFiles\.Count -ne 26[\s\S]*Count -ne 26/);
-assert.match(deploy, /exactly 26 unique files/);
+assert.match(deploy, /\$publicFiles\.Count -ne 27[\s\S]*Count -ne 27/);
+assert.match(deploy, /exactly 27 unique files/);
 assert.match(fs.readFileSync(path.join(root, "index.html"), "utf8"), /href="employer\.html">.*?<\/a>/);
 assert.match(fs.readFileSync(path.join(root, "index.html"), "utf8"), /href="account\.html">Личный кабинет<\/a>/);
 assert.doesNotMatch(deploy, /storage\s+.*\s+rm|delete-object|delete-objects|--recursive/);
@@ -62,4 +62,4 @@ assert.deepEqual(Array.from(originBlock[1].matchAll(/"([^"]+)"/g), match => matc
 assert.doesNotMatch(originBlock[1], /\*/);
 assert.match(deploy, /GitHub fallback unexpectedly received candidate API CORS/);
 
-console.log("Yandex public-site deployment checks passed: exact 26-file boundary, verified upload and Yandex-only candidate CORS.");
+console.log("Yandex public-site deployment checks passed: exact 27-file boundary, verified upload and Yandex-only candidate CORS.");

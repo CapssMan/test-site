@@ -5,8 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const bankIds = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior", "software-junior", "product-project-junior", "sales-junior"];
-const expectedCounts = { "fa-junior": 40, "ca-junior": 80, "fpa-junior": 40, "acc-junior": 40, "bi-junior": 40, "tourism-junior": 40, "software-junior": 40, "product-project-junior": 40, "sales-junior": 40 };
+const bankIds = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior", "software-junior", "product-project-junior", "sales-junior", "logistics-procurement-junior"];
+const expectedCounts = { "fa-junior": 40, "ca-junior": 80, "fpa-junior": 40, "acc-junior": 40, "bi-junior": 40, "tourism-junior": 40, "software-junior": 40, "product-project-junior": 40, "sales-junior": 40, "logistics-procurement-junior": 40 };
 const allowedDifficulties = new Set(["easy", "medium", "hard", "calc", "case"]);
 const globalIds = new Map();
 const globalTexts = new Map();

@@ -16,7 +16,8 @@ for (const [testId, version, privateFolder, objectKey, audit] of [
   ["tourism-junior", "Tourism & Hospitality Operations Junior v1.1", "skillcheck-private-tourism-r1", "banks\/tourism-v1\/tourism-junior.json", "audit-tourism-bank.js"],
   ["software-junior", "Software Development Junior v1.0", "skillcheck-private-software-r1", "banks\/software-v1\/software-junior.json", "audit-software-bank.js"],
   ["product-project-junior", "Product / Project Management Junior v1.0", "skillcheck-private-product-project-r1", "banks\/product-project-v1\/product-project-junior.json", "audit-product-project-bank.js"],
-  ["sales-junior", "Sales / Business Development Junior v1.0", "skillcheck-private-sales-r1", "banks\/sales-v1\/sales-junior.json", "audit-sales-bank.js"]
+  ["sales-junior", "Sales / Business Development Junior v1.0", "skillcheck-private-sales-r1", "banks\/sales-v1\/sales-junior.json", "audit-sales-bank.js"],
+  ["logistics-procurement-junior", "Logistics / Procurement Junior v1.0", "skillcheck-private-logistics-r1", "banks\/logistics-v1\/logistics-procurement-junior.json", "audit-logistics-bank.js"]
 ]) {
   assert(deploy.includes(`TestId = "${testId}"`));
   assert(deploy.includes(`Version = "${version}"`));
@@ -47,7 +48,7 @@ for (const gate of [
 assert.match(deploy, /deploy-yandex-public-site\.ps1"\) -SkipGatewayUpdate/);
 assert.match(deploy, /Live ranking verification failed/);
 assert.match(deploy, /Live public-bank verification failed/);
-assert.match(deploy, /nine production directions are available/);
+assert.match(deploy, /ten production directions are available/);
 assert.match(deploy, /Gateway was updated before failure; issuance remains closed/);
 assert.match(deploy, /--no-logging/);
 assert.doesNotMatch(deploy, /version delete|Lockbox|lockbox|secret create|system:allUsers|--public/);
@@ -55,5 +56,6 @@ assert(!fs.existsSync(path.join(root, "skillcheck-private-tourism-r1")));
 assert(!fs.existsSync(path.join(root, "skillcheck-private-software-r1")));
 assert(!fs.existsSync(path.join(root, "skillcheck-private-product-project-r1")));
 assert(!fs.existsSync(path.join(root, "skillcheck-private-sales-r1")));
+assert(!fs.existsSync(path.join(root, "skillcheck-private-logistics-r1")));
 
-console.log("Expansion deployment checks passed: four private banks, paused issuance, checksum verification, four rollback-safe runtimes and closed employer gates.");
+console.log("Expansion deployment checks passed: five private banks, paused issuance, checksum verification, four rollback-safe runtimes and closed employer gates.");

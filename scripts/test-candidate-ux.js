@@ -177,10 +177,10 @@ assert.equal(helperContext.__helpers.pluralizeRu(22, "вопрос", "вопро
 assert.equal(helperContext.__helpers.isValidEmail("candidate@example.com"), true);
 assert.equal(helperContext.__helpers.isValidEmail("candidate@invalid"), false);
 
-["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior", "software-junior", "product-project-junior", "sales-junior"].forEach(testId => {
+["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior", "software-junior", "product-project-junior", "sales-junior", "logistics-procurement-junior"].forEach(testId => {
   assert.match(indexPage, new RegExp('href="test\\.html\\?test=' + testId + '"'), "home must retain " + testId);
 });
-assert.match(indexPage, /data-count="400"[^>]*>400<\//, "home must show the production bank size");
+assert.match(indexPage, /data-count="440"[^>]*>440<\//, "home must show the production bank size");
 
 const doPost = extractTopLevelFunction(backend, "doPost");
 assert.match(doPost, /action === "beginAttempt"/);

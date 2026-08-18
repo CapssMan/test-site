@@ -98,7 +98,7 @@ function fakeFetch(url, options) {
   assert.equal(exchangeResponse.statusCode, 200);
   const exchange = JSON.parse(exchangeResponse.body);
   assert.equal(exchange.selfServiceEnabled, true);
-  assert.equal(exchange.testAccess.length, 9);
+  assert.equal(exchange.testAccess.length, 10);
   assert.ok(exchange.testAccess.every(item => item.status === "available"));
   assert.match(exchange.sessionToken, /^sca_[A-Za-z0-9_-]{43}$/);
   assert.equal(exchange.email, "candidate@yandex.ru");

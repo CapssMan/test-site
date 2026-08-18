@@ -182,6 +182,7 @@ paths:
               - software-junior
               - product-project-junior
               - sales-junior
+              - logistics-procurement-junior
         - name: limit
           in: query
           required: false

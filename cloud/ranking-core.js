@@ -11,7 +11,7 @@ const SUPPORTED_TESTS = Object.freeze({
   "ca-junior": "Credit Analyst Junior",
   "fpa-junior": "FP&A / Budget Analyst Junior",
   "acc-junior": "Accounting / Reporting Junior",
-  "bi-junior": "Finance BI / Data Analyst Junior",
+  "bi-junior": "Data & BI Analyst Junior",
   "tourism-junior": "Tourism & Hospitality Operations Junior"
 });
 

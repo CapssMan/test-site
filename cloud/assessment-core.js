@@ -23,7 +23,7 @@ const TESTS = Object.freeze({
   "ca-junior": Object.freeze({ title: "Credit Analyst Junior", testVersion: "CA Junior v6.0", bankVersion: "CA Junior v6.0", questions: 80, attempt: 40, prefix: "CA" }),
   "fpa-junior": Object.freeze({ title: "FP&A / Budget Analyst Junior", testVersion: "FP&A Junior v6.0", bankVersion: "FP&A Junior v6.0", questions: 40, attempt: 40, prefix: "FPA" }),
   "acc-junior": Object.freeze({ title: "Accounting / Reporting Junior", testVersion: "ACC Junior v6.0", bankVersion: "ACC Junior v6.0", questions: 40, attempt: 40, prefix: "ACC" }),
-  "bi-junior": Object.freeze({ title: "Finance BI / Data Analyst Junior", testVersion: "BI Junior v6.0", bankVersion: "BI Junior v6.0", questions: 40, attempt: 40, prefix: "BI" }),
+  "bi-junior": Object.freeze({ title: "Data & BI Analyst Junior", testVersion: "BI Junior v6.0", bankVersion: "BI Junior v6.0", questions: 40, attempt: 40, prefix: "BI" }),
   "tourism-junior": Object.freeze({ title: "Tourism & Hospitality Operations Junior", testVersion: "Tourism & Hospitality Operations Junior v1.1", bankVersion: "Tourism & Hospitality Operations Junior v1.1", questions: 40, attempt: 40, prefix: "TOUR" })
 });
 

@@ -37,7 +37,8 @@ $publicFiles = @(
   "data/ca-junior.json",
   "data/dev-quick.json",
   "data/fa-junior.json",
-  "data/fpa-junior.json"
+  "data/fpa-junior.json",
+  "data/tourism-junior.json"
 )
 
 function Invoke-YcJson([string[]]$arguments) {
@@ -136,8 +137,8 @@ if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is mis
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
-if ($publicFiles.Count -ne 22 -or @($publicFiles | Sort-Object -Unique).Count -ne 22) {
-  throw "Public deployment allowlist must contain exactly 22 unique files."
+if ($publicFiles.Count -ne 23 -or @($publicFiles | Sort-Object -Unique).Count -ne 23) {
+  throw "Public deployment allowlist must contain exactly 23 unique files."
 }
 foreach ($relativePath in $publicFiles) {
   if ($relativePath -match "(^|/)(?:cloud|docs|scripts|apps-script|private)(/|$)" -or $relativePath -match "\.\.") {

@@ -70,7 +70,7 @@ function plusMs(now, milliseconds) {
   return new Date(now.getTime() + milliseconds);
 }
 
-const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"];
+const SELF_SERVICE_TEST_IDS = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior"];
 const ACCOUNT_BACKEND_VERSION = "yandex-candidate-trust-chat-2026-08-17-1";
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const ACTIVE_ATTEMPT_TTL_MS = 6 * 60 * 60 * 1000;

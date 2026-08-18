@@ -79,11 +79,12 @@ const specs = {
   "fpa-junior": { version: "FP&A Junior v6.0", count: 40, prefix: "fpa6", namespace: marketNamespace },
   "acc-junior": { version: "ACC Junior v6.0", count: 40, prefix: "acc6", namespace: marketNamespace },
   "bi-junior": { version: "BI Junior v6.0", count: 40, prefix: "bi6", namespace: marketNamespace },
+  "tourism-junior": { version: "Tourism & Hospitality Operations Junior v1.1", count: 40, prefix: "tour1", namespace: "skillcheck-tourism-v11-balanced-1" },
   "dev-quick": { version: "DEV Quick v2.0", count: 1, prefix: "dev_quick", namespace: "skillcheck-option-v1" }
 };
 const bankFiles = fs.readdirSync(dataDirectory).filter(name => name.endsWith(".json")).sort();
 assert.deepEqual(bankFiles,
-  ["acc-junior.json", "bi-junior.json", "ca-junior.json", "dev-quick.json", "fa-junior.json", "fpa-junior.json"]);
+  ["acc-junior.json", "bi-junior.json", "ca-junior.json", "dev-quick.json", "fa-junior.json", "fpa-junior.json", "tourism-junior.json"]);
 
 const banks = bankFiles.map(fileName => ({
   fileName,

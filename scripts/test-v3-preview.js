@@ -26,7 +26,7 @@ assert(!production.includes('preview-v2.html'));
 assert(!production.includes('дизайн-превью'));
 assert(production.includes('href="ranking.html"'));
 for (const id of ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"]) assert(html.includes('href="test.html?test=' + id + '"'));
-for (const id of ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior"]) assert(production.includes('href="test.html?test=' + id + '"'));
+for (const id of ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior"]) assert(production.includes('href="test.html?test=' + id + '"'));
 assert.match(css, /backdrop-filter:blur/);
 assert.match(css, /--parallax-x/);
 assert.match(css, /--tilt-x/);
@@ -37,4 +37,4 @@ assert(!["fetch(", "XMLHttpRequest", "WebSocket", "localStorage", "sessionStorag
 assert(fs.statSync(path.join(root, "preview-v3.html")).size < 50000);
 assert(fs.statSync(path.join(root, "assets", "preview-v3.css")).size < 50000);
 assert(fs.statSync(path.join(root, "assets", "preview-v3.js")).size < 15000);
-console.log("V3 production and preview checks passed: preserved V2, approved copy, restrained effects, five roles and no network/storage side effects.");
+console.log("V3 production and preview checks passed: preserved V2, approved copy, restrained effects, six production roles and no network/storage side effects.");

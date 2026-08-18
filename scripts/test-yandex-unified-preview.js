@@ -15,8 +15,8 @@ assert.equal((gateway.match(/BEGIN UNIFIED_ORIGIN_PREVIEW/g) || []).length, 1);
 assert.equal((gateway.match(/END UNIFIED_ORIGIN_PREVIEW/g) || []).length, 1);
 assert.match(gateway, /\/preview-unified:\s*\n\s*get:[\s\S]*?type: object_storage[\s\S]*?bucket: assessment-b1gafbjd3dlh-web[\s\S]*?object: index\.html/);
 assert.match(gateway, /\/preview-unified\/\{file\+\}:[\s\S]*?name: file[\s\S]*?type: object_storage[\s\S]*?object: '\{file\}'/);
-assert.match(gateway, /\/v1\/account:[\s\S]*?tag: "account-v5"/);
-assert.match(gateway, /\/v1\/assessment:[\s\S]*?tag: "assessment-v13"/);
+assert.match(gateway, /\/v1\/account:[\s\S]*?tag: "account-v6"/);
+assert.match(gateway, /\/v1\/assessment:[\s\S]*?tag: "assessment-v14"/);
 assert.match(gateway, /service_account_id: ajerg3btsr8m7va4gi2m/);
 
 assert(account.includes(`const UNIFIED_PREVIEW_ORIGIN="${gatewayOrigin}"`));

@@ -48,6 +48,12 @@ const ROLE_TEMPLATES = Object.freeze({
     title: "Finance BI / Data Analyst",
     description: "SQL, визуализация, качество данных и финансовые метрики.",
     weights: Object.freeze({ "bi-junior": 0.65, "fa-junior": 0.2, "fpa-junior": 0.15 })
+  }),
+  "tourism-operations": Object.freeze({
+    id: "tourism-operations",
+    title: "Туризм и гостеприимство",
+    description: "Бронирование, турпродукт, клиентский сервис, гостиничные метрики и операционные риски.",
+    weights: Object.freeze({ "tourism-junior": 1 })
   })
 });
 
@@ -56,7 +62,8 @@ const TEST_TITLES = Object.freeze({
   "ca-junior": "Credit Analyst Junior",
   "fpa-junior": "FP&A / Budget Analyst",
   "acc-junior": "Accounting / Reporting",
-  "bi-junior": "Finance BI / Data Analyst"
+  "bi-junior": "Finance BI / Data Analyst",
+  "tourism-junior": "Tourism & Hospitality Operations"
 });
 
 const EXPERIENCE = Object.freeze({

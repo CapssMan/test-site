@@ -31,7 +31,7 @@ assert.match(deploy, /--no-logging/);
 assert.doesNotMatch(deploy, /version delete|Lockbox|lockbox|secret create|client_secret/i);
 assert.doesNotMatch(deploy, /Write-Host[^\n]*(?:environment|secret|password)/i);
 
-for (const tag of ["account-v5", "employer-v3", "admin-v11"]) assert.equal((gateway.match(new RegExp(`tag: "${tag}"`, "g")) || []).length, 2);
+for (const tag of ["account-v6", "employer-v4", "admin-v12"]) assert.equal((gateway.match(new RegExp(`tag: "${tag}"`, "g")) || []).length, 2);
 for (const tag of ["account-v4", "employer-v2", "admin-v10"]) assert.equal((gateway.match(new RegExp(`tag: "${tag}"`, "g")) || []).length, 0);
 
 for (const table of ["candidate_credentials", "employer_organizations", "candidate_employer_conversations", "candidate_employer_messages"]) assert(schema.includes(`CREATE TABLE IF NOT EXISTS ${table}`));

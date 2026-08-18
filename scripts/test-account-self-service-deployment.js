@@ -37,8 +37,8 @@ assert.match(deploy, /catch \{[\s\S]*Set-RolloutGates "false" "false" "false"/);
 assert.doesNotMatch(deploy, /remove-tag|New-Secret|New-SessionSecret|client_secret|Lockbox|lockbox/);
 assert.doesNotMatch(deploy, /Write-Host[^\n]*(?:environment|secret|password)/i);
 
-assert.equal((gateway.match(/tag: "assessment-v13"/g) || []).length, 2);
-assert.equal((gateway.match(/tag: "account-v5"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "assessment-v14"/g) || []).length, 2);
+assert.equal((gateway.match(/tag: "account-v6"/g) || []).length, 2);
 assert.equal((gateway.match(/tag: "assessment-v12"/g) || []).length, 0);
 assert.equal((gateway.match(/tag: "account-v1"/g) || []).length, 0);
 assert.match(schema, /CREATE TABLE IF NOT EXISTS candidate_self_service_slots/);

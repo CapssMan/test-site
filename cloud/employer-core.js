@@ -54,6 +54,12 @@ const ROLE_TEMPLATES = Object.freeze({
     title: "Туризм и гостеприимство",
     description: "Бронирование, турпродукт, клиентский сервис, гостиничные метрики и операционные риски.",
     weights: Object.freeze({ "tourism-junior": 1 })
+  }),
+  "software-development": Object.freeze({
+    id: "software-development",
+    title: "Разработка ПО",
+    description: "Алгоритмы, код, Git, HTTP/API, базы данных, тестирование, безопасность и поставка.",
+    weights: Object.freeze({ "software-junior": 1 })
   })
 });
 
@@ -63,7 +69,8 @@ const TEST_TITLES = Object.freeze({
   "fpa-junior": "FP&A / Budget Analyst",
   "acc-junior": "Accounting / Reporting",
   "bi-junior": "Data & BI Analyst",
-  "tourism-junior": "Tourism & Hospitality Operations"
+  "tourism-junior": "Tourism & Hospitality Operations",
+  "software-junior": "Software Development Junior"
 });
 
 const EXPERIENCE = Object.freeze({

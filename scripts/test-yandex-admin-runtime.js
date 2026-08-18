@@ -130,7 +130,7 @@ async function post(handler, action, requestPassword, fields) {
   assert.equal(analytics.privacy, "aggregate-no-candidate-data");
   assert.equal(analytics.minimumInitialSample, 10);
   assert.equal(analytics.minimumStableSample, 20);
-  assert.equal(analytics.tests.length, 6);
+  assert.equal(analytics.tests.length, 7);
   const financialAnalytics = analytics.tests.find(test => test.testId === "fa-junior");
   assert.equal(financialAnalytics.completedAttempts, 1);
   assert.equal(financialAnalytics.questions[0].questionId, "fa_001");

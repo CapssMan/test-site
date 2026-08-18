@@ -12,7 +12,8 @@ const SUPPORTED_TESTS = Object.freeze({
   "fpa-junior": "FP&A / Budget Analyst Junior",
   "acc-junior": "Accounting / Reporting Junior",
   "bi-junior": "Data & BI Analyst Junior",
-  "tourism-junior": "Tourism & Hospitality Operations Junior"
+  "tourism-junior": "Tourism & Hospitality Operations Junior",
+  "software-junior": "Software Development Junior"
 });
 
 const TECHNICAL_RESULT_CODES = new Set([

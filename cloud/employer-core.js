@@ -78,6 +78,12 @@ const ROLE_TEMPLATES = Object.freeze({
     title: "Logistics / Procurement",
     description: "Потребность, поставщики, закупка, запасы, склад, перевозка, документы и риски.",
     weights: Object.freeze({ "logistics-procurement-junior": 1 })
+  }),
+  "digital-marketing": Object.freeze({
+    id: "digital-marketing",
+    title: "Digital Marketing",
+    description: "Стратегия, контент, performance, SEO, аналитика, экономика, эксперименты и качество данных.",
+    weights: Object.freeze({ "digital-marketing-junior": 1 })
   })
 });
 
@@ -91,7 +97,8 @@ const TEST_TITLES = Object.freeze({
   "software-junior": "Software Development Junior",
   "product-project-junior": "Product / Project Management Junior",
   "sales-junior": "Sales / Business Development Junior",
-  "logistics-procurement-junior": "Logistics / Procurement Junior"
+  "logistics-procurement-junior": "Logistics / Procurement Junior",
+  "digital-marketing-junior": "Digital Marketing Junior"
 });
 
 const EXPERIENCE = Object.freeze({

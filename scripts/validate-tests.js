@@ -15,7 +15,8 @@ const TEST_FILES = [
   "data/software-junior.json",
   "data/product-project-junior.json",
   "data/sales-junior.json",
-  "data/logistics-procurement-junior.json"
+  "data/logistics-procurement-junior.json",
+  "data/digital-marketing-junior.json"
 ];
 const PRIVATE_KEYS = new Set([
   "correct", "correctindex", "correctanswer", "correctoption", "correctoptionid",

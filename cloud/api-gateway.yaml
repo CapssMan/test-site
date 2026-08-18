@@ -183,6 +183,7 @@ paths:
               - product-project-junior
               - sales-junior
               - logistics-procurement-junior
+              - digital-marketing-junior
         - name: limit
           in: query
           required: false

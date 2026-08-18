@@ -84,11 +84,12 @@ const specs = {
   "product-project-junior": { version: "Product / Project Management Junior v1.0", count: 40, prefix: "ppm1", namespace: "skillcheck-product-project-v1-balanced-641" },
   "sales-junior": { version: "Sales / Business Development Junior v1.0", count: 40, prefix: "sales1", namespace: "skillcheck-sales-v1-balanced-819" },
   "logistics-procurement-junior": { version: "Logistics / Procurement Junior v1.0", count: 40, prefix: "log1", namespace: "skillcheck-logistics-v1-balanced-526" },
+  "digital-marketing-junior": { version: "Digital Marketing Junior v1.0", count: 40, prefix: "dm1", namespace: "skillcheck-digital-marketing-v1-balanced-138" },
   "dev-quick": { version: "DEV Quick v2.0", count: 1, prefix: "dev_quick", namespace: "skillcheck-option-v1" }
 };
 const bankFiles = fs.readdirSync(dataDirectory).filter(name => name.endsWith(".json")).sort();
 assert.deepEqual(bankFiles,
-  ["acc-junior.json", "bi-junior.json", "ca-junior.json", "dev-quick.json", "fa-junior.json", "fpa-junior.json", "logistics-procurement-junior.json", "product-project-junior.json", "sales-junior.json", "software-junior.json", "tourism-junior.json"]);
+  ["acc-junior.json", "bi-junior.json", "ca-junior.json", "dev-quick.json", "digital-marketing-junior.json", "fa-junior.json", "fpa-junior.json", "logistics-procurement-junior.json", "product-project-junior.json", "sales-junior.json", "software-junior.json", "tourism-junior.json"]);
 
 const banks = bankFiles.map(fileName => ({
   fileName,

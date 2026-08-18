@@ -7,7 +7,7 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const htmlFiles = fs.readdirSync(root).filter(name => name.endsWith(".html")).sort();
-const productionTestIds = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior", "software-junior", "product-project-junior", "sales-junior", "logistics-procurement-junior"];
+const productionTestIds = ["fa-junior", "ca-junior", "fpa-junior", "acc-junior", "bi-junior", "tourism-junior", "software-junior", "product-project-junior", "sales-junior", "logistics-procurement-junior", "digital-marketing-junior"];
 const allTestIds = productionTestIds.concat(["dev-quick"]);
 let checkedLinks = 0;
 

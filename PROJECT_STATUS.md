@@ -1,3 +1,11 @@
+## Production expansion — 19 August 2026
+
+В production опубликованы шесть новых направлений: Tourism & Hospitality Operations Junior v1.1, Software Development Junior v1.0, Product / Project Management Junior v1.0, Sales / Business Development Junior v1.0, Logistics / Procurement Junior v1.0 и Digital Marketing Junior v1.0. Вместе с пятью финансовыми направлениями сайт теперь содержит 11 тестов и 480 production-вопросов.
+
+Активные runtime-теги: `assessment-v14`, `account-v6`, `admin-v12`, `employer-v4`, `read-v7`, `write-v9`. Account-first self-service и выдача попыток работают. `profile_publication_enabled`, `employer_workspace_enabled`, `employer_contact_enabled`, `employer_chat_enabled`, `candidate_credentials_enabled` и `employer_company_profiles_enabled` остаются `false`.
+
+Первый запуск остановился fail-closed на лимите десяти тегов Cloud Functions. После проверки нулевого числа активных сессий были сняты только устаревшие теги; сами runtime-версии сохранены по ID. Cutover завершён поэтапно, чтобы рейтинг получил отдельные `read-v7` и `write-v9`. Все 11 ranking endpoints отвечают корректно, а шесть новых публичных банков совпадают с локальными файлами по SHA-256. Платные сервисы и Lockbox не подключались. Полный отчёт: `docs/EXPANSION_CUTOVER_2026-08-19.md`.
+
 ## Employer invitations v1 — 16 August 2026
 
 Каталог всех доступных кандидатов, рабочий shortlist 1–10 человек и двусторонние приглашения опубликованы за закрытыми gates. Активные runtime: `account-v4` (`d4e8bvjsr7sla1d4bo0p`) и `employer-v2` (`d4ehoduqcvhn5rhu1aua`). Добавочные схемы `016` и `017` применены без переписывания существующих аккаунтов, результатов и профилей.

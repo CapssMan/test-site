@@ -68,13 +68,20 @@ $bankPlan = @(
     Audit = "audit-digital-marketing-bank.js"
   }
 )
-$runtimePlan = @(
-  @{ Source = "assessment-v13"; Target = "assessment-v14"; Mode = "assessment" },
-  @{ Source = "account-v5"; Target = "account-v6"; Mode = "account" },
-  @{ Source = "admin-v11"; Target = "admin-v12"; Mode = "admin" },
-  @{ Source = "employer-v3"; Target = "employer-v4"; Mode = "employer" }
+$coreRuntimePlan = @(
+  @{ Source = "assessment-v13"; Target = "assessment-v14"; Mode = "assessment"; Routes = 2 },
+  @{ Source = "account-v5"; Target = "account-v6"; Mode = "account"; Routes = 2 },
+  @{ Source = "admin-v11"; Target = "admin-v12"; Mode = "admin"; Routes = 2 },
+  @{ Source = "employer-v3"; Target = "employer-v4"; Mode = "employer"; Routes = 2 }
 )
+$rankingRuntimePlan = @(
+  @{ Source = "read-v6"; Target = "read-v7"; Mode = "read"; Routes = 1 },
+  @{ Source = "write-v8"; Target = "write-v9"; Mode = "write"; Routes = 1 }
+)
+$runtimePlan = @($coreRuntimePlan) + @($rankingRuntimePlan)
+$obsoleteTags = @("account-v4", "employer-v2", "admin-v10")
 $packagePath = Join-Path $env:TEMP ("skillcheck-expansion-runtime-" + [Guid]::NewGuid().ToString("N") + ".zip")
+$partialGatewayPath = Join-Path $env:TEMP ("skillcheck-expansion-gateway-" + [Guid]::NewGuid().ToString("N") + ".yaml")
 $verifyPath = Join-Path $env:TEMP ("skillcheck-expansion-private-" + [Guid]::NewGuid().ToString("N") + ".json")
 $publicVerifyPath = Join-Path $env:TEMP ("skillcheck-expansion-public-" + [Guid]::NewGuid().ToString("N") + ".json")
 $packageUri = ""
@@ -82,6 +89,7 @@ $stageUris = New-Object System.Collections.Generic.List[string]
 $gatewayUpdated = $false
 $ydbReady = $false
 $previousSettings = $null
+$preservedVersions = @{}
 
 function Invoke-YdbJson([string]$query) {
   $raw = @(& $ydb -e $endpoint -d $database sql -s $query --format json-unicode-array)
@@ -122,6 +130,17 @@ function Assert-Tag-Missing([string]$tag) {
     $code = $LASTEXITCODE
   } finally { $ErrorActionPreference = $before }
   if ($code -eq 0) { throw "Target runtime tag already exists: $tag" }
+}
+
+function Remove-LegacyTag([string]$tag) {
+  $version = Get-Version $tag
+  & $yc serverless function version remove-tag --id ([string]$version.id) --tag $tag | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "Legacy tag removal failed: $tag" }
+  $preserved = @(& $yc serverless function version get --id ([string]$version.id) --format json)
+  if ($LASTEXITCODE -ne 0 -or [String]::IsNullOrWhiteSpace(($preserved -join ""))) {
+    throw "Old runtime version was not preserved: $tag"
+  }
+  return [string]$version.id
 }
 
 function Join-Environment([object]$source) {
@@ -210,8 +229,8 @@ try {
 
   $specText = [IO.File]::ReadAllText($gatewaySpec)
   foreach ($item in $runtimePlan) {
-    if ([regex]::Matches($specText, 'tag: "' + [regex]::Escape([string]$item.Target) + '"').Count -ne 2) {
-      throw "Gateway does not route both methods through $($item.Target)."
+    if ([regex]::Matches($specText, 'tag: "' + [regex]::Escape([string]$item.Target) + '"').Count -ne [int]$item.Routes) {
+      throw "Gateway route count is invalid for $($item.Target)."
     }
     Assert-Tag-Missing ([string]$item.Target)
   }
@@ -243,6 +262,10 @@ try {
   $active = @(Invoke-YdbJson "SELECT COUNT(*) AS row_count FROM assessment_sessions WHERE state = Utf8('active') OR state = Utf8('reserved');")
   if ($active.Count -ne 1 -or [long]$active[0].row_count -ne 0) { throw "Active assessment sessions block expansion cutover." }
 
+  foreach ($tag in $obsoleteTags) {
+    $preservedVersions[$tag] = Remove-LegacyTag $tag
+  }
+
   $bucketRaw = @(& $yc storage bucket get $packageBucket --format json)
   if ($LASTEXITCODE -ne 0) { throw "Private bucket configuration is unavailable." }
   $bucket = ($bucketRaw -join "`n") | ConvertFrom-Json
@@ -271,15 +294,40 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Runtime package upload failed." }
 
   $created = @{}
-  foreach ($item in $runtimePlan) {
+  foreach ($item in $coreRuntimePlan) {
     $created[[string]$item.Target] = Create-Version $sources[[string]$item.Source] ([string]$item.Target) "SkillCheck multi-direction expansion runtime"
   }
-  $null = @(& $yc serverless api-gateway update --id $gatewayId --spec $gatewaySpec --no-logging --format json) | ConvertFrom-Json
-  if ($LASTEXITCODE -ne 0) { throw "Expansion API Gateway cutover failed." }
+
+  $partialSpecText = $specText.Replace('tag: "read-v7"', 'tag: "read-v6"').Replace('tag: "write-v9"', 'tag: "write-v8"')
+  if ([regex]::Matches($partialSpecText, 'tag: "read-v6"').Count -ne 1 -or
+      [regex]::Matches($partialSpecText, 'tag: "write-v8"').Count -ne 1) {
+    throw "Intermediate ranking routes are invalid."
+  }
+  [IO.File]::WriteAllText($partialGatewayPath, $partialSpecText, [Text.UTF8Encoding]::new($false))
+  $null = @(& $yc serverless api-gateway update --id $gatewayId --spec $partialGatewayPath --no-logging --format json) | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0) { throw "Intermediate API Gateway cutover failed." }
   $gatewayUpdated = $true
-  foreach ($item in $runtimePlan) {
+
+  foreach ($item in $coreRuntimePlan) {
     $current = Get-Version ([string]$item.Target)
     if ([string]$current.id -ne [string]$created[[string]$item.Target].id) { throw "Runtime tag verification failed: $($item.Target)" }
+    $preservedVersions[[string]$item.Source] = Remove-LegacyTag ([string]$item.Source)
+  }
+
+  foreach ($item in $rankingRuntimePlan) {
+    $created[[string]$item.Target] = Create-Version $sources[[string]$item.Source] ([string]$item.Target) "SkillCheck eleven-direction ranking runtime"
+  }
+  $null = @(& $yc serverless api-gateway update --id $gatewayId --spec $gatewaySpec --no-logging --format json) | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0) { throw "Final API Gateway cutover failed." }
+  foreach ($item in $rankingRuntimePlan) {
+    $current = Get-Version ([string]$item.Target)
+    if ([string]$current.id -ne [string]$created[[string]$item.Target].id) { throw "Runtime tag verification failed: $($item.Target)" }
+  }
+  foreach ($entry in $preservedVersions.GetEnumerator()) {
+    $preserved = @(& $yc serverless function version get --id ([string]$entry.Value) --format json)
+    if ($LASTEXITCODE -ne 0 -or [String]::IsNullOrWhiteSpace(($preserved -join ""))) {
+      throw "Preserved old runtime is unavailable: $($entry.Key)"
+    }
   }
 
   & (Join-Path $repoRoot "scripts\deploy-yandex-public-site.ps1") -SkipGatewayUpdate
@@ -311,6 +359,7 @@ try {
   }
   if (-not [String]::IsNullOrWhiteSpace($packageUri)) { & $yc storage s3 rm $packageUri --only-show-errors | Out-Null }
   Remove-Item -LiteralPath $packagePath -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $partialGatewayPath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $verifyPath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $publicVerifyPath -Force -ErrorAction SilentlyContinue
   Remove-Item Env:\YDB_TOKEN -ErrorAction SilentlyContinue

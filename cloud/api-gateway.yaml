@@ -202,7 +202,7 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "read-v6"
+        tag: "read-v7"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"
   # BEGIN UNIFIED_ORIGIN_PREVIEW
@@ -259,6 +259,6 @@ paths:
       x-yc-apigateway-integration:
         type: cloud_functions
         function_id: d4e1qffg3l40q6jgq0t9
-        tag: "write-v8"
+        tag: "write-v9"
         service_account_id: ajerg3btsr8m7va4gi2m
         payload_format_version: "0.1"

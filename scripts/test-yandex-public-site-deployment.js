@@ -38,6 +38,7 @@ assert.match(deploy, /failureCode -ne "attempt_unavailable"/);
 assert.match(deploy, /"\/v1\/account"/);
 assert.match(deploy, /\$publicFiles\.Count -ne 28[\s\S]*Count -ne 28/);
 assert.match(deploy, /exactly 28 unique files/);
+assert.match(deploy, /public files are live in Yandex Object Storage/);
 assert.match(fs.readFileSync(path.join(root, "index.html"), "utf8"), /href="employer\.html">.*?<\/a>/);
 assert.match(fs.readFileSync(path.join(root, "index.html"), "utf8"), /href="account\.html">Личный кабинет<\/a>/);
 assert.doesNotMatch(deploy, /storage\s+.*\s+rm|delete-object|delete-objects|--recursive/);

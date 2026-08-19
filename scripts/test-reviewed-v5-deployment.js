@@ -29,7 +29,7 @@ assert.doesNotMatch(bankDeploy, /(?:OAuth|IAM|YDB)_?(?:TOKEN|KEY)\s*=\s*"[^"\s]+
 for (const [source, target] of [["assessment-v7", "assessment-v8"], ["admin-v4", "admin-v5"], ["read-v5", "read-v6"], ["write-v7", "write-v8"]]) {
   assert(runtimeDeploy.includes(`SourceTag = "${source}"; TargetTag = "${target}"`));
 }
-for (const tag of ["read-v6", "write-v8"]) assert(gateway.includes(`tag: "${tag}"`));
+for (const tag of ["read-v7", "write-v9"]) assert(gateway.includes(`tag: "${tag}"`));
 assert.match(runtimeDeploy, /--no-logging/);
 assert.match(runtimeDeploy, /version remove-tag/);
 assert.doesNotMatch(runtimeDeploy, /version delete/);

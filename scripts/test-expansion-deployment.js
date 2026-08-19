@@ -32,10 +32,12 @@ for (const [source, target, mode] of [
   ["assessment-v13", "assessment-v14", "assessment"],
   ["account-v5", "account-v6", "account"],
   ["admin-v11", "admin-v12", "admin"],
-  ["employer-v3", "employer-v4", "employer"]
+  ["employer-v3", "employer-v4", "employer"],
+  ["read-v6", "read-v7", "read"],
+  ["write-v8", "write-v9", "write"]
 ]) {
   assert(deploy.includes(`Source = "${source}"; Target = "${target}"; Mode = "${mode}"`));
-  assert.equal((gateway.match(new RegExp(`tag: "${target}"`, "g")) || []).length, 2);
+  assert.equal((gateway.match(new RegExp(`tag: "${target}"`, "g")) || []).length, target.startsWith("read-") || target.startsWith("write-") ? 1 : 2);
 }
 assert.match(deploy, /Set-AttemptGates "false" "false"/);
 assert.match(deploy, /state = Utf8\('active'\).*state = Utf8\('reserved'\)/);
@@ -52,6 +54,11 @@ assert.match(deploy, /Live public-bank verification failed/);
 assert.match(deploy, /eleven production directions are available/);
 assert.match(deploy, /Gateway was updated before failure; issuance remains closed/);
 assert.match(deploy, /--no-logging/);
+assert.match(deploy, /version remove-tag/);
+assert.match(deploy, /Old runtime version was not preserved/);
+assert.match(deploy, /Intermediate API Gateway cutover failed/);
+assert.match(deploy, /Final API Gateway cutover failed/);
+for (const tag of ["account-v4", "employer-v2", "admin-v10"]) assert(deploy.includes(`"${tag}"`));
 assert.doesNotMatch(deploy, /version delete|Lockbox|lockbox|secret create|system:allUsers|--public/);
 assert(!fs.existsSync(path.join(root, "skillcheck-private-tourism-r1")));
 assert(!fs.existsSync(path.join(root, "skillcheck-private-software-r1")));
@@ -60,4 +67,4 @@ assert(!fs.existsSync(path.join(root, "skillcheck-private-sales-r1")));
 assert(!fs.existsSync(path.join(root, "skillcheck-private-logistics-r1")));
 assert(!fs.existsSync(path.join(root, "skillcheck-private-digital-marketing-r1")));
 
-console.log("Expansion deployment checks passed: six private banks, paused issuance, checksum verification, four rollback-safe runtimes and closed employer gates.");
+console.log("Expansion deployment checks passed: six private banks, paused issuance, checksum verification, six live successor runtimes and closed employer gates.");

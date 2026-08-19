@@ -1,13 +1,19 @@
-## Актуальный статус 31.07.2026 — банки v5
+## Актуальный статус 19.08.2026 — 11 направлений в production
+
+В production опубликованы 11 профессиональных направлений и 480 вопросов: пять финансовых тестов, Tourism & Hospitality Operations, Software Development, Product / Project Management, Sales / Business Development, Logistics / Procurement и Digital Marketing. Кандидат входит через Яндекс ID, выбирает тест самостоятельно, получает подтверждённый результат в личном кабинете и соблюдает единый 21-дневный лимит повторной попытки по каждому тесту.
+
+Активные runtime: `assessment-v14`, `account-v6`, `admin-v12`, `employer-v4`, `read-v7`, `write-v9`. Ровно 28 публичных файлов опубликованы на основном Yandex-origin. Выдача попыток и account-first self-service открыты; публикация профилей, employer workspace, контакты, регалии и чат остаются закрытыми независимыми gates. Платные сервисы не подключались, старые runtime-версии сохранены. Подробный технический отчёт: [`docs/EXPANSION_CUTOVER_2026-08-19.md`](docs/EXPANSION_CUTOVER_2026-08-19.md).
+
+## Исторический статус 31.07.2026 — банки v5
 
 Усиленная внутренняя research-проверка всех 240 вопросов завершена: неверных ключей и арифметических ошибок не найдено, 16 средних и 64 малых методических замечания исправлены единым versioned-выпуском v5. Подробности: [`docs/QUESTION_BANK_REVIEW_V5.md`](docs/QUESTION_BANK_REVIEW_V5.md).
 
 Содержание имеет статус **PASS для небольшого controlled pilot**, но не является независимым человеческим SME-заключением, официальной сертификацией или единственным основанием кадрового решения. Candidate/admin Build `2026.07.31.3` и runtime `assessment-v8` / `admin-v5` / `read-v6` / `write-v8` опубликованы в Yandex Cloud. С 31 июля 2026 года действует LIMITED GO для 10–30 прохождений только по персональным приглашениям; последующая психометрическая калибровка выполняется по результатам этой волны.
 # SkillCheck
 
-SkillCheck — статическая MVP assessment-platform для первичного отбора junior-кандидатов в финансовых направлениях и техническое ядро будущей платформы рейтинга специалистов и поиска талантов работодателями.
+SkillCheck — MVP assessment-platform для первичного отбора junior-кандидатов и техническое ядро будущей платформы рейтинга специалистов и поиска талантов работодателями.
 
-Сайт проверяет практическую финансовую логику: отчётность, cash flow, кредитный риск, Excel/аналитику, внимательность к деталям и способность принимать решения по кейсам.
+Сайт проверяет прикладные знания по 11 направлениям: финансам и аналитике, туризму, разработке ПО, управлению продуктами и проектами, продажам, логистике и закупкам, digital-маркетингу.
 
 Постоянный план развития находится в [`ROADMAP.md`](ROADMAP.md), актуальное состояние — в [`PROJECT_STATUS.md`](PROJECT_STATUS.md).
 
@@ -15,7 +21,7 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 ## Текущий статус
 
-С 16 августа 2026 года candidate-поток работает на `assessment-v13` и `account-v3`. Кандидат выбирает любой из пяти тестов, входит через Яндекс ID, попадает в личный кабинет и получает одну новую попытку по каждому тесту раз в 21 день. В приватном карьерном профиле доступны текущая и желаемая роль, опыт/проекты, инструменты и подтверждение актуальности поиска. Ровно 22 публичных файла сверены по SHA-256, основной Yandex-origin проходит API/CORS, а GitHub-origin не получает candidate API. Локальный CI выполняет 67 test suite и 5 infrastructure validators.
+С 19 августа 2026 года candidate-поток работает на `assessment-v14` и `account-v6`. Кандидат выбирает любой из 11 тестов, входит через Яндекс ID, попадает в личный кабинет и получает одну новую попытку по каждому тесту раз в 21 день. В приватном карьерном профиле доступны текущая и желаемая роль, опыт/проекты, инструменты и подтверждение актуальности поиска. Ровно 28 публичных файлов сверены по SHA-256, основной Yandex-origin проходит API/CORS, а GitHub-origin не получает candidate API. Локальный CI выполняет 82 проверки.
 
 `LEGAL_PILOT_APPROVED`, `ATTEMPT_ISSUANCE_ENABLED`, регистрация и account-first self-service открыты отдельными действиями после публикации реквизитов оператора, направления уведомления Роскомнадзору, утверждения УЗ-4/угроз типа 3 и owner sign-off. Независимый человеческий SME review рекомендуется до масштабирования и сильных публичных заявлений, но не блокирует текущий исследовательский пилот.
 
@@ -26,8 +32,8 @@ SkillCheck — статическая MVP assessment-platform для перви�
 - выбор теста на `index.html`;
 - подтверждённый аккаунт кандидата на `account.html` с тестами, результатами, текущей/желаемой ролью, опытом и проектами, инструментами, регионом, форматом работы и актуальностью поиска;
 - подготовленный `employer.html`: типовые роли, фильтры, объяснимое сравнение и постоянный shortlist 1–10 без контактов и mock-кандидатов;
-- отдельную публичную страницу `ranking.html` с выбором одной из пяти профессий, live Yandex API, безопасным состоянием набора участников и без вымышленных профилей;
-- серверное ядро рейтинга: отдельный opt-in, подтверждение результата через Apps Script без общего секрета, раздельные read/write-права, отзыв по локальному management token, TTL 365 дней, минимум пять участников и строгий список публичных полей;
+- отдельную публичную страницу `ranking.html` с выбором одного из 11 направлений, live Yandex API, безопасным состоянием набора участников и без вымышленных профилей;
+- серверное ядро рейтинга: отдельный opt-in, подтверждение результата через YDB assessment proof, раздельные read/write-права, отзыв по локальному management token, TTL 365 дней, минимум пять участников и строгий список публичных полей;
 - прохождение теста на `test.html?test=<testId>`;
 - загрузку display-only банка вопросов из `data/*.json` без `correct`, комментариев к ответу и клиентского scoring;
 - проверку целостности public bank по `publicDigest`;
@@ -68,11 +74,17 @@ SkillCheck — статическая MVP assessment-platform для перви�
 
 | Тест | Статус | Банк вопросов |
 |---|---|---|
-| Financial Analyst Junior | Технически готов; выдача приглашений заблокирована | `data/fa-junior.json` |
-| Credit Analyst Junior | Технически готов; сервер выбирает 40 из 80 | `data/ca-junior.json` |
-| FP&A / Budget Analyst Junior | Технически готов; выдача приглашений заблокирована | `data/fpa-junior.json` |
-| Accounting / Reporting Junior | Технически готов; выдача приглашений заблокирована | `data/acc-junior.json` |
-| Finance BI / Data Analyst Junior | Технически готов; выдача приглашений заблокирована | `data/bi-junior.json` |
+| Financial Analyst Junior | Опубликован; account-first доступ открыт | `data/fa-junior.json` |
+| Credit Analyst Junior | Опубликован; сервер выбирает 40 из 80 | `data/ca-junior.json` |
+| FP&A / Budget Analyst Junior | Опубликован; account-first доступ открыт | `data/fpa-junior.json` |
+| Accounting / Reporting Junior | Опубликован; account-first доступ открыт | `data/acc-junior.json` |
+| Finance BI / Data Analyst Junior | Опубликован; account-first доступ открыт | `data/bi-junior.json` |
+| Tourism & Hospitality Operations Junior | Опубликован; account-first доступ открыт | `data/tourism-junior.json` |
+| Software Development Junior | Опубликован; account-first доступ открыт | `data/software-junior.json` |
+| Product / Project Management Junior | Опубликован; account-first доступ открыт | `data/product-project-junior.json` |
+| Sales / Business Development Junior | Опубликован; account-first доступ открыт | `data/sales-junior.json` |
+| Logistics / Procurement Junior | Опубликован; account-first доступ открыт | `data/logistics-procurement-junior.json` |
+| Digital Marketing Junior | Опубликован; account-first доступ открыт | `data/digital-marketing-junior.json` |
 
 ## Основные файлы
 

@@ -276,5 +276,5 @@ $deniedOptions = Invoke-WebRequestWithRetry @{ Method = "OPTIONS"; Uri = $assess
 if ([string]$deniedOptions.Headers["Access-Control-Allow-Origin"] -eq $githubOrigin) {
   throw "GitHub fallback unexpectedly received candidate API CORS."
 }
-Write-Host "DONE: 22 public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt."
+Write-Host ("DONE: {0} public files are live in Yandex Object Storage; Yandex origin passes API CORS; GitHub fallback is denied; invalid invitation remains privacy-preserving and creates no attempt." -f $publicFiles.Count)
 Write-Host $siteOrigin

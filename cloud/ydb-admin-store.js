@@ -72,6 +72,11 @@ function createYdbAdminStore(sql) {
       return { results, sessions, invites, reports };
     },
 
+    async listRankingProfiles(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 5000, 10000));
+      const rows = rowsFrom(await executeRead(sql, [`SELECT * FROM ranking_profiles ORDER BY updated_at DESC LIMIT ${safeLimit};`], []));
+      return rows.map(mapRankingProfile);
+    },
     async listRankingProfilesByResultCode(resultCode) {
       const rows = rowsFrom(await executeRead(sql, ["SELECT * FROM ranking_profiles;"], []));
       return rows.map(mapRankingProfile).filter(profile => profile && profile.resultCode === String(resultCode || ""));
@@ -97,13 +102,18 @@ function createYdbAdminStore(sql) {
 
     async deleteAssessmentData(snapshot) {
       const source = snapshot || {};
+      const attemptId = String(source.feedback && source.feedback.attemptId || source.result && source.result.attemptId || "");
+      const feedbackSql = attemptId ? "DELETE FROM assessment_feedback WHERE attempt_id = " : "";
+      const feedbackValues = attemptId ? [attemptId] : [];
       if (source.scope === "full_attempt" && source.session && source.invite) {
-        await executeWrite(sql, [
-          "DELETE FROM assessment_results WHERE result_code = ", ";\nDELETE FROM assessment_sessions WHERE invite_id = ", ";\nDELETE FROM assessment_invites WHERE invite_id = ", ";"
-        ], [source.code, source.session.inviteId, source.invite.inviteId]);
+        const strings = feedbackSql
+          ? [feedbackSql, ";\nDELETE FROM assessment_results WHERE result_code = ", ";\nDELETE FROM assessment_sessions WHERE invite_id = ", ";\nDELETE FROM assessment_invites WHERE invite_id = ", ";"]
+          : ["DELETE FROM assessment_results WHERE result_code = ", ";\nDELETE FROM assessment_sessions WHERE invite_id = ", ";\nDELETE FROM assessment_invites WHERE invite_id = ", ";"];
+        await executeWrite(sql, strings, feedbackValues.concat([source.code, source.session.inviteId, source.invite.inviteId]));
         return;
       }
-      await executeWrite(sql, ["DELETE FROM assessment_results WHERE result_code = ", ";"], [source.code]);
+      const strings = feedbackSql ? [feedbackSql, ";\nDELETE FROM assessment_results WHERE result_code = ", ";"] : ["DELETE FROM assessment_results WHERE result_code = ", ";"];
+      await executeWrite(sql, strings, feedbackValues.concat([source.code]));
     }
   };
 }

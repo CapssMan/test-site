@@ -157,6 +157,23 @@ function mapResult(row) {
   };
 }
 
+function mapFeedback(row) {
+  if (!row) return null;
+  return {
+    attemptId: String(row.attempt_id || ""),
+    resultCode: String(row.result_code || ""),
+    testId: String(row.test_id || ""),
+    bankVersion: String(row.bank_version || ""),
+    overallRating: Number(row.overall_rating || 0),
+    clarityRating: Number(row.clarity_rating || 0),
+    difficulty: String(row.difficulty || ""),
+    technicalIssue: row.technical_issue === true,
+    comment: String(row.comment || ""),
+    submittedAt: iso(row.submitted_at),
+    updatedAt: iso(row.updated_at),
+    purgeAt: iso(row.purge_at)
+  };
+}
 function createYdbAssessmentStore(sql) {
   if (typeof sql !== "function") throw new Error("ydb_query_client_required");
 
@@ -406,6 +423,26 @@ function createYdbAssessmentStore(sql) {
         String(row.reportObjectKey || ""), row.submissionHash, row.completedAt, row.technical === true, row.purgeAt]);
     },
 
+    async getFeedbackByAttemptId(attemptId) {
+      const resultSets = await executeRead(sql, ["SELECT * FROM assessment_feedback WHERE attempt_id = ", ";"], [String(attemptId || "")]);
+      return mapFeedback(rowsFrom(resultSets)[0]);
+    },
+
+    async listFeedback(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 1000, 5000));
+      const resultSets = await executeRead(sql, [`SELECT * FROM assessment_feedback ORDER BY submitted_at DESC LIMIT ${safeLimit};`], []);
+      return rowsFrom(resultSets).map(mapFeedback);
+    },
+
+    async upsertFeedback(feedback) {
+      const row = feedback || {};
+      await executeWrite(sql, valueStrings(`UPSERT INTO assessment_feedback
+        (attempt_id, result_code, test_id, bank_version, overall_rating, clarity_rating,
+         difficulty, technical_issue, comment, submitted_at, updated_at, purge_at)
+        VALUES (`, 12, [], [9, 10, 11]), [row.attemptId, row.resultCode, row.testId, row.bankVersion,
+        row.overallRating, row.clarityRating, row.difficulty, row.technicalIssue === true, row.comment,
+        row.submittedAt, row.updatedAt, row.purgeAt]);
+    },
     async appendAudit(event) {
       const row = event || {};
       await executeWrite(sql, valueStrings(`UPSERT INTO assessment_audit_events
@@ -423,6 +460,7 @@ module.exports = {
   mapInviteGroup,
   mapInviteGroupClaim,
   mapInvite,
+  mapFeedback,
   mapResult,
   mapSession,
   parseJson,

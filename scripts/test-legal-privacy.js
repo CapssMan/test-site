@@ -14,7 +14,7 @@ const rankingConsent = read("ranking-consent.html");
 const accountConsent = read("account-consent.html");
 const privacy = read("privacy.html");
 const review = read("docs/LEGAL_PRIVACY_REVIEW.md");
-const pdVersion = "skillcheck-pd-consent-2026-07-31-v5";
+const pdVersion = "skillcheck-pd-consent-2026-08-21-v6";
 const rankingVersion = "skillcheck-ranking-public-2026-07-31-v3";
 const accountVersion = "skillcheck-account-2026-08-16-v3";
 const extendedProfileVersion = "skillcheck-credentials-chat-2026-08-17-v1";
@@ -38,7 +38,9 @@ for (const page of [consent, privacy, rankingConsent, accountConsent]) {
 }
 has(consent, "Отдельное согласие на обработку персональных данных");
 has(consent, "российском контуре ООО «ЯНДЕКС.ОБЛАКО»");
-has(consent, "ответы, результат и полный отчёт — до 365 дней");
+has(consent, "ответы, результат, добровольный отзыв и полный отчёт — до 365 дней");
+has(consent, "отправить или обновить отзыв можно в течение 30 дней после результата");
+has(privacy, "Последние отзывы выводятся без profile_id, attempt_id, кода результата и контактов");
 has(consent, "YDB применяются автоматическим TTL");
 has(privacy, "Yandex API Gateway и Cloud Functions");
 has(privacy, "Managed Service for YDB");

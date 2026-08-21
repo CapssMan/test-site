@@ -3,8 +3,8 @@
 const crypto = require("node:crypto");
 
 const ASSESSMENT_API_VERSION = "attempt-v2";
-const ASSESSMENT_BACKEND_VERSION = "yandex-cloud-self-service-2026-08-09-1";
-const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
+const ASSESSMENT_BACKEND_VERSION = "yandex-pilot-feedback-2026-08-21-1";
+const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-08-21-v6";
 const AUTHORITATIVE_SCORING_VERSION = "authoritative-v1";
 const SCORE_VERIFICATION_SERVER = "server-verified";
 const TELEMETRY_VERIFICATION_CLIENT_REPORTED = "client-reported-unverified";
@@ -17,6 +17,7 @@ const AUDIT_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
 const MAX_POST_BODY_CHARS = 250000;
 const MAX_ANSWERS = 40;
 const RESULT_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const FEEDBACK_DIFFICULTIES = new Set(["too_easy", "easy", "balanced", "hard", "too_hard"]);
 
 const TESTS = Object.freeze({
   "fa-junior": Object.freeze({ title: "Financial Analyst Junior", testVersion: "FA Junior v6.0", bankVersion: "FA Junior v6.0", questions: 40, attempt: 40, prefix: "FA" }),
@@ -212,6 +213,46 @@ function validateSaveRequest(value) {
   };
 }
 
+function validateFeedbackRequest(value) {
+  assertExactKeys(value, [
+    "action", "apiVersion", "attemptId", "attemptToken", "resultCode", "testId",
+    "overallRating", "clarityRating", "difficulty", "technicalIssue", "comment"
+  ], "saveFeedback");
+  if (value.action !== "saveFeedback" || value.apiVersion !== ASSESSMENT_API_VERSION) {
+    throw publicError("client_upgrade_required", "Версия страницы устарела. Обновите страницу.");
+  }
+  const attemptId = String(value.attemptId || "").trim();
+  const attemptToken = String(value.attemptToken || "").trim();
+  if (!/^att_[a-f0-9]{32,64}$/.test(attemptId) || attemptToken.length < 80 ||
+      attemptToken.length > 3000 || attemptToken.split(".").length !== 3) {
+    throw publicError("invalid_attempt", "Некорректная попытка.");
+  }
+  const testId = validateTestId(value.testId);
+  const resultCode = String(value.resultCode || "").trim().toUpperCase();
+  const expectedPrefix = TESTS[testId].prefix + "-";
+  if (!resultCode.startsWith(expectedPrefix) ||
+      !/^[A-Z]+-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(resultCode)) {
+    throw publicError("invalid_result_code", "Некорректный код результата.");
+  }
+  const overallRating = Number(value.overallRating);
+  const clarityRating = Number(value.clarityRating);
+  if (!Number.isInteger(overallRating) || overallRating < 1 || overallRating > 5 ||
+      !Number.isInteger(clarityRating) || clarityRating < 1 || clarityRating > 5) {
+    throw publicError("invalid_feedback_rating", "Поставьте оценки от 1 до 5.");
+  }
+  const difficulty = String(value.difficulty || "");
+  if (!FEEDBACK_DIFFICULTIES.has(difficulty)) {
+    throw publicError("invalid_feedback_difficulty", "Выберите оценку сложности теста.");
+  }
+  if (typeof value.technicalIssue !== "boolean") {
+    throw publicError("invalid_feedback_issue", "Укажите, возникла ли техническая проблема.");
+  }
+  return {
+    attemptId, attemptToken, resultCode, testId, overallRating, clarityRating, difficulty,
+    technicalIssue: value.technicalIssue,
+    comment: boundedText(value.comment, 1000, false, "Комментарий")
+  };
+}
 function sha256Hex(value) {
   return crypto.createHash("sha256").update(String(value), "utf8").digest("hex");
 }
@@ -474,6 +515,7 @@ module.exports = {
   signAttemptToken,
   timingSafeEqual,
   validateBeginRequest,
+  validateFeedbackRequest,
   validatePrivateBank,
   validateSaveRequest,
   verifyAttemptToken

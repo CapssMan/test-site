@@ -43,6 +43,7 @@ class MemoryStore {
     this.groupClaims = new Map();
     this.sessions = new Map();
     this.results = new Map();
+    this.feedback = new Map();
     this.audit = [];
     this.failNextInsertResult = false;
   }
@@ -111,6 +112,8 @@ class MemoryStore {
     if (this.results.has(result.code)) throw new Error("duplicate_result");
     this.results.set(result.code, Object.assign({}, result));
   }
+  async getFeedbackByAttemptId(attemptId) { return this.feedback.get(attemptId) || null; }
+  async upsertFeedback(row) { this.feedback.set(row.attemptId, Object.assign({}, row)); }
   async appendAudit(event) { this.audit.push(event); }
 }
 
@@ -238,6 +241,34 @@ async function post(handler, body) {
   assert.equal(replay.replayed, true);
   assert.equal(replay.resultCode, recovered.resultCode);
 
+  const feedbackPayload = {
+    action: "saveFeedback",
+    apiVersion: ASSESSMENT_API_VERSION,
+    attemptId: begin.attemptId,
+    attemptToken: begin.attemptToken,
+    resultCode: recovered.resultCode,
+    testId,
+    overallRating: 4,
+    clarityRating: 5,
+    difficulty: "balanced",
+    technicalIssue: false,
+    comment: "Понятный тест, полезные кейсы."
+  };
+  const feedback = await post(handler, feedbackPayload);
+  assert.equal(feedback.ok, true);
+  assert.equal(feedback.status, "saved");
+  assert.equal(store.feedback.size, 1);
+  assert.equal(store.feedback.get(begin.attemptId).comment, feedbackPayload.comment);
+  for (const forbidden of ["attemptId", "attemptToken", "resultCode", "email", "name", "comment"]) {
+    assert.equal(Object.prototype.hasOwnProperty.call(feedback, forbidden), false);
+  }
+  const feedbackUpdate = await post(handler, Object.assign({}, feedbackPayload, { overallRating: 5, comment: "Обновлённый отзыв." }));
+  assert.equal(feedbackUpdate.status, "updated");
+  assert.equal(store.feedback.size, 1);
+  assert.equal(store.feedback.get(begin.attemptId).overallRating, 5);
+  const wrongFeedback = await post(handler, Object.assign({}, feedbackPayload, { resultCode: "FA-AAAAA" }));
+  assert.equal(wrongFeedback.ok, false);
+  assert.equal(store.feedback.size, 1);
   const rankingProof = await post(handler, {
     action: "rankingProof",
     apiVersion: RANKING_PROOF_API_VERSION,

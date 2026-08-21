@@ -171,6 +171,32 @@
       font-size: 13px;
       line-height: 1.5;
     }
+    .feedback-panel {
+      margin-top: 24px;
+      padding: 20px;
+      border: 1px solid #c7d2fe;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #f8fafc, #eef2ff);
+    }
+    .feedback-panel h3 { margin: 0 0 8px; }
+    .feedback-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .feedback-panel textarea {
+      width: 100%;
+      min-height: 110px;
+      margin-top: 7px;
+      padding: 12px;
+      resize: vertical;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font: inherit;
+      color: #0f172a;
+      background: #fff;
+    }
+    .feedback-panel textarea:focus { outline: 3px solid rgba(59, 130, 246, .18); border-color: #3b82f6; }
+    .feedback-checkbox { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; color: #334155; line-height: 1.45; }
+    .feedback-checkbox input { width: auto; margin: 3px 0 0; }
+    .feedback-panel button { width: auto; min-width: 210px; }
+    @media (max-width: 640px) { .feedback-grid { grid-template-columns: 1fr; } .feedback-panel button { width: 100%; } }
     .verification-badge {
       display: inline-flex;
       align-items: center;
@@ -292,7 +318,7 @@
     <div class="card" id="startBlock">
       <h1 id="testTitle">Загрузка теста...</h1>
       <div id="testInfo" class="small" style="margin-bottom:16px;"></div>
-      <div class="build-number">Build 2026.08.09.1</div>
+      <div class="build-number">Build 2026.08.21.1</div>
 
       <p class="small">
         Набор и порядок вопросов определяются сервером для вашей персональной попытки.
@@ -373,7 +399,7 @@
 
       <label class="consent-row">
         <input id="privacyConsent" type="checkbox" required />
-        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>29.07.2026-v4</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
+        <span>Я отдельно даю <a href="consent.html" target="_blank" rel="noopener">согласие на обработку персональных данных</a> версии <b>21.08.2026-v6</b> и подтверждаю, что ознакомился с <a href="privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>.</span>
       </label>
 
       <label class="consent-row">
@@ -412,6 +438,33 @@
       <div id="resultContent"></div>
       <div id="sendStatus" class="send-panel" role="status" aria-live="polite"></div>
       <button id="retrySendButton" class="retry-button" type="button" hidden>Повторить отправку</button>
+      <section id="feedbackBlock" class="feedback-panel" style="display:none;" aria-labelledby="feedbackTitle">
+        <h3 id="feedbackTitle">Помогите улучшить тест</h3>
+        <p class="small">Отзыв добровольный, не влияет на балл и показывается администратору без имени, email и кода результата.</p>
+        <form id="feedbackForm">
+          <div class="feedback-grid">
+            <div class="field-group">
+              <label for="feedbackOverall">Общее впечатление</label>
+              <select id="feedbackOverall" required><option value="">Выберите оценку</option><option value="5">5 — отлично</option><option value="4">4 — хорошо</option><option value="3">3 — нормально</option><option value="2">2 — слабо</option><option value="1">1 — плохо</option></select>
+            </div>
+            <div class="field-group">
+              <label for="feedbackClarity">Понятность формулировок</label>
+              <select id="feedbackClarity" required><option value="">Выберите оценку</option><option value="5">5 — всё понятно</option><option value="4">4 — почти всё понятно</option><option value="3">3 — встречались неясности</option><option value="2">2 — много неясного</option><option value="1">1 — формулировки мешали</option></select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="feedbackDifficulty">Какой была сложность?</label>
+            <select id="feedbackDifficulty" required><option value="">Выберите вариант</option><option value="too_easy">Слишком легко</option><option value="easy">Скорее легко</option><option value="balanced">В самый раз</option><option value="hard">Скорее сложно</option><option value="too_hard">Слишком сложно</option></select>
+          </div>
+          <label class="feedback-checkbox"><input id="feedbackTechnicalIssue" type="checkbox"><span>Во время прохождения возникла техническая проблема</span></label>
+          <div class="field-group">
+            <label for="feedbackComment">Комментарий <span class="small">(необязательно)</span></label>
+            <textarea id="feedbackComment" maxlength="1000" placeholder="Что было полезно или что стоит исправить? Не указывайте здесь персональные данные."></textarea>
+          </div>
+          <button id="feedbackSubmitButton" type="submit">Отправить отзыв</button>
+          <div id="feedbackStatus" class="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </section>
       <section id="rankingPublishBlock" class="ranking-panel" style="display:none;" aria-labelledby="rankingPublishTitle">
         <h3 id="rankingPublishTitle">Добавить результат в публичный рейтинг</h3>
         <p class="small">Добровольно публикуются только псевдоним, балл, дата, направление и отметка серверной проверки. Email, Telegram, ответы, отчёт и код результата не публикуются.</p>
@@ -450,8 +503,8 @@
     const RANKING_PROFILE_API_VERSION = "ranking-profile-v1";
     const ACCOUNT_SESSION_STORAGE_KEY = "skillcheck_candidate_account_v1";
     const RANKING_CONSENT_VERSION = "skillcheck-ranking-public-2026-07-31-v3";
-    const FRONTEND_BUILD = "2026.08.09.1";
-    const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-07-31-v5";
+    const FRONTEND_BUILD = "2026.08.21.1";
+    const PRIVACY_CONSENT_VERSION = "skillcheck-pd-consent-2026-08-21-v6";
     const NETWORK_TIMEOUT_MS = 20000;
     const BEGIN_NETWORK_TIMEOUT_MS = 30000;
     const MAX_AUTOMATIC_RETRIES = 2;
@@ -621,6 +674,8 @@
     let resultSubmissionInFlight = false;
     let resultSaved = false;
     let rankingPublishProof = null;
+    let feedbackSubmissionContext = null;
+    let feedbackSubmissionInFlight = false;
     let accountAccessState = "checking";
     let accountTestAccess = null;
 
@@ -629,6 +684,7 @@
       document.getElementById("startButton").addEventListener("click", handleStartButtonClick);
       document.getElementById("nextButton").addEventListener("click", nextQuestion);
       document.getElementById("retrySendButton").addEventListener("click", retryResultSubmission);
+      document.getElementById("feedbackForm").addEventListener("submit", submitPilotFeedback);
       document.getElementById("publishRankingButton").addEventListener("click", publishRankingProfile);
       document.getElementById("withdrawRankingButton").addEventListener("click", withdrawRankingProfile);
       clearLegacyPersistentPendingResults();
@@ -1431,6 +1487,13 @@
           clearAttemptSession();
           saveLocalCompletionMarker(data.testId);
           showVerifiedResult(verified, data.tabSwitches);
+          feedbackSubmissionContext = {
+            attemptId: String(data.attemptId || ""),
+            attemptToken: String(data.attemptToken || ""),
+            resultCode: String(result.resultCode || result.code || ""),
+            testId: String(data.testId || "")
+          };
+          renderFeedbackOffer();
           renderRankingPublishOffer(verified);
 
           var resultCode = String(result.resultCode || result.code || "");
@@ -1622,6 +1685,74 @@
       };
     }
 
+    function renderFeedbackOffer() {
+      var block = document.getElementById("feedbackBlock");
+      if (!feedbackSubmissionContext || currentTestId === "dev-quick") {
+        block.style.display = "none";
+        return;
+      }
+      document.getElementById("feedbackForm").reset();
+      setFeedbackStatus("", "");
+      document.getElementById("feedbackSubmitButton").disabled = false;
+      block.style.display = "block";
+    }
+
+    function setFeedbackStatus(message, type) {
+      var node = document.getElementById("feedbackStatus");
+      node.textContent = String(message || "");
+      node.className = "form-status" + (type ? " " + type : "");
+    }
+
+    function submitPilotFeedback(event) {
+      event.preventDefault();
+      if (!feedbackSubmissionContext || feedbackSubmissionInFlight) return;
+      var overallRating = Number(document.getElementById("feedbackOverall").value);
+      var clarityRating = Number(document.getElementById("feedbackClarity").value);
+      var difficulty = document.getElementById("feedbackDifficulty").value;
+      var comment = document.getElementById("feedbackComment").value.trim();
+      if (!Number.isInteger(overallRating) || overallRating < 1 || overallRating > 5 ||
+          !Number.isInteger(clarityRating) || clarityRating < 1 || clarityRating > 5 ||
+          ["too_easy", "easy", "balanced", "hard", "too_hard"].indexOf(difficulty) < 0 ||
+          comment.length > 1000) {
+        setFeedbackStatus("Заполните оценки и проверьте длину комментария.", "error");
+        return;
+      }
+      var payload = {
+        action: "saveFeedback",
+        apiVersion: API_VERSION,
+        attemptId: feedbackSubmissionContext.attemptId,
+        attemptToken: feedbackSubmissionContext.attemptToken,
+        resultCode: feedbackSubmissionContext.resultCode,
+        testId: feedbackSubmissionContext.testId,
+        overallRating: overallRating,
+        clarityRating: clarityRating,
+        difficulty: difficulty,
+        technicalIssue: document.getElementById("feedbackTechnicalIssue").checked,
+        comment: comment
+      };
+      feedbackSubmissionInFlight = true;
+      var button = document.getElementById("feedbackSubmitButton");
+      button.disabled = true;
+      button.textContent = "Отправляем…";
+      setFeedbackStatus("Сохраняем обезличенный отзыв…", "");
+      postJsonOnce(payload, 20000).then(function(result) {
+        if (!result || result.ok !== true || ["saved", "updated"].indexOf(String(result.status || "")) < 0) {
+          throw new Error(String(result && result.message || "Не удалось сохранить отзыв."));
+        }
+        feedbackSubmissionContext = null;
+        Array.prototype.forEach.call(document.querySelectorAll("#feedbackForm select, #feedbackForm textarea, #feedbackForm input"), function(control) {
+          control.disabled = true;
+        });
+        button.hidden = true;
+        setFeedbackStatus("Спасибо. Отзыв сохранён и поможет откалибровать тест.", "success");
+      }).catch(function(error) {
+        button.disabled = false;
+        setFeedbackStatus(error && error.message ? error.message : "Не удалось сохранить отзыв. Попробуйте ещё раз.", "error");
+      }).finally(function() {
+        feedbackSubmissionInFlight = false;
+        button.textContent = "Отправить отзыв";
+      });
+    }
     function showVerifiedResult(data, localTabSwitches) {
       var statusClass = data.passStatus === "passed" ? "success" : "error";
       var html = '<div class="verification-badge" aria-label="Результат проверен сервером">' +

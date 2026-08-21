@@ -46,7 +46,8 @@ assert.match(schema, /PRIMARY KEY \(profile_id, test_id\)/);
 assert.match(schema, /Utf8\('account_self_service_enabled'\), Utf8\('false'\)/);
 assert.match(schema, /Utf8\('account_required_for_attempts'\), Utf8\('false'\)/);
 assert.match(accountCore, /skillcheck-account-2026-08-16-v3/);
-assert.match(assessmentCore, /yandex-cloud-self-service-2026-08-09-1/);
+assert.match(deploy, /yandex-cloud-self-service-2026-08-09-1/);
+assert.match(assessmentCore, /yandex-pilot-feedback-2026-08-21-1/);
 assert.match(privacy, /skillcheck-privacy-2026-08-17-v12/);
 assert.match(accountConsent, /skillcheck-account-2026-08-16-v3/);
 

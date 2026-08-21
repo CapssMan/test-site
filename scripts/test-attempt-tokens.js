@@ -70,7 +70,7 @@ const tokenContext = {
   JSON,
   Math,
   isFinite,
-  PRIVACY_CONSENT_VERSION: "skillcheck-pd-consent-2026-07-31-v5",
+  PRIVACY_CONSENT_VERSION: "skillcheck-pd-consent-2026-08-21-v6",
   getRequiredProperty(name) {
     assert.equal(name, "ATTEMPT_SIGNING_SECRET_V1");
     return secret;
@@ -96,7 +96,7 @@ const session = {
   testId: "fa-junior",
   bankVersion: "FA Junior v4.0",
   questionSetHash: "c".repeat(64),
-  privacyConsentVersion: "skillcheck-pd-consent-2026-07-31-v5",
+  privacyConsentVersion: "skillcheck-pd-consent-2026-08-21-v6",
   tokenJti: "d".repeat(32),
   tokenNonce: "d".repeat(32),
   tokenIssuedAt: new Date((nowSeconds - 30) * 1000).toISOString(),

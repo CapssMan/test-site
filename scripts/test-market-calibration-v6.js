@@ -103,8 +103,8 @@ Object.values(specs).forEach(spec => {
   assert(candidate.includes(spec.version));
   assert(admin.includes(spec.version));
 });
-assert.match(candidate, /Build 2026\.08\.09\.1/);
-assert.match(admin, /Build 2026\.08\.17\.1/);
+assert.match(candidate, /Build 2026\.08\.21\.1/);
+assert.match(admin, /Build 2026\.08\.21\.1/);
 
 const method = fs.readFileSync(path.join(root, "docs", "MARKET_CALIBRATION_V6.md"), "utf8");
 assert.match(method, /сильного студента 3–4 курса/i);

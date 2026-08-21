@@ -212,6 +212,7 @@ function deletionStateDigest(snapshot) {
     result: source.result ? { code: source.result.code, attemptId: source.result.attemptId, submissionHash: source.result.submissionHash, completedAt: source.result.completedAt } : null,
     session: source.session ? { attemptId: source.session.attemptId, inviteId: source.session.inviteId, state: source.session.state, resultCode: source.session.resultCode } : null,
     invite: source.invite ? { inviteId: source.invite.inviteId, state: source.invite.state, attemptId: source.invite.attemptId } : null,
+    feedback: source.feedback ? { attemptId: source.feedback.attemptId, resultCode: source.feedback.resultCode, updatedAt: source.feedback.updatedAt } : null,
     rankingProfiles: (source.rankingProfiles || []).map(item => [item.testId, item.publicProfileId, item.resultCode]).sort(),
     reportHash: String(source.reportHash || "")
   }));

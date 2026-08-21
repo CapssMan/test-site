@@ -50,6 +50,7 @@ class MemoryAdminStore {
     }]]);
     this.inviteGroups = new Map();
     this.rankings = [{ testId: "fa-junior", publicProfileId: "pub_1", resultCode: code, publicAlias: "Кандидат" }];
+    this.feedback = new Map([[attemptId, { attemptId, resultCode: code, testId: "fa-junior", updatedAt: now.toISOString() }]]);
     this.operations = new Map();
     this.audit = [];
   }
@@ -69,6 +70,11 @@ class MemoryAdminStore {
   async getSessionByAttemptId(id) { return this.sessions.get(id) || null; }
   async getResultByCode(resultCode) { return this.results.get(resultCode) || null; }
   async listResults() { return Array.from(this.results.values()); }
+  async getFeedbackByAttemptId(id) { return this.feedback.get(id) || null; }
+  async listFeedback() { return Array.from(this.feedback.values()); }
+  async listPilotAccounts() { return []; }
+  async listPilotAttempts() { return []; }
+  async listRankingProfiles() { return this.rankings.slice(); }
   async getDiagnostics() {
     return {
       results: { rowCount: this.results.size, lastRecordAt: now.toISOString() },
@@ -82,6 +88,7 @@ class MemoryAdminStore {
   async getDeletionOperation(requestId) { return this.operations.get(requestId) || null; }
   async upsertDeletionOperation(operation) { this.operations.set(operation.requestId, Object.assign({}, operation)); }
   async deleteAssessmentData(snapshot) {
+    if (snapshot.result) this.feedback.delete(snapshot.result.attemptId);
     this.results.delete(snapshot.code);
     if (snapshot.scope === "full_attempt") {
       if (snapshot.session) this.sessions.delete(snapshot.session.attemptId);

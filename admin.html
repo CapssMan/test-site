@@ -174,6 +174,18 @@
     .signal-balanced { color: #166534; background: #dcfce7; }
     .signal-insufficient { color: #475569; background: #e2e8f0; }
     .signal-review { color: #9a3412; background: #ffedd5; }
+    .pilot-panel { margin-bottom: 18px; padding: 18px; }
+    .pilot-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .pilot-heading h2 { margin: 0 0 6px; font-size: 18px; }
+    .pilot-heading p { margin: 0; max-width: 780px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .pilot-summary { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+    .pilot-table { margin-top: 14px; overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+    .pilot-table table { min-width: 980px; font-size: 12px; }
+    .pilot-feedback-list { display: grid; gap: 8px; margin-top: 10px; }
+    .pilot-feedback-item { padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #f8fafc; color: #475569; font-size: 12px; line-height: 1.5; }
+    .pilot-feedback-item strong { color: #0f172a; }
+    .pilot-feedback-item p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (max-width: 900px) { .pilot-summary { grid-template-columns: 1fr 1fr; } .pilot-heading { flex-direction: column; } }
     .invite-panel { margin-bottom: 18px; padding: 18px; }
     .invite-panel h2 { margin: 0 0 8px; font-size: 18px; }
     .invite-panel > p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
@@ -328,7 +340,7 @@
       <div>
         <h1>SkillCheck — Админ-панель</h1>
         <p>Псевдонимизированные результаты без открытых контактов, итоговые метрики и технические признаки прохождения.</p>
-        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.17.1</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
+        <div class="version-line">Frontend: <span id="frontendVersion">Build 2026.08.21.1</span> · Backend: <span id="backendVersion">до входа не загружен</span></div>
       </div>
       <a href="index.html">← На главную</a>
     </header>
@@ -376,6 +388,17 @@
         <div id="diagnosticsContent" class="hidden"></div>
       </section>
 
+      <section class="card pilot-panel" aria-labelledby="pilotHeading">
+        <div class="pilot-heading">
+          <div>
+            <h2 id="pilotHeading">Воронка пилота и обратная связь</h2>
+            <p>Аккаунты → старт → завершение → результат → заполненный профиль → рейтинг. Считаются только попытки, привязанные к аккаунтам; отзывы показываются без имени, email, кода результата и ответов кандидата.</p>
+          </div>
+          <button id="refreshPilotButton" class="secondary-btn" type="button">Обновить воронку</button>
+        </div>
+        <div id="pilotStatus" class="status" role="status" aria-live="polite"></div>
+        <div id="pilotContent" class="hidden"></div>
+      </section>
       <section class="card calibration-panel" aria-labelledby="calibrationHeading">
         <div class="calibration-heading">
           <div>
@@ -641,7 +664,7 @@
     const YANDEX_ADMIN_API_URL = "https://d5d0v6g7vmk9ku6kofjm.p8361f8z.apigw.yandexcloud.net/v1/admin";
     const LEGACY_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Jnvz1o6rWzxpmwIRqRpIck6uz_JgtrI3xbEkHLJ_L8ctOI1Qdw-6AaQsqn7nuzRrPA/exec";
     const ADMIN_API_URL = ADMIN_API_MODE === "legacy-google" ? LEGACY_GOOGLE_SCRIPT_URL : YANDEX_ADMIN_API_URL;
-    const FRONTEND_BUILD = "2026.08.17.1";
+    const FRONTEND_BUILD = "2026.08.21.1";
     const API_VERSION = "attempt-v2";
     const TECHNICAL_TEST_ID = "dev-quick";
     const KNOWN_TECHNICAL_RESULT_CODES = Object.freeze([
@@ -696,6 +719,8 @@
     let diagnosticsLoading = false;
     let adminQuestionAnalytics = [];
     let calibrationLoading = false;
+    let adminPilotAnalytics = null;
+    let pilotLoading = false;
 
     document.getElementById("frontendVersion").textContent = "Build " + FRONTEND_BUILD;
     document.getElementById("loginForm").addEventListener("submit", function(event) {
@@ -710,6 +735,7 @@
     });
     document.getElementById("refreshButton").addEventListener("click", function() { loadAdminResults(true); });
     document.getElementById("refreshDiagnosticsButton").addEventListener("click", loadAdminDiagnostics);
+    document.getElementById("refreshPilotButton").addEventListener("click", loadAdminPilotAnalytics);
     document.getElementById("refreshCalibrationButton").addEventListener("click", loadAdminQuestionAnalytics);
     document.getElementById("calibrationTest").addEventListener("change", renderAdminQuestionAnalytics);
     document.getElementById("logoutButton").addEventListener("click", logoutAdmin);
@@ -776,6 +802,7 @@
         renderAdmin();
         loadAdminInvites();
         loadAdminDiagnostics();
+        loadAdminPilotAnalytics();
         loadAdminQuestionAnalytics();
         loadAdminTrust();
       } catch (error) {
@@ -816,6 +843,9 @@
       return requestAdminAction("adminDiagnostics", password, {}, 45000);
     }
 
+    async function requestAdminPilotAnalytics(password) {
+      return requestAdminAction("adminPilotAnalytics", password, {}, 45000);
+    }
     async function requestAdminQuestionAnalytics(password) {
       return requestAdminAction("adminQuestionAnalytics", password, {}, 45000);
     }
@@ -967,6 +997,81 @@
       document.getElementById("diagnosticsContent").classList.remove("hidden");
     }
 
+    async function loadAdminPilotAnalytics() {
+      if (!activePassword || pilotLoading) return;
+      pilotLoading = true;
+      const button = document.getElementById("refreshPilotButton");
+      button.disabled = true;
+      button.textContent = "Считаем…";
+      setPilotStatus("Считаем попытки, результаты и добровольные отзывы…", "");
+      try {
+        const data = await requestAdminPilotAnalytics(activePassword);
+        if (!data || data.ok !== true || data.status !== "ok" ||
+            data.privacy !== "aggregate-and-pseudonymous-feedback" || !data.funnel ||
+            !Array.isArray(data.tests) || !Array.isArray(data.recentFeedback)) {
+          throw new Error(data && data.message ? data.message : "Backend вернул некорректную воронку.");
+        }
+        adminPilotAnalytics = data;
+        renderAdminPilotAnalytics();
+        setPilotStatus("Воронка обновлена. Персональные данные кандидатов не загружались в этот блок.", "success");
+      } catch (error) {
+        setPilotStatus(error && error.message ? error.message : "Воронка временно недоступна.", "error");
+      } finally {
+        pilotLoading = false;
+        button.disabled = false;
+        button.textContent = "Обновить воронку";
+      }
+    }
+
+    function renderAdminPilotAnalytics() {
+      const content = document.getElementById("pilotContent");
+      const data = adminPilotAnalytics;
+      if (!data || !data.funnel) {
+        content.classList.add("hidden");
+        content.innerHTML = "";
+        return;
+      }
+      const funnel = data.funnel;
+      const rows = data.tests.map(function(test) {
+        const difficulty = test.difficulty || {};
+        const difficultyTotal = ["too_easy", "easy", "balanced", "hard", "too_hard"].reduce(function(sum, key) { return sum + Math.max(0, Math.round(finiteNumber(difficulty[key]))); }, 0);
+        const balance = difficultyTotal ? Math.round(finiteNumber(difficulty.balanced) * 100 / difficultyTotal) + "% в самый раз" : "—";
+        return "<tr>" +
+          cell("Тест", escapeHtml(testLabel(test.testId))) +
+          cell("Стартов", formatNumber(test.startedAttempts)) +
+          cell("Завершено", formatNumber(test.completedAttempts) + " · " + formatNumber(test.completionRate) + "%") +
+          cell("Средний балл", test.averageScore === null ? "—" : formatNumber(test.averageScore) + "%") +
+          cell("Отзывов", formatNumber(test.feedbackResponses)) +
+          cell("Оценка", test.averageOverallRating === null ? "—" : formatNumber(test.averageOverallRating) + " / 5") +
+          cell("Понятность", test.averageClarityRating === null ? "—" : formatNumber(test.averageClarityRating) + " / 5") +
+          cell("Сложность", balance) +
+          cell("Тех. проблемы", formatNumber(test.technicalIssues)) + "</tr>";
+      }).join("");
+      const feedback = data.recentFeedback.length ? data.recentFeedback.map(function(item) {
+        const comment = boundedText(item.comment, 1000);
+        return '<div class="pilot-feedback-item"><strong>' + escapeHtml(testLabel(item.testId)) +
+          " · оценка " + escapeHtml(String(item.overallRating)) + "/5 · понятность " + escapeHtml(String(item.clarityRating)) +
+          "/5 · " + escapeHtml(pilotDifficultyLabel(item.difficulty)) +
+          (item.technicalIssue ? " · сообщена техническая проблема" : "") +
+          " · " + escapeHtml(formatOptionalDate(item.submittedAt)) + "</strong>" +
+          (comment ? "<p>" + escapeHtml(comment) + "</p>" : "") + "</div>";
+      }).join("") : '<div class="empty-state"><strong>Отзывов пока нет</strong>Они появятся после добровольной отправки с экрана подтверждённого результата.</div>';
+      content.innerHTML =
+        '<div class="pilot-summary">' +
+          diagnosticItemHtml("Аккаунтов", funnel.registeredCandidates) +
+          diagnosticItemHtml("Начали / попыток", funnel.startedCandidates + " / " + funnel.startedAttempts) +
+          diagnosticItemHtml("Завершили / попыток", funnel.completedCandidates + " / " + funnel.completedAttempts) +
+          diagnosticItemHtml("Заполненных профилей", funnel.profiledCandidates) +
+          diagnosticItemHtml("В рейтинге", funnel.publishedProfiles) +
+        "</div>" +
+        '<div class="pilot-table"><table><thead><tr><th>Тест</th><th>Стартов</th><th>Завершено</th><th>Средний балл</th><th>Отзывов</th><th>Оценка</th><th>Понятность</th><th>Сложность</th><th>Тех. проблемы</th></tr></thead><tbody>' + rows + "</tbody></table></div>" +
+        '<h3 class="diagnostic-section-title">Последние обезличенные отзывы</h3><div class="pilot-feedback-list">' + feedback + "</div>";
+      content.classList.remove("hidden");
+    }
+
+    function pilotDifficultyLabel(value) {
+      return { too_easy: "слишком легко", easy: "скорее легко", balanced: "в самый раз", hard: "скорее сложно", too_hard: "слишком сложно" }[value] || "сложность не указана";
+    }
     async function loadAdminQuestionAnalytics() {
       if (!activePassword || calibrationLoading) return;
       calibrationLoading = true;
@@ -1815,6 +1920,8 @@
       diagnosticsLoading = false;
       adminQuestionAnalytics = [];
       calibrationLoading = false;
+      adminPilotAnalytics = null;
+      pilotLoading = false;
       resetDeletionPreview(true);
       setInviteFormEnabled(false);
       clearFilters();
@@ -1828,11 +1935,14 @@
       setInviteGroupStatus("", "");
       setDiagnosticsStatus("", "");
       setCalibrationStatus("", "");
+      setPilotStatus("", "");
       document.getElementById("diagnosticsContent").classList.add("hidden");
       document.getElementById("calibrationContent").classList.add("hidden");
+      document.getElementById("pilotContent").classList.add("hidden");
       renderTrustQueue([]);
       setTrustStatus("","");
       document.getElementById("calibrationContent").innerHTML = "";
+      document.getElementById("pilotContent").innerHTML = "";
       document.getElementById("diagnosticsContent").innerHTML = "";
       document.getElementById("inviteOutput").classList.add("hidden");
       document.getElementById("inviteLink").value = "";
@@ -1895,6 +2005,11 @@
       node.className = "status" + (type ? " " + type : "");
     }
 
+    function setPilotStatus(message, type) {
+      const node = document.getElementById("pilotStatus");
+      node.textContent = String(message || "");
+      node.className = "status" + (type ? " " + type : "");
+    }
     function setCalibrationStatus(message, type) {
       const node = document.getElementById("calibrationStatus");
       node.textContent = message;

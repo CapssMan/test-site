@@ -69,7 +69,7 @@ try {
     action = "beginAttempt"; apiVersion = "attempt-v2"; beginRequestId = "scb_" + "a" * 24; testId = "fa-junior";
     inviteCode = "SC1-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA-AAAA"; email = "closed@example.invalid";
     browserFingerprint = "deadbeef"; clientBuild = "pre-pilot-live-check"; privacyConsent = $true;
-    privacyConsentVersion = "skillcheck-pd-consent-2026-07-31-v5"; ageConfirmed = $true
+    privacyConsentVersion = "skillcheck-pd-consent-2026-08-21-v6"; ageConfirmed = $true
   }
 
   foreach ($origin in @($primaryOrigin)) {

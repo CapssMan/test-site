@@ -113,6 +113,8 @@ class MemoryStore {
   async getResultByCode(code) { return this.results.get(code) || null; }
   async getResultByRequestId(requestId) { return [...this.results.values()].find(row => row.requestId === requestId) || null; }
   async insertResult(row) { this.results.set(row.code, { ...row }); }
+  async getFeedbackByAttemptId() { return null; }
+  async upsertFeedback() {}
   async appendAudit(row) { this.audit.push(row); }
 
   async getSessionByTokenHash(tokenHash) { return this.accountSessions.get(tokenHash) || null; }

@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, "..");
 const admin = fs.readFileSync(path.join(root, "admin.html"), "utf8");
 const handler = fs.readFileSync(path.join(root, "cloud", "admin-handler.js"), "utf8");
 
-assert.match(admin, /Build 2026\.08\.17\.1/);
+assert.match(admin, /Build 2026\.08\.21\.1/);
 assert.match(admin, /id="calibrationHeading">Калибровка вопросов по пилоту/);
 assert.match(admin, /requestAdminAction\("adminQuestionAnalytics", password, \{\}, 45000\)/);
 assert.match(admin, /privacy !== "aggregate-no-candidate-data"/);

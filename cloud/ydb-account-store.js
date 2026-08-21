@@ -194,6 +194,17 @@ function createYdbAccountStore(sql) {
         changes.updatedAt, changes.purgeAt, profileId, "active"]);
     },
 
+    async listPilotAccounts(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 5000, 10000));
+      const resultSets = await executeRead(sql, [`SELECT * FROM candidate_accounts ORDER BY created_at DESC LIMIT ${safeLimit};`], []);
+      return rowsFrom(resultSets).map(mapAccount);
+    },
+
+    async listPilotAttempts(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 5000, 10000));
+      const resultSets = await executeRead(sql, [`SELECT * FROM candidate_attempt_links ORDER BY started_at DESC LIMIT ${safeLimit};`], []);
+      return rowsFrom(resultSets).map(mapAttempt);
+    },
     async listProfileAttempts(profileId) {
       const resultSets = await executeRead(sql, [
         "SELECT * FROM candidate_attempt_links WHERE profile_id = ",

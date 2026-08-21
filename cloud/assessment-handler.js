@@ -31,6 +31,7 @@ const {
   timingSafeEqual,
   validateBeginRequest,
   validatePrivateBank,
+  validateFeedbackRequest,
   validateSaveRequest,
   verifyAttemptToken
 } = require("./assessment-core");
@@ -47,6 +48,7 @@ const { buildTxtReport } = require("./report-core");
 
 const RETAKE_WINDOW_MS = 21 * 24 * 60 * 60 * 1000;
 const MAX_RESULT_CODE_ATTEMPTS = 12;
+const FEEDBACK_SUBMISSION_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 function getMethod(event) {
   return String(event && (
@@ -300,7 +302,7 @@ function assertDependencies(settings) {
     "getInviteGroupByCodeHash", "getInviteGroupClaim", "claimInviteGroupSeat", "upsertInvite",
     "getSessionByInviteId", "getSessionByAttemptId", "listRecentSessions", "insertSession",
     "markInviteActive", "reserveSession", "completeSession", "completeInvite", "getResultByCode",
-    "getResultByRequestId", "insertResult", "appendAudit"
+    "getResultByRequestId", "insertResult", "getFeedbackByAttemptId", "upsertFeedback", "appendAudit"
   ];
   if (!store || requiredStoreMethods.some(method => typeof store[method] !== "function")) throw new Error("assessment_store_required");
   const accountSecret = String(settings.accountSessionSecret || "");
@@ -684,6 +686,54 @@ function createAssessmentHandler(dependencies) {
       technical: false
     };
   }
+  async function saveFeedback(request) {
+    const now = nowProvider();
+    const tokenResult = verifyAttemptToken(request.attemptToken, signingSecret, { now, allowExpired: true });
+    if (!tokenResult.valid) return unavailableResponse();
+    const session = await store.getSessionByAttemptId(request.attemptId);
+    if (!session || session.state !== "completed" || session.attemptId !== request.attemptId ||
+        session.testId !== request.testId || session.resultCode !== request.resultCode ||
+        session.testId === "dev-quick" || TECHNICAL_RESULT_CODES.has(request.resultCode) ||
+        !tokenMatchesSession(tokenResult, session)) return unavailableResponse();
+    if (accountIntegrationEnabled) {
+      const linkedAttempt = await store.getProfileAttemptByAttemptId(session.attemptId);
+      if (!linkedAttempt || linkedAttempt.state !== "completed" || linkedAttempt.testId !== session.testId ||
+          linkedAttempt.resultCode !== session.resultCode) return unavailableResponse();
+    }
+    const result = await store.getResultByCode(request.resultCode);
+    const completedAt = validDate(result && result.completedAt || session.completedAt);
+    const ageMs = completedAt ? now.getTime() - completedAt.getTime() : NaN;
+    if (!result || result.attemptId !== session.attemptId || result.testId !== session.testId ||
+        result.bankVersion !== session.bankVersion || result.scoreVerification !== SCORE_VERIFICATION_SERVER ||
+        result.technical === true || !Number.isFinite(ageMs) || ageMs < -5 * 60 * 1000 ||
+        ageMs > FEEDBACK_SUBMISSION_WINDOW_MS) return unavailableResponse();
+    const existing = await store.getFeedbackByAttemptId(session.attemptId);
+    const submittedAt = validDate(existing && existing.submittedAt) || now;
+    await store.upsertFeedback({
+      attemptId: session.attemptId,
+      resultCode: session.resultCode,
+      testId: session.testId,
+      bankVersion: session.bankVersion,
+      overallRating: request.overallRating,
+      clarityRating: request.clarityRating,
+      difficulty: request.difficulty,
+      technicalIssue: request.technicalIssue,
+      comment: request.comment,
+      submittedAt,
+      updatedAt: now,
+      purgeAt: plusMs(completedAt, RESULT_RETENTION_MS)
+    });
+    await audit("pilot_feedback_saved", session.identityHash, existing ? "updated" : "created", now);
+    return {
+      ok: true,
+      status: existing ? "updated" : "saved",
+      backendVersion: ASSESSMENT_BACKEND_VERSION,
+      apiVersion: ASSESSMENT_API_VERSION,
+      testId: session.testId,
+      submittedAt: submittedAt.toISOString(),
+      updatedAt: now.toISOString()
+    };
+  }
   async function saveResult(request, context, event) {
     const now = nowProvider();
     const accountContext = await resolveAccountContext(event, request, now);
@@ -816,6 +866,7 @@ function createAssessmentHandler(dependencies) {
       let payload;
       if (body.action === "beginAttempt") payload = await beginAttempt(validateBeginRequest(body), context, event);
       else if (body.action === "saveResult") payload = await saveResult(validateSaveRequest(body), context, event);
+      else if (body.action === "saveFeedback") payload = await saveFeedback(validateFeedbackRequest(body));
       else if (body.action === "rankingProof") payload = await verifyRankingProof(validateRankingProofRequest(body));
       else throw publicError("unsupported_action", "Действие не поддерживается.");
       return jsonResponse(200, payload, allowedOrigin);

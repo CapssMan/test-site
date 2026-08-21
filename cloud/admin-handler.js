@@ -21,6 +21,7 @@ const {
 const { resolveAllowedOrigin } = require("./cors-origin");
 const { getMethod, jsonResponse, storageErrorResponse } = require("./assessment-handler");
 const { buildQuestionAnalytics } = require("./question-analytics");
+const { buildPilotAnalytics } = require("./pilot-analytics");
 const {
   MAX_ADMIN_REPORT_CHARS,
   accessDeniedResponse,
@@ -85,7 +86,8 @@ function createAdminHandler(dependencies) {
   const requiredMethods = [
     "getRuntimeSettings", "getBankMetadata", "getInviteByRequestId", "getInviteById", "listInvites", "upsertInvite", "revokeInvite",
     "getInviteGroupByRequestId", "getInviteGroupById", "listInviteGroups", "upsertInviteGroup", "revokeInviteGroup", "updateInviteGroupDescription",
-    "getSessionByAttemptId", "getResultByCode", "listResults", "getDiagnostics", "listRankingProfilesByResultCode",
+    "getSessionByAttemptId", "getResultByCode", "listResults", "getFeedbackByAttemptId", "listFeedback", "getDiagnostics",
+    "listPilotAccounts", "listPilotAttempts", "listRankingProfiles", "listRankingProfilesByResultCode",
     "deleteRankingProfile", "getDeletionOperation", "upsertDeletionOperation", "deleteAssessmentData", "appendAudit"
   ];
   if (!store || requiredMethods.some(method => typeof store[method] !== "function")) throw new Error("admin_store_required");
@@ -119,6 +121,20 @@ function createAdminHandler(dependencies) {
     } catch (_error) {}
   }
 
+  async function adminPilotAnalytics() {
+    const [accounts, attempts, results, feedback, rankingProfiles] = await Promise.all([
+      store.listPilotAccounts(MAX_ADMIN_RESULTS),
+      store.listPilotAttempts(MAX_ADMIN_RESULTS),
+      store.listResults(MAX_ADMIN_RESULTS),
+      store.listFeedback(MAX_ADMIN_RESULTS),
+      store.listRankingProfiles(MAX_ADMIN_RESULTS)
+    ]);
+    return Object.assign({
+      ok: true,
+      status: "ok",
+      backendVersion: ASSESSMENT_BACKEND_VERSION
+    }, buildPilotAnalytics({ accounts, attempts, results, feedback, rankingProfiles }, { now: nowProvider() }));
+  }
   async function adminResults() {
     const results = await store.listResults(MAX_ADMIN_RESULTS);
     return { ok: true, status: "ok", backendVersion: ASSESSMENT_BACKEND_VERSION, loadedAt: nowProvider().toISOString(), results: results.map(sanitizeAdminResult) };
@@ -403,6 +419,7 @@ function createAdminHandler(dependencies) {
     const session = scope === "full_attempt" ? await store.getSessionByAttemptId(result.attemptId) : null;
     const invite = session && session.inviteId ? await store.getInviteById(session.inviteId) : null;
     const rankingProfiles = await store.listRankingProfilesByResultCode(code);
+    const feedback = await store.getFeedbackByAttemptId(result.attemptId);
     let reportText = null;
     if (result.reportCreated && result.reportObjectKey) reportText = await storage.readText(result.reportObjectKey, context);
     return {
@@ -412,6 +429,7 @@ function createAdminHandler(dependencies) {
       result,
       session,
       invite,
+      feedback,
       rankingProfiles,
       reportHash: reportText === null ? "" : sha256Hex(reportText),
       reportText: includeReportText ? reportText : undefined
@@ -421,6 +439,7 @@ function createAdminHandler(dependencies) {
   function deletionCounts(snapshot) {
     return {
       adminRows: snapshot && snapshot.result ? 1 : 0,
+      feedbackRows: snapshot && snapshot.feedback ? 1 : 0,
       report: snapshot && snapshot.reportHash ? 1 : 0,
       attemptRows: snapshot && snapshot.scope === "full_attempt" && snapshot.session ? 1 : 0,
       sessions: snapshot && snapshot.scope === "full_attempt" && snapshot.session ? 1 : 0,
@@ -498,6 +517,7 @@ function createAdminHandler(dependencies) {
     for (const profile of snapshot.rankingProfiles || []) await store.deleteRankingProfile(profile.testId, profile.publicProfileId);
     if (snapshot.result && snapshot.result.reportObjectKey) await storage.deleteObject(snapshot.result.reportObjectKey, context);
     if (await store.getResultByCode(code)) throw new Error("deletion_result_verification_failed");
+    if (snapshot.result && await store.getFeedbackByAttemptId(snapshot.result.attemptId)) throw new Error("deletion_feedback_verification_failed");
     if (scope === "full_attempt" && snapshot.session && await store.getSessionByAttemptId(snapshot.session.attemptId)) throw new Error("deletion_session_verification_failed");
     if ((await store.listRankingProfilesByResultCode(code)).length) throw new Error("deletion_ranking_verification_failed");
     if (snapshot.result && snapshot.result.reportObjectKey && await storage.readText(snapshot.result.reportObjectKey, context) !== null) throw new Error("deletion_report_verification_failed");
@@ -584,6 +604,7 @@ function createAdminHandler(dependencies) {
       if (!verifyAdminPassword(body.password, adminPasswordRecord)) return jsonResponse(200, accessDeniedResponse(), allowedOrigin);
       let response;
       if (body.action === "adminResults") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminResults(); }
+      else if (body.action === "adminPilotAnalytics") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminPilotAnalytics(); }
       else if (body.action === "adminQuestionAnalytics") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminQuestionAnalytics(); }
       else if (body.action === "adminReport") { exactAction(body, ["action", "apiVersion", "password", "code"]); response = await adminReport(body, context); }
       else if (body.action === "adminInvites") { exactAction(body, ["action", "apiVersion", "password"]); response = await adminInvites(); }

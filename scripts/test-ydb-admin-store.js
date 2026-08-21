@@ -43,7 +43,7 @@ function fakeSql(strings, ...values) {
   assert.equal(operation.state, "backed_up");
   await store.upsertDeletionOperation(operation);
   await store.deleteRankingProfile("fa-junior", "pub_1");
-  await store.deleteAssessmentData({ code: "FA-ABCDE", scope: "full_attempt", session: { inviteId: "inv_" + "3".repeat(32) }, invite: { inviteId: "inv_" + "3".repeat(32) } });
+  await store.deleteAssessmentData({ code: "FA-ABCDE", scope: "full_attempt", result: { attemptId: "att_" + "4".repeat(32) }, feedback: { attemptId: "att_" + "4".repeat(32) }, session: { inviteId: "inv_" + "3".repeat(32) }, invite: { inviteId: "inv_" + "3".repeat(32) } });
 
   calls.slice(0, 6).forEach(call => {
     assert.equal(call.isolation.mode, "onlineReadOnly");
@@ -54,7 +54,8 @@ function fakeSql(strings, ...values) {
     assert.equal(call.idempotent, true);
   });
   assert.match(calls[6].text, /UPSERT INTO assessment_deletion_operations/);
-  assert.match(calls[8].text, /DELETE FROM assessment_results[\s\S]*DELETE FROM assessment_sessions[\s\S]*DELETE FROM assessment_invites/);
+  assert.match(calls[8].text, /DELETE FROM assessment_feedback[\s\S]*DELETE FROM assessment_results[\s\S]*DELETE FROM assessment_sessions[\s\S]*DELETE FROM assessment_invites/);
+  assert.equal(calls[8].values[0], "att_" + "4".repeat(32));
 
   const ddl = fs.readFileSync(path.join(__dirname, "..", "cloud", "schema", "007_assessment_deletion_operations.sql"), "utf8");
   assert.match(ddl, /assessment_deletion_operations[\s\S]*backup_purged Bool NOT NULL[\s\S]*TTL = Interval\("PT0S"\) ON purge_at/);

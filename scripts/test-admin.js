@@ -42,6 +42,17 @@ assert.doesNotMatch(frontend, /adminResultsCallback_|createElement\("script"\)/,
 assert.doesNotMatch(frontend, /reportPath|reportCode/, "internal report locations must not reach the admin UI");
 assert.doesNotMatch(frontend, /mock(?:Data|Results)|ADMIN_PASSWORD\s*=|password\s*:\s*["'][^"']{4,}["']/, "frontend must not contain mock results or a hard-coded password");
 
+assert.match(frontend, /id="trustQueueCount"/, "credential review queue must expose a count");
+assert.match(frontend, /dataset\.trustEvidenceChecked/, "credential review must require an explicit evidence check");
+assert.match(frontend, /dataset\.trustNote/, "credential review must provide an inline candidate note");
+const trustQueueFunction = extractFunction(frontend, "renderTrustQueue");
+const trustReviewFunction = extractFunction(frontend, "reviewCredentialFromButton");
+assert.match(trustQueueFunction, /approve\.disabled=true/);
+assert.match(trustQueueFunction, /reject\.disabled=true/);
+assert.match(trustReviewFunction, /Сначала откройте подтверждение/);
+assert.match(trustReviewFunction, /Для отклонения обязательно напишите кандидату конкретную причину/);
+assert.doesNotMatch(trustReviewFunction, /prompt\s*\(/, "credential rejection must not rely on a browser prompt");
+
 const doGetFunction = extractFunction(backend, "doGet");
 assert.doesNotMatch(doGetFunction, /params\.password/, "GET must not accept the admin password");
 assert.match(doGetFunction, /административных операций требуется POST-запрос/, "legacy admin GET must be rejected");

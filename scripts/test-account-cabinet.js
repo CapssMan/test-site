@@ -23,6 +23,12 @@ new vm.Script(scripts[0], { filename: "account.html" });
 ].forEach(id => assert.match(page, new RegExp('id="' + id + '"'), "cabinet missing #" + id));
 
 assert.match(page, /После входа вы попадёте в личный кабинет/);
+assert.match(page, /id="credentialProcess"/);
+assert.match(page, /HTTPS-ссылка доступна только оператору\./);
+assert.match(page, /Только после неё запись может появиться у работодателя\./);
+assert.match(page, /item\.verificationNote/);
+assert.match(page, /Причина отклонения:/);
+assert.match(page, /item\.verificationStatus==="rejected"\?"Исправить":"Изменить"/);
 assert.match(page, /\.guest-panel\{margin:0 auto 76px;/, "guest login panel must remain centered inside the shared shell");
 assert.doesNotMatch(page, /\.guest-panel\{margin:0 0 76px;/, "guest login panel must not reset the shell's horizontal auto margins");
 assert.match(page, /await loadProfile\(\)/, "OAuth callback must load the complete private profile, credentials and conversations");

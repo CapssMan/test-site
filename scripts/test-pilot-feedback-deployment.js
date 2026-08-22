@@ -10,8 +10,9 @@ const gateway = fs.readFileSync(path.join(root, "cloud", "api-gateway.yaml"), "u
 const candidate = fs.readFileSync(path.join(root, "test.html"), "utf8");
 const admin = fs.readFileSync(path.join(root, "admin.html"), "utf8");
 
-assert.match(deploy, /param\(\[switch\]\$PublishPilotFeedback\)/);
+assert.match(deploy, /param\(\[switch\]\$PublishPilotFeedback, \[switch\]\$ResumeFailClosedDeployment\)/);
 assert.match(deploy, /Explicit -PublishPilotFeedback confirmation is required/);
+assert.match(deploy, /Explicit -ResumeFailClosedDeployment confirmation is required to restore a fail-closed pilot/);
 for (const [source, target] of [["assessment-v14", "assessment-v15"], ["admin-v12", "admin-v13"]]) {
   assert.equal((gateway.match(new RegExp(`tag: "${source}"`, "g")) || []).length, 2);
   assert(deploy.includes(`SourceTag = "${source}"`));
@@ -19,6 +20,10 @@ for (const [source, target] of [["assessment-v14", "assessment-v15"], ["admin-v1
   assert.match(deploy, new RegExp(`tag: "${source}"[\\s\\S]*tag: "${target}"`));
 }
 assert.match(deploy, /020_pilot_feedback\.sql/);
+assert.match(deploy, /skillcheck-pilot-feedback-schema-/);
+assert.match(deploy, /Copy-Item -LiteralPath \$schema -Destination \$schemaTempPath -Force/);
+assert.match(deploy, /sql -f \$schemaTempPath/);
+assert.match(deploy, /Set-AttemptGates \$restoreIssuance \$restoreSelfService/);
 assert.match(deploy, /Set-AttemptGates "false" "false"/);
 assert.match(deploy, /state = Utf8\('active'\).*state = Utf8\('reserved'\)/);
 assert.match(deploy, /privacy-consent and feedback cutover/);

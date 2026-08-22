@@ -1,4 +1,4 @@
-param([switch]$PublishPilotFeedback)
+param([switch]$PublishPilotFeedback, [switch]$ResumeFailClosedDeployment)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -23,6 +23,7 @@ $adminTargetTag = "admin-v13"
 $backendVersion = "yandex-pilot-feedback-2026-08-21-1"
 $gatewaySpec = Join-Path $repoRoot "cloud\api-gateway.yaml"
 $schema = Join-Path $repoRoot "cloud\schema\020_pilot_feedback.sql"
+$schemaTempPath = Join-Path $env:TEMP ("skillcheck-pilot-feedback-schema-" + [Guid]::NewGuid().ToString("N") + ".sql")
 $packagePath = Join-Path $env:TEMP ("skillcheck-pilot-feedback-" + [Guid]::NewGuid().ToString("N") + ".zip")
 $deploymentSpec = Join-Path $env:TEMP ("skillcheck-pilot-feedback-gateway-" + [Guid]::NewGuid().ToString("N") + ".yaml")
 $rollbackSpec = Join-Path $env:TEMP ("skillcheck-pilot-feedback-rollback-" + [Guid]::NewGuid().ToString("N") + ".yaml")
@@ -124,11 +125,19 @@ try {
   $ydbReady = $true
   $previousSettings = Get-Settings
   Assert-ClosedProductGates $previousSettings
+  $restoreIssuance = $previousSettings.attempt_issuance_enabled
+  $restoreSelfService = $previousSettings.account_self_service_enabled
+  if ($restoreIssuance -eq "false" -and $restoreSelfService -eq "false") {
+    if (-not $ResumeFailClosedDeployment) { throw "Explicit -ResumeFailClosedDeployment confirmation is required to restore a fail-closed pilot." }
+    $restoreIssuance = "true"
+    $restoreSelfService = "true"
+  }
   Set-AttemptGates "false" "false" $previousSettings.account_required_for_attempts
   $active = @(Invoke-YdbJson "SELECT COUNT(*) AS row_count FROM assessment_sessions WHERE state = Utf8('active') OR state = Utf8('reserved');")
   if ($active.Count -ne 1 -or [long]$active[0].row_count -ne 0) { throw "Active assessment sessions block the privacy-consent and feedback cutover." }
 
-  $null = & $ydb -e $endpoint -d $database sql -f $schema --format json-unicode-array
+  Copy-Item -LiteralPath $schema -Destination $schemaTempPath -Force
+  $null = & $ydb -e $endpoint -d $database sql -f $schemaTempPath --format json-unicode-array
   if ($LASTEXITCODE -ne 0) { throw "Pilot-feedback schema migration failed." }
   if (@(Invoke-YdbJson "SELECT COUNT(*) AS row_count FROM assessment_feedback;").Count -ne 1) { throw "Pilot-feedback schema verification failed." }
 
@@ -158,7 +167,7 @@ try {
 
   & (Join-Path $PSScriptRoot "deploy-yandex-public-site.ps1") -SkipGatewayUpdate
   if ($LASTEXITCODE -ne 0) { throw "Pilot-feedback public-site deployment failed." }
-  Set-AttemptGates $previousSettings.attempt_issuance_enabled $previousSettings.account_self_service_enabled $previousSettings.account_required_for_attempts
+  Set-AttemptGates $restoreIssuance $restoreSelfService $previousSettings.account_required_for_attempts
   Assert-ClosedProductGates (Get-Settings)
 
   $assessmentHealth = (Invoke-WebRequestWithRetry @{ Uri = ($apiBase + "/v1/assessment"); Headers = @{ Origin = $origin }; UseBasicParsing = $true; TimeoutSec = 30 }).Content | ConvertFrom-Json
@@ -180,6 +189,7 @@ try {
   throw
 } finally {
   if (-not [String]::IsNullOrWhiteSpace($packageUri)) { & $yc storage s3 rm $packageUri --only-show-errors | Out-Null }
+  Remove-Item -LiteralPath $schemaTempPath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $packagePath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $deploymentSpec -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $rollbackSpec -Force -ErrorAction SilentlyContinue

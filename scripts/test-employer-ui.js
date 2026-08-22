@@ -23,6 +23,19 @@ assert.match(page, /removeFromShortlist/);
 assert.match(page, /Все кандидаты/);
 assert.match(page, /Показать кандидатов/);
 assert.match(page, /id="sendInvitationBatch"/);
+for (const id of ["briefPreview", "briefReadiness", "briefPreviewTitle", "briefPreviewSummary", "briefPreviewMeta"]) {
+  assert.match(page, new RegExp('id="' + id + '"'), "missing vacancy brief node: " + id);
+}
+assert.match(page, /function roleCategory\(id\)/);
+for (const roleId of ["finance-general", "accounting-junior", "finance-bi", "tourism-operations", "software-development", "product-project-management", "sales-business-development", "logistics-procurement", "digital-marketing"]) {
+  assert.ok(page.includes('"' + roleId + '"'), "missing role category mapping: " + roleId);
+}
+assert.match(page, /function updateInvitationBrief\(prefill\)/);
+assert.match(page, /ready\+" \/ 5"/);
+assert.match(page, /Заполните название роли, задачи, следующий этап и срок ответа\./);
+const briefFunction = page.match(/function updateInvitationBrief\(prefill\)\{([\s\S]*?)\r?\n    function initials/);
+assert(briefFunction, "vacancy brief function boundary is missing");
+assert.doesNotMatch(briefFunction[1], /fetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|innerHTML/i);
 assert.match(page, /createInvitationBatch/);
 assert.match(page, /listInvitations/);
 assert.match(page, /active_invitation_exists/);

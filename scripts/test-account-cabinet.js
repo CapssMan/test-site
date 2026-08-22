@@ -15,7 +15,7 @@ new vm.Script(scripts[0], { filename: "account.html" });
 
 [
   "loginView", "dashboardView", "dashboardTitle", "completedMetric", "bestMetric", "availableMetric",
-  "jobMetric", "nextActionTitle", "nextActionButton", "testAccessList", "resultList", "profileEditor",
+  "jobMetric", "nextActionTitle", "nextActionButton", "candidateJourney", "candidateJourneyStatus", "journeyAccount", "journeyResult", "journeyProfile", "testAccessList", "resultList", "profileEditor",
   "profileProgressBar", "careerProfileCard", "currentRole", "targetRole", "experienceSummary", "professionalTools",
   "availabilityPanel", "confirmAvailabilityButton", "profileConsentRefresh", "saveButton", "logoutButton", "deleteButton",
   "invitations", "invitationList", "credentialsCard", "credentialList", "saveCredentialButton", "chatCard",
@@ -31,6 +31,15 @@ assert.match(page, /highlightedTestId=testIdFromReturnTarget\(flow\.returnTo\)/)
 assert.match(page, /card\.dataset\.highlighted="true"/);
 assert.match(page, /test\.html\?test=/);
 assert.match(page, /profileCompletion/);
+assert.match(page, /const TEST_COUNT=Object\.keys\(TEST_TITLES\)\.length/);
+assert.match(page, /uniqueTests\.size\+" из "\+TEST_COUNT/);
+assert.match(page, /function updateCandidateJourney\(profile\)/);
+assert.match(page, /done:resultRows\(profile\)\.length>0/);
+assert.match(page, /done:profileCompletion\(profile\)===100/);
+assert.match(page, /setAttribute\("aria-current","step"\)/);
+assert.match(page, /\.candidate-path\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+assert.match(page, /@media\(max-width:680px\)[\s\S]*\.candidate-path\{grid-template-columns:1fr\}/);
+assert.doesNotMatch(page, /Пять финансовых направлений|0 из 5|uniqueTests\.size\+" из 5"/);
 assert.match(page, /new Set\(results\.map\(row=>row\.testId\)\)/);
 assert.match(page, /publicProfileEnabled/);
 assert.match(page, /discoverableOption\.disabled=/);
@@ -59,4 +68,4 @@ assert.match(page, /@media\(max-width:680px\)/);
 assert.match(page, /@media\(prefers-reduced-motion:reduce\)/);
 assert.doesNotMatch(page, /localStorage|login:phone|login:birthday|login:avatar|client_secret/);
 
-console.log("Account cabinet checks passed: Yandex dashboard, candidate invitation inbox, tests, gated visibility and desktop/mobile states are present.");
+console.log("Account cabinet checks passed: 11-direction metrics, three-step candidate progress, Yandex dashboard and desktop/mobile states are present.");

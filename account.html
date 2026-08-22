@@ -82,6 +82,17 @@
     .next-action{display:grid;grid-template-columns:1fr auto;gap:26px;align-items:center;padding:25px 26px;border-color:#d4d9ee;background:linear-gradient(125deg,#fff,#f5f4ff)}
     .next-action h2{margin:7px 0 7px;font-size:27px;letter-spacing:-.04em}
     .next-action p{margin:0;color:var(--muted);line-height:1.55}
+    .next-action-copy{min-width:0}
+    .next-action>.button{align-self:start}
+    .candidate-journey{grid-column:1/-1;padding-top:20px;border-top:1px solid rgba(111,103,162,.16)}
+    .journey-summary{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:11px;color:#566174;font-size:12px}
+    .journey-summary strong{color:#2f3748;font-size:13px}
+    .candidate-path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0;padding:0;list-style:none}
+    .candidate-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;min-height:68px;padding:11px 12px;border:1px solid #e1e4ec;border-radius:15px;background:rgba(255,255,255,.7);color:#687285}
+    .journey-marker{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:#e9ecf2;color:#667084;font-size:11px;font-weight:900;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
+    .candidate-step strong,.candidate-step small{display:block}.candidate-step strong{color:#3e4758;font-size:12px}.candidate-step small{margin-top:3px;font-size:10px;line-height:1.35}
+    .candidate-step.complete{border-color:#cce5da;background:#f5fbf8}.candidate-step.complete .journey-marker{background:#168460;color:#fff}.candidate-step.complete strong{color:#176149}
+    .candidate-step.current{border-color:#aebbf4;background:#f6f7ff;box-shadow:0 0 0 3px rgba(63,90,210,.07)}.candidate-step.current .journey-marker{background:#536ce0;color:#fff}.candidate-step.current strong{color:#344cad}
     .test-list{display:grid;gap:11px}
     .test-access{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fff;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
     .test-access:hover{border-color:#c9d1e3;box-shadow:0 12px 28px rgba(30,42,72,.07);transform:translateY(-1px)}
@@ -163,7 +174,7 @@
       .guest-panel{padding:20px;border-radius:22px}.login-benefits{grid-template-columns:1fr}.login-action{padding:17px}
       .dashboard{padding:24px 0 52px}.dashboard-head{display:block;padding:24px;border-radius:22px}.dashboard-head h1{font-size:38px}.dashboard-head .button{margin-top:20px}
       .metrics{grid-template-columns:1fr 1fr;gap:9px}.metric{min-height:112px;padding:16px}.metric-value{font-size:25px}
-      .card{border-radius:21px}.card-pad{padding:19px}.next-action{grid-template-columns:1fr;padding:20px}.next-action .button{width:100%}
+      .card{border-radius:21px}.card-pad{padding:19px}.next-action{grid-template-columns:1fr;padding:20px}.next-action .button{width:100%}.candidate-path{grid-template-columns:1fr}.journey-summary{align-items:flex-start}
       .section-head{display:block}.section-head p{margin-top:9px}
       .test-access{grid-template-columns:1fr}.test-access .button{width:100%}.test-locked{text-align:left}
       .result{padding:15px}.profile-summary h2{font-size:22px}
@@ -205,7 +216,7 @@
           <h2 id="loginTitle">Войдите через Яндекс</h2>
           <p>После входа вы попадёте в личный кабинет. Один аккаунт объединяет результаты и контролирует правило одной новой попытки по каждому тесту раз в 21 день.</p>
           <div class="login-benefits" aria-label="Возможности кабинета">
-            <div class="login-benefit"><span>01</span>Пять финансовых направлений</div>
+            <div class="login-benefit"><span>01</span>11 профессиональных направлений</div>
             <div class="login-benefit"><span>02</span>Подтверждённые результаты</div>
             <div class="login-benefit"><span>03</span>Добровольная видимость</div>
           </div>
@@ -236,7 +247,7 @@
         </div>
 
         <div class="metrics" aria-label="Сводка кабинета">
-          <article class="metric"><span class="metric-label">Пройдено тестов</span><strong id="completedMetric" class="metric-value">0 из 5</strong><span class="metric-note">Подтверждённые попытки</span></article>
+          <article class="metric"><span class="metric-label">Пройдено тестов</span><strong id="completedMetric" class="metric-value">0 из 11</strong><span class="metric-note">Подтверждённые попытки</span></article>
           <article class="metric"><span class="metric-label">Лучший результат</span><strong id="bestMetric" class="metric-value">—</strong><span class="metric-note">Среди завершённых тестов</span></article>
           <article class="metric"><span class="metric-label">Доступно сейчас</span><strong id="availableMetric" class="metric-value">0</strong><span class="metric-note">Можно начать без приглашения</span></article>
           <article class="metric"><span class="metric-label">Статус профиля</span><strong id="jobMetric" class="metric-value">Приватный</strong><span id="jobMetricNote" class="metric-note">Вы управляете видимостью</span></article>
@@ -245,12 +256,20 @@
         <div class="dashboard-grid">
           <div class="stack">
             <article class="card next-action">
-              <div>
+              <div class="next-action-copy">
                 <div class="section-kicker">Следующий шаг</div>
                 <h2 id="nextActionTitle">Выберите первый тест</h2>
                 <p id="nextActionText">Результат автоматически появится в этом кабинете.</p>
               </div>
               <a id="nextActionButton" class="button" href="#tests">Выбрать тест</a>
+              <div class="candidate-journey">
+                <div class="journey-summary"><strong>Основа профиля</strong><span id="candidateJourneyStatus" aria-live="polite">1 из 3 выполнено</span></div>
+                <ol id="candidateJourney" class="candidate-path" aria-label="Прогресс кандидата">
+                  <li id="journeyAccount" class="candidate-step complete"><span class="journey-marker">1</span><span><strong>Аккаунт</strong><small>Вход подтверждён Яндекс ID</small></span></li>
+                  <li id="journeyResult" class="candidate-step current" aria-current="step"><span class="journey-marker">2</span><span><strong>Первый результат</strong><small>Пройдите одно направление</small></span></li>
+                  <li id="journeyProfile" class="candidate-step"><span class="journey-marker">3</span><span><strong>Карьерный контекст</strong><small>Добавьте роль, опыт и инструменты</small></span></li>
+                </ol>
+              </div>
             </article>
 
             <section id="invitations" class="card card-pad" aria-labelledby="invitationsTitle">
@@ -389,6 +408,7 @@
     const PUBLIC_CONSENT_VERSION="skillcheck-profile-discovery-2026-08-08-v1";
     const EXTENDED_PROFILE_CONSENT_VERSION="skillcheck-credentials-chat-2026-08-17-v1";
     const TEST_TITLES={"fa-junior":"Financial Analyst Junior","ca-junior":"Credit Analyst Junior","fpa-junior":"FP&A / Budget Analyst","acc-junior":"Accounting / Reporting","bi-junior":"Data & BI Analyst","tourism-junior":"Tourism & Hospitality Operations","software-junior":"Software Development Junior","product-project-junior":"Product / Project Management Junior","sales-junior":"Sales / Business Development Junior","logistics-procurement-junior":"Logistics / Procurement Junior","digital-marketing-junior":"Digital Marketing Junior"};
+    const TEST_COUNT=Object.keys(TEST_TITLES).length;
     const JOB_LABELS={hidden:"Приватный",active:"Ищу работу",open:"Открыт",not_looking:"Не ищу"};
     const INVITATION_STATUS_LABELS={sent:"Новое",viewed:"Просмотрено",interested:"Интересно",details:"Нужны детали",declined:"Неинтересно",expired:"Срок истёк"};
     const CREDENTIAL_STATUS_LABELS={self_reported:"Заявлено",pending:"На проверке",verified:"Проверено",rejected:"Отклонено"};
@@ -698,7 +718,7 @@
       const uniqueTests=new Set(results.map(row=>row.testId));
       const best=results.reduce((value,row)=>Math.max(value,Number(row.percent||0)),0);
       const available=(Array.isArray(testAccess)?testAccess:[]).filter(row=>row&&row.status==="available").length;
-      document.getElementById("completedMetric").textContent=uniqueTests.size+" из 5";
+      document.getElementById("completedMetric").textContent=uniqueTests.size+" из "+TEST_COUNT;
       document.getElementById("bestMetric").textContent=results.length?best.toFixed(1)+"%":"—";
       document.getElementById("availableMetric").textContent=String(available);
       document.getElementById("jobMetric").textContent=JOB_LABELS[profile.jobStatus]||"Приватный";
@@ -740,6 +760,21 @@
       if(next){button.href="test.html?test="+encodeURIComponent(next.testId);button.textContent="Открыть "+TEST_TITLES[next.testId]}
       else{button.href="#tests";button.textContent="Посмотреть сроки"}
     }
+    function updateCandidateJourney(profile){
+      const steps=[
+        {id:"journeyAccount",done:true},
+        {id:"journeyResult",done:resultRows(profile).length>0},
+        {id:"journeyProfile",done:profileCompletion(profile)===100}
+      ];
+      let currentAssigned=false;
+      steps.forEach(step=>{
+        const node=document.getElementById(step.id),isCurrent=!step.done&&!currentAssigned;
+        node.classList.toggle("complete",step.done);node.classList.toggle("current",isCurrent);
+        if(isCurrent){node.setAttribute("aria-current","step");currentAssigned=true}else node.removeAttribute("aria-current");
+      });
+      const completed=steps.filter(step=>step.done).length;
+      document.getElementById("candidateJourneyStatus").textContent=completed===steps.length?"Основа профиля готова":completed+" из "+steps.length+" выполнено";
+    }
     function renderDashboard(profile,email,testAccess,invitations,credentials,conversations){
       currentProfile=profile;
       setAccountView("dashboard");
@@ -773,6 +808,7 @@
       renderResults(profile.results);
       updateMetrics(profile,testAccess);
       updateProfileSummary(profile);
+      updateCandidateJourney(profile);
       updateNextAction(profile,testAccess);
       document.title="Личный кабинет — SkillCheck";
     }

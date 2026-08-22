@@ -17,6 +17,9 @@ $siteOrigin = "https://assessment-b1gafbjd3dlh-web.website.yandexcloud.net"
 $githubOrigin = "https://capssman.github.io"
 $publicFiles = @(
   "index.html",
+  "demo.html",
+  "assets/demo.css",
+  "assets/demo.js",
   "preview-v2.html",
   "preview-v3.html",
   "assets/preview-v3.css",
@@ -142,8 +145,8 @@ if (-not (Test-Path -LiteralPath $yc -PathType Leaf)) { throw "Yandex CLI is mis
 foreach ($path in @($gatewaySpec, $websiteSettings)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required deployment configuration is missing." }
 }
-if ($publicFiles.Count -ne 28 -or @($publicFiles | Sort-Object -Unique).Count -ne 28) {
-  throw "Public deployment allowlist must contain exactly 28 unique files."
+if ($publicFiles.Count -ne 31 -or @($publicFiles | Sort-Object -Unique).Count -ne 31) {
+  throw "Public deployment allowlist must contain exactly 31 unique files."
 }
 foreach ($relativePath in $publicFiles) {
   if ($relativePath -match "(^|/)(?:cloud|docs|scripts|apps-script|private)(/|$)" -or $relativePath -match "\.\.") {

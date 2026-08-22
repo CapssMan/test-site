@@ -10,6 +10,10 @@ skillcheck/
 │   └── workflows/
 │       └── ci.yml
 ├── index.html
+├── demo.html
+├── assets/
+│   ├── demo.css
+│   └── demo.js
 ├── test.html
 ├── privacy.html
 ├── consent.html

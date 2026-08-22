@@ -1,10 +1,10 @@
 ## Актуальный статус 22.08.2026 — feedback и аналитика пилота в production
 
-В production работают 11 профессиональных направлений, 480 закрытых вопросов и account-first поток через Яндекс ID. Активные runtime: `assessment-v15`, `account-v6`, `admin-v13`, `employer-v4`, `read-v7`, `write-v9`. Ровно 28 публичных файлов опубликованы на основном Yandex-origin.
+В production работают 11 профессиональных направлений, 480 закрытых вопросов и account-first поток через Яндекс ID. Активные runtime: `assessment-v15`, `account-v6`, `admin-v13`, `employer-v4`, `read-v7`, `write-v9`. Ровно 28 публичных файлов опубликованы на основном Yandex-origin. Локально подготовлены `demo.html`, `assets/demo.css` и `assets/demo.js`; они используют только вымышленные данные, не обращаются к API/хранилищу и войдут в production только после отдельного разрешения на публикацию.
 
 После подтверждённого результата кандидат может добровольно оценить общий опыт, понятность и сложность теста, отметить техническую проблему и оставить комментарий без персональных данных. Админка показывает защищённую агрегированную воронку и псевдонимизированную сводку отзывов. Таблица `assessment_feedback` создана в YDB; хранение ограничено 365 днями, отправка доступна 30 дней, удаление связано с удалением результата.
 
-Production-проверка подтвердила backend `yandex-pilot-feedback-2026-08-21-1`, runtime `assessment-v15` и `admin-v13`, открытые `attempt_issuance_enabled`, `account_registration_enabled`, `account_self_service_enabled`, `account_required_for_attempts`, а также закрытые `profile_publication_enabled`, `employer_workspace_enabled`, `employer_invitation_enabled`, `employer_contact_enabled`, `candidate_credentials_enabled`, `employer_company_profiles_enabled`, `employer_chat_enabled`. Все 84 локальные проверки проходят; платные сервисы не подключались, старые runtime-версии не удалялись.
+Production-проверка подтвердила backend `yandex-pilot-feedback-2026-08-21-1`, runtime `assessment-v15` и `admin-v13`, открытые `attempt_issuance_enabled`, `account_registration_enabled`, `account_self_service_enabled`, `account_required_for_attempts`, а также закрытые `profile_publication_enabled`, `employer_workspace_enabled`, `employer_invitation_enabled`, `employer_contact_enabled`, `candidate_credentials_enabled`, `employer_company_profiles_enabled`, `employer_chat_enabled`. Production-выпуск прошёл 84 проверки; локальная версия с изолированным демо проходит 85/85. Платные сервисы не подключались, старые runtime-версии не удалялись.
 
 ## Production expansion — 19 August 2026
 

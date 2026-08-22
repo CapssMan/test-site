@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Интерактивное демо SkillCheck: путь кандидата, профиль компетенций, shortlist и приглашение работодателя на вымышленных данных.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <title>Демо платформы — SkillCheck</title>
+  <link rel="stylesheet" href="assets/demo.css">
+  <script src="assets/demo.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#demoContent">Перейти к демо</a>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="index.html" aria-label="SkillCheck — главная"><span class="brand-mark" aria-hidden="true">✓</span><span>SkillCheck</span></a>
+      <nav aria-label="Навигация демо"><a href="#productDemo">Сценарии</a><a href="#flow">Путь до оффера</a><a class="nav-back" href="index.html">На главную</a></nav>
+    </div>
+  </header>
+
+  <main id="demoContent">
+    <section class="hero">
+      <div class="hero-orb one" aria-hidden="true"></div><div class="hero-orb two" aria-hidden="true"></div>
+      <div class="shell hero-grid">
+        <div>
+          <div class="demo-badge"><span></span> Демо-режим · вымышленные данные</div>
+          <h1>Посмотрите весь путь — <em>от навыка до приглашения.</em></h1>
+          <p>Интерактивный макет показывает, как кандидат подтверждает компетенции, а работодатель собирает shortlist без бесконечного просмотра резюме.</p>
+          <div class="hero-actions"><a class="button primary" href="#productDemo">Открыть сценарий</a><a class="button ghost" href="#flow">Как это работает</a></div>
+        </div>
+        <aside class="trust-card" aria-label="Границы демо">
+          <span>Безопасная демонстрация</span>
+          <strong>Ни одного реального профиля</strong>
+          <ul><li>Нет связи с рабочей базой</li><li>Действия не влияют на рейтинг</li><li>Состояние сбрасывается при обновлении</li></ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="demo-section" id="productDemo">
+      <div class="shell">
+        <div class="section-head">
+          <div><span class="kicker">Интерактивный прототип</span><h2>Выберите сторону платформы</h2><p>Переключайтесь между личным кабинетом кандидата и рабочим местом работодателя.</p></div>
+          <div class="fiction-note"><b>Важно</b><span>Все имена, результаты и организации на этой странице вымышлены.</span></div>
+        </div>
+
+        <div class="view-switch" role="tablist" aria-label="Сторона платформы">
+          <button id="candidateTab" class="view-tab active" type="button" role="tab" aria-selected="true" aria-controls="candidateView"><span>01</span> Я кандидат</button>
+          <button id="employerTab" class="view-tab" type="button" role="tab" aria-selected="false" aria-controls="employerView"><span>02</span> Я работодатель</button>
+        </div>
+
+        <section id="candidateView" class="product-view" role="tabpanel" aria-labelledby="candidateTab">
+          <div class="workspace candidate-workspace">
+            <aside class="side-panel">
+              <div class="mini-brand"><span>✓</span><strong>Личный кабинет</strong></div>
+              <nav aria-label="Разделы кабинета"><button class="side-link active" type="button"><i></i>Обзор</button><button class="side-link" type="button"><i></i>Результаты</button><button class="side-link" type="button"><i></i>Профиль</button><button class="side-link" type="button"><i></i>Приглашения <b>1</b></button></nav>
+              <div class="demo-person"><span>ДК</span><div><strong>Демо-кандидат</strong><small>Профиль-пример</small></div></div>
+            </aside>
+            <div class="workspace-main">
+              <div class="workspace-head"><div><span>Добрый день</span><h3>Ваш путь к сильному профилю</h3></div><span class="status-chip">Ищу предложение</span></div>
+              <div class="journey">
+                <article class="journey-step done"><span>✓</span><div><small>Шаг 1</small><strong>Создать аккаунт</strong></div></article>
+                <article class="journey-step done"><span>✓</span><div><small>Шаг 2</small><strong>Подтвердить навыки</strong></div></article>
+                <article class="journey-step current"><span>3</span><div><small>Шаг 3</small><strong>Получать приглашения</strong></div></article>
+              </div>
+              <div class="candidate-grid">
+                <article class="profile-panel">
+                  <div class="card-head"><div><span class="eyebrow">Skill Passport</span><h4>Product / Project Junior</h4></div><span class="verified">✓ Подтверждено</span></div>
+                  <div class="score-row"><div class="score-ring"><strong>84</strong><span>из 100</span></div><div><strong>Сильный junior</strong><p>Результат выше демонстрационного ориентира роли.</p></div></div>
+                  <div class="skill-bars"><div><span>Метрики и аналитика <b>89%</b></span><i><u class="w89"></u></i></div><div><span>Discovery и гипотезы <b>86%</b></span><i><u class="w86"></u></i></div><div><span>Планирование и риски <b>78%</b></span><i><u class="w78"></u></i></div></div>
+                </article>
+                <div class="candidate-stack">
+                  <article class="compact-card"><span class="eyebrow">Карьерный контекст</span><h4>Junior Product Analyst</h4><div class="tag-row"><span>Учебные проекты</span><span>SQL</span><span>Очный / гибрид</span></div><button id="profileDemoButton" class="text-button" type="button">Посмотреть, что видит работодатель <span>→</span></button></article>
+                  <article class="invite-card"><div><span class="eyebrow">Новое приглашение</span><h4>Знакомство с командой продукта</h4><p>Демо-компания · первичное интервью · 30 минут</p></div><button id="acceptDemoInvite" class="button small" type="button">Ответить</button><span id="candidateInviteStatus" class="invite-status" aria-live="polite"></span></article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="employerView" class="product-view" role="tabpanel" aria-labelledby="employerTab" hidden>
+          <div class="workspace employer-workspace">
+            <aside class="filter-panel"><span class="eyebrow">Параметры роли</span><h3>Junior Product Analyst</h3><div class="criteria"><div><span>Направление</span><strong>Product / Project</strong></div><div><span>Минимальный балл</span><strong>75 из 100</strong></div><div><span>Опыт</span><strong>До 2 лет</strong></div><div><span>Статус</span><strong>Ищет предложение</strong></div></div><p>Совпадение объясняется критериями, а решение всегда принимает человек.</p></aside>
+            <div class="talent-panel">
+              <div class="talent-head"><div><span class="eyebrow">Каталог кандидатов</span><h3>Подходящие профили</h3></div><span><b>3</b> примера</span></div>
+              <div class="talent-list">
+                <article class="talent-card" data-candidate-id="a17"><div class="talent-top"><span class="avatar">A17</span><div><h4>Кандидат A-17</h4><p>Учебные проекты · Москва</p></div><strong>92%</strong></div><div class="tag-row"><span>Product / Project 84</span><span>SQL</span><span>Ищет оффер</span></div><p class="why">Совпало: целевая роль, аналитика, формат работы и подтверждённый результат.</p><button class="shortlist-button" type="button" data-shortlist-toggle="a17">Добавить в shortlist <span>+</span></button></article>
+                <article class="talent-card" data-candidate-id="b24"><div class="talent-top"><span class="avatar violet">B24</span><div><h4>Кандидат B-24</h4><p>Стажировка 4 месяца · Казань</p></div><strong>88%</strong></div><div class="tag-row"><span>Data &amp; BI 87</span><span>Power BI</span><span>Рассматривает</span></div><p class="why">Совпало: аналитический профиль, опыт с дашбордами и готовность к гибриду.</p><button class="shortlist-button" type="button" data-shortlist-toggle="b24">Добавить в shortlist <span>+</span></button></article>
+                <article class="talent-card" data-candidate-id="c08"><div class="talent-top"><span class="avatar mint">C08</span><div><h4>Кандидат C-08</h4><p>Проектная практика · удалённо</p></div><strong>81%</strong></div><div class="tag-row"><span>Product / Project 79</span><span>Исследования</span><span>Ищет оффер</span></div><p class="why">Совпало: discovery, пользовательские исследования и доступность к старту.</p><button class="shortlist-button" type="button" data-shortlist-toggle="c08">Добавить в shortlist <span>+</span></button></article>
+              </div>
+            </div>
+            <aside class="shortlist-panel"><div class="shortlist-title"><div><span class="eyebrow">Shortlist</span><h3>На интервью</h3></div><b id="shortlistCount">0/10</b></div><div id="shortlistItems" class="shortlist-items"><p class="empty-shortlist">Добавьте кандидатов — выбранные профили появятся здесь.</p></div><button id="sendDemoInvite" class="button primary full" type="button" disabled>Пригласить выбранных</button><p id="employerInviteStatus" class="action-status" aria-live="polite">Демо-действие: никаких сообщений реальным людям не отправляется.</p></aside>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="flow-section" id="flow"><div class="shell"><div class="flow-head"><span class="kicker">Меньше трения</span><h2>Один понятный путь до интервью</h2><p>Платформа убирает повторяющиеся действия, сохраняя контроль кандидата и работодателя.</p></div><div class="flow-grid"><article><span>01</span><div><h3>Проверка</h3><p>Кандидат выбирает роль и подтверждает прикладные навыки.</p></div></article><article><span>02</span><div><h3>Профиль</h3><p>Результаты объединяются с опытом и карьерными предпочтениями.</p></div></article><article><span>03</span><div><h3>Shortlist</h3><p>Работодатель сразу видит компактные и объяснимые совпадения.</p></div></article><article><span>04</span><div><h3>Приглашение</h3><p>До десяти кандидатов получают структурированное предложение следующего шага.</p></div></article><article><span>05</span><div><h3>Диалог</h3><p>После согласия открывается безопасное общение внутри платформы.</p></div></article><article><span>06</span><div><h3>Интервью</h3><p>Команда переходит к разговору, уже понимая сильные стороны кандидата.</p></div></article></div></div></section>
+
+    <section class="closing"><div class="shell closing-card"><div><span class="kicker">Это демонстрация продукта</span><h2>Рабочий пилот развивается отдельно.</h2><p>На этой странице нет реальных людей, компаний, партнёров или результатов. Демо ничего не сохраняет и не изменяет.</p></div><div><a class="button primary" href="index.html#roles">Посмотреть реальные тесты</a><a class="button light" href="index.html">Вернуться на главную</a></div></div></section>
+  </main>
+  <footer><div class="shell"><a class="brand dark" href="index.html"><span class="brand-mark">✓</span><span>SkillCheck</span></a><p>Интерактивное демо · все данные вымышлены</p></div></footer>
+</body>
+</html>

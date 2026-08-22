@@ -41,3 +41,5 @@
 .audience-card a{font-size:13px}
 @media(max-width:760px){.quote-section{padding-top:18px}.role-arrow{width:42px;height:42px}.role-card>p{font-size:14px}.role-meta span{font-size:11px}.role-action{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.role-card,.role-card:before,.role-arrow,.role-arrow path{transition:none!important}.role-card:hover,.role-card:active{transform:none}.role-card:hover .role-arrow path{transform:none}}
+
+@media(max-width:980px) and (min-width:761px){.main-nav{gap:14px}.main-nav>a{font-size:11px}.nav-action{display:none}}

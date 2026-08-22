@@ -7,8 +7,8 @@ const path = require("node:path");
 const page = fs.readFileSync(path.resolve(__dirname, "..", "account.html"), "utf8");
 const requiredIds = [
   "employerPreviewTitle", "previewAvatar", "previewAlias", "previewRole", "previewMeta",
-  "previewResults", "previewTools", "profileStrengthTitle", "strengthResult", "strengthRole",
-  "strengthExperience", "strengthTools"
+  "previewResults", "previewTools", "previewCredentials", "profileStrengthTitle", "strengthResult", "strengthRole",
+  "strengthExperience", "strengthTools", "strengthCredential"
 ];
 for (const id of requiredIds) assert.match(page, new RegExp('id="' + id + '"'), "missing candidate preview node: " + id);
 
@@ -19,6 +19,10 @@ assert.match(page, /function previewInitials\(value\)/);
 assert.match(page, /function updateEmployerPreview\(profile\)/);
 assert.match(page, /resultRows\(profile\)\.slice\(0,2\)/);
 assert.match(page, /professionalTools[\s\S]{0,180}slice\(0,5\)/);
+assert.match(page, /visibility==="employer"&&item\.verificationStatus==="verified"/);
+assert.match(page, /verifiedEvidence=currentCredentials[\s\S]{0,180}slice\(0,3\)/);
+assert.match(page, /Проверенные достижения подключатся после открытия раздела регалий\./);
+assert.match(page, /Работодателю пока не показываются проверенные достижения\./);
 assert.match(page, /updateProfileSummary\(profile\);[\s\S]{0,80}updateEmployerPreview\(profile\);/);
 assert.match(page, /\["publicAlias","visibility","jobStatus","region","workFormat","experienceBand","currentRole","targetRole","experienceSummary","professionalTools"\][\s\S]{0,220}updateEmployerPreview\(profile\)/);
 assert.match(page, /\.preview-head b\{[^}]*font-size:10px/);
@@ -26,7 +30,7 @@ assert.match(page, /\.strength-item\{[^}]*font-size:10px/);
 
 const previewFunction = page.match(/function updateEmployerPreview\(profile\)\{([\s\S]*?)\n    \}\n    function updateAvailability/);
 assert(previewFunction, "candidate employer preview function boundary is missing");
-assert.doesNotMatch(previewFunction[1], /fetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|innerHTML/i);
+assert.doesNotMatch(previewFunction[1], /fetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|innerHTML|evidenceUrl/i);
 assert.match(previewFunction[1], /textContent=/);
 assert.match(previewFunction[1], /replaceChildren\(\)/);
 

@@ -24,6 +24,10 @@ assert.match(html, /Кандидат A-17/);
 assert.match(html, /Кандидат B-24/);
 assert.match(html, /Кандидат C-08/);
 assert.match(html, /Демо-компания/);
+assert.match(html, /Доказательства опыта/);
+assert.match(html, /Учебный проект по юнит-экономике/);
+assert.match(html, /Проект · проверено оператором/);
+assert.match(html, /Учебный проект проверен/);
 assert.doesNotMatch(html, /(?:@|\+7\s*\d|Тинькофф|Сбер|Яндекс|VK|Ozon|Wildberries)/i);
 
 for (const source of [html, js]) {

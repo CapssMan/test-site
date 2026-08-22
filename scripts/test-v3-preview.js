@@ -31,6 +31,7 @@ assert.match(css, /backdrop-filter:blur/);
 assert.match(css, /--parallax-x/);
 assert.match(css, /--tilt-x/);
 assert.match(css, /prefers-reduced-motion:reduce/);
+assert.doesNotMatch(css, /font-size:(?:7|8|9)px/, "production V3 must not use unreadable sub-10px text");
 assert.match(js, /pointermove/);
 assert.match(js, /IntersectionObserver/);
 assert(!["fetch(", "XMLHttpRequest", "WebSocket", "localStorage", "sessionStorage"].some(token => js.includes(token)));

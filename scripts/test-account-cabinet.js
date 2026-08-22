@@ -66,6 +66,7 @@ assert.match(page, /Ссылка не передаётся работодате�
 assert.match(page, /skillcheck-account-2026-08-16-v3/);
 assert.match(page, /@media\(max-width:680px\)/);
 assert.match(page, /@media\(prefers-reduced-motion:reduce\)/);
+assert.doesNotMatch(page, /font-size:(?:7|8|9)px/, "candidate cabinet must not use unreadable sub-10px text");
 assert.doesNotMatch(page, /localStorage|login:phone|login:birthday|login:avatar|client_secret/);
 
 console.log("Account cabinet checks passed: 11-direction metrics, three-step candidate progress, Yandex dashboard and desktop/mobile states are present.");

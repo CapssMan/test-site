@@ -47,6 +47,7 @@ assert.match(page, /ФИО, email, телефон, полный отчёт и о
 assert.match(page, /реальные кандидаты и контакты не подставляются/);
 assert.match(page, /@media\(max-width:760px\)/);
 assert.match(page, /prefers-reduced-motion:reduce/);
+assert.doesNotMatch(page, /font-size:(?:7|8|9)px/, "employer workspace must not use unreadable sub-10px text");
 assert.doesNotMatch(page, /requestContact|revealContact|contactCandidate/);
 assert.doesNotMatch(page, /@example\.(?:com|ru)|Иван Иванов|Мария С\.|Алексей К\./);
 assert.doesNotMatch(page, /innerHTML\s*=/);
